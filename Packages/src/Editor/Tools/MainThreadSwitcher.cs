@@ -7,6 +7,19 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
+    /// PlayerLoopTimingの列挙型（Editor版ではダミー実装）
+    /// </summary>
+    public enum PlayerLoopTiming
+    {
+        Initialization = 0,
+        EarlyUpdate = 1,
+        FixedUpdate = 2,
+        PreUpdate = 3,
+        Update = 4,
+        PreLateUpdate = 5,
+        PostLateUpdate = 6
+    }
+    /// <summary>
     /// UniTaskのSwitchToMainThreadと同等の機能を提供するクラス
     /// メインスレッドへの切り替えを行う
     /// </summary>
@@ -43,7 +56,33 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static SwitchToMainThreadAwaitable SwitchToMainThread()
         {
-            return new SwitchToMainThreadAwaitable();
+            return new SwitchToMainThreadAwaitable(CancellationToken.None);
+        }
+        
+        /// <summary>
+        /// メインスレッドに切り替える（CancellationToken付き）
+        /// </summary>
+        public static SwitchToMainThreadAwaitable SwitchToMainThread(CancellationToken cancellationToken)
+        {
+            return new SwitchToMainThreadAwaitable(cancellationToken);
+        }
+        
+        /// <summary>
+        /// メインスレッドに切り替える（PlayerLoopTiming指定）
+        /// Editor版ではPlayerLoopTimingは無視される
+        /// </summary>
+        public static SwitchToMainThreadAwaitable SwitchToMainThread(PlayerLoopTiming timing)
+        {
+            return new SwitchToMainThreadAwaitable(CancellationToken.None);
+        }
+        
+        /// <summary>
+        /// メインスレッドに切り替える（PlayerLoopTimingとCancellationToken指定）
+        /// Editor版ではPlayerLoopTimingは無視される
+        /// </summary>
+        public static SwitchToMainThreadAwaitable SwitchToMainThread(PlayerLoopTiming timing, CancellationToken cancellationToken)
+        {
+            return new SwitchToMainThreadAwaitable(cancellationToken);
         }
 
         /// <summary>
@@ -60,16 +99,42 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public struct SwitchToMainThreadAwaitable
     {
-        public Awaiter GetAwaiter() => new Awaiter();
+        private readonly CancellationToken cancellationToken;
+        
+        public SwitchToMainThreadAwaitable(CancellationToken cancellationToken)
+        {
+            this.cancellationToken = cancellationToken;
+        }
+        
+        public Awaiter GetAwaiter() => new Awaiter(cancellationToken);
 
         public struct Awaiter : INotifyCompletion
         {
-            public bool IsCompleted => MainThreadSwitcher.IsMainThread;
+            private readonly CancellationToken cancellationToken;
+            
+            public Awaiter(CancellationToken cancellationToken)
+            {
+                this.cancellationToken = cancellationToken;
+            }
+            
+            public bool IsCompleted
+            {
+                get
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return MainThreadSwitcher.IsMainThread;
+                }
+            }
 
-            public void GetResult() { }
+            public void GetResult()
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
 
             public void OnCompleted(Action continuation)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                
                 if (MainThreadSwitcher.IsMainThread)
                 {
                     continuation();

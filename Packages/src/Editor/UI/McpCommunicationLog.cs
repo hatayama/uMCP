@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using Newtonsoft.Json;
-using Cysharp.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
 {
@@ -100,7 +99,7 @@ namespace io.github.hatayama.uMCP
             _pendingRequests[id] = pendingRequest;
 
             // メインスレッドに切り替えてSessionState保存とUI更新
-            await UniTask.SwitchToMainThread();
+            await MainThreadSwitcher.SwitchToMainThread();
             SaveToSessionState();
             OnLogUpdated?.Invoke();
 
@@ -150,7 +149,7 @@ namespace io.github.hatayama.uMCP
                 McpLogger.LogDebug($"Response logged - Method: {pendingRequest.CommandName}, Total logs: {_logs.Count}");
 
                 // メインスレッドに切り替えてSessionState保存とUI更新
-                await UniTask.SwitchToMainThread();
+                await MainThreadSwitcher.SwitchToMainThread();
 
                 // 即座にSessionStateに保存（Domain Reload対策）
                 SaveToSessionState();
