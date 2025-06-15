@@ -1,0 +1,44 @@
+{
+  "name": "unity-mcp-server",
+  "version": "0.1.0",
+  "description": "TypeScript MCP Server for Unity-Cursor integration",
+  "main": "dist/server.bundle.js",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:bundle",
+    "build:tsc": "tsc",
+    "build:webpack": "webpack --mode production",
+    "build:bundle": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
+    "dev": "NODE_ENV=development npm run build:bundle && NODE_ENV=development node dist/server.bundle.js",
+    "dev:watch": "NODE_ENV=development esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os --watch",
+    "start": "node dist/server.bundle.js",
+    "start:dev": "NODE_ENV=development node dist/server.bundle.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npm run build",
+    "postinstall": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "unity",
+    "cursor",
+    "typescript"
+  ],
+  "author": "hatayama",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.12.2",
+    "zod": "3.25.64"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "20.19.0",
+    "esbuild": "^0.24.0",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.4.0",
+    "ts-loader": "9.5.2",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3",
+    "webpack": "5.99.9",
+    "webpack-cli": "5.1.4"
+  }
+}

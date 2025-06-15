@@ -1,0 +1,18 @@
+{
+    "name": "uMCP.Tests",
+    "rootNamespace": "",
+    "references": [
+        "GUID:214998e563c124e8a88199b2dd1f522d"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

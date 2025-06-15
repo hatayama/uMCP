@@ -1,0 +1,31 @@
+{
+  "name": "io.github.hatayama.umcp",
+  "version": "0.1.0",
+  "displayName": "uMCP",
+  "description": "Connect your Unity Editor to LLMs using the Model Context Protocol.",
+  "unity": "2020.3",
+  "documentationUrl": "https://github.com/hatayama/uMCP/blob/main/Packages/src/README.md",
+  "licensesUrl": "https://github.com/hatayama/uMCP/blob/main/LICENSE.md",
+  "author": {
+    "name": "hatayama",
+    "email": "booqle@gmail.com",
+    "url": "https://github.com/hatayama/uMCP"
+  },
+  "dependencies": {
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
+  "keywords": [
+    "uMCP",
+    "MCP",
+    "Cursor",
+    "Claude",
+    "Windsurf",
+    "AI"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hatayama/uMCP.git"
+  }
+} 

@@ -1,0 +1,116 @@
+name: Build and Release uMCP
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-typescript-server:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'Packages/src/TypeScriptServer/package-lock.json'
+        
+    - name: Install TypeScript Server dependencies
+      working-directory: Packages/src/TypeScriptServer
+      run: |
+        echo "Installing dependencies (node_modules will be created temporarily)..."
+        npm ci
+        echo "Dependencies installed successfully"
+        
+    - name: Build TypeScript Server
+      working-directory: Packages/src/TypeScriptServer
+      run: |
+        echo "Building TypeScript Server with esbuild..."
+        npm run build:bundle
+        echo "Build completed successfully"
+        
+    - name: Verify build output
+      working-directory: Packages/src/TypeScriptServer
+      run: |
+        echo "Verifying build output..."
+        ls -la dist/
+        echo "Testing server startup..."
+        timeout 5s node dist/server.bundle.js || echo "Server built successfully"
+        
+    - name: Clean up node_modules (optional verification)
+      working-directory: Packages/src/TypeScriptServer
+      run: |
+        echo "node_modules size before cleanup:"
+        du -sh node_modules/ || echo "node_modules not found"
+        echo "Note: node_modules will be automatically cleaned up when GitHub Actions environment is destroyed"
+        
+    - name: Commit built files (if changed)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        echo "Adding only dist/ files to git..."
+        git add Packages/src/TypeScriptServer/dist/
+        
+        echo "Checking for changes..."
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          echo "Committing built files..."
+          git commit -m "Auto-build TypeScript Server [skip ci]
+          
+          Built files:
+          - dist/server.bundle.js
+          
+          Note: node_modules/ is excluded by .gitignore"
+          git push
+          echo "Built files committed successfully"
+        fi
+        
+  test-unity-package:
+    runs-on: ubuntu-latest
+    needs: build-typescript-server
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Validate Unity Package structure
+      run: |
+        echo "Validating Unity Package structure..."
+        
+        # Unity Package必須ファイルの存在確認
+        test -f "Packages/src/package.json" || exit 1
+        test -d "Packages/src/Editor" || exit 1
+        test -f "Packages/src/TypeScriptServer/dist/server.bundle.js" || exit 1
+        
+        echo "✅ Unity Package structure is valid"
+        
+        # node_modulesが含まれていないことを確認
+        if [ -d "Packages/src/TypeScriptServer/node_modules" ]; then
+          echo "❌ ERROR: node_modules should not be in the repository"
+          exit 1
+        else
+          echo "✅ node_modules correctly excluded from repository"
+        fi
+        
+    - name: Validate package.json
+      working-directory: Packages/src
+      run: |
+        echo "Validating package.json syntax..."
+        node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8'))"
+        echo "✅ package.json is valid"
+

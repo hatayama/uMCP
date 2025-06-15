@@ -1,0 +1,41 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main        # ← デフォブランチに合わせて
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0      # タグ取得に必須
+
+      # ── デバッグ：リポ構造を出力 ─────────────────────────
+      - name: 🕵️ Show file tree
+        run: |
+          echo "PWD: $(pwd)"
+          echo "===== ls -R ====="
+          ls -R
+
+      # ── package.json が本当にあるか簡易チェック ─────────
+      - name: 🧪 Sanity check
+        run: |
+          test -f Packages/src/package.json && echo "✅ package.json OK"
+
+      # ── release‑please 本番 ───────────────────────────
+      - name: 🚀 Run release‑please
+        uses: googleapis/release-please-action@v3
+        with:
+          path: Packages/src
+          release-type: node
+          package-name: "io.github.hatayama.unitypocketmcp"
+          token: ${{ secrets.GITHUB_TOKEN }}
