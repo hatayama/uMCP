@@ -1,0 +1,124 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Newtonsoft.Json;
+
+namespace io.github.hatayama.uMCP
+{
+    /// <summary>
+    /// Cursor MCP設定の永続化を担当するクラス
+    /// 単一責任原則：設定ファイルの読み書きのみを担当
+    /// </summary>
+    public class CursorMcpConfigRepository
+    {
+        /// <summary>
+        /// 設定ファイルが存在するかチェック
+        /// </summary>
+        public bool Exists(string configPath)
+        {
+            return File.Exists(configPath);
+        }
+
+        /// <summary>
+        /// 設定ディレクトリを作成
+        /// </summary>
+        public void CreateConfigDirectory(string configPath)
+        {
+            string configDir = Path.GetDirectoryName(configPath);
+            Directory.CreateDirectory(configDir);
+        }
+
+        /// <summary>
+        /// mcp.json設定を読み込み
+        /// </summary>
+        public CursorMcpConfig Load(string configPath)
+        {
+            if (!File.Exists(configPath))
+            {
+                return new CursorMcpConfig(new Dictionary<string, McpServerConfigData>());
+            }
+
+            string jsonContent = File.ReadAllText(configPath);
+            
+            // まず、既存のJSONを辞書として読み込み
+            Dictionary<string, object> rootObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonContent);
+            Dictionary<string, McpServerConfigData> servers = new();
+            
+            // mcpServersセクションが存在するかチェック
+            if (rootObject != null && rootObject.ContainsKey("mcpServers"))
+            {
+                // mcpServersを辞書として取得
+                string mcpServersJson = JsonConvert.SerializeObject(rootObject["mcpServers"]);
+                Dictionary<string, object> mcpServersObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(mcpServersJson);
+                
+                if (mcpServersObject != null)
+                {
+                    foreach (KeyValuePair<string, object> serverEntry in mcpServersObject)
+                    {
+                        string serverName = serverEntry.Key;
+                        
+                        // 各サーバー設定を辞書として取得
+                        string serverConfigJson = JsonConvert.SerializeObject(serverEntry.Value);
+                        Dictionary<string, object> serverConfigObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(serverConfigJson);
+                        
+                        if (serverConfigObject != null)
+                        {
+                            string command = serverConfigObject.ContainsKey("command") ? serverConfigObject["command"]?.ToString() ?? "" : "";
+                            
+                            string[] args = new string[0];
+                            if (serverConfigObject.ContainsKey("args"))
+                            {
+                                string argsJson = JsonConvert.SerializeObject(serverConfigObject["args"]);
+                                args = JsonConvert.DeserializeObject<string[]>(argsJson) ?? new string[0];
+                            }
+                            
+                            Dictionary<string, string> env = new();
+                            if (serverConfigObject.ContainsKey("env"))
+                            {
+                                string envJson = JsonConvert.SerializeObject(serverConfigObject["env"]);
+                                env = JsonConvert.DeserializeObject<Dictionary<string, string>>(envJson) ?? new Dictionary<string, string>();
+                            }
+                            
+                            servers[serverName] = new McpServerConfigData(command, args, env);
+                        }
+                    }
+                }
+            }
+            
+            return new CursorMcpConfig(servers);
+        }
+
+        /// <summary>
+        /// mcp.json設定を保存
+        /// </summary>
+        public void Save(string configPath, CursorMcpConfig config)
+        {
+            Dictionary<string, object> jsonStructure;
+            
+            // 既存ファイルがある場合は、既存の構造を保持
+            if (File.Exists(configPath))
+            {
+                string existingContent = File.ReadAllText(configPath);
+                jsonStructure = JsonConvert.DeserializeObject<Dictionary<string, object>>(existingContent) ?? new Dictionary<string, object>();
+            }
+            else
+            {
+                jsonStructure = new Dictionary<string, object>();
+            }
+            
+            // mcpServersセクションのみを更新
+            jsonStructure["mcpServers"] = config.mcpServers.ToDictionary(
+                kvp => kvp.Key,
+                kvp => new
+                {
+                    command = kvp.Value.command,
+                    args = kvp.Value.args,
+                    env = kvp.Value.env
+                }
+            );
+
+            string jsonContent = JsonConvert.SerializeObject(jsonStructure, Formatting.Indented);
+            File.WriteAllText(configPath, jsonContent);
+        }
+    }
+} 
