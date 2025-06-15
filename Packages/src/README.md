@@ -25,9 +25,9 @@ Model Context Protocolを使用し、UnityエディターをLLMツールに接�
 3. "+" ボタンをクリック
 4. "Add package from git URL" を選択
 5. 以下のURLを入力：
-   ```
-   https://github.com/hatayama/UnityPocketMCP.git?path=/Packages/src
-   ```
+```
+https://github.com/hatayama/uMCP.git?path=/Packages/src
+```
 
 ### セットアップ
 
