@@ -12,7 +12,6 @@
     "url": "https://github.com/hatayama/uMCP"
   },
   "dependencies": {
-    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
     "com.unity.nuget.newtonsoft-json": "3.2.1"
   },
   "keywords": [
