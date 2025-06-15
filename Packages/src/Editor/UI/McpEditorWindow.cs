@@ -34,10 +34,10 @@ namespace io.github.hatayama.uMCP
         private readonly CursorMcpConfigRepository _repository = new();
         private CursorMcpConfigService _configService;
         
-        [MenuItem("Window/UnityPocketMCP")]
+        [MenuItem("Tools/uMCP/uMCP Window")]
         public static void ShowWindow()
         {
-            McpEditorWindow window = GetWindow<McpEditorWindow>("UnityPocketMCP");
+            McpEditorWindow window = GetWindow<McpEditorWindow>("uMCP");
             window.minSize = new Vector2(400, 200);
             window.Show();
         }
