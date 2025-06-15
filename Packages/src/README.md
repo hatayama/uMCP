@@ -1,12 +1,12 @@
 # uMCP
 
-モデルコンテキストプロトコルを使用して Unity エディターを LLM に接続します。
+Model Context Protocolを使用し、UnityエディターをLLMツールに接続します。
 
 ## 機能
 
 - Unityプロジェクトのコンパイル実行・エラー取得
 - Unityコンソールログの取得
-- CursorからUnityを直接操作
+- LLMツールからUnityを直接操作
 
 ## 前提条件
 
@@ -38,8 +38,9 @@
 - "Start Server" ボタンをクリック
 - 設定したportでTCP/IPサーバーが起動
 
-#### 2. Cursor側の設定
+#### 2. LLMツールの設定
 
+ここでは例としてCursorで説明します。
 Unity Editorで「Window > Unity MCP」を開き、「Auto Configure Cursor」ボタンをクリックしてください。
 これにより`.cursor/mcp.json`が自動的に作成・更新されます。
 
@@ -90,10 +91,8 @@ Cursorで以下のコマンドが使用可能：
 - `.cursor/mcp.json` のパスが正しいか確認
 - JSON形式が正しいか確認
 
-## ライセンス
-
+## License
 MIT License
 
-## 作者
-
+## Author
 Masamichi Hatayama
