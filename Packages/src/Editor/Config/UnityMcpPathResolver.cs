@@ -75,7 +75,7 @@ namespace io.github.hatayama.uMCP
             if (Directory.Exists(packageCacheDir))
             {
                 // io.github.hatayama.unitymcp@で始まるディレクトリを検索
-                string[] packageDirs = Directory.GetDirectories(packageCacheDir, "io.github.hatayama.unitymcp@*");
+                string[] packageDirs = Directory.GetDirectories(packageCacheDir, "io.github.hatayama.umcp@*");
                 
                 foreach (string packageDir in packageDirs)
                 {
