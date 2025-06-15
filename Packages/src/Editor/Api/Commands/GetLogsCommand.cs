@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using Cysharp.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
 {
@@ -21,8 +20,8 @@ namespace io.github.hatayama.uMCP
             
             McpLogger.LogDebug($"GetLogs request received: logType={logType}, maxCount={maxCount}");
             
-            // UniTaskのSwitchToMainThreadを使用
-            await UniTask.SwitchToMainThread();
+            // MainThreadSwitcherを使用してメインスレッドに切り替え
+            await MainThreadSwitcher.SwitchToMainThread();
             
             // LogGetterクラスを使ってUnity Console Logを取得
             LogDisplayDto logData;

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using Cysharp.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
 {
@@ -71,7 +70,7 @@ namespace io.github.hatayama.uMCP
             }
 
             McpLogger.LogDebug($"Executing command: {commandName}");
-            await UniTask.SwitchToMainThread();
+            await MainThreadSwitcher.SwitchToMainThread();
             return await command.ExecuteAsync(paramsToken);
         }
 
