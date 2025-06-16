@@ -2,6 +2,8 @@ using System;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor.TestTools.TestRunner.Api;
+using UnityEditor;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
@@ -20,13 +22,13 @@ namespace io.github.hatayama.uMCP
             
             McpLogger.LogInfo($"テスト実行開始 - フィルター: {parameters.FilterType}, 値: {parameters.FilterValue}, XML保存: {parameters.SaveXml}");
 
-            // テスト実行結果を格納するためのTaskCompletionSource
-            TaskCompletionSource<TestExecutionResult> completionSource = new TaskCompletionSource<TestExecutionResult>();
-
             try
             {
                 // メインスレッドでテスト実行
                 await MainThreadSwitcher.SwitchToMainThread();
+                
+                // TaskCompletionSourceを使ってテスト完了まで待機
+                TaskCompletionSource<TestExecutionResult> completionSource = new TaskCompletionSource<TestExecutionResult>();
                 
                 if (parameters.FilterType == "all")
                 {
@@ -46,10 +48,8 @@ namespace io.github.hatayama.uMCP
                     });
                 }
 
-                // テスト実行完了を待機
+                // テスト完了まで待機
                 TestExecutionResult executionResult = await completionSource.Task;
-                
-                McpLogger.LogInfo($"テスト実行完了 - 成功: {executionResult.Success}");
                 
                 return new
                 {
@@ -57,6 +57,9 @@ namespace io.github.hatayama.uMCP
                     message = executionResult.Message,
                     testResults = executionResult.TestResults,
                     xmlPath = executionResult.XmlPath,
+                    filterType = parameters.FilterType,
+                    filterValue = parameters.FilterValue,
+                    saveXml = parameters.SaveXml,
                     completedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 };
             }
@@ -115,18 +118,30 @@ namespace io.github.hatayama.uMCP
                 // テスト結果の統計を取得
                 TestResultSummary summary = AnalyzeTestResult(result);
                 
+                McpLogger.LogInfo($"✅ テスト実行完了");
+                McpLogger.LogInfo($"📊 結果: テスト完了 - 成功:{summary.PassedCount} 失敗:{summary.FailedCount} スキップ:{summary.SkippedCount} ({result.Duration:F1}秒)");
+                
                 string xmlPath = null;
                 if (saveXml)
                 {
                     // XML保存
                     xmlPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
+                    if (!string.IsNullOrEmpty(xmlPath))
+                    {
+                        McpLogger.LogInfo($"📄 XMLファイル保存: {xmlPath}");
+                    }
+                    else
+                    {
+                        McpLogger.LogError("XMLファイルの保存に失敗しました");
+                    }
                 }
                 else
                 {
                     // XMLをログ出力
                     NUnitXmlResultExporter.LogTestResultAsXml(result);
+                    McpLogger.LogInfo("📄 XMLをコンソールに出力しました");
                 }
-
+                
                 TestExecutionResult executionResult = new TestExecutionResult
                 {
                     Success = summary.FailedCount == 0,
@@ -134,11 +149,12 @@ namespace io.github.hatayama.uMCP
                     TestResults = summary,
                     XmlPath = xmlPath
                 };
-
+                
                 completionSource.SetResult(executionResult);
             }
             catch (Exception ex)
             {
+                McpLogger.LogError($"テスト結果処理エラー: {ex.Message}");
                 completionSource.SetException(ex);
             }
         }

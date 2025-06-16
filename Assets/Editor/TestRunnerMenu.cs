@@ -74,16 +74,6 @@ namespace io.github.hatayama.uMCP
             testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
         }
         
-        [MenuItem("uMCP/Test Runner/Run Specific Test/McpServerControllerTests")]
-        public static void RunMcpServerControllerTests()
-        {
-            Debug.Log("McpServerControllerTestsだけ実行するで！");
-            shouldSaveXml = false;
-            testRunnerController = new UnityTestExecutionManager();
-            TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.McpServerControllerTests");
-            testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
-        }
-        
         [MenuItem("uMCP/Test Runner/Run Specific Test/SampleEditModeTest")]
         public static void RunSampleEditModeTest()
         {

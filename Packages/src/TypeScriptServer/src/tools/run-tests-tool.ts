@@ -45,11 +45,11 @@ export class RunTestsTool extends BaseTool {
 
   protected async execute(args: { filterType: string; filterValue: string; saveXml: boolean }): Promise<string> {
     try {
-      const response = await this.context.unityClient.sendCommand('runtests', {
-        filterType: args.filterType,
-        filterValue: args.filterValue,
-        saveXml: args.saveXml
-      });
+      const response = await this.context.unityClient.runTests(
+        args.filterType,
+        args.filterValue,
+        args.saveXml
+      );
 
       if (response.success) {
         let result = `✅ テスト実行完了\n`;

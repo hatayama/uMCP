@@ -1,15 +1,15 @@
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// コマンドの種類を定義するenum
+    /// Unityコマンドの種類を定義する列挙型
     /// </summary>
     public enum CommandType
     {
+        Ping,
         Compile,
         GetLogs,
-        GetVersion,
-        Ping,
-        RunTests
+        RunTests,
+        GetVersion
     }
 
     /// <summary>

@@ -5542,33 +5542,11 @@ var UnityClient = class {
     });
   }
   /**
-   * Unityプロジェクトのコンパイルを実行
+   * Unityプロジェクトをコンパイル
    */
   async compileProject(forceRecompile = false) {
     if (!this.connected) {
-      return {
-        success: true,
-        errorCount: 0,
-        warningCount: 2,
-        completedAt: (/* @__PURE__ */ new Date()).toISOString(),
-        errors: [],
-        warnings: [
-          {
-            message: "Warning: Unused variable detected in PlayerController.cs:42",
-            file: "PlayerController.cs",
-            line: 42,
-            column: 1,
-            type: "Warning"
-          },
-          {
-            message: "Warning: Missing null check in GameManager.cs:156",
-            file: "GameManager.cs",
-            line: 156,
-            column: 1,
-            type: "Warning"
-          }
-        ]
-      };
+      throw new Error("Unity MCP Bridge is not connected. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.");
     }
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
@@ -5604,16 +5582,7 @@ var UnityClient = class {
    */
   async getLogs(logType = "All", maxCount = 100) {
     if (!this.connected) {
-      return {
-        logs: [
-          {
-            type: "Log",
-            message: "Unity MCP Bridge not connected",
-            timestamp: (/* @__PURE__ */ new Date()).toISOString()
-          }
-        ],
-        totalCount: 1
-      };
+      throw new Error("Unity MCP Bridge is not connected. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.");
     }
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
@@ -5641,6 +5610,44 @@ var UnityClient = class {
           }
         } catch (error) {
           reject(new Error("Invalid getLogs response from Unity"));
+        }
+      });
+    });
+  }
+  /**
+   * Unity Test Runnerを実行
+   */
+  async runTests(filterType = "all", filterValue = "", saveXml = false) {
+    if (!this.connected) {
+      throw new Error("Unity MCP Bridge is not connected. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.");
+    }
+    return new Promise((resolve, reject) => {
+      const requestId = Date.now();
+      const request = JSON.stringify({
+        jsonrpc: "2.0",
+        id: requestId,
+        method: "runtests",
+        params: {
+          filterType,
+          filterValue,
+          saveXml
+        }
+      });
+      this.socket.write(request + "\n");
+      const timeout = setTimeout(() => {
+        reject(new Error("Unity runTests timeout"));
+      }, 6e4);
+      this.socket.once("data", (data) => {
+        clearTimeout(timeout);
+        try {
+          const response = JSON.parse(data.toString());
+          if (response.error) {
+            reject(new Error(`Unity runTests error: ${response.error.message}`));
+          } else {
+            resolve(response.result);
+          }
+        } catch (error) {
+          reject(new Error("Invalid runTests response from Unity"));
         }
       });
     });
@@ -5967,11 +5974,11 @@ var RunTestsTool = class extends BaseTool {
   }
   async execute(args) {
     try {
-      const response = await this.context.unityClient.sendCommand("runtests", {
-        filterType: args.filterType,
-        filterValue: args.filterValue,
-        saveXml: args.saveXml
-      });
+      const response = await this.context.unityClient.runTests(
+        args.filterType,
+        args.filterValue,
+        args.saveXml
+      );
       if (response.success) {
         let result = `\u2705 \u30C6\u30B9\u30C8\u5B9F\u884C\u5B8C\u4E86
 `;
