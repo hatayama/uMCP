@@ -3,6 +3,7 @@ import { PingTool } from './ping-tool.js';
 import { UnityPingTool } from './unity-ping-tool.js';
 import { CompileTool } from './compile-tool.js';
 import { LogsTool } from './logs-tool.js';
+import { RunTestsTool } from './run-tests-tool.js';
 
 /**
  * ツールレジストリ
@@ -30,6 +31,7 @@ export class ToolRegistry {
     this.register(new UnityPingTool(context));
     this.register(new CompileTool(context));
     this.register(new LogsTool(context));
+    this.register(new RunTestsTool(context));
   }
 
   /**

@@ -8,7 +8,8 @@ namespace io.github.hatayama.uMCP
         Compile,
         GetLogs,
         GetVersion,
-        Ping
+        Ping,
+        RunTests
     }
 
     /// <summary>

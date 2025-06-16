@@ -87,8 +87,11 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Test Runner/Run Specific Test/SampleEditModeTest")]
         public static void RunSampleEditModeTest()
         {
-            // SpecificClassTestExecutorを使ってクラス単位で実行（フルネーム指定）
-            SpecificClassTestExecutor.RunTestsByFullClassName("Tests.SampleEditModeTest", saveXml: false);
+            Debug.Log("SampleEditModeTestだけ実行するで！");
+            shouldSaveXml = false;
+            testRunnerController = new UnityTestExecutionManager();
+            TestExecutionFilter filter = TestExecutionFilter.ByClassName("Tests.SampleEditModeTest");
+            testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
         }
         
         /// <summary>

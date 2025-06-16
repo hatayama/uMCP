@@ -5932,6 +5932,85 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
   }
 };
 
+// src/tools/run-tests-tool.ts
+var RunTestsTool = class extends BaseTool {
+  name = "action_runTests";
+  description = "Unity Test Runner\u3092\u5B9F\u884C\u3057\u3066\u30C6\u30B9\u30C8\u7D50\u679C\u3092\u53D6\u5F97\u3059\u308B";
+  inputSchema = {
+    type: "object",
+    properties: {
+      filterType: {
+        type: "string",
+        description: "\u30C6\u30B9\u30C8\u30D5\u30A3\u30EB\u30BF\u30FC\u306E\u7A2E\u985E",
+        enum: ["all", "fullclassname", "namespace", "testname", "assembly"],
+        default: "all"
+      },
+      filterValue: {
+        type: "string",
+        description: "\u30D5\u30A3\u30EB\u30BF\u30FC\u5024\uFF08filterType\u304Call\u4EE5\u5916\u306E\u5834\u5408\u306B\u6307\u5B9A\uFF09\n\u2022 fullclassname: \u30D5\u30EB\u30AF\u30E9\u30B9\u540D (\u4F8B: io.github.hatayama.uMCP.CompileCommandTests)\n\u2022 namespace: \u30CD\u30FC\u30E0\u30B9\u30DA\u30FC\u30B9 (\u4F8B: io.github.hatayama.uMCP)\n\u2022 testname: \u500B\u5225\u30C6\u30B9\u30C8\u540D\n\u2022 assembly: \u30A2\u30BB\u30F3\u30D6\u30EA\u540D",
+        default: ""
+      },
+      saveXml: {
+        type: "boolean",
+        description: "\u30C6\u30B9\u30C8\u7D50\u679C\u3092XML\u30D5\u30A1\u30A4\u30EB\u3068\u3057\u3066\u4FDD\u5B58\u3059\u308B\u304B\u3069\u3046\u304B",
+        default: false
+      }
+    }
+  };
+  validateArgs(args) {
+    const schema = external_exports.object({
+      filterType: external_exports.enum(["all", "fullclassname", "namespace", "testname", "assembly"]).default("all"),
+      filterValue: external_exports.string().default(""),
+      saveXml: external_exports.boolean().default(false)
+    });
+    return schema.parse(args || {});
+  }
+  async execute(args) {
+    try {
+      const response = await this.context.unityClient.sendCommand("runtests", {
+        filterType: args.filterType,
+        filterValue: args.filterValue,
+        saveXml: args.saveXml
+      });
+      if (response.success) {
+        let result = `\u2705 \u30C6\u30B9\u30C8\u5B9F\u884C\u5B8C\u4E86
+`;
+        result += `\u{1F4CA} \u7D50\u679C: ${response.message}
+`;
+        if (response.testResults) {
+          const testResults = response.testResults;
+          result += `
+\u{1F4C8} \u8A73\u7D30\u7D71\u8A08:
+`;
+          result += `  \u2022 \u6210\u529F: ${testResults.PassedCount}\u4EF6
+`;
+          result += `  \u2022 \u5931\u6557: ${testResults.FailedCount}\u4EF6
+`;
+          result += `  \u2022 \u30B9\u30AD\u30C3\u30D7: ${testResults.SkippedCount}\u4EF6
+`;
+          result += `  \u2022 \u5408\u8A08: ${testResults.TotalCount}\u4EF6
+`;
+          result += `  \u2022 \u5B9F\u884C\u6642\u9593: ${testResults.Duration.toFixed(1)}\u79D2
+`;
+        }
+        if (response.xmlPath) {
+          result += `
+\u{1F4C4} XML\u30D5\u30A1\u30A4\u30EB\u4FDD\u5B58: ${response.xmlPath}
+`;
+        }
+        result += `
+\u23F0 \u5B8C\u4E86\u6642\u523B: ${response.completedAt}`;
+        return result;
+      } else {
+        return `\u274C \u30C6\u30B9\u30C8\u5B9F\u884C\u5931\u6557: ${response.message}
+${response.error || ""}`;
+      }
+    } catch (error) {
+      return `\u274C \u30C6\u30B9\u30C8\u5B9F\u884C\u30A8\u30E9\u30FC: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+};
+
 // src/tools/tool-registry.ts
 var ToolRegistry = class {
   tools = /* @__PURE__ */ new Map();
@@ -5950,6 +6029,7 @@ var ToolRegistry = class {
     this.register(new UnityPingTool(context));
     this.register(new CompileTool(context));
     this.register(new LogsTool(context));
+    this.register(new RunTestsTool(context));
   }
   /**
    * ツールを登録
