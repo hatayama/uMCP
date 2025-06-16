@@ -7,16 +7,16 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity Test Runnerの実行を制御するクラス
+    /// Unity Test Runnerの実行を管理するクラス
     /// </summary>
-    public class TestRunnerController : ICallbacks
+    public class UnityTestExecutionManager : ICallbacks
     {
         private TestRunnerApi testRunnerApi;
         private bool isRunning = false;
         private Action<ITestResultAdaptor> onTestFinished;
         private Action<ITestResultAdaptor> onRunFinished;
         
-        public TestRunnerController()
+        public UnityTestExecutionManager()
         {
             // TestRunnerApiはstaticメソッドを使うので、インスタンス作成は不要
         }
@@ -32,23 +32,14 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// 特定のEditModeテストを実行する
         /// </summary>
-        /// <param name="testFilter">テストフィルター（null の場合は全テスト実行）</param>
+        /// <param name="testFilter">テスト実行フィルター（null の場合は全テスト実行）</param>
         /// <param name="onComplete">完了時コールバック</param>
-        public void RunEditModeTests(TestFilter testFilter, Action<ITestResultAdaptor> onComplete = null)
+        public void RunEditModeTests(TestExecutionFilter testFilter, Action<ITestResultAdaptor> onComplete = null)
         {
             if (isRunning)
             {
-                Debug.LogWarning("まさみち、もうテスト実行中やで！");
+                McpLogger.LogWarning("テスト実行中です");
                 return;
-            }
-            
-            if (testFilter != null)
-            {
-                Debug.Log($"EditModeテストを開始するで〜 (フィルター: {testFilter.FilterType} = {testFilter.FilterValue})");
-            }
-            else
-            {
-                Debug.Log("EditModeテストを開始するで〜（全テスト）");
             }
             
             isRunning = true;
@@ -71,18 +62,18 @@ namespace io.github.hatayama.uMCP
             {
                 switch (testFilter.FilterType)
                 {
-                    case TestFilterType.TestName:
+                    case TestExecutionFilterType.TestName:
                         filter.testNames = new string[] { testFilter.FilterValue };
                         break;
-                    case TestFilterType.ClassName:
+                    case TestExecutionFilterType.ClassName:
                         // クラス名でフィルタリング - フルネームとして扱う
                         filter.testNames = new string[] { testFilter.FilterValue };
                         break;
-                    case TestFilterType.Namespace:
+                    case TestExecutionFilterType.Namespace:
                         // ネームスペースでのフィルタリング
                         filter.testNames = new string[] { testFilter.FilterValue };
                         break;
-                    case TestFilterType.AssemblyName:
+                    case TestExecutionFilterType.AssemblyName:
                         filter.assemblyNames = new string[] { testFilter.FilterValue };
                         break;
                 }
@@ -95,8 +86,7 @@ namespace io.github.hatayama.uMCP
         // ICallbacks実装
         public void RunStarted(ITestAdaptor testsToRun)
         {
-            int testCount = CountTests(testsToRun);
-            Debug.Log($"まさみち、{testCount}個のテストを実行するで！");
+            // テスト開始ログは削除（不要）
         }
         
         public void RunFinished(ITestResultAdaptor result)
@@ -115,30 +105,12 @@ namespace io.github.hatayama.uMCP
         
         public void TestStarted(ITestAdaptor test)
         {
-            Debug.Log($"テスト開始: {test.FullName}");
+            // 個別テスト開始ログは不要
         }
         
         public void TestFinished(ITestResultAdaptor result)
         {
-            string status = result.TestStatus switch
-            {
-                TestStatus.Passed => "✓ 成功",
-                TestStatus.Failed => "✗ 失敗",
-                TestStatus.Skipped => "- スキップ",
-                _ => "? 不明"
-            };
-            
-            Debug.Log($"{status}: {result.Test.FullName} ({result.Duration:F3}秒)");
-            
-            if (result.TestStatus == TestStatus.Failed)
-            {
-                Debug.LogError($"失敗理由: {result.Message}");
-                if (!string.IsNullOrEmpty(result.StackTrace))
-                {
-                    Debug.LogError($"スタックトレース:\n{result.StackTrace}");
-                }
-            }
-            
+            // 個別テスト完了ログは不要
             onTestFinished?.Invoke(result);
         }
         
@@ -169,12 +141,7 @@ namespace io.github.hatayama.uMCP
             
             CountResults(result, ref passedCount, ref failedCount, ref skippedCount);
             
-            Debug.Log("========== テスト実行完了 ==========");
-            Debug.Log($"成功: {passedCount}");
-            Debug.Log($"失敗: {failedCount}");
-            Debug.Log($"スキップ: {skippedCount}");
-            Debug.Log($"合計実行時間: {result.Duration:F3}秒");
-            Debug.Log("==================================");
+            McpLogger.LogInfo($"テスト完了 - 成功:{passedCount} 失敗:{failedCount} スキップ:{skippedCount} ({result.Duration:F1}秒)");
         }
         
         /// <summary>

@@ -9,9 +9,9 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// テスト結果をXML形式でエクスポートするクラス
+    /// テスト結果をNUnit形式のXMLでエクスポートするクラス
     /// </summary>
-    public static class TestResultXmlExporter
+    public static class NUnitXmlResultExporter
     {
         /// <summary>
         /// テスト結果のXMLをログ出力する
@@ -21,13 +21,12 @@ namespace io.github.hatayama.uMCP
             try
             {
                 string xmlContent = GenerateNUnitXml(testResult);
-                Debug.Log("========== テスト結果XML ==========");
-                Debug.Log(xmlContent);
-                Debug.Log("==================================");
+                McpLogger.LogInfo("テスト結果XML:");
+                McpLogger.LogInfo(xmlContent);
             }
             catch (Exception ex)
             {
-                Debug.LogError($"XML生成に失敗したわ...: {ex.Message}");
+                McpLogger.LogError($"XML生成エラー: {ex.Message}");
             }
         }
         
@@ -48,12 +47,12 @@ namespace io.github.hatayama.uMCP
                 // Assetsフォルダをリフレッシュ
                 AssetDatabase.Refresh();
                 
-                Debug.Log($"まさみち、テスト結果をXMLに保存したで！\nパス: {filePath}");
+                McpLogger.LogInfo($"テスト結果XMLを保存: {fileName}");
                 return filePath;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"XMLファイルの保存に失敗したわ...: {ex.Message}");
+                McpLogger.LogError($"XMLファイル保存エラー: {ex.Message}");
                 return null;
             }
         }

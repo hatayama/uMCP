@@ -8,9 +8,9 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// TestClassRunner用のコールバッククラス
+    /// SpecificClassTestExecutor用のコールバッククラス
     /// </summary>
-    internal class TestClassRunnerCallbacks : ICallbacks
+    internal class SpecificClassTestCallbacks : ICallbacks
     {
         private readonly string className;
         private readonly bool saveXml;
@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
         private int failedCount = 0;
         private int skippedCount = 0;
         
-        public TestClassRunnerCallbacks(string className, bool saveXml)
+        public SpecificClassTestCallbacks(string className, bool saveXml)
         {
             this.className = className;
             this.saveXml = saveXml;
@@ -26,34 +26,26 @@ namespace io.github.hatayama.uMCP
         
         public void RunStarted(ITestAdaptor testsToRun)
         {
-            Debug.Log($"{className}のテスト実行開始したで！");
+            // テスト開始ログは不要
         }
         
         public void RunFinished(ITestResultAdaptor result)
         {
-            Debug.Log($"========== {className} テスト実行完了 ==========");
-            Debug.Log($"成功: {passedCount}");
-            Debug.Log($"失敗: {failedCount}");
-            Debug.Log($"スキップ: {skippedCount}");
-            Debug.Log($"合計実行時間: {result.Duration:F3}秒");
-            Debug.Log("==========================================");
+            McpLogger.LogInfo($"{className} - 成功:{passedCount} 失敗:{failedCount} スキップ:{skippedCount} ({result.Duration:F1}秒)");
             
             if (saveXml)
             {
-                TestResultXmlExporter.SaveTestResultAsXml(result);
+                NUnitXmlResultExporter.SaveTestResultAsXml(result);
             }
             else
             {
-                TestResultXmlExporter.LogTestResultAsXml(result);
+                NUnitXmlResultExporter.LogTestResultAsXml(result);
             }
         }
         
         public void TestStarted(ITestAdaptor test)
         {
-            if (test.FullName.StartsWith(className + "."))
-            {
-                Debug.Log($"テスト開始: {test.Name}");
-            }
+            // 個別テスト開始ログは不要
         }
         
         public void TestFinished(ITestResultAdaptor result)
@@ -64,19 +56,13 @@ namespace io.github.hatayama.uMCP
                 {
                     case TestStatus.Passed:
                         passedCount++;
-                        Debug.Log($"✓ 成功: {result.Test.Name} ({result.Duration:F3}秒)");
                         break;
                     case TestStatus.Failed:
                         failedCount++;
-                        Debug.LogError($"✗ 失敗: {result.Test.Name} ({result.Duration:F3}秒)");
-                        if (!string.IsNullOrEmpty(result.Message))
-                        {
-                            Debug.LogError($"失敗理由: {result.Message}");
-                        }
+                        McpLogger.LogError($"テスト失敗: {result.Test.Name} - {result.Message}");
                         break;
                     case TestStatus.Skipped:
                         skippedCount++;
-                        Debug.Log($"- スキップ: {result.Test.Name}");
                         break;
                 }
             }
@@ -86,7 +72,7 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// 特定のテストクラスを実行するためのヘルパークラス
     /// </summary>
-    public static class TestClassRunner
+    public static class SpecificClassTestExecutor
     {
         /// <summary>
         /// 指定したフルクラス名のテストを実行する
@@ -95,8 +81,6 @@ namespace io.github.hatayama.uMCP
         /// <param name="saveXml">XMLとして保存するかどうか</param>
         public static void RunTestsByFullClassName(string fullClassName, bool saveXml = false)
         {
-            Debug.Log($"{fullClassName}のテストを実行するで！");
-            
             // TestRunnerApiのインスタンスを作成
             TestRunnerApi testRunnerApi = ScriptableObject.CreateInstance<TestRunnerApi>();
             
@@ -109,14 +93,8 @@ namespace io.github.hatayama.uMCP
                 
                 if (testFullNames.Count == 0)
                 {
-                    Debug.LogWarning($"まさみち、{fullClassName}のテストが見つからへんで...");
+                    McpLogger.LogWarning($"{fullClassName}のテストが見つかりません");
                     return;
-                }
-                
-                Debug.Log($"{fullClassName}で{testFullNames.Count}個のテストメソッド見つけたで！");
-                foreach (string testName in testFullNames)
-                {
-                    Debug.Log($"  - {testName}");
                 }
                 
                 // 見つかったテストを実行
@@ -124,7 +102,7 @@ namespace io.github.hatayama.uMCP
                 TestRunnerApi runnerApi = ScriptableObject.CreateInstance<TestRunnerApi>();
                 
                 // コールバックを作成
-                TestClassRunnerCallbacks callbacks = new TestClassRunnerCallbacks(fullClassName, saveXml);
+                SpecificClassTestCallbacks callbacks = new SpecificClassTestCallbacks(fullClassName, saveXml);
                 runnerApi.RegisterCallbacks(callbacks);
                 
                 // 複数のテスト名を指定してFilterを作成

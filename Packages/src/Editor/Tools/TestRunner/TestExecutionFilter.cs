@@ -1,9 +1,9 @@
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// テストフィルターの種類
+    /// テスト実行フィルターの種類
     /// </summary>
-    public enum TestFilterType
+    public enum TestExecutionFilterType
     {
         /// <summary>
         /// 特定のテスト名でフィルタリング
@@ -27,14 +27,14 @@ namespace io.github.hatayama.uMCP
     }
     
     /// <summary>
-    /// テストフィルター情報を保持するクラス
+    /// テスト実行フィルター情報を保持するクラス
     /// </summary>
-    public class TestFilter
+    public class TestExecutionFilter
     {
         /// <summary>
         /// フィルタータイプ
         /// </summary>
-        public TestFilterType FilterType { get; }
+        public TestExecutionFilterType FilterType { get; }
         
         /// <summary>
         /// フィルター値
@@ -42,9 +42,9 @@ namespace io.github.hatayama.uMCP
         public string FilterValue { get; }
         
         /// <summary>
-        /// テストフィルターを作成する
+        /// テスト実行フィルターを作成する
         /// </summary>
-        public TestFilter(TestFilterType filterType, string filterValue)
+        public TestExecutionFilter(TestExecutionFilterType filterType, string filterValue)
         {
             FilterType = filterType;
             FilterValue = filterValue;
@@ -53,33 +53,33 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// クラス名でフィルターを作成
         /// </summary>
-        public static TestFilter ByClassName(string className)
+        public static TestExecutionFilter ByClassName(string className)
         {
-            return new TestFilter(TestFilterType.ClassName, className);
+            return new TestExecutionFilter(TestExecutionFilterType.ClassName, className);
         }
         
         /// <summary>
         /// ネームスペースでフィルターを作成
         /// </summary>
-        public static TestFilter ByNamespace(string namespaceName)
+        public static TestExecutionFilter ByNamespace(string namespaceName)
         {
-            return new TestFilter(TestFilterType.Namespace, namespaceName);
+            return new TestExecutionFilter(TestExecutionFilterType.Namespace, namespaceName);
         }
         
         /// <summary>
         /// テスト名でフィルターを作成
         /// </summary>
-        public static TestFilter ByTestName(string testName)
+        public static TestExecutionFilter ByTestName(string testName)
         {
-            return new TestFilter(TestFilterType.TestName, testName);
+            return new TestExecutionFilter(TestExecutionFilterType.TestName, testName);
         }
         
         /// <summary>
         /// アセンブリ名でフィルターを作成
         /// </summary>
-        public static TestFilter ByAssemblyName(string assemblyName)
+        public static TestExecutionFilter ByAssemblyName(string assemblyName)
         {
-            return new TestFilter(TestFilterType.AssemblyName, assemblyName);
+            return new TestExecutionFilter(TestExecutionFilterType.AssemblyName, assemblyName);
         }
     }
 } 

@@ -9,7 +9,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class TestRunnerMenu
     {
-        private static TestRunnerController testRunnerController;
+        private static UnityTestExecutionManager testRunnerController;
         private static bool shouldSaveXml = true;
         
         [MenuItem("uMCP/Test Runner/Run EditMode Tests (Save XML)")]
@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log("まさみち、EditModeテストを実行してXMLに保存するで！");
             
             shouldSaveXml = true;
-            testRunnerController = new TestRunnerController();
+            testRunnerController = new UnityTestExecutionManager();
             testRunnerController.RunEditModeTests(OnTestRunComplete);
         }
         
@@ -28,7 +28,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log("まさみち、EditModeテストを実行してXMLをログ出力するで！");
             
             shouldSaveXml = false;
-            testRunnerController = new TestRunnerController();
+            testRunnerController = new UnityTestExecutionManager();
             testRunnerController.RunEditModeTests(OnTestRunComplete);
         }
         
@@ -48,9 +48,9 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("CompileCommandTestsだけ実行するで！");
             shouldSaveXml = false;
-            testRunnerController = new TestRunnerController();
+            testRunnerController = new UnityTestExecutionManager();
             // io.github.hatayama.uMCP ネームスペースのテスト
-            TestFilter filter = TestFilter.ByClassName("io.github.hatayama.uMCP.CompileCommandTests");
+            TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.CompileCommandTests");
             testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
         }
         
@@ -59,8 +59,8 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("GetLogsCommandTestsだけ実行するで！");
             shouldSaveXml = false;
-            testRunnerController = new TestRunnerController();
-            TestFilter filter = TestFilter.ByClassName("io.github.hatayama.uMCP.GetLogsCommandTests");
+            testRunnerController = new UnityTestExecutionManager();
+            TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.GetLogsCommandTests");
             testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
         }
         
@@ -69,8 +69,8 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("MainThreadSwitcherTestsだけ実行するで！");
             shouldSaveXml = false;
-            testRunnerController = new TestRunnerController();
-            TestFilter filter = TestFilter.ByClassName("io.github.hatayama.uMCP.MainThreadSwitcherTests");
+            testRunnerController = new UnityTestExecutionManager();
+            TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.MainThreadSwitcherTests");
             testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
         }
         
@@ -79,16 +79,16 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("McpServerControllerTestsだけ実行するで！");
             shouldSaveXml = false;
-            testRunnerController = new TestRunnerController();
-            TestFilter filter = TestFilter.ByClassName("io.github.hatayama.uMCP.McpServerControllerTests");
+            testRunnerController = new UnityTestExecutionManager();
+            TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.McpServerControllerTests");
             testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
         }
         
         [MenuItem("uMCP/Test Runner/Run Specific Test/SampleEditModeTest")]
         public static void RunSampleEditModeTest()
         {
-            // TestClassRunnerを使ってクラス単位で実行（フルネーム指定）
-            TestClassRunner.RunTestsByFullClassName("Tests.SampleEditModeTest", saveXml: false);
+            // SpecificClassTestExecutorを使ってクラス単位で実行（フルネーム指定）
+            SpecificClassTestExecutor.RunTestsByFullClassName("Tests.SampleEditModeTest", saveXml: false);
         }
         
         /// <summary>
@@ -101,7 +101,7 @@ namespace io.github.hatayama.uMCP
             if (shouldSaveXml)
             {
                 // XML保存処理を呼び出す
-                string savedPath = TestResultXmlExporter.SaveTestResultAsXml(result);
+                string savedPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
                 
                 if (!string.IsNullOrEmpty(savedPath))
                 {
@@ -124,7 +124,7 @@ namespace io.github.hatayama.uMCP
             else
             {
                 // XMLをログ出力
-                TestResultXmlExporter.LogTestResultAsXml(result);
+                NUnitXmlResultExporter.LogTestResultAsXml(result);
                 Debug.Log("XMLをコンソールに出力したで！上のログを確認してや〜");
             }
         }
