@@ -30,12 +30,51 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Claude Codeの設定ファイル(.mcp.json)のパスを取得
+        /// </summary>
+        public static string GetClaudeCodeConfigPath()
+        {
+            string projectRoot = GetProjectRoot();
+            return Path.Combine(projectRoot, MCP_CONFIG_FILE);
+        }
+
+        /// <summary>
+        /// 指定されたエディタ用の設定ファイルパスを取得
+        /// </summary>
+        /// <param name="editorType">エディタの種類</param>
+        /// <returns>設定ファイルのパス</returns>
+        public static string GetConfigPath(McpEditorType editorType)
+        {
+            return editorType switch
+            {
+                McpEditorType.Cursor => GetMcpConfigPath(),
+                McpEditorType.ClaudeCode => GetClaudeCodeConfigPath(),
+                _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
+            };
+        }
+
+        /// <summary>
         /// .cursorディレクトリのパスを取得
         /// </summary>
         public static string GetCursorConfigDirectory()
         {
             string projectRoot = GetProjectRoot();
             return Path.Combine(projectRoot, CURSOR_CONFIG_DIR);
+        }
+
+        /// <summary>
+        /// 指定されたエディタ用の設定ディレクトリを取得（存在する場合のみ）
+        /// </summary>
+        /// <param name="editorType">エディタの種類</param>
+        /// <returns>設定ディレクトリのパス（Claude Codeの場合はnull）</returns>
+        public static string GetConfigDirectory(McpEditorType editorType)
+        {
+            return editorType switch
+            {
+                McpEditorType.Cursor => GetCursorConfigDirectory(),
+                McpEditorType.ClaudeCode => null, // Claude Codeはプロジェクトルートに直接配置
+                _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
+            };
         }
 
         /// <summary>
@@ -93,5 +132,14 @@ namespace io.github.hatayama.uMCP
             
             return localPath;
         }
+    }
+
+    /// <summary>
+    /// サポートするエディタの種類
+    /// </summary>
+    public enum McpEditorType
+    {
+        Cursor,
+        ClaudeCode
     }
 } 

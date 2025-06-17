@@ -3,14 +3,14 @@ using System.Collections.Generic;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Cursor MCP設定のデータ構造
+    /// MCP設定のデータ構造
     /// mcp.jsonファイルの構造を表現するimmutableなクラス
     /// </summary>
-    public class CursorMcpConfig
+    public class McpConfig
     {
         public readonly Dictionary<string, McpServerConfigData> mcpServers;
 
-        public CursorMcpConfig(Dictionary<string, McpServerConfigData> mcpServers)
+        public McpConfig(Dictionary<string, McpServerConfigData> mcpServers)
         {
             this.mcpServers = mcpServers;
         }
@@ -31,6 +31,17 @@ namespace io.github.hatayama.uMCP
             this.command = command;
             this.args = args;
             this.env = env;
+        }
+    }
+
+    /// <summary>
+    /// 後方互換性のためのエイリアス
+    /// </summary>
+    [System.Obsolete("Use McpConfig instead")]
+    public class CursorMcpConfig : McpConfig
+    {
+        public CursorMcpConfig(Dictionary<string, McpServerConfigData> mcpServers) : base(mcpServers)
+        {
         }
     }
 } 

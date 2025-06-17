@@ -23,6 +23,9 @@ namespace io.github.hatayama.uMCP
         private float communicationLogHeight = 300f; // リサイズ可能な通信ログエリアの高さ
         private bool isResizingCommunicationLog = false; // リサイズ中かどうか
         
+        // エディタ選択用のUI状態
+        private McpEditorType selectedEditorType = McpEditorType.Cursor;
+        
         // ログエントリごとのスクロール位置を管理
         private Dictionary<string, Vector2> requestScrollPositions = new Dictionary<string, Vector2>();
         private Dictionary<string, Vector2> responseScrollPositions = new Dictionary<string, Vector2>();
@@ -31,8 +34,9 @@ namespace io.github.hatayama.uMCP
         private Vector2 mainScrollPosition;
         
         // 設定サービス
-        private readonly CursorMcpConfigRepository _repository = new();
-        private CursorMcpConfigService _configService;
+        private readonly McpConfigRepository _repository = new(McpEditorType.Cursor);
+        private McpConfigService _cursorConfigService;
+        private McpConfigService _claudeCodeConfigService;
         
         [MenuItem("Tools/uMCP/uMCP Window")]
         public static void ShowWindow()
@@ -45,7 +49,10 @@ namespace io.github.hatayama.uMCP
         private void OnEnable()
         {
             // 設定サービスを初期化
-            _configService = new CursorMcpConfigService(_repository);
+            McpConfigRepository cursorRepository = new(McpEditorType.Cursor);
+            McpConfigRepository claudeCodeRepository = new(McpEditorType.ClaudeCode);
+            _cursorConfigService = new McpConfigService(cursorRepository, McpEditorType.Cursor);
+            _claudeCodeConfigService = new McpConfigService(claudeCodeRepository, McpEditorType.ClaudeCode);
             
             // 保存された設定を読み込み
             McpEditorSettingsData settings = McpEditorSettings.GetSettings();
@@ -53,6 +60,9 @@ namespace io.github.hatayama.uMCP
             autoStartServer = settings.autoStartServer;
             showDeveloperTools = settings.showDeveloperTools;
             enableMcpLogs = settings.enableMcpLogs;
+            
+            // エディタ選択状態を復元
+            selectedEditorType = (McpEditorType)SessionState.GetInt("UnityMCP.SelectedEditorType", (int)McpEditorType.Cursor);
             
             // McpLoggerの設定を同期
             McpLogger.EnableDebugLog = enableMcpLogs;
@@ -75,6 +85,9 @@ namespace io.github.hatayama.uMCP
             // ログ更新イベントの購読を解除
             McpCommunicationLogger.OnLogUpdated -= Repaint;
             
+            // エディタ選択状態を保存
+            SessionState.SetInt("UnityMCP.SelectedEditorType", (int)selectedEditorType);
+            
             // ウィンドウを閉じた時にサーバーを停止
             if (McpServerController.IsServerRunning)
             {
@@ -92,7 +105,7 @@ namespace io.github.hatayama.uMCP
             
             DrawServerStatus();
             DrawServerControls();
-            DrawCursorConfigSection();
+            DrawEditorConfigSection();
             DrawCommunicationLogs();
             DrawDeveloperTools();
             
@@ -291,35 +304,88 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Cursor設定セクションを描画
+        /// エディタ設定セクションを描画
         /// </summary>
-        private void DrawCursorConfigSection()
+        private void DrawEditorConfigSection()
         {
-            EditorGUILayout.LabelField("Cursor設定", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("エディタ設定", EditorStyles.boldLabel);
             
-            bool isConfigured = _configService.IsCursorConfigured();
+            // エディタ選択プルダウン
+            EditorGUI.BeginChangeCheck();
+            selectedEditorType = (McpEditorType)EditorGUILayout.EnumPopup("対象エディタ:", selectedEditorType);
+            if (EditorGUI.EndChangeCheck())
+            {
+                // 選択が変更されたらセッションに保存
+                SessionState.SetInt("UnityMCP.SelectedEditorType", (int)selectedEditorType);
+            }
+            
+            EditorGUILayout.Space();
+            
             bool isServerRunning = McpServerController.IsServerRunning;
             int currentServerPort = McpServerController.ServerPort;
+            
+            // 選択されたエディタの設定のみ表示
+            McpConfigService configService = GetConfigService(selectedEditorType);
+            string editorName = GetEditorDisplayName(selectedEditorType);
+            
+            DrawConfigurationSection(editorName, configService, isServerRunning, currentServerPort);
+        }
+
+        /// <summary>
+        /// エディタタイプから対応する設定サービスを取得
+        /// </summary>
+        private McpConfigService GetConfigService(McpEditorType editorType)
+        {
+            return editorType switch
+            {
+                McpEditorType.Cursor => _cursorConfigService,
+                McpEditorType.ClaudeCode => _claudeCodeConfigService,
+                _ => throw new ArgumentException($"Unsupported editor type: {editorType}")
+            };
+        }
+
+        /// <summary>
+        /// エディタタイプから表示名を取得
+        /// </summary>
+        private string GetEditorDisplayName(McpEditorType editorType)
+        {
+            return editorType switch
+            {
+                McpEditorType.Cursor => "Cursor",
+                McpEditorType.ClaudeCode => "Claude Code",
+                _ => editorType.ToString()
+            };
+        }
+
+        /// <summary>
+        /// 個別の設定セクションを描画
+        /// </summary>
+        private void DrawConfigurationSection(string editorName, McpConfigService configService, bool isServerRunning, int currentServerPort)
+        {
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField($"{editorName}設定", EditorStyles.boldLabel);
+            
+            bool isConfigured = configService.IsConfigured();
             
             if (isConfigured)
             {
                 // ポート番号の不整合チェック
                 if (isServerRunning && currentServerPort != customPort)
                 {
-                    EditorGUILayout.HelpBox($"注意: Cursor設定のポート番号と現在のサーバーポート({currentServerPort})が一致していない可能性があります。", MessageType.Warning);
+                    EditorGUILayout.HelpBox($"注意: {editorName}設定のポート番号と現在のサーバーポート({currentServerPort})が一致していない可能性があります。", MessageType.Warning);
                     
-                    if (GUILayout.Button($"Cursor設定をポート{currentServerPort}に更新"))
+                    if (GUILayout.Button($"{editorName}設定をポート{currentServerPort}に更新"))
                     {
-                        _configService.AutoConfigureCursor(currentServerPort);
+                        configService.AutoConfigure(currentServerPort);
                         Repaint();
                     }
                     
                     EditorGUILayout.Space();
                 }
                 
-                EditorGUILayout.HelpBox("Cursor設定は既に構成されています。", MessageType.Info);
+                EditorGUILayout.HelpBox($"{editorName}設定は既に構成されています。", MessageType.Info);
                 
-                string configPath = UnityMcpPathResolver.GetMcpConfigPath();
+                string configPath = UnityMcpPathResolver.GetConfigPath(selectedEditorType);
                 if (GUILayout.Button("設定ファイルを開く"))
                 {
                     EditorUtility.RevealInFinder(configPath);
@@ -327,18 +393,20 @@ namespace io.github.hatayama.uMCP
             }
             else
             {
-                EditorGUILayout.HelpBox("Cursor設定が見つかりません。自動設定を実行してください。", MessageType.Warning);
+                EditorGUILayout.HelpBox($"{editorName}設定が見つかりません。自動設定を実行してください。", MessageType.Warning);
             }
             
             EditorGUILayout.Space();
             
-            string buttonText = isServerRunning ? $"Cursor設定を自動構成 (ポート{currentServerPort})" : "Cursor設定を自動構成";
+            string buttonText = isServerRunning ? $"{editorName}設定を自動構成 (ポート{currentServerPort})" : $"{editorName}設定を自動構成";
             if (GUILayout.Button(buttonText))
             {
                 int portToUse = isServerRunning ? currentServerPort : customPort;
-                _configService.AutoConfigureCursor(portToUse);
+                configService.AutoConfigure(portToUse);
                 Repaint();
             }
+            
+            EditorGUILayout.EndVertical();
         }
 
         /// <summary>

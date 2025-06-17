@@ -4,47 +4,49 @@ using System.Linq;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Cursor MCP設定のビジネスロジックを担当するクラス
+    /// MCP設定のビジネスロジックを担当するクラス
     /// 単一責任原則：設定管理のビジネスロジックのみを担当
     /// </summary>
-    public class CursorMcpConfigService
+    public class McpConfigService
     {
-        private readonly CursorMcpConfigRepository _repository;
+        private readonly McpConfigRepository _repository;
+        private readonly McpEditorType _editorType;
 
-        public CursorMcpConfigService(CursorMcpConfigRepository repository)
+        public McpConfigService(McpConfigRepository repository, McpEditorType editorType)
         {
             _repository = repository;
+            _editorType = editorType;
         }
 
         /// <summary>
-        /// Cursor設定が存在するかチェック
+        /// エディタ設定が存在するかチェック
         /// </summary>
-        public bool IsCursorConfigured()
+        public bool IsConfigured()
         {
-            string configPath = UnityMcpPathResolver.GetMcpConfigPath();
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
             if (!_repository.Exists(configPath))
             {
                 return false;
             }
 
-            CursorMcpConfig config = _repository.Load(configPath);
+            McpConfig config = _repository.Load(configPath);
             // ポート番号付きの設定が存在するかチェック
             return config.mcpServers.Keys.Any(key => key.StartsWith("unity-mcp"));
         }
 
         /// <summary>
-        /// Cursor設定を自動設定
+        /// エディタ設定を自動設定
         /// </summary>
         /// <param name="port">使用するポート番号</param>
-        public void AutoConfigureCursor(int port)
+        public void AutoConfigure(int port)
         {
-            string configPath = UnityMcpPathResolver.GetMcpConfigPath();
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
             
-            // .cursorディレクトリを作成
+            // 設定ディレクトリを作成（必要な場合のみ）
             _repository.CreateConfigDirectory(configPath);
 
             // 既存設定を読み込み（存在しない場合は新規作成）
-            CursorMcpConfig config = _repository.Load(configPath);
+            McpConfig config = _repository.Load(configPath);
 
             // 既存設定の確認ログ
             McpLogger.LogInfo($"Loaded existing MCP servers: {string.Join(", ", config.mcpServers.Keys)}");
@@ -89,13 +91,55 @@ namespace io.github.hatayama.uMCP
                 // Unity MCP設定を追加/更新
                 updatedServers[serverKey] = newConfig;
 
-                CursorMcpConfig updatedConfig = new(updatedServers);
+                McpConfig updatedConfig = new(updatedServers);
                 _repository.Save(configPath, updatedConfig);
 
-                McpLogger.LogInfo($"Cursor configuration updated: {configPath}");
+                string editorName = GetEditorDisplayName(_editorType);
+                McpLogger.LogInfo($"{editorName} configuration updated: {configPath}");
                 McpLogger.LogInfo($"Server key: {serverKey}, Port: {port}");
                 McpLogger.LogInfo($"Final MCP servers: {string.Join(", ", updatedConfig.mcpServers.Keys)}");
             }
+        }
+
+        /// <summary>
+        /// エディタの表示名を取得
+        /// </summary>
+        private string GetEditorDisplayName(McpEditorType editorType)
+        {
+            return editorType switch
+            {
+                McpEditorType.Cursor => "Cursor",
+                McpEditorType.ClaudeCode => "Claude Code",
+                _ => editorType.ToString()
+            };
+        }
+    }
+
+    /// <summary>
+    /// 後方互換性のためのエイリアス
+    /// </summary>
+    [System.Obsolete("Use McpConfigService instead")]
+    public class CursorMcpConfigService : McpConfigService
+    {
+        public CursorMcpConfigService(McpConfigRepository repository) : base(repository, McpEditorType.Cursor)
+        {
+        }
+
+        /// <summary>
+        /// Cursor設定が存在するかチェック
+        /// </summary>
+        public bool IsCursorConfigured()
+        {
+            return IsConfigured();
+        }
+
+        /// <summary>
+        /// Cursor設定を自動設定
+        /// </summary>
+        /// <param name="port">使用するポート番号</param>
+        public void AutoConfigureCursor(int port)
+        {
+            AutoConfigure(port);
         }
     }
 } 
