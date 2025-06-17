@@ -56,7 +56,7 @@ namespace io.github.hatayama.uMCP
             // Arrange
             JObject paramsToken = new JObject
             {
-                ["filterType"] = "classname",
+                ["filterType"] = "fullclassname",
                 ["filterValue"] = "TestClass",
                 ["saveXml"] = true
             };
@@ -68,7 +68,7 @@ namespace io.github.hatayama.uMCP
             TestExecutionParameters result = (TestExecutionParameters)parseMethod.Invoke(runTestsCommand, new object[] { paramsToken });
 
             // Assert
-            Assert.That(result.FilterType, Is.EqualTo("classname"));
+            Assert.That(result.FilterType, Is.EqualTo("fullclassname"));
             Assert.That(result.FilterValue, Is.EqualTo("TestClass"));
             Assert.That(result.SaveXml, Is.True);
         }
@@ -101,7 +101,7 @@ namespace io.github.hatayama.uMCP
             System.Reflection.MethodInfo createFilterMethod = typeof(RunTestsCommand)
                 .GetMethod("CreateFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            TestExecutionFilter result = (TestExecutionFilter)createFilterMethod.Invoke(runTestsCommand, new object[] { "classname", "TestClass" });
+            TestExecutionFilter result = (TestExecutionFilter)createFilterMethod.Invoke(runTestsCommand, new object[] { "fullclassname", "TestClass" });
 
             // Assert
             Assert.That(result.FilterType, Is.EqualTo(TestExecutionFilterType.ClassName));

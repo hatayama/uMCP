@@ -5487,6 +5487,32 @@ var UnityClient = class {
     return this._connected && this.socket !== null && !this.socket.destroyed;
   }
   /**
+   * Unity側の接続状態を実際にテストする
+   * ソケットの状態だけでなく、実際の通信可能性を確認
+   */
+  async testConnection() {
+    if (!this._connected || this.socket === null || this.socket.destroyed) {
+      return false;
+    }
+    try {
+      await this.ping("connection_test");
+      return true;
+    } catch {
+      this._connected = false;
+      return false;
+    }
+  }
+  /**
+   * Unity側に接続（必要に応じて再接続）
+   */
+  async ensureConnected() {
+    if (await this.testConnection()) {
+      return;
+    }
+    this.disconnect();
+    await this.connect();
+  }
+  /**
    * Unity側に接続
    */
   async connect() {
@@ -5713,7 +5739,7 @@ var BaseTool = class {
 
 // src/tools/ping-tool.ts
 var PingTool = class extends BaseTool {
-  name = "mcp_ping";
+  name = "mcp.ping";
   description = "Unity MCP Server\u63A5\u7D9A\u30C6\u30B9\u30C8\u7528\u306Eping\u30B3\u30DE\u30F3\u30C9\uFF08TypeScript\u5074\u306E\u307F\uFF09";
   inputSchema = {
     type: "object",
@@ -5757,9 +5783,7 @@ var UnityPingTool = class extends BaseTool {
     return schema.parse(args || {});
   }
   async execute(args) {
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    await this.context.unityClient.ensureConnected();
     const response = await this.context.unityClient.ping(args.message);
     const port = process.env.UNITY_TCP_PORT || "7400";
     return `Unity Ping Success!
@@ -5785,7 +5809,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
 
 // src/tools/compile-tool.ts
 var CompileTool = class extends BaseTool {
-  name = "action.compileUnity";
+  name = "unity.compile";
   description = "Unity\u30D7\u30ED\u30B8\u30A7\u30AF\u30C8\u306E\u30B3\u30F3\u30D1\u30A4\u30EB\u3092\u5B9F\u884C\u3057\u3001\u30A8\u30E9\u30FC\u60C5\u5831\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5804,9 +5828,7 @@ var CompileTool = class extends BaseTool {
     return schema.parse(args || {});
   }
   async execute(args) {
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    await this.context.unityClient.ensureConnected();
     return await this.context.unityClient.compileProject(args.forceRecompile);
   }
   formatResponse(result) {
@@ -5862,7 +5884,7 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
 
 // src/tools/logs-tool.ts
 var LogsTool = class extends BaseTool {
-  name = "context.getUnityLogs";
+  name = "unity.getLogs";
   description = "Unity\u30B3\u30F3\u30BD\u30FC\u30EB\u306E\u30ED\u30B0\u60C5\u5831\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5888,9 +5910,7 @@ var LogsTool = class extends BaseTool {
     return schema.parse(args || {});
   }
   async execute(args) {
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    await this.context.unityClient.ensureConnected();
     return await this.context.unityClient.getLogs(args.logType, args.maxCount);
   }
   formatResponse(result) {
@@ -5941,7 +5961,7 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
 
 // src/tools/run-tests-tool.ts
 var RunTestsTool = class extends BaseTool {
-  name = "action_runTests";
+  name = "unity.runTests";
   description = "Unity Test Runner\u3092\u5B9F\u884C\u3057\u3066\u30C6\u30B9\u30C8\u7D50\u679C\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5974,44 +5994,70 @@ var RunTestsTool = class extends BaseTool {
   }
   async execute(args) {
     try {
+      await this.context.unityClient.ensureConnected();
       const response = await this.context.unityClient.runTests(
         args.filterType,
         args.filterValue,
         args.saveXml
       );
-      if (response.success) {
-        let result = `\u2705 \u30C6\u30B9\u30C8\u5B9F\u884C\u5B8C\u4E86
+      let result = response.success ? `\u2705 \u30C6\u30B9\u30C8\u5B9F\u884C\u5B8C\u4E86
+` : `\u26A0\uFE0F \u30C6\u30B9\u30C8\u5B9F\u884C\u5B8C\u4E86\uFF08\u5931\u6557\u3042\u308A\uFF09
 `;
-        result += `\u{1F4CA} \u7D50\u679C: ${response.message}
+      result += `\u{1F4CA} \u7D50\u679C: ${response.message}
 `;
-        if (response.testResults) {
-          const testResults = response.testResults;
-          result += `
+      if (response.testResults) {
+        const testResults = response.testResults;
+        result += `
 \u{1F4C8} \u8A73\u7D30\u7D71\u8A08:
 `;
-          result += `  \u2022 \u6210\u529F: ${testResults.PassedCount}\u4EF6
+        result += `  \u2022 \u6210\u529F: ${testResults.PassedCount}\u4EF6
 `;
-          result += `  \u2022 \u5931\u6557: ${testResults.FailedCount}\u4EF6
+        result += `  \u2022 \u5931\u6557: ${testResults.FailedCount}\u4EF6
 `;
-          result += `  \u2022 \u30B9\u30AD\u30C3\u30D7: ${testResults.SkippedCount}\u4EF6
+        result += `  \u2022 \u30B9\u30AD\u30C3\u30D7: ${testResults.SkippedCount}\u4EF6
 `;
-          result += `  \u2022 \u5408\u8A08: ${testResults.TotalCount}\u4EF6
+        result += `  \u2022 \u5408\u8A08: ${testResults.TotalCount}\u4EF6
 `;
-          result += `  \u2022 \u5B9F\u884C\u6642\u9593: ${testResults.Duration.toFixed(1)}\u79D2
+        result += `  \u2022 \u5B9F\u884C\u6642\u9593: ${testResults.Duration.toFixed(1)}\u79D2
 `;
-        }
-        if (response.xmlPath) {
+        if (testResults.FailedTests && testResults.FailedTests.length > 0) {
           result += `
+\u274C \u5931\u6557\u3057\u305F\u30C6\u30B9\u30C8:
+`;
+          testResults.FailedTests.forEach((failedTest, index) => {
+            result += `  ${index + 1}. ${failedTest.TestName}
+`;
+            result += `     \u30D5\u30EB\u30CD\u30FC\u30E0: ${failedTest.FullName}
+`;
+            if (failedTest.Message) {
+              result += `     \u30A8\u30E9\u30FC: ${failedTest.Message}
+`;
+            }
+            if (failedTest.StackTrace) {
+              const stackLines = failedTest.StackTrace.split("\n").slice(0, 3);
+              result += `     \u30B9\u30BF\u30C3\u30AF\u30C8\u30EC\u30FC\u30B9: ${stackLines.join("\n     ")}
+`;
+            }
+            result += `     \u5B9F\u884C\u6642\u9593: ${failedTest.Duration.toFixed(3)}\u79D2
+
+`;
+          });
+        }
+      }
+      if (response.xmlPath) {
+        result += `
 \u{1F4C4} XML\u30D5\u30A1\u30A4\u30EB\u4FDD\u5B58: ${response.xmlPath}
 `;
-        }
-        result += `
-\u23F0 \u5B8C\u4E86\u6642\u523B: ${response.completedAt}`;
-        return result;
-      } else {
-        return `\u274C \u30C6\u30B9\u30C8\u5B9F\u884C\u5931\u6557: ${response.message}
-${response.error || ""}`;
       }
+      result += `
+\u23F0 \u5B8C\u4E86\u6642\u523B: ${response.completedAt}`;
+      if (!response.success && response.error && !response.testResults) {
+        result += `
+
+\u274C \u30A8\u30E9\u30FC\u8A73\u7D30:
+${response.error}`;
+      }
+      return result;
     } catch (error) {
       return `\u274C \u30C6\u30B9\u30C8\u5B9F\u884C\u30A8\u30E9\u30FC: ${error instanceof Error ? error.message : String(error)}`;
     }

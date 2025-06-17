@@ -137,12 +137,46 @@ namespace io.github.hatayama.uMCP
                 return;
             }
 
+            McpLogger.LogInfo("Stopping Unity MCP Server...");
             isRunning = false;
             
+            // キャンセレーションを要求
             cancellationTokenSource?.Cancel();
-            tcpListener?.Stop();
             
-            serverTask?.Wait(TimeSpan.FromSeconds(McpServerConfig.SHUTDOWN_TIMEOUT_SECONDS));
+            // TCPリスナーを停止
+            try
+            {
+                tcpListener?.Stop();
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogError($"Error stopping TcpListener: {ex.Message}");
+            }
+            
+            // サーバータスクの完了を待つ
+            try
+            {
+                serverTask?.Wait(TimeSpan.FromSeconds(McpServerConfig.SHUTDOWN_TIMEOUT_SECONDS));
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogError($"Error waiting for server task completion: {ex.Message}");
+            }
+            
+            // キャンセレーショントークンソースを破棄
+            try
+            {
+                cancellationTokenSource?.Dispose();
+                cancellationTokenSource = null;
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogError($"Error disposing CancellationTokenSource: {ex.Message}");
+            }
+            
+            // TCPリスナーをnullに設定
+            tcpListener = null;
+            serverTask = null;
             
             McpLogger.LogInfo("Unity MCP Server stopped");
         }

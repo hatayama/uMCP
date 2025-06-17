@@ -84,6 +84,9 @@ namespace io.github.hatayama.uMCP
 
         private void OnGUI()
         {
+            // サーバーポートとUI設定を同期
+            SyncPortSettings();
+            
             // ウィンドウ全体をスクロール可能にする
             mainScrollPosition = EditorGUILayout.BeginScrollView(mainScrollPosition);
             
@@ -94,6 +97,24 @@ namespace io.github.hatayama.uMCP
             DrawDeveloperTools();
             
             EditorGUILayout.EndScrollView();
+        }
+
+        /// <summary>
+        /// サーバーポートとUI設定を同期する
+        /// </summary>
+        private void SyncPortSettings()
+        {
+            // サーバーが動作中で、UIのポート設定と実際のサーバーポートが異なる場合は同期
+            if (McpServerController.IsServerRunning)
+            {
+                int actualServerPort = McpServerController.ServerPort;
+                if (customPort != actualServerPort)
+                {
+                    customPort = actualServerPort;
+                    // 設定ファイルも更新
+                    McpEditorSettings.SetCustomPort(customPort);
+                }
+            }
         }
 
         /// <summary>
@@ -121,6 +142,13 @@ namespace io.github.hatayama.uMCP
             if (isRunning)
             {
                 EditorGUILayout.LabelField("Listening for TypeScript MCP Server connections...");
+            }
+            
+            // デバッグ情報表示ボタン
+            if (GUILayout.Button("Show Debug Info"))
+            {
+                string debugInfo = McpServerController.GetDetailedServerStatus();
+                Debug.Log($"MCP Server Debug Info:\n{debugInfo}");
             }
             
             EditorGUILayout.EndVertical();
@@ -216,11 +244,18 @@ namespace io.github.hatayama.uMCP
                 return false;
             }
 
-            // ポートが使用中かどうかをチェック
+            // 既に同じポートで自分のサーバーが動いているかチェック
+            if (McpServerController.IsServerRunning && McpServerController.ServerPort == customPort)
+            {
+                McpLogger.LogInfo($"MCP Server is already running on port {customPort}");
+                return true; // 既に動いているので成功扱い
+            }
+
+            // 他のプロセスが使用中かどうかをチェック
             if (McpBridgeServer.IsPortInUse(customPort))
             {
                 EditorUtility.DisplayDialog("Port Error", 
-                    $"Port {customPort} is already in use.\nPlease choose a different port number.", 
+                    $"Port {customPort} is already in use by another process.\nPlease choose a different port number.", 
                     "OK");
                 return false;
             }
@@ -263,9 +298,25 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.LabelField("Cursor設定", EditorStyles.boldLabel);
             
             bool isConfigured = _configService.IsCursorConfigured();
+            bool isServerRunning = McpServerController.IsServerRunning;
+            int currentServerPort = McpServerController.ServerPort;
             
             if (isConfigured)
             {
+                // ポート番号の不整合チェック
+                if (isServerRunning && currentServerPort != customPort)
+                {
+                    EditorGUILayout.HelpBox($"注意: Cursor設定のポート番号と現在のサーバーポート({currentServerPort})が一致していない可能性があります。", MessageType.Warning);
+                    
+                    if (GUILayout.Button($"Cursor設定をポート{currentServerPort}に更新"))
+                    {
+                        _configService.AutoConfigureCursor(currentServerPort);
+                        Repaint();
+                    }
+                    
+                    EditorGUILayout.Space();
+                }
+                
                 EditorGUILayout.HelpBox("Cursor設定は既に構成されています。", MessageType.Info);
                 
                 string configPath = UnityMcpPathResolver.GetMcpConfigPath();
@@ -281,9 +332,11 @@ namespace io.github.hatayama.uMCP
             
             EditorGUILayout.Space();
             
-            if (GUILayout.Button("Cursor設定を自動構成"))
+            string buttonText = isServerRunning ? $"Cursor設定を自動構成 (ポート{currentServerPort})" : "Cursor設定を自動構成";
+            if (GUILayout.Button(buttonText))
             {
-                _configService.AutoConfigureCursor(customPort);
+                int portToUse = isServerRunning ? currentServerPort : customPort;
+                _configService.AutoConfigureCursor(portToUse);
                 Repaint();
             }
         }

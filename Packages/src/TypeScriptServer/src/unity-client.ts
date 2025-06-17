@@ -19,6 +19,40 @@ export class UnityClient {
   }
 
   /**
+   * Unity側の接続状態を実際にテストする
+   * ソケットの状態だけでなく、実際の通信可能性を確認
+   */
+  async testConnection(): Promise<boolean> {
+    if (!this._connected || this.socket === null || this.socket.destroyed) {
+      return false;
+    }
+
+    try {
+      // 簡単なpingを送って実際に通信できるかテスト
+      await this.ping('connection_test');
+      return true;
+    } catch {
+      // 通信失敗の場合は接続を切断状態にする
+      this._connected = false;
+      return false;
+    }
+  }
+
+  /**
+   * Unity側に接続（必要に応じて再接続）
+   */
+  async ensureConnected(): Promise<void> {
+    // 既に接続済みで実際に通信可能な場合はそのまま
+    if (await this.testConnection()) {
+      return;
+    }
+
+    // 接続が失われている場合は再接続
+    this.disconnect();
+    await this.connect();
+  }
+
+  /**
    * Unity側に接続
    */
   async connect(): Promise<void> {
@@ -206,6 +240,13 @@ export class UnityClient {
       SkippedCount: number;
       TotalCount: number;
       Duration: number;
+      FailedTests?: Array<{
+        TestName: string;
+        FullName: string;
+        Message: string;
+        StackTrace: string;
+        Duration: number;
+      }>;
     };
     xmlPath?: string;
     completedAt: string;

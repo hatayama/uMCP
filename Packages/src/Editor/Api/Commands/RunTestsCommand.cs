@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using UnityEditor.TestTools.TestRunner.Api;
 using UnityEditor;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
@@ -167,8 +168,9 @@ namespace io.github.hatayama.uMCP
             int passedCount = 0;
             int failedCount = 0;
             int skippedCount = 0;
+            List<FailedTestInfo> failedTests = new List<FailedTestInfo>();
 
-            CountResults(result, ref passedCount, ref failedCount, ref skippedCount);
+            CountResults(result, ref passedCount, ref failedCount, ref skippedCount, failedTests);
 
             return new TestResultSummary
             {
@@ -176,14 +178,15 @@ namespace io.github.hatayama.uMCP
                 FailedCount = failedCount,
                 SkippedCount = skippedCount,
                 TotalCount = passedCount + failedCount + skippedCount,
-                Duration = result.Duration
+                Duration = result.Duration,
+                FailedTests = failedTests.ToArray()
             };
         }
 
         /// <summary>
         /// 結果を再帰的にカウントする
         /// </summary>
-        private void CountResults(ITestResultAdaptor result, ref int passed, ref int failed, ref int skipped)
+        private void CountResults(ITestResultAdaptor result, ref int passed, ref int failed, ref int skipped, List<FailedTestInfo> failedTests)
         {
             if (!result.Test.IsSuite)
             {
@@ -194,6 +197,15 @@ namespace io.github.hatayama.uMCP
                         break;
                     case TestStatus.Failed:
                         failed++;
+                        // 失敗したテストの詳細を記録
+                        failedTests.Add(new FailedTestInfo
+                        {
+                            TestName = result.Test.Name,
+                            FullName = result.Test.FullName,
+                            Message = result.Message,
+                            StackTrace = result.StackTrace,
+                            Duration = result.Duration
+                        });
                         break;
                     case TestStatus.Skipped:
                         skipped++;
@@ -206,7 +218,7 @@ namespace io.github.hatayama.uMCP
             {
                 foreach (ITestResultAdaptor child in result.Children)
                 {
-                    CountResults(child, ref passed, ref failed, ref skipped);
+                    CountResults(child, ref passed, ref failed, ref skipped, failedTests);
                 }
             }
         }
@@ -242,6 +254,19 @@ namespace io.github.hatayama.uMCP
         public int FailedCount { get; set; }
         public int SkippedCount { get; set; }
         public int TotalCount { get; set; }
+        public double Duration { get; set; }
+        public FailedTestInfo[] FailedTests { get; set; }
+    }
+
+    /// <summary>
+    /// 失敗したテスト情報
+    /// </summary>
+    public class FailedTestInfo
+    {
+        public string TestName { get; set; }
+        public string FullName { get; set; }
+        public string Message { get; set; }
+        public string StackTrace { get; set; }
         public double Duration { get; set; }
     }
 } 
