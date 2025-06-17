@@ -38,7 +38,7 @@ namespace io.github.hatayama.uMCP
         private McpConfigService _cursorConfigService;
         private McpConfigService _claudeCodeConfigService;
         
-        [MenuItem("Tools/uMCP/uMCP Window")]
+        [MenuItem("Window/uMCP")]
         public static void ShowWindow()
         {
             McpEditorWindow window = GetWindow<McpEditorWindow>("uMCP");
