@@ -127,6 +127,7 @@ Model Context Protocolを使用し、UnityエディターをLLMツールに接�
 ⚠️ **重要**: 以下のソフトウェアが必要です
 - **Unity 2020.3 以上**
 - **Node.js 18.0 以上** ⭐ **必須** - MCP Serverの実行に必要
+- node.jsのinstallは[こちら](https://nodejs.org/ja/download)
 
 
 ## インストール
@@ -158,8 +159,6 @@ Scope(s)：io.github.hatayama.umcp
 ### Node.js関連
 - `node --version` でNode.js 18以上がインストールされているか確認
 - パスが正しく設定されているか確認
-
-nodejsのinstallは[こちら](https://nodejs.org/ja/download)
 
 ### Unity接続エラー
 - Unity MCP Bridge が起動しているか確認（Window > Unity MCP）
