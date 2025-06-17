@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/hatayama/uMCP/compare/v0.1.1...v0.2.0) (2025-06-17)
+
+
+### Features
+
+* Compatible with Test Runner And Claude Code ([#8](https://github.com/hatayama/uMCP/issues/8)) ([bf06ab3](https://github.com/hatayama/uMCP/commit/bf06ab324f57c0c36474e6b56569a498f3cfb36a))
+
 ## 0.1.1 (2025-06-17)
 
 
