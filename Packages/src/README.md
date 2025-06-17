@@ -75,6 +75,8 @@ Model Context Protocolを使用し、UnityエディターをLLMツールに接�
   - `response` (string): Unity側からの応答メッセージ
   - `responseTime` (number): 応答時間（ミリ秒）
 
+[現状は上記の組み込み機能しか使えませんが、将来的にpackage外で自由にコマンドを増やす事ができる機能を追加する予定です]
+
 ## 使用方法
 1. Window > uMCP を選択。専用windowが立ち上がります。"Start Server"ボタンを押します。
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/0a1b5ed4-56a9-4209-b2e7-0acbca3cb9a9" />
