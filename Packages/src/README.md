@@ -77,14 +77,20 @@ Model Context Protocolを使用し、UnityエディターをLLMツールに接�
 
 ## 使用方法
 1. Window > uMCP を選択。専用windowが立ち上がります。"Start Server"ボタンを押します。
-<img width="512" alt="image" src="https://github.com/user-attachments/assets/7e80e4b8-e844-42aa-a968-19a728fa3874" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/0a1b5ed4-56a9-4209-b2e7-0acbca3cb9a9" />
+
 
 下記のように表示が変われば成功です。
 
 
-<img width="512" alt="image" src="https://github.com/user-attachments/assets/8276b17a-24d5-40cf-b2e8-5c3ee72ce3f1" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/9f5d8294-2cde-4d30-ab22-f527e6c3bf66" />
+
+
 
 2. 次はLLM Tool Settings項目で接続先のIDEを選択します。"設定を自動構成" ボタンを押すと、自動的にIDEに接続されます。
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/379fe674-dee7-4962-9d93-6f43fca13227" />
+
 
 3. IDEの接続確認
   - 例えばCursorでは、設定ページのTools & Integrationsをチェックして、unity-mcp-{port番号} を見つけます。toggleをクリックし、mcpが動いた状態にしてください。黄色や赤の丸が表示される場合、Cursorを再起動してください。
