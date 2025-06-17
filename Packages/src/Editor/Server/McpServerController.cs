@@ -8,8 +8,8 @@ namespace io.github.hatayama.uMCP
     [InitializeOnLoad]
     public static class McpServerController
     {
-        private const string SESSION_KEY_SERVER_RUNNING = "UnityMCP.ServerRunning";
-        private const string SESSION_KEY_SERVER_PORT = "UnityMCP.ServerPort";
+        private const string SESSION_KEY_SERVER_RUNNING = "uMCP.ServerRunning";
+        private const string SESSION_KEY_SERVER_PORT = "uMCP.ServerPort";
         
         private static McpBridgeServer mcpServer;
         

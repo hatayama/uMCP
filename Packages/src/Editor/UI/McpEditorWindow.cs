@@ -13,6 +13,10 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class McpEditorWindow : EditorWindow
     {
+        // SessionState用の定数
+        private const string SESSION_KEY_SELECTED_EDITOR_TYPE = "uMCP.SelectedEditorType";
+        private const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
+        
         // UI状態
         private int customPort = 7400;
         private bool autoStartServer = false;
@@ -62,13 +66,13 @@ namespace io.github.hatayama.uMCP
             enableMcpLogs = settings.enableMcpLogs;
             
             // エディタ選択状態を復元
-            selectedEditorType = (McpEditorType)SessionState.GetInt("UnityMCP.SelectedEditorType", (int)McpEditorType.Cursor);
+            selectedEditorType = (McpEditorType)SessionState.GetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
             
             // McpLoggerの設定を同期
             McpLogger.EnableDebugLog = enableMcpLogs;
             
             // 通信ログエリアの高さを復元（SessionStateから）
-            communicationLogHeight = SessionState.GetFloat("UnityMCP.CommunicationLogHeight", 300f);
+            communicationLogHeight = SessionState.GetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, 300f);
             
             // ログ更新イベントを購読
             McpCommunicationLogger.OnLogUpdated += Repaint;
@@ -86,7 +90,7 @@ namespace io.github.hatayama.uMCP
             McpCommunicationLogger.OnLogUpdated -= Repaint;
             
             // エディタ選択状態を保存
-            SessionState.SetInt("UnityMCP.SelectedEditorType", (int)selectedEditorType);
+            SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             
             // ウィンドウを閉じた時にサーバーを停止
             if (McpServerController.IsServerRunning)
@@ -136,7 +140,6 @@ namespace io.github.hatayama.uMCP
         private void DrawServerStatus()
         {
             EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("Server Status", EditorStyles.boldLabel);
             
             // 状態表示
             (bool isRunning, int port, bool wasRestored) = McpServerController.GetServerStatus();
@@ -149,23 +152,19 @@ namespace io.github.hatayama.uMCP
                 fontStyle = FontStyle.Bold
             };
             
-            EditorGUILayout.LabelField($"Status: {status}", statusStyle);
+            // Server Status、Status、Port を全て横並びで表示
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Server Status:", EditorStyles.boldLabel, GUILayout.Width(85));
+            EditorGUILayout.LabelField($"{status}", statusStyle, GUILayout.Width(80));
             EditorGUILayout.LabelField($"Port: {port}");
+            EditorGUILayout.EndHorizontal();
             
             if (isRunning)
             {
                 EditorGUILayout.LabelField("Listening for TypeScript MCP Server connections...");
             }
             
-            // デバッグ情報表示ボタン
-            if (GUILayout.Button("Show Debug Info"))
-            {
-                string debugInfo = McpServerController.GetDetailedServerStatus();
-                Debug.Log($"MCP Server Debug Info:\n{debugInfo}");
-            }
-            
             EditorGUILayout.EndVertical();
-            EditorGUILayout.Space();
         }
 
         /// <summary>
@@ -174,7 +173,6 @@ namespace io.github.hatayama.uMCP
         private void DrawServerControls()
         {
             EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("Server Controls", EditorStyles.boldLabel);
             
             // 自動起動チェックボックス
             EditorGUI.BeginChangeCheck();
@@ -308,18 +306,16 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void DrawEditorConfigSection()
         {
-            EditorGUILayout.LabelField("エディタ設定", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("LLM Tool Settings", EditorStyles.boldLabel);
             
             // エディタ選択プルダウン
             EditorGUI.BeginChangeCheck();
-            selectedEditorType = (McpEditorType)EditorGUILayout.EnumPopup("対象エディタ:", selectedEditorType);
+            selectedEditorType = (McpEditorType)EditorGUILayout.EnumPopup("Target:", selectedEditorType);
             if (EditorGUI.EndChangeCheck())
             {
                 // 選択が変更されたらセッションに保存
-                SessionState.SetInt("UnityMCP.SelectedEditorType", (int)selectedEditorType);
+                SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             }
-            
-            EditorGUILayout.Space();
             
             bool isServerRunning = McpServerController.IsServerRunning;
             int currentServerPort = McpServerController.ServerPort;
@@ -436,6 +432,15 @@ namespace io.github.hatayama.uMCP
                 {
                     enableMcpLogs = newEnableMcpLogs;
                     McpEditorSettings.SetEnableMcpLogs(enableMcpLogs);
+                }
+                
+                EditorGUILayout.Space();
+                
+                // デバッグ情報表示ボタン
+                if (GUILayout.Button("Show Debug Info"))
+                {
+                    string debugInfo = McpServerController.GetDetailedServerStatus();
+                    Debug.Log($"MCP Server Debug Info:\n{debugInfo}");
                 }
                 
                 EditorGUILayout.Space();
@@ -682,7 +687,7 @@ namespace io.github.hatayama.uMCP
                     communicationLogHeight = Mathf.Clamp(communicationLogHeight, 100f, 800f);
                     
                     // SessionStateに保存
-                    SessionState.SetFloat("UnityMCP.CommunicationLogHeight", communicationLogHeight);
+                    SessionState.SetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, communicationLogHeight);
                     
                     Event.current.Use();
                     Repaint();
