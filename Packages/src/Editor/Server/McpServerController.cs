@@ -48,14 +48,15 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void StartServer(int port = McpServerConfig.DEFAULT_PORT)
         {
-            if (mcpServer?.IsRunning == true)
+            // 既存のサーバーを必ず停止する（ポートを解放するため）
+            if (mcpServer != null)
             {
-                McpLogger.LogWarning("MCP Server is already running");
-                return;
+                McpLogger.LogInfo($"Stopping existing server before starting new one...");
+                StopServer();
+                
+                // TCP接続が確実に解放されるよう少し待機
+                System.Threading.Thread.Sleep(200);
             }
-
-            // 既存のサーバーをクリーンアップ
-            StopServer();
 
             mcpServer = new McpBridgeServer();
             mcpServer.StartServer(port);
@@ -157,23 +158,20 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void TryRestoreServerWithRetry(int port, int retryCount)
         {
-            const int maxRetries = 5; // リトライ回数を増やす
-            
-            // ポートが使用中の場合は、次に利用可能なポートを探す
-            int availablePort = FindAvailablePort(port);
-            if (availablePort != port)
-            {
-                McpLogger.LogInfo($"Assembly reload recovery: Port {port} is busy, automatically switching to port {availablePort}");
-                port = availablePort;
-            }
+            const int maxRetries = 3;
             
             try
             {
+                // 既存のサーバーインスタンスがある場合は確実に停止
+                if (mcpServer != null)
+                {
+                    mcpServer.Dispose();
+                    mcpServer = null;
+                    System.Threading.Thread.Sleep(200);
+                }
+                
                 mcpServer = new McpBridgeServer();
                 mcpServer.StartServer(port);
-                
-                // 新しいポート番号をSessionStateに保存
-                SessionState.SetInt(SESSION_KEY_SERVER_PORT, port);
                 
                 McpLogger.LogInfo($"Unity MCP Server restored on port {port}");
             }
@@ -186,34 +184,18 @@ namespace io.github.hatayama.uMCP
                 {
                     EditorApplication.delayCall += () =>
                     {
-                        TryRestoreServerWithRetry(port + 1, retryCount + 1); // 次のポートを試す
+                        // ポート番号は変更せず、同じポートで再試行
+                        TryRestoreServerWithRetry(port, retryCount + 1);
                     };
                 }
                 else
                 {
                     // 最終的に失敗した場合はSessionStateをクリア
-                    McpLogger.LogError($"Failed to restore MCP Server after {maxRetries + 1} attempts. Clearing session state.");
+                    McpLogger.LogError($"Failed to restore MCP Server on port {port} after {maxRetries + 1} attempts. Clearing session state.");
                     SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
                     SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
                 }
             }
-        }
-
-        /// <summary>
-        /// 指定されたポート番号から利用可能なポートを探す
-        /// </summary>
-        private static int FindAvailablePort(int startPort)
-        {
-            for (int port = startPort; port <= startPort + 10; port++)
-            {
-                if (!McpBridgeServer.IsPortInUse(port))
-                {
-                    return port;
-                }
-            }
-            
-            // 見つからない場合は元のポートを返す（エラーになるが、ログで分かる）
-            return startPort;
         }
 
         /// <summary>
