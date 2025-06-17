@@ -1,39 +1,127 @@
+[![Unity](https://img.shields.io/badge/Unity-2020.3+-red.svg)](https://unity3d.com/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
+
 # uMCP
 
 Model Context Protocolを使用し、UnityエディターをLLMツールに接続します。
+それにより、下記の機能を呼び出せるようになります。
 
-## 機能
+## ✨機能
 
-### 1. unity.ping
-- **説明**: Unity側へのpingテスト（TCP/IP通信確認）
-- **パラメータ**: 
-  - `message` (string): Unity側に送信するメッセージ（デフォルト: "Hello from TypeScript MCP Server"）
-
-### 2. unity.compile
-- **説明**: Unityプロジェクトのコンパイルを実行し、エラー情報を取得する
+### 1. unity.compile
+- **説明**: Unityプロジェクトのコンパイルを実行し、コンパイル結果を取得する
 - **パラメータ**: 
   - `forceRecompile` (boolean): 強制再コンパイルを行うかどうか（デフォルト: false）
+- **レスポンス**: 
+  - `success` (boolean): コンパイルが成功したかどうか
+  - `errors` (array): コンパイルエラーの配列（エラーがある場合）
+    - `message` (string): エラーメッセージ
+    - `file` (string): エラーが発生したファイルパス
+    - `line` (number): エラーが発生した行番号
+    - `column` (number): エラーが発生した列番号
+    - `errorCode` (string): エラーコード（CS0117など）
+  - `warnings` (array): コンパイル警告の配列（警告がある場合）
+    - `message` (string): 警告メッセージ
+    - `file` (string): 警告が発生したファイルパス
+    - `line` (number): 警告が発生した行番号
+    - `column` (number): 警告が発生した列番号
+    - `warningCode` (string): 警告コード（CS0162など）
+  - `compileTime` (number): コンパイル所要時間（ミリ秒）
 
-### 3. unity.getLogs
+### 2. unity.getLogs
 - **説明**: Unityコンソールのログ情報を取得する
 - **パラメータ**: 
   - `logType` (string): フィルタリングするログタイプ (Error, Warning, Log, All)（デフォルト: "All"）
   - `maxCount` (number): 取得する最大ログ数（デフォルト: 100）
+- **レスポンス**: 
+  - `logs` (array): ログエントリの配列
+    - `type` (string): ログタイプ (Error, Warning, Log)
+    - `message` (string): ログメッセージ
+    - `stackTrace` (string): スタックトレース
+    - `timestamp` (string): ログの時刻
+  - `totalCount` (number): 取得したログの総数
+- **注意**
+  - 現状、Consoleの表示と連動しています。フィルターで非表示になっているlog typeは取得できません。これは将来的に改善する予定です
 
-### 4. unity.runTests
+### 3. unity.runTests
 - **説明**: Unity Test Runnerを実行してテスト結果を取得する
 - **パラメータ**: 
   - `filterType` (string): テストフィルターの種類 (all, fullclassname, namespace, testname, assembly)（デフォルト: "all"）
   - `filterValue` (string): フィルター値（filterTypeがall以外の場合に指定）（デフォルト: ""）
   - `saveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）
+- **レスポンス**: 
+  - `success` (boolean): テスト実行が成功したかどうか
+  - `totalTests` (number): 実行されたテストの総数
+  - `passedTests` (number): 成功したテスト数
+  - `failedTests` (number): 失敗したテスト数
+  - `skippedTests` (number): スキップされたテスト数
+  - `executionTime` (number): テスト実行時間（秒）
+  - `results` (array): 個別テスト結果の配列
+    - `name` (string): テスト名
+    - `fullName` (string): テストのフルネーム
+    - `status` (string): テスト結果 (Passed, Failed, Skipped)
+    - `duration` (number): テスト実行時間（秒）
+    - `errorMessage` (string): エラーメッセージ（失敗時）
+    - `stackTrace` (string): スタックトレース（失敗時）
+    - `assertionFailures` (array): アサーション失敗の詳細（失敗時）
+  - `xmlPath` (string): XMLファイルのパス（saveXmlがtrueの場合）
+ 
+### 4. unity.ping
+- **説明**: Unity側へのpingテスト（TCP/IP通信確認）
+- **パラメータ**: 
+  - `message` (string): Unity側に送信するメッセージ（デフォルト: "Hello from TypeScript MCP Server"）
+- **レスポンス**: 
+  - `success` (boolean): 通信が成功したかどうか
+  - `response` (string): Unity側からの応答メッセージ
+  - `responseTime` (number): 応答時間（ミリ秒）
+
+## セットアップ
+## 使用方法
+1. Window > uMCP を選択。専用windowが立ち上がります。"Start Server"ボタンを押します。
+<img width="512" alt="image" src="https://github.com/user-attachments/assets/7e80e4b8-e844-42aa-a968-19a728fa3874" />
+
+下記のように表示が変われば成功です。
+
+
+<img width="512" alt="image" src="https://github.com/user-attachments/assets/8276b17a-24d5-40cf-b2e8-5c3ee72ce3f1" />
+
+2. 次はLLM Tool Settings項目で接続先のIDEを選択します。"設定を自動構成" ボタンを押すと、自動的にIDEに接続されます。
+
+3. IDEの接続確認
+  - 例えばCursorでは、設定ページのTools & Integrationsをチェックして、unity-mcp-{port番号} を見つけます。toggleをクリックし、mcpが動いた状態にしてください。黄色や赤の丸が表示される場合、Cursorを再起動してください。
+<img width="657" alt="image" src="https://github.com/user-attachments/assets/14352ec0-c0a4-443d-98d5-35a6c86acd45" />
+
+4. 手動設定 (通常は不要です)
+必要に応じて、Cursorの設定ファイル（`.cursor/mcp.json`）を手動で編集することも可能です：
+
+```json
+{
+  "mcpServers": {
+    "unity-mcp-{設定したport}": {
+      "command": "node",
+      "args": [
+        "[Unity Package Path]/TypeScriptServer/dist/server.bundle.js"
+      ],
+      "env": {
+        "UNITY_TCP_PORT": "{設定したport}"
+      }
+    }
+  }
+}
+```
+
+**パス例**:
+- **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umpc@[hash]/TypeScriptServer/dist/server.bundle.js"`
+> **注意**: Package Manager経由でインストールした場合、パッケージは`Library/PackageCache`に配置され、ハッシュ付きのディレクトリ名になります。「Auto Configure Cursor」ボタンを使用することで、正しいパスが自動的に設定されます。
+
+5. 複数Unity起動への対応
+  - port番号を変更する事で、複数のUnity起動に対応しています
 
 ## 前提条件
 
 ⚠️ **重要**: 以下のソフトウェアが必要です
-
 - **Unity 2020.3 以上**
 - **Node.js 18.0 以上** ⭐ **必須** - MCP Serverの実行に必要
-- **LLM エディタ** - MCPクライアントとして使用
 
 
 ## インストール
@@ -61,51 +149,6 @@ Scope(s)：io.github.hatayama.umcp
 ```
 
 3. Package Manager ウィンドウを開き、My Registries セクションの "hatayama" ページに移動します
-
-### セットアップ
-
-#### 1. Unity側の設定
-
-パッケージインストール後、Unity Editorで以下を実行：
-- Window > Unity MCP を開く
-- "Start Server" ボタンをクリック
-- 設定したportでTCP/IPサーバーが起動
-
-#### 2. LLMツールの設定
-
-ここでは例としてCursorで説明します。
-Unity Editorで「Window > Unity MCP」を開き、「Auto Configure Cursor」ボタンをクリックしてください。
-これにより`.cursor/mcp.json`が自動的に作成・更新されます。
-
-**手動設定**:
-必要に応じて、Cursorの設定ファイル（`.cursor/mcp.json`）を手動で編集することも可能です：
-
-```json
-{
-  "mcpServers": {
-    "unity-mcp-{設定したport}": {
-      "command": "node",
-      "args": [
-        "[Unity Package Path]/TypeScriptServer/dist/server.bundle.js"
-      ],
-      "env": {
-        "UNITY_TCP_PORT": "{設定したport}"
-      }
-    }
-  }
-}
-```
-
-**パス例**:
-- **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umpc@[hash]/TypeScriptServer/dist/server.bundle.js"`
-- **ローカル開発**: `"/Users/username/UnityProject/Packages/src/TypeScriptServer/dist/server.bundle.js"`
-
-> **注意**: Package Manager経由でインストールした場合、パッケージは`Library/PackageCache`に配置され、ハッシュ付きのディレクトリ名になります。「Auto Configure Cursor」ボタンを使用することで、正しいパスが自動的に設定されます。
-
-## 使用方法
-Window > uMCP を選択。専用windowが立ち上がります。
-
-## トラブルシューティング
 
 ### Node.js関連
 - `node --version` でNode.js 18以上がインストールされているか確認
