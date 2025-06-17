@@ -103,7 +103,7 @@ src/
 
 ### 前提条件
 - Node.js 18以上
-- Unity 2022.3以上
+- Unity 2020.3以上
 - Unity MCP Bridge パッケージがインストール済み
 
 ### インストール
@@ -223,7 +223,7 @@ private registerDefaultTools(context: ToolContext): void {
 
 ### Unity接続エラー
 - Unity MCP Bridge が起動しているか確認
-- ポート7400が使用可能か確認
+- Window > uMPC で設定したportが使用可能か確認
 - Unity側で "Window > Unity MCP > Start Server" を実行
 
 ### コンパイルエラー
@@ -246,7 +246,4 @@ npm install
 ## ライセンス
 
 MIT License
-
-## 貢献
-
-新しいツールの追加や改善提案は歓迎します。プルリクエストを送信する前に、既存のコーディング規約に従ってください。 
+ 
