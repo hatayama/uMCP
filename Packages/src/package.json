@@ -1,6 +1,6 @@
 {
   "name": "io.github.hatayama.umcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "displayName": "uMCP",
   "description": "Connect your Unity Editor to LLMs using the Model Context Protocol.",
   "unity": "2020.3",
