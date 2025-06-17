@@ -6,7 +6,7 @@ import { ToolResponse } from '../types/tool-types.js';
  * Unityログ取得ツール
  */
 export class LogsTool extends BaseTool {
-  readonly name = 'context.getUnityLogs';
+  readonly name = 'unity.getLogs';
   readonly description = 'Unityコンソールのログ情報を取得する';
   readonly inputSchema = {
     type: 'object',
@@ -34,10 +34,8 @@ export class LogsTool extends BaseTool {
   }
 
   protected async execute(args: { logType: string; maxCount: number }): Promise<any> {
-    // Unity側に接続（必要に応じて）
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    // Unity側に接続（必要に応じて再接続）
+    await this.context.unityClient.ensureConnected();
 
     // Unity側からログを取得
     return await this.context.unityClient.getLogs(args.logType, args.maxCount);

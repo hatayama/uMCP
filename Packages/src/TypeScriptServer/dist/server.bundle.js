@@ -5487,6 +5487,32 @@ var UnityClient = class {
     return this._connected && this.socket !== null && !this.socket.destroyed;
   }
   /**
+   * Unity側の接続状態を実際にテストする
+   * ソケットの状態だけでなく、実際の通信可能性を確認
+   */
+  async testConnection() {
+    if (!this._connected || this.socket === null || this.socket.destroyed) {
+      return false;
+    }
+    try {
+      await this.ping("connection_test");
+      return true;
+    } catch {
+      this._connected = false;
+      return false;
+    }
+  }
+  /**
+   * Unity側に接続（必要に応じて再接続）
+   */
+  async ensureConnected() {
+    if (await this.testConnection()) {
+      return;
+    }
+    this.disconnect();
+    await this.connect();
+  }
+  /**
    * Unity側に接続
    */
   async connect() {
@@ -5542,33 +5568,11 @@ var UnityClient = class {
     });
   }
   /**
-   * Unityプロジェクトのコンパイルを実行
+   * Unityプロジェクトをコンパイル
    */
   async compileProject(forceRecompile = false) {
     if (!this.connected) {
-      return {
-        success: true,
-        errorCount: 0,
-        warningCount: 2,
-        completedAt: (/* @__PURE__ */ new Date()).toISOString(),
-        errors: [],
-        warnings: [
-          {
-            message: "Warning: Unused variable detected in PlayerController.cs:42",
-            file: "PlayerController.cs",
-            line: 42,
-            column: 1,
-            type: "Warning"
-          },
-          {
-            message: "Warning: Missing null check in GameManager.cs:156",
-            file: "GameManager.cs",
-            line: 156,
-            column: 1,
-            type: "Warning"
-          }
-        ]
-      };
+      throw new Error("Unity MCP Bridge is not connected. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.");
     }
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
@@ -5604,16 +5608,7 @@ var UnityClient = class {
    */
   async getLogs(logType = "All", maxCount = 100) {
     if (!this.connected) {
-      return {
-        logs: [
-          {
-            type: "Log",
-            message: "Unity MCP Bridge not connected",
-            timestamp: (/* @__PURE__ */ new Date()).toISOString()
-          }
-        ],
-        totalCount: 1
-      };
+      throw new Error("Unity MCP Bridge is not connected. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.");
     }
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
@@ -5641,6 +5636,44 @@ var UnityClient = class {
           }
         } catch (error) {
           reject(new Error("Invalid getLogs response from Unity"));
+        }
+      });
+    });
+  }
+  /**
+   * Unity Test Runnerを実行
+   */
+  async runTests(filterType = "all", filterValue = "", saveXml = false) {
+    if (!this.connected) {
+      throw new Error("Unity MCP Bridge is not connected. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.");
+    }
+    return new Promise((resolve, reject) => {
+      const requestId = Date.now();
+      const request = JSON.stringify({
+        jsonrpc: "2.0",
+        id: requestId,
+        method: "runtests",
+        params: {
+          filterType,
+          filterValue,
+          saveXml
+        }
+      });
+      this.socket.write(request + "\n");
+      const timeout = setTimeout(() => {
+        reject(new Error("Unity runTests timeout"));
+      }, 6e4);
+      this.socket.once("data", (data) => {
+        clearTimeout(timeout);
+        try {
+          const response = JSON.parse(data.toString());
+          if (response.error) {
+            reject(new Error(`Unity runTests error: ${response.error.message}`));
+          } else {
+            resolve(response.result);
+          }
+        } catch (error) {
+          reject(new Error("Invalid runTests response from Unity"));
         }
       });
     });
@@ -5706,7 +5739,7 @@ var BaseTool = class {
 
 // src/tools/ping-tool.ts
 var PingTool = class extends BaseTool {
-  name = "mcp_ping";
+  name = "mcp.ping";
   description = "Unity MCP Server\u63A5\u7D9A\u30C6\u30B9\u30C8\u7528\u306Eping\u30B3\u30DE\u30F3\u30C9\uFF08TypeScript\u5074\u306E\u307F\uFF09";
   inputSchema = {
     type: "object",
@@ -5750,9 +5783,7 @@ var UnityPingTool = class extends BaseTool {
     return schema.parse(args || {});
   }
   async execute(args) {
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    await this.context.unityClient.ensureConnected();
     const response = await this.context.unityClient.ping(args.message);
     const port = process.env.UNITY_TCP_PORT || "7400";
     return `Unity Ping Success!
@@ -5778,7 +5809,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
 
 // src/tools/compile-tool.ts
 var CompileTool = class extends BaseTool {
-  name = "action.compileUnity";
+  name = "unity.compile";
   description = "Unity\u30D7\u30ED\u30B8\u30A7\u30AF\u30C8\u306E\u30B3\u30F3\u30D1\u30A4\u30EB\u3092\u5B9F\u884C\u3057\u3001\u30A8\u30E9\u30FC\u60C5\u5831\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5797,9 +5828,7 @@ var CompileTool = class extends BaseTool {
     return schema.parse(args || {});
   }
   async execute(args) {
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    await this.context.unityClient.ensureConnected();
     return await this.context.unityClient.compileProject(args.forceRecompile);
   }
   formatResponse(result) {
@@ -5855,7 +5884,7 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
 
 // src/tools/logs-tool.ts
 var LogsTool = class extends BaseTool {
-  name = "context.getUnityLogs";
+  name = "unity.getLogs";
   description = "Unity\u30B3\u30F3\u30BD\u30FC\u30EB\u306E\u30ED\u30B0\u60C5\u5831\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5881,9 +5910,7 @@ var LogsTool = class extends BaseTool {
     return schema.parse(args || {});
   }
   async execute(args) {
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    await this.context.unityClient.ensureConnected();
     return await this.context.unityClient.getLogs(args.logType, args.maxCount);
   }
   formatResponse(result) {
@@ -5932,6 +5959,111 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
   }
 };
 
+// src/tools/run-tests-tool.ts
+var RunTestsTool = class extends BaseTool {
+  name = "unity.runTests";
+  description = "Unity Test Runner\u3092\u5B9F\u884C\u3057\u3066\u30C6\u30B9\u30C8\u7D50\u679C\u3092\u53D6\u5F97\u3059\u308B";
+  inputSchema = {
+    type: "object",
+    properties: {
+      filterType: {
+        type: "string",
+        description: "\u30C6\u30B9\u30C8\u30D5\u30A3\u30EB\u30BF\u30FC\u306E\u7A2E\u985E",
+        enum: ["all", "fullclassname", "namespace", "testname", "assembly"],
+        default: "all"
+      },
+      filterValue: {
+        type: "string",
+        description: "\u30D5\u30A3\u30EB\u30BF\u30FC\u5024\uFF08filterType\u304Call\u4EE5\u5916\u306E\u5834\u5408\u306B\u6307\u5B9A\uFF09\n\u2022 fullclassname: \u30D5\u30EB\u30AF\u30E9\u30B9\u540D (\u4F8B: io.github.hatayama.uMCP.CompileCommandTests)\n\u2022 namespace: \u30CD\u30FC\u30E0\u30B9\u30DA\u30FC\u30B9 (\u4F8B: io.github.hatayama.uMCP)\n\u2022 testname: \u500B\u5225\u30C6\u30B9\u30C8\u540D\n\u2022 assembly: \u30A2\u30BB\u30F3\u30D6\u30EA\u540D",
+        default: ""
+      },
+      saveXml: {
+        type: "boolean",
+        description: "\u30C6\u30B9\u30C8\u7D50\u679C\u3092XML\u30D5\u30A1\u30A4\u30EB\u3068\u3057\u3066\u4FDD\u5B58\u3059\u308B\u304B\u3069\u3046\u304B",
+        default: false
+      }
+    }
+  };
+  validateArgs(args) {
+    const schema = external_exports.object({
+      filterType: external_exports.enum(["all", "fullclassname", "namespace", "testname", "assembly"]).default("all"),
+      filterValue: external_exports.string().default(""),
+      saveXml: external_exports.boolean().default(false)
+    });
+    return schema.parse(args || {});
+  }
+  async execute(args) {
+    try {
+      await this.context.unityClient.ensureConnected();
+      const response = await this.context.unityClient.runTests(
+        args.filterType,
+        args.filterValue,
+        args.saveXml
+      );
+      let result = response.success ? `\u2705 \u30C6\u30B9\u30C8\u5B9F\u884C\u5B8C\u4E86
+` : `\u26A0\uFE0F \u30C6\u30B9\u30C8\u5B9F\u884C\u5B8C\u4E86\uFF08\u5931\u6557\u3042\u308A\uFF09
+`;
+      result += `\u{1F4CA} \u7D50\u679C: ${response.message}
+`;
+      if (response.testResults) {
+        const testResults = response.testResults;
+        result += `
+\u{1F4C8} \u8A73\u7D30\u7D71\u8A08:
+`;
+        result += `  \u2022 \u6210\u529F: ${testResults.PassedCount}\u4EF6
+`;
+        result += `  \u2022 \u5931\u6557: ${testResults.FailedCount}\u4EF6
+`;
+        result += `  \u2022 \u30B9\u30AD\u30C3\u30D7: ${testResults.SkippedCount}\u4EF6
+`;
+        result += `  \u2022 \u5408\u8A08: ${testResults.TotalCount}\u4EF6
+`;
+        result += `  \u2022 \u5B9F\u884C\u6642\u9593: ${testResults.Duration.toFixed(1)}\u79D2
+`;
+        if (testResults.FailedTests && testResults.FailedTests.length > 0) {
+          result += `
+\u274C \u5931\u6557\u3057\u305F\u30C6\u30B9\u30C8:
+`;
+          testResults.FailedTests.forEach((failedTest, index) => {
+            result += `  ${index + 1}. ${failedTest.TestName}
+`;
+            result += `     \u30D5\u30EB\u30CD\u30FC\u30E0: ${failedTest.FullName}
+`;
+            if (failedTest.Message) {
+              result += `     \u30A8\u30E9\u30FC: ${failedTest.Message}
+`;
+            }
+            if (failedTest.StackTrace) {
+              const stackLines = failedTest.StackTrace.split("\n").slice(0, 3);
+              result += `     \u30B9\u30BF\u30C3\u30AF\u30C8\u30EC\u30FC\u30B9: ${stackLines.join("\n     ")}
+`;
+            }
+            result += `     \u5B9F\u884C\u6642\u9593: ${failedTest.Duration.toFixed(3)}\u79D2
+
+`;
+          });
+        }
+      }
+      if (response.xmlPath) {
+        result += `
+\u{1F4C4} XML\u30D5\u30A1\u30A4\u30EB\u4FDD\u5B58: ${response.xmlPath}
+`;
+      }
+      result += `
+\u23F0 \u5B8C\u4E86\u6642\u523B: ${response.completedAt}`;
+      if (!response.success && response.error && !response.testResults) {
+        result += `
+
+\u274C \u30A8\u30E9\u30FC\u8A73\u7D30:
+${response.error}`;
+      }
+      return result;
+    } catch (error) {
+      return `\u274C \u30C6\u30B9\u30C8\u5B9F\u884C\u30A8\u30E9\u30FC: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+};
+
 // src/tools/tool-registry.ts
 var ToolRegistry = class {
   tools = /* @__PURE__ */ new Map();
@@ -5950,6 +6082,7 @@ var ToolRegistry = class {
     this.register(new UnityPingTool(context));
     this.register(new CompileTool(context));
     this.register(new LogsTool(context));
+    this.register(new RunTestsTool(context));
   }
   /**
    * ツールを登録

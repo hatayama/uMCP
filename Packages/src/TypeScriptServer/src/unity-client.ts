@@ -19,6 +19,40 @@ export class UnityClient {
   }
 
   /**
+   * Unity側の接続状態を実際にテストする
+   * ソケットの状態だけでなく、実際の通信可能性を確認
+   */
+  async testConnection(): Promise<boolean> {
+    if (!this._connected || this.socket === null || this.socket.destroyed) {
+      return false;
+    }
+
+    try {
+      // 簡単なpingを送って実際に通信できるかテスト
+      await this.ping('connection_test');
+      return true;
+    } catch {
+      // 通信失敗の場合は接続を切断状態にする
+      this._connected = false;
+      return false;
+    }
+  }
+
+  /**
+   * Unity側に接続（必要に応じて再接続）
+   */
+  async ensureConnected(): Promise<void> {
+    // 既に接続済みで実際に通信可能な場合はそのまま
+    if (await this.testConnection()) {
+      return;
+    }
+
+    // 接続が失われている場合は再接続
+    this.disconnect();
+    await this.connect();
+  }
+
+  /**
    * Unity側に接続
    */
   async connect(): Promise<void> {
@@ -83,7 +117,7 @@ export class UnityClient {
   }
 
   /**
-   * Unityプロジェクトのコンパイルを実行
+   * Unityプロジェクトをコンパイル
    */
   async compileProject(forceRecompile: boolean = false): Promise<{
     success: boolean;
@@ -106,30 +140,8 @@ export class UnityClient {
     }>;
   }> {
     if (!this.connected) {
-      // 接続されていない場合はダミーレスポンスを返す
-      return {
-        success: true,
-        errorCount: 0,
-        warningCount: 2,
-        completedAt: new Date().toISOString(),
-        errors: [],
-        warnings: [
-          {
-            message: 'Warning: Unused variable detected in PlayerController.cs:42',
-            file: 'PlayerController.cs',
-            line: 42,
-            column: 1,
-            type: 'Warning'
-          },
-          {
-            message: 'Warning: Missing null check in GameManager.cs:156',
-            file: 'GameManager.cs',
-            line: 156,
-            column: 1,
-            type: 'Warning'
-          }
-        ]
-      };
+      // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
+      throw new Error('Unity MCP Bridge is not connected. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.');
     }
 
     return new Promise((resolve, reject) => {
@@ -178,17 +190,8 @@ export class UnityClient {
     totalCount: number;
   }> {
     if (!this.connected) {
-      // 接続されていない場合はダミーレスポンスを返す
-      return {
-        logs: [
-          {
-            type: 'Log',
-            message: 'Unity MCP Bridge not connected',
-            timestamp: new Date().toISOString()
-          }
-        ],
-        totalCount: 1
-      };
+      // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
+      throw new Error('Unity MCP Bridge is not connected. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.');
     }
 
     return new Promise((resolve, reject) => {
@@ -220,6 +223,70 @@ export class UnityClient {
           }
         } catch (error) {
           reject(new Error('Invalid getLogs response from Unity'));
+        }
+      });
+    });
+  }
+
+  /**
+   * Unity Test Runnerを実行
+   */
+  async runTests(filterType: string = 'all', filterValue: string = '', saveXml: boolean = false): Promise<{
+    success: boolean;
+    message: string;
+    testResults?: {
+      PassedCount: number;
+      FailedCount: number;
+      SkippedCount: number;
+      TotalCount: number;
+      Duration: number;
+      FailedTests?: Array<{
+        TestName: string;
+        FullName: string;
+        Message: string;
+        StackTrace: string;
+        Duration: number;
+      }>;
+    };
+    xmlPath?: string;
+    completedAt: string;
+    error?: string;
+  }> {
+    if (!this.connected) {
+      // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
+      throw new Error('Unity MCP Bridge is not connected. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.');
+    }
+
+    return new Promise((resolve, reject) => {
+      const requestId = Date.now();
+      const request = JSON.stringify({
+        jsonrpc: '2.0',
+        id: requestId,
+        method: 'runtests',
+        params: {
+          filterType: filterType,
+          filterValue: filterValue,
+          saveXml: saveXml
+        }
+      });
+
+      this.socket!.write(request + '\n');
+
+      const timeout = setTimeout(() => {
+        reject(new Error('Unity runTests timeout'));
+      }, 60000); // 60秒タイムアウト（テスト実行は時間がかかる）
+
+      this.socket!.once('data', (data) => {
+        clearTimeout(timeout);
+        try {
+          const response = JSON.parse(data.toString());
+          if (response.error) {
+            reject(new Error(`Unity runTests error: ${response.error.message}`));
+          } else {
+            resolve(response.result);
+          }
+        } catch (error) {
+          reject(new Error('Invalid runTests response from Unity'));
         }
       });
     });

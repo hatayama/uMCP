@@ -102,8 +102,19 @@ namespace io.github.hatayama.uMCP
                 // 通信ログも強制的に保存
                 McpCommunicationLogger.SaveToSessionState();
                 
-                // サーバーを停止（Disposeは呼ばない、リロード後に復旧するため）
-                mcpServer?.StopServer();
+                // サーバーを完全に停止（TCP接続を確実に解放するためDisposeを使用）
+                try
+                {
+                    mcpServer.Dispose();
+                    mcpServer = null;
+                    
+                    // 少し待機してTCP接続が確実に解放されるようにする
+                    System.Threading.Thread.Sleep(100);
+                }
+                catch (System.Exception ex)
+                {
+                    McpLogger.LogError($"Error during server shutdown before assembly reload: {ex.Message}");
+                }
             }
         }
 
@@ -129,11 +140,80 @@ namespace io.github.hatayama.uMCP
             
             if (wasRunning && (mcpServer == null || !mcpServer.IsRunning))
             {
-                mcpServer = new McpBridgeServer();
-                mcpServer.StartServer(savedPort);
-                
-                McpLogger.LogInfo($"Unity MCP Server restored on port {savedPort}");
+                // アセンブリリロード後、TCP接続の解放を待つため少し長めの遅延を入れる
+                EditorApplication.delayCall += () =>
+                {
+                    // さらに遅延を追加（合計で約200-300ms待機）
+                    EditorApplication.delayCall += () =>
+                    {
+                        TryRestoreServerWithRetry(savedPort, 0);
+                    };
+                };
             }
+        }
+
+        /// <summary>
+        /// サーバーの復旧を再試行付きで実行する
+        /// </summary>
+        private static void TryRestoreServerWithRetry(int port, int retryCount)
+        {
+            const int maxRetries = 5; // リトライ回数を増やす
+            
+            // ポートが使用中の場合は、次に利用可能なポートを探す
+            int availablePort = FindAvailablePort(port);
+            if (availablePort != port)
+            {
+                McpLogger.LogInfo($"Assembly reload recovery: Port {port} is busy, automatically switching to port {availablePort}");
+                port = availablePort;
+            }
+            
+            try
+            {
+                mcpServer = new McpBridgeServer();
+                mcpServer.StartServer(port);
+                
+                // 新しいポート番号をSessionStateに保存
+                SessionState.SetInt(SESSION_KEY_SERVER_PORT, port);
+                
+                McpLogger.LogInfo($"Unity MCP Server restored on port {port}");
+            }
+            catch (System.Exception ex)
+            {
+                McpLogger.LogError($"Failed to restore MCP Server on port {port} (attempt {retryCount + 1}): {ex.Message}");
+                
+                // 最大リトライ回数に達していない場合は再試行
+                if (retryCount < maxRetries)
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        TryRestoreServerWithRetry(port + 1, retryCount + 1); // 次のポートを試す
+                    };
+                }
+                else
+                {
+                    // 最終的に失敗した場合はSessionStateをクリア
+                    McpLogger.LogError($"Failed to restore MCP Server after {maxRetries + 1} attempts. Clearing session state.");
+                    SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
+                    SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 指定されたポート番号から利用可能なポートを探す
+        /// </summary>
+        private static int FindAvailablePort(int startPort)
+        {
+            for (int port = startPort; port <= startPort + 10; port++)
+            {
+                if (!McpBridgeServer.IsPortInUse(port))
+                {
+                    return port;
+                }
+            }
+            
+            // 見つからない場合は元のポートを返す（エラーになるが、ログで分かる）
+            return startPort;
         }
 
         /// <summary>
@@ -160,6 +240,22 @@ namespace io.github.hatayama.uMCP
         {
             bool wasRestored = SessionState.GetBool(SESSION_KEY_SERVER_RUNNING, false);
             return (IsServerRunning, ServerPort, wasRestored);
+        }
+
+        /// <summary>
+        /// デバッグ用：詳細なサーバー状態を取得する
+        /// </summary>
+        public static string GetDetailedServerStatus()
+        {
+            bool sessionWasRunning = SessionState.GetBool(SESSION_KEY_SERVER_RUNNING, false);
+            int sessionPort = SessionState.GetInt(SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
+            bool serverInstanceExists = mcpServer != null;
+            bool serverInstanceRunning = mcpServer?.IsRunning ?? false;
+            int serverInstancePort = mcpServer?.Port ?? -1;
+            
+            return $"SessionState: wasRunning={sessionWasRunning}, port={sessionPort}\n" +
+                   $"ServerInstance: exists={serverInstanceExists}, running={serverInstanceRunning}, port={serverInstancePort}\n" +
+                   $"IsServerRunning={IsServerRunning}, ServerPort={ServerPort}";
         }
     }
 } 

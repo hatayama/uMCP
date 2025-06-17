@@ -6,7 +6,7 @@ import { ToolResponse } from '../types/tool-types.js';
  * Unityコンパイルツール
  */
 export class CompileTool extends BaseTool {
-  readonly name = 'action.compileUnity';
+  readonly name = 'unity.compile';
   readonly description = 'Unityプロジェクトのコンパイルを実行し、エラー情報を取得する';
   readonly inputSchema = {
     type: 'object',
@@ -27,10 +27,8 @@ export class CompileTool extends BaseTool {
   }
 
   protected async execute(args: { forceRecompile: boolean }): Promise<any> {
-    // Unity側に接続（必要に応じて）
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    // Unity側に接続（必要に応じて再接続）
+    await this.context.unityClient.ensureConnected();
 
     // Unity側でコンパイルを実行
     return await this.context.unityClient.compileProject(args.forceRecompile);

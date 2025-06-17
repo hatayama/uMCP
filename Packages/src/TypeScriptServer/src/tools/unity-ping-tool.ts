@@ -27,17 +27,12 @@ export class UnityPingTool extends BaseTool {
   }
 
   protected async execute(args: { message: string }): Promise<string> {
-    // Unity側に接続
-    if (!this.context.unityClient.connected) {
-      await this.context.unityClient.connect();
-    }
+    // Unity側に接続（必要に応じて再接続）
+    await this.context.unityClient.ensureConnected();
 
-    // Unity側にpingを送信
     const response = await this.context.unityClient.ping(args.message);
-
-    // 環境変数からポート番号を取得
     const port = process.env.UNITY_TCP_PORT || '7400';
-
+    
     return `Unity Ping Success!
 Sent: ${args.message}
 Response: ${response}

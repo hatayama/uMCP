@@ -30,6 +30,7 @@ namespace io.github.hatayama.uMCP
             RegisterCommand(new PingCommand());
             RegisterCommand(new CompileCommand());
             RegisterCommand(new GetLogsCommand());
+            RegisterCommand(new RunTestsCommand());
             
             // 新しいコマンドの追加例
             RegisterCommand(new GetVersionCommand());

@@ -66,9 +66,9 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo("=== Force Update MCP Config ===");
             
             int port = 7400;
-            CursorMcpConfigRepository repository = new();
-            CursorMcpConfigService configService = new(repository);
-            configService.AutoConfigureCursor(port);
+            McpConfigRepository repository = new(McpEditorType.Cursor);
+            McpConfigService configService = new(repository, McpEditorType.Cursor);
+            configService.AutoConfigure(port);
             
             McpLogger.LogInfo("MCP config update completed");
         }

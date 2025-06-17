@@ -6,11 +6,18 @@ using Newtonsoft.Json;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Cursor MCP設定の永続化を担当するクラス
+    /// MCP設定の永続化を担当するクラス
     /// 単一責任原則：設定ファイルの読み書きのみを担当
     /// </summary>
-    public class CursorMcpConfigRepository
+    public class McpConfigRepository
     {
+        private readonly McpEditorType _editorType;
+
+        public McpConfigRepository(McpEditorType editorType = McpEditorType.Cursor)
+        {
+            _editorType = editorType;
+        }
+
         /// <summary>
         /// 設定ファイルが存在するかチェック
         /// </summary>
@@ -20,22 +27,46 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// 設定ファイルが存在するかチェック（エディタタイプ自動解決版）
+        /// </summary>
+        public bool Exists()
+        {
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
+            return Exists(configPath);
+        }
+
+        /// <summary>
         /// 設定ディレクトリを作成
         /// </summary>
         public void CreateConfigDirectory(string configPath)
         {
             string configDir = Path.GetDirectoryName(configPath);
-            Directory.CreateDirectory(configDir);
+            if (!string.IsNullOrEmpty(configDir))
+            {
+                Directory.CreateDirectory(configDir);
+            }
+        }
+
+        /// <summary>
+        /// 設定ディレクトリを作成（エディタタイプ自動解決版）
+        /// </summary>
+        public void CreateConfigDirectory()
+        {
+            string configDirectory = UnityMcpPathResolver.GetConfigDirectory(_editorType);
+            if (!string.IsNullOrEmpty(configDirectory))
+            {
+                Directory.CreateDirectory(configDirectory);
+            }
         }
 
         /// <summary>
         /// mcp.json設定を読み込み
         /// </summary>
-        public CursorMcpConfig Load(string configPath)
+        public McpConfig Load(string configPath)
         {
             if (!File.Exists(configPath))
             {
-                return new CursorMcpConfig(new Dictionary<string, McpServerConfigData>());
+                return new McpConfig(new Dictionary<string, McpServerConfigData>());
             }
 
             string jsonContent = File.ReadAllText(configPath);
@@ -85,13 +116,22 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            return new CursorMcpConfig(servers);
+            return new McpConfig(servers);
+        }
+
+        /// <summary>
+        /// mcp.json設定を読み込み（エディタタイプ自動解決版）
+        /// </summary>
+        public McpConfig Load()
+        {
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
+            return Load(configPath);
         }
 
         /// <summary>
         /// mcp.json設定を保存
         /// </summary>
-        public void Save(string configPath, CursorMcpConfig config)
+        public void Save(string configPath, McpConfig config)
         {
             Dictionary<string, object> jsonStructure;
             
@@ -120,5 +160,20 @@ namespace io.github.hatayama.uMCP
             string jsonContent = JsonConvert.SerializeObject(jsonStructure, Formatting.Indented);
             File.WriteAllText(configPath, jsonContent);
         }
+
+        /// <summary>
+        /// mcp.json設定を保存（エディタタイプ自動解決版）
+        /// </summary>
+        public void Save(McpConfig config)
+        {
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
+            
+            // ディレクトリが必要な場合は作成
+            CreateConfigDirectory(configPath);
+            
+            Save(configPath, config);
+        }
     }
+
+
 } 

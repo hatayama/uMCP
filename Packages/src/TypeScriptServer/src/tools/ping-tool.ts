@@ -6,7 +6,7 @@ import { ToolResponse } from '../types/tool-types.js';
  * TypeScript側のPingツール
  */
 export class PingTool extends BaseTool {
-  readonly name = 'mcp_ping';
+  readonly name = 'mcp.ping';
   readonly description = 'Unity MCP Server接続テスト用のpingコマンド（TypeScript側のみ）';
   readonly inputSchema = {
     type: 'object',
