@@ -10,8 +10,8 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class CompileSessionState
     {
-        private const string SESSION_KEY_PREFIX = "UnityMCP.CompileRequest.";
-        private const string PENDING_REQUESTS_KEY = "UnityMCP.PendingCompileRequests";
+        private const string SESSION_KEY_PREFIX = "uMCP.CompileRequest.";
+        private const string PENDING_REQUESTS_KEY = "uMCP.PendingCompileRequests";
 
         /// <summary>
         /// 強制再コンパイルリクエスト情報
