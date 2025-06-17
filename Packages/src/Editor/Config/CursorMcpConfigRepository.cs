@@ -175,14 +175,5 @@ namespace io.github.hatayama.uMCP
         }
     }
 
-    /// <summary>
-    /// 後方互換性のためのエイリアス
-    /// </summary>
-    [System.Obsolete("Use McpConfigRepository instead")]
-    public class CursorMcpConfigRepository : McpConfigRepository
-    {
-        public CursorMcpConfigRepository() : base(McpEditorType.Cursor)
-        {
-        }
-    }
+
 } 

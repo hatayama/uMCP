@@ -115,31 +115,5 @@ namespace io.github.hatayama.uMCP
         }
     }
 
-    /// <summary>
-    /// 後方互換性のためのエイリアス
-    /// </summary>
-    [System.Obsolete("Use McpConfigService instead")]
-    public class CursorMcpConfigService : McpConfigService
-    {
-        public CursorMcpConfigService(McpConfigRepository repository) : base(repository, McpEditorType.Cursor)
-        {
-        }
 
-        /// <summary>
-        /// Cursor設定が存在するかチェック
-        /// </summary>
-        public bool IsCursorConfigured()
-        {
-            return IsConfigured();
-        }
-
-        /// <summary>
-        /// Cursor設定を自動設定
-        /// </summary>
-        /// <param name="port">使用するポート番号</param>
-        public void AutoConfigureCursor(int port)
-        {
-            AutoConfigure(port);
-        }
-    }
 } 

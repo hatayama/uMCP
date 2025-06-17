@@ -34,14 +34,5 @@ namespace io.github.hatayama.uMCP
         }
     }
 
-    /// <summary>
-    /// 後方互換性のためのエイリアス
-    /// </summary>
-    [System.Obsolete("Use McpConfig instead")]
-    public class CursorMcpConfig : McpConfig
-    {
-        public CursorMcpConfig(Dictionary<string, McpServerConfigData> mcpServers) : base(mcpServers)
-        {
-        }
-    }
+
 } 
