@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using UnityEditor;
 
 namespace io.github.hatayama.uMCP
 {
@@ -18,6 +19,10 @@ namespace io.github.hatayama.uMCP
 
             McpLogger.LogDebug($"Compile request received: forceRecompile={forceRecompile}");
 
+            // MCP経由のコンパイルであることを示すフラグを設定
+            SessionState.SetBool("uMCP.CompileFromMCP", true);
+            McpLogger.LogInfo("CompileCommand: Set uMCP.CompileFromMCP = true");
+            
             // CompileCheckerを使用してコンパイル実行
             using CompileChecker compileChecker = new CompileChecker();
             CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
@@ -47,7 +52,7 @@ namespace io.github.hatayama.uMCP
                 }).ToArray()
             };
 
-            // 通常のコンパイルでは特別な処理なし
+            // MCP経由コンパイルフラグはアセンブリリロード後にクリアされるため、ここではクリアしない
 
             McpLogger.LogDebug($"Compile completed: Success={result.Success}, Errors={result.ErrorCount}, Warnings={result.WarningCount}");
 

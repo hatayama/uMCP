@@ -10,6 +10,7 @@ namespace io.github.hatayama.uMCP
     {
         private const string SESSION_KEY_SERVER_RUNNING = "uMCP.ServerRunning";
         private const string SESSION_KEY_SERVER_PORT = "uMCP.ServerPort";
+        private const string SESSION_KEY_AFTER_COMPILE = "uMCP.AfterCompile";
         
         private static McpBridgeServer mcpServer;
         
@@ -48,14 +49,15 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void StartServer(int port = McpServerConfig.DEFAULT_PORT)
         {
-            if (mcpServer?.IsRunning == true)
+            // 既存のサーバーを必ず停止する（ポートを解放するため）
+            if (mcpServer != null)
             {
-                McpLogger.LogWarning("MCP Server is already running");
-                return;
+                McpLogger.LogInfo($"Stopping existing server before starting new one...");
+                StopServer();
+                
+                // TCP接続が確実に解放されるよう少し待機
+                System.Threading.Thread.Sleep(200);
             }
-
-            // 既存のサーバーをクリーンアップ
-            StopServer();
 
             mcpServer = new McpBridgeServer();
             mcpServer.StartServer(port);
@@ -90,6 +92,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void OnBeforeAssemblyReload()
         {
+            McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: IsServerRunning={mcpServer?.IsRunning}");
+            
             // サーバーが動作中の場合、状態を保存してサーバーを停止
             if (mcpServer?.IsRunning == true)
             {
@@ -98,6 +102,9 @@ namespace io.github.hatayama.uMCP
                 // SessionState操作を即座に実行（Domain Reload前に確実に保存）
                 SessionState.SetBool(SESSION_KEY_SERVER_RUNNING, true);
                 SessionState.SetInt(SESSION_KEY_SERVER_PORT, portToSave);
+                SessionState.SetBool(SESSION_KEY_AFTER_COMPILE, true); // コンパイル後フラグを設定
+                
+                McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: Saved server state - port={portToSave}");
                 
                 // 通信ログも強制的に保存
                 McpCommunicationLogger.SaveToSessionState();
@@ -123,6 +130,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void OnAfterAssemblyReload()
         {
+            // MCP経由コンパイルフラグをクリア（念のため）
+            SessionState.EraseBool("uMCP.CompileFromMCP");
+            
             // サーバー状態を復旧
             RestoreServerStateIfNeeded();
             
@@ -137,18 +147,69 @@ namespace io.github.hatayama.uMCP
         {
             bool wasRunning = SessionState.GetBool(SESSION_KEY_SERVER_RUNNING, false);
             int savedPort = SessionState.GetInt(SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
+            bool isAfterCompile = SessionState.GetBool(SESSION_KEY_AFTER_COMPILE, false);
+            
+            // サーバーが既に起動している場合（McpEditorWindowで起動済みなど）
+            if (mcpServer?.IsRunning == true)
+            {
+                // コンパイル後フラグだけクリアして終了
+                if (isAfterCompile)
+                {
+                    SessionState.EraseBool(SESSION_KEY_AFTER_COMPILE);
+                    McpLogger.LogInfo("Server already running. Clearing post-compile flag.");
+                }
+                return;
+            }
+            
+            // コンパイル後フラグをクリア
+            if (isAfterCompile)
+            {
+                SessionState.EraseBool(SESSION_KEY_AFTER_COMPILE);
+            }
             
             if (wasRunning && (mcpServer == null || !mcpServer.IsRunning))
             {
-                // アセンブリリロード後、TCP接続の解放を待つため少し長めの遅延を入れる
-                EditorApplication.delayCall += () =>
+                // コンパイル後の場合は即座に再起動（Auto Start Serverの設定に関わらず）
+                if (isAfterCompile)
                 {
-                    // さらに遅延を追加（合計で約200-300ms待機）
+                    McpLogger.LogInfo("Detected post-compile state. Restoring server immediately...");
+                    
+                    // 少しだけ待機してからすぐに再起動（TCP解放のため）
                     EditorApplication.delayCall += () =>
                     {
                         TryRestoreServerWithRetry(savedPort, 0);
                     };
-                };
+                }
+                else
+                {
+                    // Unity起動時など、コンパイル以外の場合
+                    // Auto Start Serverの設定を確認
+                    bool autoStartEnabled = McpEditorSettings.GetAutoStartServer();
+                    
+                    if (autoStartEnabled)
+                    {
+                        McpLogger.LogInfo("Auto Start Server is enabled. Restoring server with delay...");
+                        
+                        // Auto Start Serverがonの場合は従来通りの遅延処理
+                        EditorApplication.delayCall += () =>
+                        {
+                            // さらに遅延を追加（合計で約200-300ms待機）
+                            EditorApplication.delayCall += () =>
+                            {
+                                TryRestoreServerWithRetry(savedPort, 0);
+                            };
+                        };
+                    }
+                    else
+                    {
+                        // Auto Start Serverがoffの場合はサーバーを起動しない
+                        McpLogger.LogInfo("Auto Start Server is disabled. Server will not be restored automatically.");
+                        
+                        // SessionStateをクリア（手動でサーバーを起動するまで待つ）
+                        SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
+                        SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
+                    }
+                }
             }
         }
 
@@ -157,23 +218,20 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void TryRestoreServerWithRetry(int port, int retryCount)
         {
-            const int maxRetries = 5; // リトライ回数を増やす
-            
-            // ポートが使用中の場合は、次に利用可能なポートを探す
-            int availablePort = FindAvailablePort(port);
-            if (availablePort != port)
-            {
-                McpLogger.LogInfo($"Assembly reload recovery: Port {port} is busy, automatically switching to port {availablePort}");
-                port = availablePort;
-            }
+            const int maxRetries = 3;
             
             try
             {
+                // 既存のサーバーインスタンスがある場合は確実に停止
+                if (mcpServer != null)
+                {
+                    mcpServer.Dispose();
+                    mcpServer = null;
+                    System.Threading.Thread.Sleep(200);
+                }
+                
                 mcpServer = new McpBridgeServer();
                 mcpServer.StartServer(port);
-                
-                // 新しいポート番号をSessionStateに保存
-                SessionState.SetInt(SESSION_KEY_SERVER_PORT, port);
                 
                 McpLogger.LogInfo($"Unity MCP Server restored on port {port}");
             }
@@ -186,34 +244,18 @@ namespace io.github.hatayama.uMCP
                 {
                     EditorApplication.delayCall += () =>
                     {
-                        TryRestoreServerWithRetry(port + 1, retryCount + 1); // 次のポートを試す
+                        // ポート番号は変更せず、同じポートで再試行
+                        TryRestoreServerWithRetry(port, retryCount + 1);
                     };
                 }
                 else
                 {
                     // 最終的に失敗した場合はSessionStateをクリア
-                    McpLogger.LogError($"Failed to restore MCP Server after {maxRetries + 1} attempts. Clearing session state.");
+                    McpLogger.LogError($"Failed to restore MCP Server on port {port} after {maxRetries + 1} attempts. Clearing session state.");
                     SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
                     SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
                 }
             }
-        }
-
-        /// <summary>
-        /// 指定されたポート番号から利用可能なポートを探す
-        /// </summary>
-        private static int FindAvailablePort(int startPort)
-        {
-            for (int port = startPort; port <= startPort + 10; port++)
-            {
-                if (!McpBridgeServer.IsPortInUse(port))
-                {
-                    return port;
-                }
-            }
-            
-            // 見つからない場合は元のポートを返す（エラーになるが、ログで分かる）
-            return startPort;
         }
 
         /// <summary>
