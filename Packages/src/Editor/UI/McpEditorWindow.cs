@@ -77,9 +77,27 @@ namespace io.github.hatayama.uMCP
             // ログ更新イベントを購読
             McpCommunicationLogger.OnLogUpdated += Repaint;
             
-            // 自動起動が有効な場合、サーバーを起動
-            if (autoStartServer && !McpServerController.IsServerRunning)
+            // コンパイル後かどうかチェック
+            bool isAfterCompile = SessionState.GetBool("uMCP.AfterCompile", false);
+            
+            // コンパイル後またはAuto Start Serverが有効な場合、サーバーを起動
+            if ((isAfterCompile || autoStartServer) && !McpServerController.IsServerRunning)
             {
+                // コンパイル後の場合、フラグをクリア
+                if (isAfterCompile)
+                {
+                    SessionState.EraseBool("uMCP.AfterCompile");
+                    McpLogger.LogInfo("McpEditorWindow detected post-compile state. Starting server immediately...");
+                    
+                    // 保存されたポート番号を使用
+                    int savedPort = SessionState.GetInt("uMCP.ServerPort", customPort);
+                    if (savedPort != customPort)
+                    {
+                        customPort = savedPort;
+                        McpEditorSettings.SetCustomPort(customPort);
+                    }
+                }
+                
                 StartServerInternal();
             }
         }
@@ -92,11 +110,9 @@ namespace io.github.hatayama.uMCP
             // エディタ選択状態を保存
             SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             
-            // ウィンドウを閉じた時にサーバーを停止
-            if (McpServerController.IsServerRunning)
-            {
-                McpServerController.StopServer();
-            }
+            // サーバーの管理はMcpServerControllerに完全に任せる
+            // ウィンドウを閉じてもサーバーは停止しない（グローバルリソースとして扱う）
+            McpLogger.LogInfo($"McpEditorWindow.OnDisable: Window closing, server will keep running if active");
         }
 
         private void OnGUI()

@@ -135,6 +135,159 @@ npm run start:dev
 ENABLE_PING_TOOL=true npm start
 ```
 
+## Unity側への直接通信テスト
+
+Unity側のMCPサーバーが7400番ポートで起動している場合、直接JSON-RPC通信でコマンドを実行できます。
+
+### コンパイル実行
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"compile","params":{"forceRecompile":false}}' | nc localhost 7400
+```
+
+### Ping送信
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"ping","params":{"message":"test"}}' | nc localhost 7400
+```
+
+### ログ取得
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"getLogs","params":{"logType":"All","maxCount":10}}' | nc localhost 7400
+```
+
+### テスト実行
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"runtests","params":{"filterType":"all","filterValue":"","saveXml":false}}' | nc localhost 7400
+```
+
+### 注意事項
+- Unity側で「Window > Unity MCP > Start Server」を実行してMCPサーバーを起動している必要があります
+- デフォルトポートは7400番です（`McpServerConfig.DEFAULT_PORT`）
+
+## テストスクリプト
+
+Unity側との通信を確認するための各種テストスクリプトです。
+
+### 1. コンパイルテスト (test-compile.js)
+Unity側との通信を確認し、実際にコンパイルを実行するテストスクリプトです。
+
+```bash
+# TypeScriptサーバーディレクトリに移動
+cd Packages/src/TypeScriptServer
+
+# 通常コンパイル
+node test/test-compile.js
+
+# 強制再コンパイル
+node test/test-compile.js --force
+# または
+node test/test-compile.js -f
+
+# ヘルプ表示
+node test/test-compile.js --help
+```
+
+### 2. ログテスト (test-logs.js)
+Unity コンソールのログを取得・表示するテストスクリプトです。
+
+```bash
+# 全ログ10件取得
+node test/test-logs.js
+
+# エラーログのみ取得
+node test/test-logs.js --type Error
+
+# 警告ログ20件取得
+node test/test-logs.js -t Warning -c 20
+
+# ヘルプ表示
+node test/test-logs.js --help
+```
+
+### 3. 全ログ統計テスト (test-all-logs.js)
+大量のログを取得し、統計情報を表示するテストスクリプトです。
+
+```bash
+# 全ログ100件取得+統計表示
+node test/test-all-logs.js
+
+# 全ログ200件取得
+node test/test-all-logs.js -c 200
+
+# 統計情報のみ表示
+node test/test-all-logs.js --stats
+
+# ヘルプ表示
+node test/test-all-logs.js --help
+```
+
+### 4. 接続テスト (test-unity-connection.js)
+Unity側との基本的な接続・通信をテストするスクリプトです。
+
+```bash
+# 全機能テスト（ping + compile + logs）
+node test/test-unity-connection.js
+
+# pingテストのみ実行
+node test/test-unity-connection.js --quick
+
+# 詳細出力で実行
+node test/test-unity-connection.js --verbose
+
+# ヘルプ表示
+node test/test-unity-connection.js --help
+```
+
+### 実行例
+
+**コンパイルテスト:**
+```
+=== Unity Compile Test ===
+Force Recompile: OFF
+
+1. Connecting to Unity...
+✓ Connected successfully!
+
+2. Executing compile...
+✓ Compile completed!
+Success: true
+Errors: 0
+Warnings: 0
+Completed at: 2025-06-18T23:20:14.775Z
+
+3. Disconnecting...
+✓ Disconnected
+```
+
+**接続テスト（クイック）:**
+```
+=== Unity Connection Test ===
+Verbose: OFF
+Quick Test: ON
+
+1. Connecting to Unity...
+✓ Connected successfully!
+
+2. Testing ping...
+✓ Ping response: Unity MCP Bridge received: Hello from connection test!
+
+✓ Quick test completed successfully!
+
+5. Disconnecting...
+✓ Disconnected
+```
+
+### 前提条件
+- Unity側でMCPサーバーが起動済み（Window > Unity MCP > Start Server）
+- Unity側がlocalhostの7400番ポートで待機中
+
+### 機能
+- Unity側への接続テスト
+- 通常コンパイル・強制再コンパイルの実行
+- ログ取得（タイプ別フィルタリング、統計表示）
+- コマンドライン引数による動作制御
+- エラー/警告の詳細取得と表示
+- 自動切断
+
 ## 新しいツールの追加方法
 
 ### 1. ツールクラスの作成

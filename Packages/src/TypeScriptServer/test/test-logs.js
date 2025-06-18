@@ -1,64 +1,85 @@
-import { UnityClient } from './dist/unity-client.js';
+import { DirectUnityClient } from './unity-test-client.js';
+
+function showHelp() {
+    console.log('=== Unity Logs Test ===');
+    console.log('');
+    console.log('Usage:');
+    console.log('  node test/test-logs.js [options]');
+    console.log('');
+    console.log('Options:');
+    console.log('  --type, -t <type>  ログタイプを指定 (All, Error, Warning, Log)');
+    console.log('  --count, -c <num>  取得する最大ログ数 (default: 10)');
+    console.log('  --help, -h         このヘルプを表示');
+    console.log('');
+    console.log('Examples:');
+    console.log('  node test/test-logs.js                    # 全ログ10件取得');
+    console.log('  node test/test-logs.js --type Error       # エラーログのみ取得');
+    console.log('  node test/test-logs.js -t Warning -c 20   # 警告ログ20件取得');
+    console.log('');
+}
 
 async function testGetLogs() {
-    console.log('=== Unity Logs Test ===');
+    // コマンドライン引数の解析
+    const args = process.argv.slice(2);
     
-    const client = new UnityClient();
+    // ヘルプ表示
+    if (args.includes('--help') || args.includes('-h')) {
+        showHelp();
+        return;
+    }
+    
+    // ログタイプの取得
+    let logType = 'All';
+    const typeIndex = args.findIndex(arg => arg === '--type' || arg === '-t');
+    if (typeIndex !== -1 && args[typeIndex + 1]) {
+        logType = args[typeIndex + 1];
+    }
+    
+    // ログ数の取得
+    let maxCount = 10;
+    const countIndex = args.findIndex(arg => arg === '--count' || arg === '-c');
+    if (countIndex !== -1 && args[countIndex + 1]) {
+        maxCount = parseInt(args[countIndex + 1], 10) || 10;
+    }
+    
+    console.log('=== Unity Logs Test ===');
+    console.log(`Log Type: ${logType}`);
+    console.log(`Max Count: ${maxCount}`);
+    
+    const client = new DirectUnityClient();
     
     try {
-        console.log('1. Connecting to Unity...');
+        console.log('\n1. Connecting to Unity...');
         await client.connect();
         console.log('✓ Connected successfully!');
         
-        // 全ログを取得
-        console.log('\n2. Getting All logs (max 10)...');
-        const allLogs = await client.getLogs('All', 10);
-        console.log(`✓ Found ${allLogs.logs.length} logs (total: ${allLogs.totalCount})`);
+        console.log(`\n2. Getting ${logType} logs (max ${maxCount})...`);
+        const logs = await client.getLogs(logType, maxCount);
+        console.log(`✓ Found ${logs.logs.length} logs (total: ${logs.totalCount})`);
         
-        if (allLogs.logs.length > 0) {
-            console.log('\n--- ALL LOGS ---');
-            allLogs.logs.forEach((log, index) => {
+        if (logs.logs.length > 0) {
+            console.log(`\n--- ${logType.toUpperCase()} LOGS ---`);
+            logs.logs.forEach((log, index) => {
                 console.log(`${index + 1}. [${log.timestamp}] ${log.type}: ${log.message}`);
                 if (log.file && log.file !== './Runtime/Export/Debug/Debug.bindings.h') {
                     console.log(`   File: ${log.file}`);
                 }
-            });
-        }
-        
-        // エラーログのみ取得
-        console.log('\n3. Getting Error logs only...');
-        const errorLogs = await client.getLogs('Error', 5);
-        console.log(`✓ Found ${errorLogs.logs.length} error logs`);
-        
-        if (errorLogs.logs.length > 0) {
-            console.log('\n--- ERROR LOGS ---');
-            errorLogs.logs.forEach((log, index) => {
-                console.log(`${index + 1}. [${log.timestamp}] ${log.message}`);
-                if (log.file && log.file !== './Runtime/Export/Debug/Debug.bindings.h') {
-                    console.log(`   File: ${log.file}`);
+                if (log.stackTrace) {
+                    const stackLines = log.stackTrace.split('\n').slice(0, 3);
+                    stackLines.forEach(line => {
+                        if (line.trim()) console.log(`   Stack: ${line.trim()}`);
+                    });
                 }
+                console.log('');
             });
-        }
-        
-        // 警告ログのみ取得
-        console.log('\n4. Getting Warning logs only...');
-        const warningLogs = await client.getLogs('Warning', 5);
-        console.log(`✓ Found ${warningLogs.logs.length} warning logs`);
-        
-        if (warningLogs.logs.length > 0) {
-            console.log('\n--- WARNING LOGS ---');
-            warningLogs.logs.forEach((log, index) => {
-                console.log(`${index + 1}. [${log.timestamp}] ${log.message}`);
-                if (log.file && log.file !== './Runtime/Export/Debug/Debug.bindings.h') {
-                    console.log(`   File: ${log.file}`);
-                }
-            });
+        } else {
+            console.log(`No ${logType} logs found.`);
         }
         
     } catch (error) {
         console.error('✗ Get logs failed:', error.message);
     } finally {
-        console.log('\n5. Disconnecting...');
+        console.log('\n3. Disconnecting...');
         client.disconnect();
         console.log('✓ Disconnected');
     }
