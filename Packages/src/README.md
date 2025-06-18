@@ -1,6 +1,9 @@
 [![Unity](https://img.shields.io/badge/Unity-2020.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 
+# 注意
+**またpreview版です。動作が安定していません**
+
 # uMCP
 
 Model Context Protocolを使用し、UnityエディターをLLMツールに接続します。
