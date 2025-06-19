@@ -1,10 +1,10 @@
 import * as net from 'net';
 
 /**
- * Unity TCP/IP クライアント（テスト用直接通信版）
+ * Unity TCP/IP クライアント（デバッグ用直接通信版）
  * bundleされたファイルに依存せずに直接TCP/IP通信を行う
  */
-export class DirectUnityClient {
+export class UnityDebugClient {
     constructor() {
         this.port = parseInt(process.env.UNITY_TCP_PORT || '7400', 10);
         this.host = 'localhost';

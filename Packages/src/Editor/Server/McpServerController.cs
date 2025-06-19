@@ -35,10 +35,10 @@ namespace io.github.hatayama.uMCP
             EditorApplication.quitting += OnEditorQuitting;
             
             // アセンブリリロード前の処理
-            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+            // AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             
             // アセンブリリロード後の処理
-            AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+            // AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
             
             // 初期化時にサーバー状態を復旧
             RestoreServerStateIfNeeded();

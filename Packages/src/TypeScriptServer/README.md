@@ -163,78 +163,115 @@ echo '{"jsonrpc":"2.0","id":1,"method":"runtests","params":{"filterType":"all","
 - Unity側で「Window > Unity MCP > Start Server」を実行してMCPサーバーを起動している必要があります
 - デフォルトポートは7400番です（`McpServerConfig.DEFAULT_PORT`）
 
-## テストスクリプト
+## デバッグスクリプト
 
-Unity側との通信を確認するための各種テストスクリプトです。
+Unity側との通信を確認するための各種デバッグスクリプトです。
 
-### 1. コンパイルテスト (test-compile.js)
-Unity側との通信を確認し、実際にコンパイルを実行するテストスクリプトです。
+### npmスクリプト経由での実行（推奨）
+
+```bash
+# TypeScriptサーバーディレクトリに移動
+cd Packages/src/TypeScriptServer
+
+# コンパイル実行
+npm run debug:compile
+
+# 強制再コンパイル
+npm run debug:compile -- --force
+
+# ログ取得
+npm run debug:logs
+
+# 接続確認
+npm run debug:connection
+
+# 全ログ取得
+npm run debug:all-logs
+```
+
+### 直接実行
 
 ```bash
 # TypeScriptサーバーディレクトリに移動
 cd Packages/src/TypeScriptServer
 
 # 通常コンパイル
-node test/test-compile.js
+node debug/compile-check.js
 
 # 強制再コンパイル
-node test/test-compile.js --force
+node debug/compile-check.js --force
 # または
-node test/test-compile.js -f
+node debug/compile-check.js -f
 
 # ヘルプ表示
-node test/test-compile.js --help
+node debug/compile-check.js --help
 ```
 
-### 2. ログテスト (test-logs.js)
-Unity コンソールのログを取得・表示するテストスクリプトです。
+### 利用可能なデバッグスクリプト
+
+#### 1. コンパイル確認 (compile-check.js)
+Unity側との通信を確認し、実際にコンパイルを実行します。
+
+```bash
+# 通常コンパイル
+node debug/compile-check.js
+
+# 強制再コンパイル
+node debug/compile-check.js --force
+
+# ヘルプ表示
+node debug/compile-check.js --help
+```
+
+#### 2. ログ取得 (logs-fetch.js)
+Unity コンソールのログを取得・表示します。
 
 ```bash
 # 全ログ10件取得
-node test/test-logs.js
+node debug/logs-fetch.js
 
 # エラーログのみ取得
-node test/test-logs.js --type Error
+node debug/logs-fetch.js --type Error
 
 # 警告ログ20件取得
-node test/test-logs.js -t Warning -c 20
+node debug/logs-fetch.js -t Warning -c 20
 
 # ヘルプ表示
-node test/test-logs.js --help
+node debug/logs-fetch.js --help
 ```
 
-### 3. 全ログ統計テスト (test-all-logs.js)
-大量のログを取得し、統計情報を表示するテストスクリプトです。
-
-```bash
-# 全ログ100件取得+統計表示
-node test/test-all-logs.js
-
-# 全ログ200件取得
-node test/test-all-logs.js -c 200
-
-# 統計情報のみ表示
-node test/test-all-logs.js --stats
-
-# ヘルプ表示
-node test/test-all-logs.js --help
-```
-
-### 4. 接続テスト (test-unity-connection.js)
-Unity側との基本的な接続・通信をテストするスクリプトです。
+#### 3. 接続確認 (connection-check.js)
+Unity側との基本的な接続・通信をテストします。
 
 ```bash
 # 全機能テスト（ping + compile + logs）
-node test/test-unity-connection.js
+node debug/connection-check.js
 
 # pingテストのみ実行
-node test/test-unity-connection.js --quick
+node debug/connection-check.js --quick
 
 # 詳細出力で実行
-node test/test-unity-connection.js --verbose
+node debug/connection-check.js --verbose
 
 # ヘルプ表示
-node test/test-unity-connection.js --help
+node debug/connection-check.js --help
+```
+
+#### 4. 全ログ取得 (all-logs-fetch.js)
+大量のログを取得し、統計情報を表示します。
+
+```bash
+# 全ログ100件取得+統計表示
+node debug/all-logs-fetch.js
+
+# 全ログ200件取得
+node debug/all-logs-fetch.js -c 200
+
+# 統計情報のみ表示
+node debug/all-logs-fetch.js --stats
+
+# ヘルプ表示
+node debug/all-logs-fetch.js --help
 ```
 
 ### 実行例

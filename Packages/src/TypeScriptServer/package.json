@@ -14,6 +14,10 @@
     "start": "node dist/server.bundle.js",
     "start:dev": "NODE_ENV=development node dist/server.bundle.js",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "debug:compile": "node debug/compile-check.js",
+    "debug:logs": "node debug/logs-fetch.js",
+    "debug:connection": "node debug/connection-check.js",
+    "debug:all-logs": "node debug/all-logs-fetch.js",
     "prepublishOnly": "npm run build",
     "postinstall": "npm run build"
   },

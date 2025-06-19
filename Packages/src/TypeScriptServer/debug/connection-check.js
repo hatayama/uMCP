@@ -1,10 +1,10 @@
-import { DirectUnityClient } from './unity-test-client.js';
+import { UnityDebugClient } from './unity-debug-client.js';
 
 function showHelp() {
     console.log('=== Unity Connection Test ===');
     console.log('');
     console.log('Usage:');
-    console.log('  node test/test-unity-connection.js [options]');
+    console.log('  node debug/connection-check.js [options]');
     console.log('');
     console.log('Options:');
     console.log('  --verbose, -v      詳細出力を表示');
@@ -12,9 +12,9 @@ function showHelp() {
     console.log('  --help, -h         このヘルプを表示');
     console.log('');
     console.log('Examples:');
-    console.log('  node test/test-unity-connection.js           # 全機能テスト');
-    console.log('  node test/test-unity-connection.js --quick   # pingテストのみ');
-    console.log('  node test/test-unity-connection.js -v        # 詳細出力');
+    console.log('  node debug/connection-check.js           # 全機能テスト');
+    console.log('  node debug/connection-check.js --quick   # pingテストのみ');
+    console.log('  node debug/connection-check.js -v        # 詳細出力');
     console.log('');
 }
 
@@ -35,7 +35,7 @@ async function testUnityConnection() {
     console.log(`Verbose: ${verbose ? 'ON' : 'OFF'}`);
     console.log(`Quick Test: ${quickTest ? 'ON' : 'OFF'}`);
     
-    const client = new DirectUnityClient();
+    const client = new UnityDebugClient();
     
     try {
         console.log('\n1. Connecting to Unity...');
