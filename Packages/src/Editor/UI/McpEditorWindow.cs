@@ -13,9 +13,8 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class McpEditorWindow : EditorWindow
     {
-        // SessionState用の定数
-        private const string SESSION_KEY_SELECTED_EDITOR_TYPE = "uMCP.SelectedEditorType";
-        private const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
+        // ScriptableSingleton用のUI設定
+        private McpEditorWindowData windowData;
         
         // UI状態
         private int customPort = 7400;
@@ -65,39 +64,20 @@ namespace io.github.hatayama.uMCP
             showDeveloperTools = settings.showDeveloperTools;
             enableMcpLogs = settings.enableMcpLogs;
             
-            // エディタ選択状態を復元
-            selectedEditorType = (McpEditorType)SessionState.GetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
+            // UI設定をScriptableSingletonから復元
+            windowData = McpEditorWindowData.instance;
+            selectedEditorType = windowData.SelectedEditorType;
+            communicationLogHeight = windowData.CommunicationLogHeight;
             
             // McpLoggerの設定を同期
             McpLogger.EnableDebugLog = enableMcpLogs;
             
-            // 通信ログエリアの高さを復元（SessionStateから）
-            communicationLogHeight = SessionState.GetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, 300f);
-            
             // ログ更新イベントを購読
             McpCommunicationLogger.OnLogUpdated += Repaint;
             
-            // コンパイル後かどうかチェック
-            bool isAfterCompile = SessionState.GetBool("uMCP.AfterCompile", false);
-            
-            // コンパイル後またはAuto Start Serverが有効な場合、サーバーを起動
-            if ((isAfterCompile || autoStartServer) && !McpServerController.IsServerRunning)
+            // Auto Start Serverが有効な場合、サーバーを起動
+            if (autoStartServer && !McpServerController.IsServerRunning)
             {
-                // コンパイル後の場合、フラグをクリア
-                if (isAfterCompile)
-                {
-                    SessionState.EraseBool("uMCP.AfterCompile");
-                    McpLogger.LogInfo("McpEditorWindow detected post-compile state. Starting server immediately...");
-                    
-                    // 保存されたポート番号を使用
-                    int savedPort = SessionState.GetInt("uMCP.ServerPort", customPort);
-                    if (savedPort != customPort)
-                    {
-                        customPort = savedPort;
-                        McpEditorSettings.SetCustomPort(customPort);
-                    }
-                }
-                
                 StartServerInternal();
             }
         }
@@ -107,8 +87,12 @@ namespace io.github.hatayama.uMCP
             // ログ更新イベントの購読を解除
             McpCommunicationLogger.OnLogUpdated -= Repaint;
             
-            // エディタ選択状態を保存
-            SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+            // UI設定をScriptableSingletonに保存
+            if (windowData != null)
+            {
+                windowData.SelectedEditorType = selectedEditorType;
+                windowData.CommunicationLogHeight = communicationLogHeight;
+            }
             
             // サーバーの管理はMcpServerControllerに完全に任せる
             // ウィンドウを閉じてもサーバーは停止しない（グローバルリソースとして扱う）
@@ -329,8 +313,8 @@ namespace io.github.hatayama.uMCP
             selectedEditorType = (McpEditorType)EditorGUILayout.EnumPopup("Target:", selectedEditorType);
             if (EditorGUI.EndChangeCheck())
             {
-                // 選択が変更されたらセッションに保存
-                SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+                // 選択が変更されたらScriptableSingletonに保存
+                windowData.SelectedEditorType = selectedEditorType;
             }
             
             bool isServerRunning = McpServerController.IsServerRunning;
@@ -487,7 +471,7 @@ namespace io.github.hatayama.uMCP
             {
                 if (GUILayout.Button("クリア", GUILayout.Width(60)))
                 {
-                    McpCommunicationLogger.ClearLogs();
+                    _ = McpCommunicationLogger.ClearLogsAsync();
                 }
             }
             
@@ -702,8 +686,8 @@ namespace io.github.hatayama.uMCP
                     // 最小・最大高さを制限
                     communicationLogHeight = Mathf.Clamp(communicationLogHeight, 100f, 800f);
                     
-                    // SessionStateに保存
-                    SessionState.SetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, communicationLogHeight);
+                    // ScriptableSingletonに保存
+                    windowData.CommunicationLogHeight = communicationLogHeight;
                     
                     Event.current.Use();
                     Repaint();

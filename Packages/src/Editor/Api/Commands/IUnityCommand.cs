@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
@@ -19,7 +20,8 @@ namespace io.github.hatayama.uMCP
         /// コマンドを実行する
         /// </summary>
         /// <param name="paramsToken">パラメータのJSONトークン</param>
+        /// <param name="cancellationToken">キャンセレーショントークン</param>
         /// <returns>実行結果</returns>
-        Task<object> ExecuteAsync(JToken paramsToken);
+        Task<object> ExecuteAsync(JToken paramsToken, CancellationToken cancellationToken = default);
     }
 } 

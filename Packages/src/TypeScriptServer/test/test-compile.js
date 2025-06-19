@@ -36,6 +36,14 @@ class DirectUnityClient {
             throw new Error('Unity MCP Bridge is not connected');
         }
 
+        // Step 1: Start compile request
+        const compileRequestId = await this.sendCompileRequest(forceRecompile);
+        
+        // Step 2: Poll for result
+        return await this.pollCompileResult(compileRequestId);
+    }
+
+    async sendCompileRequest(forceRecompile = false) {
         return new Promise((resolve, reject) => {
             const requestId = Date.now();
             const request = JSON.stringify({
@@ -50,20 +58,84 @@ class DirectUnityClient {
             this.socket.write(request + '\n');
 
             const timeout = setTimeout(() => {
-                reject(new Error('Unity compile timeout'));
-            }, 30000);
+                reject(new Error('Unity compile request timeout'));
+            }, 10000);
 
             this.socket.once('data', (data) => {
                 clearTimeout(timeout);
                 try {
                     const response = JSON.parse(data.toString());
                     if (response.error) {
-                        reject(new Error(`Unity compile error: ${response.error.message}`));
+                        reject(new Error(`Unity compile request error: ${response.error.message}`));
+                    } else if (response.result && response.result.status === 'accepted') {
+                        resolve(response.result.requestId);
+                    } else {
+                        reject(new Error('Invalid compile request response from Unity'));
+                    }
+                } catch (error) {
+                    reject(new Error('Invalid compile request response from Unity'));
+                }
+            });
+        });
+    }
+
+    async pollCompileResult(requestId, maxAttempts = 30, intervalMs = 1000) {
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                const result = await this.getCompileResult(requestId);
+                
+                if (result.status === 'completed') {
+                    return result.result;
+                } else if (result.status === 'failed') {
+                    throw new Error(`Compile failed: ${result.message || 'Unknown error'}`);
+                } else if (result.status === 'not_found') {
+                    throw new Error(`Compile request not found: ${requestId}`);
+                }
+                
+                // Status is 'pending', wait and retry
+                if (attempt < maxAttempts - 1) {
+                    await new Promise(resolve => setTimeout(resolve, intervalMs));
+                }
+            } catch (error) {
+                if (attempt === maxAttempts - 1) {
+                    throw error;
+                }
+                await new Promise(resolve => setTimeout(resolve, intervalMs));
+            }
+        }
+        
+        throw new Error(`Compile result polling timeout after ${maxAttempts} attempts`);
+    }
+
+    async getCompileResult(requestId) {
+        return new Promise((resolve, reject) => {
+            const id = Date.now();
+            const request = JSON.stringify({
+                jsonrpc: '2.0',
+                id: id,
+                method: 'getCompileResult',
+                params: {
+                    requestId: requestId
+                }
+            });
+
+            this.socket.write(request + '\n');
+
+            const timeout = setTimeout(() => {
+                reject(new Error('Unity getCompileResult timeout'));
+            }, 5000);
+
+            this.socket.once('data', (data) => {
+                clearTimeout(timeout);
+                try {
+                    const response = JSON.parse(data.toString());
+                    if (response.error) {
+                        reject(new Error(`Unity getCompileResult error: ${response.error.message}`));
                     } else {
                         resolve(response.result);
                     }
                 } catch (error) {
-                    reject(new Error('Invalid compile response from Unity'));
+                    reject(new Error('Invalid getCompileResult response from Unity'));
                 }
             });
         });

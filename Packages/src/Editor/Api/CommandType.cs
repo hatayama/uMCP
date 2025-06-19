@@ -9,7 +9,8 @@ namespace io.github.hatayama.uMCP
         Compile,
         GetLogs,
         RunTests,
-        GetVersion
+        GetVersion,
+        GetCompileResult
     }
 
     /// <summary>

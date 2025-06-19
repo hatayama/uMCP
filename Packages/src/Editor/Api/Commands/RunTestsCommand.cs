@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor.TestTools.TestRunner.Api;
@@ -16,7 +17,7 @@ namespace io.github.hatayama.uMCP
     {
         public CommandType CommandType => CommandType.RunTests;
 
-        public async Task<object> ExecuteAsync(JToken paramsToken)
+        public async Task<object> ExecuteAsync(JToken paramsToken, CancellationToken cancellationToken = default)
         {
             // パラメータを解析
             TestExecutionParameters parameters = ParseParameters(paramsToken);

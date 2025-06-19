@@ -206,6 +206,11 @@ namespace io.github.hatayama.uMCP
                     // サーバー停止時の正常な例外
                     break;
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // キャンセレーション時の正常な例外
+                    break;
+                }
                 catch (Exception ex)
                 {
                     if (!cancellationToken.IsCancellationRequested)
@@ -214,21 +219,59 @@ namespace io.github.hatayama.uMCP
                         McpLogger.LogError(errorMessage);
                         OnError?.Invoke(errorMessage);
                     }
+                    else
+                    {
+                        // キャンセレーション要求があった場合は正常終了
+                        break;
+                    }
                 }
             }
         }
 
         /// <summary>
         /// TcpListenerからクライアントを非同期で受け付ける
+        /// Unity/.NET Frameworkでの安全な実装
         /// </summary>
         private async Task<TcpClient> AcceptTcpClientAsync(TcpListener listener, CancellationToken cancellationToken)
         {
+            // Unity環境でのCancellationToken問題を回避するため、
+            // よりシンプルな実装に変更
+            
             try
             {
-                return await Task.Run(() => listener.AcceptTcpClient(), cancellationToken);
+                // キャンセル要求があればすぐに戻る
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return null;
+                }
+
+                // Task.Runを使って非同期化（Unity環境でより安全）
+                return await Task.Run(() =>
+                {
+                    try
+                    {
+                        return listener.AcceptTcpClient();
+                    }
+                    catch (Exception ex)
+                    {
+                        // キャンセル要求中の例外はnullを返す
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            McpLogger.LogDebug("AcceptTcpClient cancelled");
+                            return null;
+                        }
+                        throw;
+                    }
+                }, cancellationToken);
             }
             catch (OperationCanceledException)
             {
+                McpLogger.LogDebug("AcceptTcpClientAsync was cancelled");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogDebug($"AcceptTcpClientAsync exception: {ex.Message}");
                 return null;
             }
         }
@@ -281,12 +324,21 @@ namespace io.github.hatayama.uMCP
                             OnJsonRpcReceived?.Invoke(clientEndpoint, request);
                             
                             // JSON-RPC処理とレスポンス送信
-                            string response = await JsonRpcProcessor.ProcessRequest(request);
+                            McpLogger.LogDebug("Starting JSON-RPC processing...");
+                            string response = await JsonRpcProcessor.ProcessRequest(request, cancellationToken);
+                            McpLogger.LogDebug($"JSON-RPC processing completed, sending response ({response.Length} bytes)");
+                            
                             byte[] responseBytes = Encoding.UTF8.GetBytes(response);
                             await stream.WriteAsync(responseBytes, 0, responseBytes.Length, cancellationToken);
+                            await stream.FlushAsync(cancellationToken);
+                            McpLogger.LogDebug("Response sent and flushed successfully");
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // キャンセレーション時の正常な例外
             }
             catch (Exception ex)
             {

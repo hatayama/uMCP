@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -13,50 +14,35 @@ namespace io.github.hatayama.uMCP
     {
         public CommandType CommandType => CommandType.Compile;
 
-        public async Task<object> ExecuteAsync(JToken paramsToken)
+        public async Task<object> ExecuteAsync(JToken paramsToken, CancellationToken cancellationToken = default)
         {
             bool forceRecompile = paramsToken?["forceRecompile"]?.ToObject<bool>() ?? false;
 
-            McpLogger.LogDebug($"Compile request received: forceRecompile={forceRecompile}");
+            McpLogger.LogDebug($"Compile request received (Two-Phase): forceRecompile={forceRecompile}");
 
-            // MCP経由のコンパイルであることを示すフラグを設定
-            SessionState.SetBool("uMCP.CompileFromMCP", true);
-            McpLogger.LogInfo("CompileCommand: Set uMCP.CompileFromMCP = true");
+            // 一意のリクエストIDを生成
+            string requestId = System.Guid.NewGuid().ToString();
+
+            // MCP経由のコンパイル要求をScriptableSingletonに保存
+            var compileData = McpCompileData.instance;
+            compileData.CompileFromMcp = true;
+            compileData.AddCompileRequest(requestId, forceRecompile, "MCP-Client");
             
-            // CompileCheckerを使用してコンパイル実行
-            using CompileChecker compileChecker = new CompileChecker();
-            CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
+            McpLogger.LogInfo($"CompileCommand: Added compile request {requestId}, triggering AssetDatabase.Refresh()");
 
-            // レスポンス用のオブジェクトを作成
-            object response = new
+            // AssetDatabase.Refresh()を実行（これによりDomain Reloadが発生）
+            AssetDatabase.Refresh();
+
+            // 即座に受付応答を返す（Domain Reload前に）
+            object acceptedResponse = new
             {
-                success = result.Success,
-                errorCount = result.ErrorCount,
-                warningCount = result.WarningCount,
-                completedAt = result.CompletedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                errors = result.Errors.Select(e => new
-                {
-                    message = e.message,
-                    file = e.file,
-                    line = e.line,
-                    column = e.column,
-                    type = e.type.ToString()
-                }).ToArray(),
-                warnings = result.Warnings.Select(w => new
-                {
-                    message = w.message,
-                    file = w.file,
-                    line = w.line,
-                    column = w.column,
-                    type = w.type.ToString()
-                }).ToArray()
+                status = "accepted",
+                requestId = requestId,
+                message = "Compile request accepted. Use getCompileResult to check status."
             };
 
-            // MCP経由コンパイルフラグはアセンブリリロード後にクリアされるため、ここではクリアしない
-
-            McpLogger.LogDebug($"Compile completed: Success={result.Success}, Errors={result.ErrorCount}, Warnings={result.WarningCount}");
-
-            return response;
+            McpLogger.LogDebug($"Returning accepted response for request: {requestId}");
+            return acceptedResponse;
         }
     }
 }

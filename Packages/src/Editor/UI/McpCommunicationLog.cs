@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using Newtonsoft.Json;
@@ -10,7 +12,7 @@ namespace io.github.hatayama.uMCP
     /// MCP通信ログのエントリー
     /// Request/Responseがセットになったログ情報
     /// </summary>
-    public record McpCommunicationLogEntry
+    public class McpCommunicationLogEntry
     {
         public readonly string CommandName;
         public readonly DateTime Timestamp;
@@ -34,42 +36,47 @@ namespace io.github.hatayama.uMCP
 
     /// <summary>
     /// MCP通信ログの管理クラス
+    /// ScriptableSingletonで永続化を行う
     /// </summary>
     public static class McpCommunicationLogger
     {
-        private const string LOGS_SESSION_KEY = "uMCP.CommunicationLogs";
-        private const string PENDING_REQUESTS_SESSION_KEY = "uMCP.PendingRequests";
-
         private static List<McpCommunicationLogEntry> _logs;
-        private static Dictionary<string, PendingRequest> _pendingRequests;
+        private static Dictionary<string, PendingRequestInfo> _pendingRequests;
 
         /// <summary>
         /// ログ更新時のイベント（UI更新用）
         /// </summary>
         public static event System.Action OnLogUpdated;
 
-        /// <summary>
-        /// 静的コンストラクタ（Domain Reload後に自動実行）
-        /// </summary>
-        static McpCommunicationLogger()
-        {
-            LoadFromSessionState();
-        }
 
         /// <summary>
-        /// 保留中のリクエスト情報
+        /// ScriptableSingletonからデータを復元
         /// </summary>
-        private record PendingRequest
+        private static void LoadFromScriptableSingleton()
         {
-            public readonly string CommandName;
-            public readonly DateTime Timestamp;
-            public readonly string RequestJson;
-
-            public PendingRequest(string commandName, DateTime timestamp, string requestJson)
+            try
             {
-                CommandName = commandName;
-                Timestamp = timestamp;
-                RequestJson = requestJson;
+                var logData = McpCommunicationLogData.instance;
+                
+                // ログの復元
+                _logs = logData.GetLogs();
+                
+                // 保留中リクエストの復元
+                _pendingRequests = new Dictionary<string, PendingRequestInfo>();
+                foreach (var pending in logData.GetPendingRequests())
+                {
+                    if (!string.IsNullOrEmpty(pending.requestId))
+                    {
+                        _pendingRequests[pending.requestId] = pending;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                // 初期化失敗時はデフォルト値で初期化
+                _logs = new List<McpCommunicationLogEntry>();
+                _pendingRequests = new Dictionary<string, PendingRequestInfo>();
+                McpLogger.LogError($"Failed to load from ScriptableSingleton: {ex.Message}");
             }
         }
 
@@ -78,175 +85,181 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static IReadOnlyList<McpCommunicationLogEntry> GetAllLogs()
         {
+            EnsureInitialized();
             return _logs.AsReadOnly();
         }
 
         /// <summary>
         /// リクエストを記録（レスポンス待ち状態）
         /// </summary>
-        public static async void LogRequest(string jsonRequest)
+        public static async Task LogRequestAsync(string requestId, string commandName, string requestJson, CancellationToken cancellationToken = default)
         {
-            McpLogger.LogDebug($"LogRequest called: {jsonRequest}");
+            EnsureInitialized();
+            
+            var logData = McpCommunicationLogData.instance;
+            await logData.AddPendingRequestAsync(requestId, commandName, requestJson, cancellationToken);
+            
+            var pendingRequest = new PendingRequestInfo(requestId, commandName, requestJson);
+            _pendingRequests[requestId] = pendingRequest;
+        }
 
-            JObject request = JObject.Parse(jsonRequest);
-            string method = request["method"]?.ToString() ?? "unknown";
-            string id = request["id"]?.ToString() ?? "unknown";
-
-            McpLogger.LogDebug($"Storing request with ID: '{id}' (Type: {id.GetType().Name}), Method: {method}");
-
-            PendingRequest pendingRequest = new(method, DateTime.Now, jsonRequest);
-
-            _pendingRequests[id] = pendingRequest;
-
-            // メインスレッドに切り替えてSessionState保存とUI更新
-            await MainThreadSwitcher.SwitchToMainThread();
-            SaveToSessionState();
+        /// <summary>
+        /// レスポンスを記録（リクエストと組み合わせてログエントリー作成）
+        /// </summary>
+        public static async Task LogResponseAsync(string requestId, string responseJson, bool isError = false, CancellationToken cancellationToken = default)
+        {
+            EnsureInitialized();
+            
+            var logData = McpCommunicationLogData.instance;
+            await logData.CompletePendingRequestAsync(requestId, responseJson, isError, cancellationToken);
+            
+            // ローカルの保留中リクエストからも削除
+            if (_pendingRequests.ContainsKey(requestId))
+            {
+                _pendingRequests.Remove(requestId);
+            }
+            
+            // ローカルログを再読み込み
+            _logs = logData.GetLogs();
+            
             OnLogUpdated?.Invoke();
-
-            McpLogger.LogDebug($"Request logged - Method: {method}, ID: {id}");
         }
 
         /// <summary>
-        /// レスポンスを記録（リクエストとセットにしてログに追加）
+        /// 直接ログエントリーを追加（リクエスト・レスポンスが同時にある場合）
         /// </summary>
-        public static async void LogResponse(string jsonResponse)
+        public static async Task LogEntryAsync(string commandName, string requestJson, string responseJson, bool isError = false, CancellationToken cancellationToken = default)
         {
-            McpLogger.LogDebug($"LogResponse called: {jsonResponse}");
-
-            JObject response = JObject.Parse(jsonResponse);
-            string id = response["id"]?.ToString() ?? "unknown";
-
-            McpLogger.LogDebug($"Looking for request with ID: '{id}' (Type: {id.GetType().Name})");
-            McpLogger.LogDebug($"Pending requests count: {_pendingRequests.Count}");
-            foreach (var kvp in _pendingRequests)
-            {
-                McpLogger.LogDebug($"- Pending ID: '{kvp.Key}' (Type: {kvp.Key.GetType().Name}), Method: {kvp.Value.CommandName}");
-            }
-
-            if (_pendingRequests.TryGetValue(id, out PendingRequest pendingRequest))
-            {
-                bool isError = response["error"] != null;
-
-                // 既存のログがある場合は全て閉じる（新しいログを追加する前に）
-                foreach (McpCommunicationLogEntry existingLog in _logs)
-                {
-                    existingLog.IsExpanded = false;
-                }
-
-                // 新しいログは閉じた状態で作成
-                McpCommunicationLogEntry logEntry = new(
-                    pendingRequest.CommandName,
-                    pendingRequest.Timestamp,
-                    pendingRequest.RequestJson,
-                    jsonResponse,
-                    isError,
-                    false // 最初からトグルを閉じた状態にする
-                );
-
-                _logs.Add(logEntry);
-                _pendingRequests.Remove(id);
-
-                McpLogger.LogDebug($"Response logged - Method: {pendingRequest.CommandName}, Total logs: {_logs.Count}");
-
-                // メインスレッドに切り替えてSessionState保存とUI更新
-                await MainThreadSwitcher.SwitchToMainThread();
-
-                // 即座にSessionStateに保存（Domain Reload対策）
-                SaveToSessionState();
-
-                OnLogUpdated?.Invoke();
-            }
-            else
-            {
-                McpLogger.LogWarning($"No pending request found for response ID: {id}");
-            }
+            EnsureInitialized();
+            
+            var logData = McpCommunicationLogData.instance;
+            await logData.AddLogAsync(commandName, DateTime.Now, requestJson, responseJson, isError, cancellationToken);
+            
+            // ローカルログを再読み込み
+            _logs = logData.GetLogs();
+            
+            OnLogUpdated?.Invoke();
         }
 
         /// <summary>
-        /// 全てのログをクリア
+        /// ログエントリーの展開状態を変更
         /// </summary>
-        public static void ClearLogs()
+        public static async Task SetLogExpandedAsync(int index, bool expanded, CancellationToken cancellationToken = default)
         {
-            _logs.Clear();
-            _pendingRequests.Clear();
-
-            // SessionStateも完全に削除してUI更新をメインスレッドで実行
-            EditorApplication.delayCall += () =>
+            EnsureInitialized();
+            
+            if (index >= 0 && index < _logs.Count)
             {
-                ClearLogSessionState();
-                OnLogUpdated?.Invoke();
-            };
-        }
-
-        /// <summary>
-        /// SessionStateからデータを復元
-        /// </summary>
-        private static void LoadFromSessionState()
-        {
-            // ログの復元
-            string logsJson = SessionState.GetString(LOGS_SESSION_KEY, "[]");
-            try
-            {
-                _logs = JsonConvert.DeserializeObject<List<McpCommunicationLogEntry>>(logsJson) ?? new List<McpCommunicationLogEntry>();
-            }
-            catch (Exception ex)
-            {
-                McpLogger.LogWarning($"Failed to deserialize logs: {ex.Message}");
-                _logs = new List<McpCommunicationLogEntry>();
-            }
-
-            // 保留中リクエストの復元
-            string pendingJson = SessionState.GetString(PENDING_REQUESTS_SESSION_KEY, "{}");
-            try
-            {
-                _pendingRequests = JsonConvert.DeserializeObject<Dictionary<string, PendingRequest>>(pendingJson) ?? new Dictionary<string, PendingRequest>();
-            }
-            catch (Exception ex)
-            {
-                McpLogger.LogWarning($"Failed to deserialize pending requests: {ex.Message}");
-                _pendingRequests = new Dictionary<string, PendingRequest>();
+                _logs[index].IsExpanded = expanded;
+                
+                var logData = McpCommunicationLogData.instance;
+                await logData.SetLogExpandedAsync(index, expanded, cancellationToken);
             }
         }
 
         /// <summary>
-        /// SessionStateにデータを保存
+        /// 通信ログをクリア
         /// </summary>
-        public static void SaveToSessionState()
+        public static async Task ClearLogsAsync(CancellationToken cancellationToken = default)
         {
             try
             {
-                string logsJson = JsonConvert.SerializeObject(_logs);
-                string pendingJson = JsonConvert.SerializeObject(_pendingRequests);
-
-                SessionState.SetString(LOGS_SESSION_KEY, logsJson);
-                SessionState.SetString(PENDING_REQUESTS_SESSION_KEY, pendingJson);
-            }
-            catch (Exception ex)
-            {
-                McpLogger.LogError($"Failed to save to SessionState: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 通信ログ関連のSessionStateをクリア（ログ問題修正用）
-        /// </summary>
-        public static void ClearLogSessionState()
-        {
-            try
-            {
-                SessionState.EraseString(LOGS_SESSION_KEY);
-                SessionState.EraseString(PENDING_REQUESTS_SESSION_KEY);
+                var logData = McpCommunicationLogData.instance;
+                await logData.ClearAllLogsAsync(cancellationToken);
+                
                 _logs?.Clear();
                 _pendingRequests?.Clear();
-
-                // SessionStateクリア完了（ログ出力なし）
-
-                // UIの更新通知
-                EditorApplication.delayCall += () => OnLogUpdated?.Invoke();
+                
+                OnLogUpdated?.Invoke();
+                McpLogger.LogInfo("Cleared communication logs");
             }
             catch (Exception ex)
             {
-                McpLogger.LogError($"Failed to clear communication log SessionState: {ex.Message}");
+                McpLogger.LogError($"Failed to clear logs: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 完了したログのみクリア（保留中は保持）
+        /// </summary>
+        public static async Task ClearCompletedLogsAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var logData = McpCommunicationLogData.instance;
+                await logData.ClearCompletedLogsAsync(cancellationToken);
+                
+                // ローカルログを再読み込み
+                _logs = logData.GetLogs();
+                
+                OnLogUpdated?.Invoke();
+                McpLogger.LogInfo("Cleared completed communication logs");
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogError($"Failed to clear completed logs: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 最大ログ数を設定
+        /// </summary>
+        public static void SetMaxLogCount(int maxCount)
+        {
+            var logData = McpCommunicationLogData.instance;
+            logData.MaxLogCount = maxCount;
+            
+            // ローカルログを再読み込み
+            _logs = logData.GetLogs();
+            
+            OnLogUpdated?.Invoke();
+        }
+
+        /// <summary>
+        /// 現在の最大ログ数を取得
+        /// </summary>
+        public static int GetMaxLogCount()
+        {
+            return McpCommunicationLogData.instance.MaxLogCount;
+        }
+
+        /// <summary>
+        /// 保留中のリクエスト数を取得
+        /// </summary>
+        public static int GetPendingRequestCount()
+        {
+            EnsureInitialized();
+            return _pendingRequests.Count;
+        }
+
+        /// <summary>
+        /// デバッグ情報を取得
+        /// </summary>
+        public static string GetDebugInfo()
+        {
+            EnsureInitialized();
+            var logData = McpCommunicationLogData.instance;
+            return $"McpCommunicationLogger: LocalLogs={_logs.Count}, LocalPending={_pendingRequests.Count}, {logData.GetDebugInfo()}";
+        }
+
+        /// <summary>
+        /// 初期化処理（遅延初期化）
+        /// </summary>
+        private static void EnsureInitialized()
+        {
+            if (_logs == null || _pendingRequests == null)
+            {
+                try
+                {
+                    LoadFromScriptableSingleton();
+                }
+                catch (System.Exception ex)
+                {
+                    // 完全にフォールバック
+                    _logs = new List<McpCommunicationLogEntry>();
+                    _pendingRequests = new Dictionary<string, PendingRequestInfo>();
+                    McpLogger.LogError($"EnsureInitialized failed: {ex.Message}");
+                }
             }
         }
     }

@@ -52,11 +52,15 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo($"Loaded existing MCP servers: {string.Join(", ", config.mcpServers.Keys)}");
 
             // ポート番号を含む設定キーを生成
-            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+            string serverKey = $"unity-mcp-{port}";
 
             // 新しい設定を作成
             string serverPath = UnityMcpPathResolver.GetTypeScriptServerPath();
-            McpServerConfigData newConfig = McpServerConfigFactory.CreateUnityMcpConfig(port, serverPath);
+            McpServerConfigData newConfig = new(
+                "node",
+                new[] { serverPath, "--port", port.ToString() },
+                new Dictionary<string, string>()
+            );
 
             // 既存設定を保持し、新しい設定を追加/更新
             Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
@@ -66,7 +70,7 @@ namespace io.github.hatayama.uMCP
             if (updatedServers.ContainsKey(serverKey))
             {
                 McpServerConfigData existingConfig = updatedServers[serverKey];
-                needsUpdate = !McpServerConfigComparer.AreEqual(existingConfig, newConfig);
+                needsUpdate = !AreConfigsEqual(existingConfig, newConfig);
                 
                 if (needsUpdate)
                 {
@@ -112,6 +116,35 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.ClaudeCode => "Claude Code",
                 _ => editorType.ToString()
             };
+        }
+
+        /// <summary>
+        /// 2つの設定が等しいかチェック
+        /// </summary>
+        private static bool AreConfigsEqual(McpServerConfigData config1, McpServerConfigData config2)
+        {
+            if (config1.command != config2.command)
+                return false;
+            
+            if (config1.args.Length != config2.args.Length)
+                return false;
+            
+            for (int i = 0; i < config1.args.Length; i++)
+            {
+                if (config1.args[i] != config2.args[i])
+                    return false;
+            }
+            
+            if (config1.env.Count != config2.env.Count)
+                return false;
+            
+            foreach (var kvp in config1.env)
+            {
+                if (!config2.env.ContainsKey(kvp.Key) || config2.env[kvp.Key] != kvp.Value)
+                    return false;
+            }
+            
+            return true;
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
@@ -11,7 +12,7 @@ namespace io.github.hatayama.uMCP
     {
         public CommandType CommandType => CommandType.Ping;
 
-        public Task<object> ExecuteAsync(JToken paramsToken)
+        public Task<object> ExecuteAsync(JToken paramsToken, CancellationToken cancellationToken = default)
         {
             string message = paramsToken?["message"]?.ToString() ?? "No message";
             string response = $"Unity MCP Bridge received: {message}";

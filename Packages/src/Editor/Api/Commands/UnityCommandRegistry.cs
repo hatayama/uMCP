@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
@@ -34,6 +35,7 @@ namespace io.github.hatayama.uMCP
             
             // 新しいコマンドの追加例
             RegisterCommand(new GetVersionCommand());
+            RegisterCommand(new GetCompileResultCommand());
         }
 
         /// <summary>
@@ -58,7 +60,7 @@ namespace io.github.hatayama.uMCP
         /// <param name="paramsToken">パラメータ</param>
         /// <returns>実行結果</returns>
         /// <exception cref="ArgumentException">未知のコマンドの場合</exception>
-        public async Task<object> ExecuteCommandAsync(string commandName, JToken paramsToken)
+        public async Task<object> ExecuteCommandAsync(string commandName, JToken paramsToken, CancellationToken cancellationToken = default)
         {
             if (!Enum.TryParse<CommandType>(commandName, true, out CommandType commandType))
             {
@@ -70,9 +72,11 @@ namespace io.github.hatayama.uMCP
                 throw new ArgumentException($"Command not registered: {commandName}");
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             McpLogger.LogDebug($"Executing command: {commandName}");
             await MainThreadSwitcher.SwitchToMainThread();
-            return await command.ExecuteAsync(paramsToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return await command.ExecuteAsync(paramsToken, cancellationToken);
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
@@ -13,7 +14,7 @@ namespace io.github.hatayama.uMCP
     {
         public CommandType CommandType => CommandType.GetLogs;
 
-        public async Task<object> ExecuteAsync(JToken paramsToken)
+        public async Task<object> ExecuteAsync(JToken paramsToken, CancellationToken cancellationToken = default)
         {
             string logType = paramsToken?["logType"]?.ToString() ?? "All";
             int maxCount = paramsToken?["maxCount"]?.ToObject<int>() ?? 100;

@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -13,7 +14,7 @@ namespace io.github.hatayama.uMCP
     {
         public CommandType CommandType => CommandType.GetVersion;
 
-        public Task<object> ExecuteAsync(JToken paramsToken)
+        public Task<object> ExecuteAsync(JToken paramsToken, CancellationToken cancellationToken = default)
         {
             McpLogger.LogDebug("GetVersion request received");
             
