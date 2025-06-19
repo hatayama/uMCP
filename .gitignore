@@ -80,6 +80,8 @@ crashlytics-build.properties
 
 # AI
 .cursor
+.claude
+CLAUDE.md
 
 # VSCode
 .vscode
