@@ -5764,7 +5764,7 @@ var PingTool = class extends BaseTool {
 
 // src/tools/unity-ping-tool.ts
 var UnityPingTool = class extends BaseTool {
-  name = "unity.ping";
+  name = "unity-ping";
   description = "Unity\u5074\u3078\u306Eping\u30C6\u30B9\u30C8\uFF08TCP/IP\u901A\u4FE1\u78BA\u8A8D\uFF09";
   inputSchema = {
     type: "object",
@@ -5809,7 +5809,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
 
 // src/tools/compile-tool.ts
 var CompileTool = class extends BaseTool {
-  name = "unity.compile";
+  name = "unity-compile";
   description = "Unity\u30D7\u30ED\u30B8\u30A7\u30AF\u30C8\u306E\u30B3\u30F3\u30D1\u30A4\u30EB\u3092\u5B9F\u884C\u3057\u3001\u30A8\u30E9\u30FC\u60C5\u5831\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5884,7 +5884,7 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
 
 // src/tools/logs-tool.ts
 var LogsTool = class extends BaseTool {
-  name = "unity.getLogs";
+  name = "unity-get-logs";
   description = "Unity\u30B3\u30F3\u30BD\u30FC\u30EB\u306E\u30ED\u30B0\u60C5\u5831\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5961,7 +5961,7 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
 
 // src/tools/run-tests-tool.ts
 var RunTestsTool = class extends BaseTool {
-  name = "unity.runTests";
+  name = "unity-run-tests";
   description = "Unity Test Runner\u3092\u5B9F\u884C\u3057\u3066\u30C6\u30B9\u30C8\u7D50\u679C\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",

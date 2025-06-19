@@ -6,7 +6,7 @@ import { ToolResponse } from '../types/tool-types.js';
  * Unity側へのPingツール
  */
 export class UnityPingTool extends BaseTool {
-  readonly name = 'unity.ping';
+  readonly name = 'unity-ping';
   readonly description = 'Unity側へのpingテスト（TCP/IP通信確認）';
   readonly inputSchema = {
     type: 'object',

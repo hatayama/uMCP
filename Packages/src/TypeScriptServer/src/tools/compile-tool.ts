@@ -6,7 +6,7 @@ import { ToolResponse } from '../types/tool-types.js';
  * Unityコンパイルツール
  */
 export class CompileTool extends BaseTool {
-  readonly name = 'unity.compile';
+  readonly name = 'unity-compile';
   readonly description = 'Unityプロジェクトのコンパイルを実行し、エラー情報を取得する';
   readonly inputSchema = {
     type: 'object',
