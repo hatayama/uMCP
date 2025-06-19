@@ -11,6 +11,7 @@ namespace io.github.hatayama.uMCP
         private const string SESSION_KEY_SERVER_RUNNING = "uMCP.ServerRunning";
         private const string SESSION_KEY_SERVER_PORT = "uMCP.ServerPort";
         private const string SESSION_KEY_AFTER_COMPILE = "uMCP.AfterCompile";
+        private const string SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS = "uMCP.DomainReloadInProgress";
         
         private static McpBridgeServer mcpServer;
         
@@ -35,10 +36,10 @@ namespace io.github.hatayama.uMCP
             EditorApplication.quitting += OnEditorQuitting;
             
             // アセンブリリロード前の処理
-            // AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             
             // アセンブリリロード後の処理
-            // AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+            AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
             
             // 初期化時にサーバー状態を復旧
             RestoreServerStateIfNeeded();
@@ -94,6 +95,10 @@ namespace io.github.hatayama.uMCP
         {
             McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: IsServerRunning={mcpServer?.IsRunning}");
             
+            // ドメインリロード開始フラグを設定
+            SessionState.SetBool(SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS, true);
+            McpLogger.LogInfo("Domain reload in progress flag set to true");
+            
             // サーバーが動作中の場合、状態を保存してサーバーを停止
             if (mcpServer?.IsRunning == true)
             {
@@ -132,6 +137,10 @@ namespace io.github.hatayama.uMCP
         {
             // MCP経由コンパイルフラグをクリア（念のため）
             SessionState.EraseBool("uMCP.CompileFromMCP");
+            
+            // ドメインリロード完了フラグをクリア
+            SessionState.EraseBool(SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS);
+            McpLogger.LogInfo("Domain reload in progress flag cleared");
             
             // サーバー状態を復旧
             RestoreServerStateIfNeeded();

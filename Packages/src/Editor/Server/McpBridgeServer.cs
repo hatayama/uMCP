@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEditor;
 
 namespace io.github.hatayama.uMCP
 {
@@ -206,6 +207,20 @@ namespace io.github.hatayama.uMCP
                     // サーバー停止時の正常な例外
                     break;
                 }
+                catch (ThreadAbortException ex)
+                {
+                    // ドメインリロード中の場合は正常な動作として扱う
+                    if (SessionState.GetBool("uMCP.DomainReloadInProgress", false))
+                    {
+                        McpLogger.LogInfo("Server thread aborted during domain reload (normal behavior)");
+                    }
+                    else
+                    {
+                        McpLogger.LogError($"Unexpected thread abort in server loop: {ex.Message}");
+                        OnError?.Invoke($"Unexpected thread abort: {ex.Message}");
+                    }
+                    break; // サーバーループを終了
+                }
                 catch (Exception ex)
                 {
                     if (!cancellationToken.IsCancellationRequested)
@@ -226,6 +241,19 @@ namespace io.github.hatayama.uMCP
             try
             {
                 return await Task.Run(() => listener.AcceptTcpClient(), cancellationToken);
+            }
+            catch (ThreadAbortException ex)
+            {
+                // ドメインリロード中の場合は正常な動作として扱う
+                if (SessionState.GetBool("uMCP.DomainReloadInProgress", false))
+                {
+                    McpLogger.LogInfo("AcceptTcpClient thread aborted during domain reload (normal behavior)");
+                }
+                else
+                {
+                    McpLogger.LogError($"Unexpected thread abort in AcceptTcpClient: {ex.Message}");
+                }
+                return null;
             }
             catch (OperationCanceledException)
             {
@@ -286,6 +314,18 @@ namespace io.github.hatayama.uMCP
                             await stream.WriteAsync(responseBytes, 0, responseBytes.Length, cancellationToken);
                         }
                     }
+                }
+            }
+            catch (ThreadAbortException ex)
+            {
+                // ドメインリロード中の場合は正常な動作として扱う
+                if (SessionState.GetBool("uMCP.DomainReloadInProgress", false))
+                {
+                    McpLogger.LogInfo("Client handling thread aborted during domain reload (normal behavior)");
+                }
+                else
+                {
+                    McpLogger.LogError($"Unexpected thread abort in client handling: {ex.Message}");
                 }
             }
             catch (Exception ex)
