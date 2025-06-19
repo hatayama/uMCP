@@ -1,4 +1,4 @@
-import { DirectUnityClient } from './unity-test-client.js';
+import { UnityDebugClient } from './unity-debug-client.js';
 
 /**
  * Domain Reload タイミング詳細調査
@@ -12,7 +12,7 @@ async function testDomainReloadTiming() {
     console.log('- TCP接続関連のログ');
     console.log('');
     
-    const client = new DirectUnityClient();
+    const client = new UnityDebugClient();
     
     try {
         console.log('1. Connecting to Unity...');

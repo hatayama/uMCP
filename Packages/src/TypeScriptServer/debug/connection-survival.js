@@ -1,4 +1,4 @@
-import { DirectUnityClient } from './unity-test-client.js';
+import { UnityDebugClient } from './unity-debug-client.js';
 
 /**
  * TCP接続の生存確認テスト
@@ -7,7 +7,7 @@ import { DirectUnityClient } from './unity-test-client.js';
 async function testConnectionSurvival() {
     console.log('=== TCP Connection Survival Test ===');
     
-    const client = new DirectUnityClient();
+    const client = new UnityDebugClient();
     
     try {
         console.log('\n1. Establishing connection...');

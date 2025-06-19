@@ -1,4 +1,4 @@
-import { DirectUnityClient } from './unity-test-client.js';
+import { UnityDebugClient } from './unity-debug-client.js';
 
 /**
  * コンパイルリクエストの詳細テスト
@@ -8,7 +8,7 @@ async function testCompileDetailed() {
     console.log('=== Unity Compile Response Analysis ===');
     console.log(`Test started at: ${new Date().toISOString()}`);
     
-    const client = new DirectUnityClient();
+    const client = new UnityDebugClient();
     
     try {
         console.log('\n1. Connecting to Unity...');

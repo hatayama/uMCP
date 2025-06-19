@@ -1,4 +1,4 @@
-import { DirectUnityClient } from './unity-test-client.js';
+import { UnityDebugClient } from './unity-debug-client.js';
 
 function showHelp() {
     console.log('=== Unity Logs Test ===');
@@ -46,7 +46,7 @@ async function testGetLogs() {
     console.log(`Log Type: ${logType}`);
     console.log(`Max Count: ${maxCount}`);
     
-    const client = new DirectUnityClient();
+    const client = new UnityDebugClient();
     
     try {
         console.log('\n1. Connecting to Unity...');
