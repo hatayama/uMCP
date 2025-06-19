@@ -1,159 +1,259 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは、このリポジトリでコードを扱う際のClaude Code (claude.ai/code) への指針を提供します。
 
-## About this Project
+## プロジェクトについて
 
-uMCP is a Unity package that connects Unity Editor to AI assistants using the Model Context Protocol (MCP). It allows AI tools like Cursor to execute Unity operations such as compilation, log retrieval, and test running through a bridge architecture.
+uMCPは、Model Context Protocol (MCP)を使用してUnity EditorをAIアシスタントに接続するUnityパッケージです。CursorなどのAIツールがブリッジアーキテクチャを通じて、コンパイル、ログ取得、テスト実行などのUnity操作を実行できるようにします。
 
-## Development Commands
+## 開発コマンド
 
-### Unity Package Development
-- **Unity Version**: 2020.3+ required
-- **Testing**: Open Unity project at root level, install package via Package Manager from `Packages/src`
-- **Package Testing**: Window > uMCP to open the main interface
+### Unity パッケージ開発
+- **Unity バージョン**: 2020.3以上が必要
+- **テスト**: ルートレベルでUnityプロジェクトを開き、`Packages/src`からPackage Manager経由でパッケージをインストール
+- **パッケージテスト**: Window > uMCP でメインインターフェースを開く
 
-### TypeScript MCP Server Development
+### TypeScript MCP サーバー開発
 ```bash
-# Navigate to TypeScript server directory
+# TypeScriptサーバーディレクトリに移動
 cd Packages/src/TypeScriptServer
 
-# Initial setup (only needed once or after package.json changes)
+# 初期セットアップ（初回のみ、またはpackage.json変更後）
 npm install
 
-# Build the bundled server
+# バンドルサーバーをビルド
 npm run build
 
-# Development with auto-rebuild on file changes
+# ファイル変更時の自動リビルド付き開発
 npm run dev:watch
 
-# Run development server (includes ping tool)
+# 開発サーバーを実行（pingツール有効）
 npm run dev
 
-# Production server (ping tool disabled)
+# 本番サーバー（pingツール無効）
 npm start
 ```
 
-### Testing Commands
+### テストコマンド
 ```bash
-# Test Unity-TypeScript communication
-node test/test-compile.js                    # Basic compile test
-node test/test-compile.js --force           # Force recompile
-node test/test-logs.js                      # Log retrieval test
-node test/test-unity-connection.js          # Full connection test
-node test/test-all-logs.js --stats         # Log statistics
+# Unity-TypeScript通信テスト
+node test/test-compile.js                    # 基本コンパイルテスト
+node test/test-compile.js --force           # 強制再コンパイル
+node test/test-logs.js                      # ログ取得テスト
+node test/test-unity-connection.js          # 完全接続テスト
+node test/test-all-logs.js --stats         # ログ統計
 
-# Direct Unity communication (when Unity MCP server is running on port 7400)
+# Unity MCPサーバーがポート7400で動作している時の直接Unity通信
 echo '{"jsonrpc":"2.0","id":1,"method":"ping","params":{"message":"test"}}' | nc localhost 7400
 ```
 
-## Architecture Overview
+## アーキテクチャ概要
 
-### Two-Layer Bridge Architecture
-The system uses a dual-bridge approach to connect AI assistants to Unity:
+### 二層ブリッジアーキテクチャ
+システムは、AIアシスタントをUnityに接続するためのデュアルブリッジアプローチを使用します：
 
-1. **TypeScript MCP Server** (`Packages/src/TypeScriptServer/`)
-   - Implements MCP protocol for AI assistant communication
-   - Provides tools: `unity.ping`, `action.compileUnity`, `context.getUnityLogs`
-   - Communicates with Unity via TCP/IP JSON-RPC
+1. **TypeScript MCP サーバー** (`Packages/src/TypeScriptServer/`)
+   - AIアシスタント通信用のMCPプロトコルを実装
+   - 提供ツール: `unity.ping`, `action.compileUnity`, `context.getUnityLogs`
+   - TCP/IP JSON-RPC経由でUnityと通信
 
-2. **Unity MCP Bridge** (`Packages/src/Editor/`)
-   - Unity Editor package that receives commands from TypeScript server
-   - Executes Unity operations and returns results
-   - Manages persistent state through ScriptableSingleton classes
+2. **Unity MCP ブリッジ** (`Packages/src/Editor/`)
+   - TypeScriptサーバーからのコマンドを受信するUnity Editorパッケージ
+   - Unity操作を実行して結果を返す
+   - ScriptableSingletonクラスを通じて永続的な状態を管理
 
-### ScriptableSingleton-Based State Management
+### ScriptableSingleton ベースの状態管理
 
-**Key Design Decision**: The codebase has migrated from SessionState to ScriptableSingleton for all persistent data to handle Unity's Domain Reload transparently. This architectural change eliminates the complexity of managing state across compilation cycles.
+**重要な設計決定**: コードベースは、Unityのドメインリロードを透過的に処理するため、すべての永続データをSessionStateからScriptableSingletonに移行しました。このアーキテクチャ変更により、コンパイルサイクル全体での状態管理の複雑さが排除されます。
 
-**ScriptableSingleton Classes:**
-- `McpServerData` - Server state and configuration
-- `McpCompileData` - Compilation request tracking  
-- `McpCommunicationLogData` - Communication logs and pending requests
-- `McpEditorWindowData` - UI state and preferences
+**ScriptableSingleton クラス:**
+- `McpServerData` - サーバー状態と設定
+- `McpCompileData` - コンパイル要求の追跡  
+- `McpCommunicationLogData` - 通信ログと保留中の要求
+- `McpEditorWindowData` - UI状態と設定
 
-### Command Pattern Implementation
+### コマンドパターン実装
 
-Unity commands use a registry-based Command Pattern located in `Packages/src/Editor/Api/Commands/`:
+Unityコマンドは、`Packages/src/Editor/Api/Commands/`にあるレジストリベースのコマンドパターンを使用します：
 
-- `IUnityCommand` - Base interface for all commands
-- `UnityCommandRegistry` - Dynamic command registration and execution
-- Individual command classes: `CompileCommand`, `GetLogsCommand`, `PingCommand`, etc.
-- All commands support `CancellationToken` for async operations
+- `IUnityCommand` - すべてのコマンドのベースインターフェース
+- `UnityCommandRegistry` - 動的コマンド登録と実行
+- 個別のコマンドクラス: `CompileCommand`, `GetLogsCommand`, `PingCommand`など
+- すべてのコマンドが非同期操作用の`CancellationToken`をサポート
 
-### Critical Technical Constraints
+### 重要な技術的制約
 
-**Domain Reload Behavior**: Unity's Domain Reload destroys static variables and interrupts TCP connections. The ScriptableSingleton architecture automatically handles server state restoration, but long-running operations (like compilation) may experience connection timeouts on the client side.
+**ドメインリロード動作**: Unityのドメインリロードは静的変数を破棄し、TCP接続を中断します。ScriptableSingletonアーキテクチャはサーバー状態の復元を自動的に処理しますが、長時間実行される操作（コンパイルなど）はクライアント側で接続タイムアウトが発生する可能性があります。
 
-**TCP Communication Lifecycle**: During Unity compilation, Domain Reload will terminate existing TCP connections. The server automatically restarts based on ScriptableSingleton state, but clients need to handle connection timeouts appropriately.
+**TCP通信ライフサイクル**: Unityコンパイル中、ドメインリロードにより既存のTCP接続が終了されます。サーバーはScriptableSingletonの状態に基づいて自動的に再起動しますが、クライアントは適切に接続タイムアウトを処理する必要があります。
 
-## Code Organization
+## コード構成
 
-### Unity Editor Structure
+### Unity Editor 構造
 ```
 Packages/src/Editor/
-├── Api/            # JSON-RPC processing and command handlers
-├── Server/         # TCP server and controller logic  
-├── Data/           # ScriptableSingleton persistence classes
-├── Config/         # IDE configuration management (Cursor, Claude Code)
-├── UI/             # Editor windows and communication logs
-├── Tools/          # Development utilities and log fetching
-├── Build/          # TypeScript server building utilities
-└── Utils/          # Logging and helper utilities
+├── Api/            # JSON-RPC処理とコマンドハンドラー
+├── Server/         # TCPサーバーとコントローラーロジック  
+├── Data/           # ScriptableSingleton永続化クラス
+├── Config/         # IDE設定管理 (Cursor, Claude Code)
+├── UI/             # エディターウィンドウと通信ログ
+├── Tools/          # 開発ユーティリティとログ取得
+├── Build/          # TypeScriptサーバービルドユーティリティ
+└── Utils/          # ログとヘルパーユーティリティ
 ```
 
-### TypeScript Server Structure
+### TypeScript サーバー構造
 ```
 Packages/src/TypeScriptServer/
 ├── src/
-│   ├── tools/      # MCP tool implementations
-│   ├── types/      # TypeScript type definitions
-│   ├── server.ts   # Main MCP server
-│   └── unity-client.ts # Unity communication client
-├── test/           # Test scripts for Unity communication
-└── dist/           # Built artifacts (server.bundle.js)
+│   ├── tools/      # MCPツール実装
+│   ├── types/      # TypeScript型定義
+│   ├── server.ts   # メインMCPサーバー
+│   └── unity-client.ts # Unity通信クライアント
+├── test/           # Unity通信用テストスクリプト
+└── dist/           # ビルド成果物 (server.bundle.js)
 ```
 
-## Key Implementation Details
+## 主要な実装詳細
 
-### Bundle Distribution
-The TypeScript server uses esbuild to create a single `server.bundle.js` file containing all dependencies. This eliminates the need for users to run `npm install` when using the package.
+### バンドル配布
+TypeScriptサーバーは、すべての依存関係を含む単一の`server.bundle.js`ファイルを作成するためにesbuildを使用します。これにより、パッケージ使用時にユーザーが`npm install`を実行する必要がなくなります。
 
-### IDE Integration
-The package automatically configures MCP settings for supported IDEs:
-- **Cursor**: Creates/updates `.cursor/mcp.json`
-- **Claude Code**: Planned support for Claude Code configuration
-- Configuration handles both local development and Package Manager installation paths
+### IDE統合
+パッケージは、サポートされているIDE用にMCP設定を自動的に構成します：
+- **Cursor**: `.cursor/mcp.json`を作成/更新
+- **Claude Code**: Claude Code設定のサポートを計画中
+- 設定は、ローカル開発とPackage Managerインストールパスの両方を処理
 
-### Development vs Production Modes
-- **Development**: `npm run dev` enables ping tool for testing
-- **Production**: `npm start` runs minimal tool set for end users
-- Environment variable `ENABLE_PING_TOOL=true` can override production behavior
+### 開発モード vs 本番モード
+- **開発モード**: `npm run dev`でテスト用pingツールを有効化
+- **本番モード**: `npm start`でエンドユーザー向けの最小ツールセットを実行
+- 環境変数`ENABLE_PING_TOOL=true`で本番動作をオーバーライド可能
 
-## Domain-Specific Considerations
+## ドメイン固有の考慮事項
 
-### Unity Package Manager Compatibility
-The codebase handles both local development (Packages/src) and Package Manager installation (Library/PackageCache/io.github.hatayama.umcp@hash) through dynamic path resolution in `UnityMcpPathResolver`.
+### Unity Package Manager 互換性
+コードベースは、`UnityMcpPathResolver`での動的パス解決を通じて、ローカル開発（Packages/src）とPackage Managerインストール（Library/PackageCache/io.github.hatayama.umcp@hash）の両方を処理します。
 
-### Async/Await in Unity
-All Unity command operations use async/await with proper `CancellationToken` support. The `MainThreadSwitcher` utility ensures Unity API calls execute on the main thread when needed.
+### Unity での Async/Await
+すべてのUnityコマンド操作は、適切な`CancellationToken`サポート付きでasync/awaitを使用します。`MainThreadSwitcher`ユーティリティは、必要に応じてUnity APIコールがメインスレッドで実行されることを保証します。
 
-### Compilation Integration
-The compilation system integrates with Unity's `CompilationPipeline` and uses `CompileChecker` for async compilation tracking. Domain Reload during compilation is handled gracefully through the ScriptableSingleton persistence layer.
+### コンパイル統合
+コンパイルシステムは、UnityのCompilationPipelineと統合し、非同期コンパイル追跡に`CompileChecker`を使用します。コンパイル中のドメインリロードは、ScriptableSingleton永続化層を通じて適切に処理されます。
 
-## Testing Strategy
+## テスト戦略
 
-### Automated Testing
-- Unity: Edit Mode tests in `Assets/Tests/Editor/`
-- TypeScript: Test scripts in `test/` directory for Unity communication validation
+### 自動テスト
+- Unity: `Assets/Tests/Editor/`でのEdit Modeテスト
+- TypeScript: Unity通信検証用の`test/`ディレクトリのテストスクリプト
 
-### Integration Testing
-The test scripts provide comprehensive integration testing between TypeScript and Unity layers, validating the full communication pipeline including Domain Reload scenarios.
+### 統合テスト
+テストスクリプトは、ドメインリロードシナリオを含む完全な通信パイプラインを検証し、TypeScriptとUnity層間の包括的な統合テストを提供します。
 
-## Known Issues & Limitations
+## 既知の問題と制限
 
-1. **Compilation Timeout**: Long-running compile operations may timeout on the client side due to Domain Reload breaking TCP connections, even though compilation completes successfully on the Unity side.
+1. **コンパイルタイムアウト**: ドメインリロードによるTCP接続の切断により、Unity側でコンパイルが正常に完了していても、クライアント側で長時間実行されるコンパイル操作がタイムアウトする場合があります。
 
-2. **ThreadAbortException**: Occasional thread abort exceptions occur during Unity Domain Reload, but these are handled gracefully and don't affect functionality.
+2. **ThreadAbortException**: Unityドメインリロード中に時折スレッド中止例外が発生しますが、これらは適切に処理され、機能には影響しません。
 
-3. **Background Operation Delays**: Unity's `EditorApplication.delayCall` executes more slowly when Unity is in the background, affecting auto-restart behavior.
+3. **バックグラウンド操作の遅延**: Unityがバックグラウンドにあるとき、`EditorApplication.delayCall`の実行が遅くなり、自動再起動動作に影響します。
+
+## compileコマンドレスポンス問題の解決過程
+
+### 問題の発見
+**症状**: compileコマンドを実行してもレスポンスが返らず、TypeScriptクライアント側でタイムアウトが発生する。
+
+**原因分析**: 
+- `AssetDatabase.Refresh()`がドメインリロードを引き起こす
+- ドメインリロード時にTCP接続が強制切断される
+- レスポンスを返す前に接続が失われる
+
+### 解決策の検討過程
+
+#### 1. 一段階通信の限界
+従来のアプローチ：
+```
+クライアント → compile要求 → Unity処理 → レスポンス
+```
+問題：ドメインリロードで接続が切断され、レスポンスが届かない
+
+#### 2. 二段階通信アプローチの検討
+新しいアプローチ：
+```
+ステップ1: compile要求 → 即座に"accepted"レスポンス
+ステップ2: getCompileResult要求 → 結果取得（ポーリング）
+```
+
+**利点**:
+- ドメインリロード前に応答を返せる
+- ScriptableSingletonで状態を永続化
+- 確実な通信が可能
+
+#### 3. Long Polling の検討と断念
+**検討したアプローチ**: Ajax/XHRのような長時間接続で待機
+
+**技術的制約により断念**:
+- Unityのドメインリロードは**AppDomain全体の破棄・再作成**
+- 別スレッドで動作するTCPサーバーも強制終了される
+- 実行環境そのものが破棄されるため、接続の維持は不可能
+
+#### 4. Unity Domain Reload の技術的仕組み
+```
+Domain Reload の流れ:
+1. 現在のAppDomain破棄
+2. すべてのマネージドスレッド強制終了
+3. TCP接続、ファイルハンドル等も強制クローズ
+4. 新しいAppDomain作成
+5. アセンブリ再ロード
+```
+
+**結論**: プロセス再起動に近い重い処理のため、別スレッドでも接続切断は避けられない
+
+### 最終的な解決方針
+
+#### 採用した方式: 二段階通信 + ポーリング
+1. **即座の応答**: compileコマンドで"accepted"ステータスを即座に返却
+2. **状態永続化**: ScriptableSingletonでリクエスト状態を保存
+3. **ポーリング取得**: 1秒間隔でgetCompileResultを呼び出し
+4. **結果取得**: ドメインリロード完了後に実際の結果を返却
+
+#### 実装詳細
+```javascript
+// TypeScript側
+const result = await sendCompileRequest(forceRecompile);
+// → 即座に { status: "accepted", requestId: "..." }
+
+// 1秒間隔でポーリング
+const finalResult = await pollCompileResult(requestId);
+// → { status: "completed", result: {...} }
+```
+
+#### 妥協点と利点
+**妥協点**:
+- 完全にリアルタイムではない（1-3秒の遅延）
+- 若干複雑なクライアント実装
+
+**利点**:
+- 確実な通信（タイムアウトなし）
+- 従来の10-30秒タイムアウトから3-4秒に大幅改善
+- アーキテクチャ変更が最小限
+- 実用的なレスポンス時間
+
+### 学んだ技術的知見
+
+1. **Unity ドメインリロードの影響範囲**
+   - 別スレッドも含めすべてのマネージドコードが終了
+   - ネイティブレイヤー以外は生存不可能
+   - TCP接続の切断は避けられない
+
+2. **AssetDatabase.Refresh()の必要性**
+   - 新規C#ファイルの認識に必須
+   - ドメインリロードの引き金となる
+   - この処理を回避する方法は存在しない
+
+3. **実用的な解決策の重要性**
+   - 完璧な技術的解決策が常に存在するわけではない
+   - 制約内での最適化と妥協点の見極めが重要
+   - ユーザー体験の改善が最優先
+
+この経験により、Unityのアーキテクチャ制約を深く理解し、現実的な解決策を見つけることの重要性を学びました。
