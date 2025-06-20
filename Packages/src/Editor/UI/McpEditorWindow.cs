@@ -456,7 +456,7 @@ namespace io.github.hatayama.uMCP
                 if (GUILayout.Button("Show Debug Info"))
                 {
                     string debugInfo = McpServerController.GetDetailedServerStatus();
-                    Debug.Log($"MCP Server Debug Info:\n{debugInfo}");
+                    McpLogger.LogDebug($"MCP Server Debug Info:\n{debugInfo}");
                 }
                 
                 EditorGUILayout.Space();
@@ -730,19 +730,19 @@ namespace io.github.hatayama.uMCP
                     // サーバーが動いている場合は自動再起動
                     if (McpServerController.IsServerRunning)
                     {
-                        Debug.Log("Restarting server with new build...");
+                        McpLogger.LogInfo("Restarting server with new build...");
                         McpServerController.StopServer();
                         
                         // 少し待ってから再起動（サーバーの完全停止を待つ）
                         EditorApplication.delayCall += () => {
                             McpServerController.StartServer(customPort);
-                            Debug.Log("Server restarted with updated TypeScript build!");
+                            McpLogger.LogInfo("Server restarted with updated TypeScript build!");
                             Repaint(); // UIを更新
                         };
                     }
                     else
                     {
-                        Debug.Log("Server is not running. Start the server manually to use the updated build.");
+                        McpLogger.LogInfo("Server is not running. Start the server manually to use the updated build.");
                     }
                 }
                 // エラー処理はTypeScriptBuilder内で行われる

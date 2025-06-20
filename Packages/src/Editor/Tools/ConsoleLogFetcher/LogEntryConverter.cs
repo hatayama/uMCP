@@ -23,61 +23,51 @@ namespace io.github.hatayama.uMCP
             finalMessage = finalMessage?.Trim() ?? "";
 
             // ログタイプの判定
-            string logType = LogTypeDetector.DetermineLogType(mode, finalMessage);
+            string logType = LogTypeDetector.DetermineLogType(mode);
 
             return new LogEntryDto(finalMessage, logType, "", file);
         }
 
         private static string GetProperty(object obj, string propertyName)
         {
-            try
+            PropertyInfo property = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (property != null)
             {
-                PropertyInfo property = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (property != null)
-                {
-                    object value = property.GetValue(obj);
-                    return value?.ToString() ?? "";
-                }
-                
-                FieldInfo field = obj.GetType().GetField(propertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (field != null)
-                {
-                    object value = field.GetValue(obj);
-                    return value?.ToString() ?? "";
-                }
+                object value = property.GetValue(obj);
+                return value?.ToString() ?? "";
             }
-            catch (Exception)
+            
+            FieldInfo field = obj.GetType().GetField(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (field != null)
             {
-                // エラーは静かに処理
+                object value = field.GetValue(obj);
+                return value?.ToString() ?? "";
             }
-            return "";
+            
+            throw new InvalidOperationException($"Property or field '{propertyName}' not found in {obj.GetType().FullName}");
         }
 
         private static int GetPropertyInt(object obj, string propertyName)
         {
-            try
+            PropertyInfo property = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (property != null)
             {
-                PropertyInfo property = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (property != null)
-                {
-                    object value = property.GetValue(obj);
-                    if (value is int intValue)
-                        return intValue;
-                }
-                
-                FieldInfo field = obj.GetType().GetField(propertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (field != null)
-                {
-                    object value = field.GetValue(obj);
-                    if (value is int intValue)
-                        return intValue;
-                }
+                object value = property.GetValue(obj);
+                if (value is int intValue)
+                    return intValue;
+                throw new InvalidOperationException($"Property '{propertyName}' is not of type int, actual type: {value?.GetType().FullName ?? "null"}");
             }
-            catch (Exception)
+            
+            FieldInfo field = obj.GetType().GetField(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (field != null)
             {
-                // エラーは静かに処理
+                object value = field.GetValue(obj);
+                if (value is int intValue)
+                    return intValue;
+                throw new InvalidOperationException($"Field '{propertyName}' is not of type int, actual type: {value?.GetType().FullName ?? "null"}");
             }
-            return 0;
+            
+            throw new InvalidOperationException($"Property or field '{propertyName}' not found in {obj.GetType().FullName}");
         }
     }
 } 

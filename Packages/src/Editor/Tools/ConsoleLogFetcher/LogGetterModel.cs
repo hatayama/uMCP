@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace io.github.hatayama.uMCP
 {
@@ -25,27 +24,65 @@ namespace io.github.hatayama.uMCP
                 return logEntries.ToArray();
             }
 
-            try
+            // フィルター制御が利用可能な場合のみフィルター操作を行う
+            if (logAccessor.IsFilterControlAvailable)
             {
-                int logCount = logAccessor.GetLogCount();
+                // フィルター状態を保存し、すべてのフィルターを有効化
+                logAccessor.SaveConsoleFlags();
+                logAccessor.EnableAllConsoleFlags();
+            }
+            
+            // ログ取得開始
+            logAccessor.StartGettingEntries();
+            
+            int logCount = logAccessor.GetLogCount();
 
-                for (int i = 0; i < logCount; i++)
+            for (int i = 0; i < logCount; i++)
+            {
+                object logEntry = logAccessor.GetLogEntry(i);
+                LogEntryDto dto = LogEntryConverter.ConvertToDto(logEntry);
+                
+                if (dto != null)
                 {
-                    object logEntry = logAccessor.GetLogEntry(i);
-                    LogEntryDto dto = LogEntryConverter.ConvertToDto(logEntry);
-                    
-                    if (dto != null)
-                    {
-                        logEntries.Add(dto);
-                    }
+                    logEntries.Add(dto);
                 }
             }
-            catch (Exception ex)
+            
+            // ログ取得終了
+            logAccessor.EndGettingEntries();
+            
+            // フィルター制御が利用可能な場合のみフィルター状態を復元
+            if (logAccessor.IsFilterControlAvailable)
             {
-                Debug.LogError($"ログ取得中にエラーが発生したで: {ex.Message}");
+                logAccessor.RestoreConsoleFlags();
             }
 
             return logEntries.ToArray();
+        }
+
+        /// <summary>
+        /// 指定されたログタイプでフィルタリングしたログエントリを取得する
+        /// </summary>
+        /// <param name="logType">フィルタリングするログタイプ（"Error", "Warning", "Log", "All"）</param>
+        public LogEntryDto[] GetConsoleLogEntries(string logType)
+        {
+            LogEntryDto[] allEntries = GetConsoleLogEntries();
+            
+            if (string.IsNullOrEmpty(logType) || logType.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                return allEntries;
+            }
+
+            List<LogEntryDto> filteredEntries = new List<LogEntryDto>();
+            foreach (LogEntryDto entry in allEntries)
+            {
+                if (entry.LogType.Equals(logType, StringComparison.OrdinalIgnoreCase))
+                {
+                    filteredEntries.Add(entry);
+                }
+            }
+
+            return filteredEntries.ToArray();
         }
 
         public void Dispose()

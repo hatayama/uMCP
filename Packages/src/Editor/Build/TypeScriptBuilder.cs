@@ -10,6 +10,51 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class TypeScriptBuilder
     {
+        // ディレクトリ・ファイル名の定数
+        private const string TypeScriptServerDirName = "TypeScriptServer";
+        private const string NvmVersionsNodePath = ".nvm/versions/node";
+        private const string BinDirName = "bin";
+        private const string NpmExecutableName = "npm";
+        
+        // コマンドの定数
+        private const string WhichCommand = "which";
+        private const string NpmCiCommand = "ci";
+        private const string NpmRunBuildBundleCommand = "run build:bundle";
+        private const string NpmInstallCommand = "install";
+        
+        // パスの定数
+        private const string HomebrewBinPath = "/usr/local/bin";
+        private const string AppleSiliconBrewBinPath = "/opt/homebrew/bin";
+        private const string SystemBinPath = "/usr/bin";
+        private const string PathEnvironmentVariable = "PATH";
+        private const string PathSeparator = ":";
+        private const string WildcardChar = "*";
+        
+        // メッセージの定数
+        private const string PackagePathNotFoundError = "Package base path not found. Cannot build TypeScript server.";
+        private const string TypeScriptDirNotFoundError = "TypeScript directory not found: {0}";
+        private const string NpmNotFoundError = "npm command not found. Please make sure Node.js and npm are installed.";
+        private const string NpmNotFoundShortError = "npm command not found";
+        private const string BuildingMessage = "Building TypeScript server in: {0}";
+        private const string UsingNpmMessage = "Using npm at: {0}";
+        private const string BuildCompletedMessage = "TypeScript server build completed.";
+        private const string SearchingNpmMessage = "Searching for npm command...";
+        private const string RunningNpmInstallMessage = "Running npm install...";
+        private const string NpmInstallSuccessMessage = "npm install completed successfully!";
+        private const string InstallOutputMessage = "Install output:\n{0}";
+        private const string NpmInstallFailedMessage = "npm install failed with exit code {0}";
+        private const string InstallErrorMessage = "Install error:\n{0}";
+        private const string WhichNpmOutputMessage = "which npm output: '{0}', error: '{1}', exit code: {2}";
+        private const string FoundNpmViaWhichMessage = "Found npm via which command: {0}";
+        private const string CheckingNpmPathMessage = "Checking npm path: {0}";
+        private const string FoundNpmAtMessage = "Found npm at: {0}";
+        private const string NpmNotFoundInExpectedLocationsError = "npm command not found in any of the expected locations";
+        private const string RunningCommandMessage = "Running command: {0} {1} in directory: {2}";
+        private const string CommandCompletedSuccessMessage = "{0} {1} completed successfully!";
+        private const string OutputMessage = "Output:\n{0}";
+        private const string CommandFailedMessage = "{0} {1} failed with exit code {2}";
+        private const string ErrorMessage = "Error:\n{0}";
+        private const string UpdatedPathMessage = "Updated PATH for npm process: {0}";
         /// <summary>
         /// ビルド完了時のコールバック
         /// </summary>
@@ -27,16 +72,16 @@ namespace io.github.hatayama.uMCP
             string packageBasePath = UnityMcpPathResolver.GetPackageBasePath();
             if (string.IsNullOrEmpty(packageBasePath))
             {
-                Debug.LogError("Package base path not found. Cannot build TypeScript server.");
-                onComplete?.Invoke(false, "", "Package base path not found. Cannot build TypeScript server.");
+                McpLogger.LogError(PackagePathNotFoundError);
+                onComplete?.Invoke(false, "", PackagePathNotFoundError);
                 return;
             }
             
-            string typeScriptDir = Path.Combine(packageBasePath, "TypeScriptServer");
+            string typeScriptDir = Path.Combine(packageBasePath, TypeScriptServerDirName);
             if (!Directory.Exists(typeScriptDir))
             {
-                Debug.LogError($"TypeScript directory not found: {typeScriptDir}");
-                onComplete?.Invoke(false, "", $"TypeScript directory not found: {typeScriptDir}");
+                McpLogger.LogError(string.Format(TypeScriptDirNotFoundError, typeScriptDir));
+                onComplete?.Invoke(false, "", string.Format(TypeScriptDirNotFoundError, typeScriptDir));
                 return;
             }
             
@@ -44,22 +89,22 @@ namespace io.github.hatayama.uMCP
             string npmPath = GetNpmPath();
             if (string.IsNullOrEmpty(npmPath))
             {
-                Debug.LogError("npm command not found. Please make sure Node.js and npm are installed.");
-                onComplete?.Invoke(false, "", "npm command not found");
+                McpLogger.LogError(NpmNotFoundError);
+                onComplete?.Invoke(false, "", NpmNotFoundShortError);
                 return;
             }
             
-            Debug.Log($"Building TypeScript server in: {typeScriptDir}");
-            Debug.Log($"Using npm at: {npmPath}");
+            McpLogger.LogInfo(string.Format(BuildingMessage, typeScriptDir));
+            McpLogger.LogInfo(string.Format(UsingNpmMessage, npmPath));
             
             // npm ciを実行（package-lock.jsonから厳密にインストール）
-            RunCommand(npmPath, "ci", typeScriptDir);
+            RunCommand(npmPath, NpmCiCommand, typeScriptDir);
             
             // esbuildでバンドルビルドを実行
-            RunCommand(npmPath, "run build:bundle", typeScriptDir);
+            RunCommand(npmPath, NpmRunBuildBundleCommand, typeScriptDir);
             
-            Debug.Log("TypeScript server build completed.");
-            onComplete?.Invoke(true, "", "TypeScript server build completed.");
+            McpLogger.LogInfo(BuildCompletedMessage);
+            onComplete?.Invoke(true, "", BuildCompletedMessage);
         }
 
         /// <summary>
@@ -70,12 +115,12 @@ namespace io.github.hatayama.uMCP
         /// <returns>成功したかどうか</returns>
         private bool RunNpmInstall(string npmPath, string workingDirectory)
         {
-            Debug.Log("Running npm install...");
+            McpLogger.LogInfo(RunningNpmInstallMessage);
             
             SystemDiagnostics.ProcessStartInfo startInfo = new SystemDiagnostics.ProcessStartInfo
             {
                 FileName = npmPath,
-                Arguments = "install",
+                Arguments = NpmInstallCommand,
                 WorkingDirectory = workingDirectory,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -86,42 +131,33 @@ namespace io.github.hatayama.uMCP
             // 環境変数のPATHを設定
             SetupEnvironmentPath(startInfo, npmPath);
             
-            try
+            using (SystemDiagnostics.Process process = SystemDiagnostics.Process.Start(startInfo))
             {
-                using (SystemDiagnostics.Process process = SystemDiagnostics.Process.Start(startInfo))
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                
+                process.WaitForExit();
+                
+                if (process.ExitCode == 0)
                 {
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    
-                    process.WaitForExit();
-                    
-                    if (process.ExitCode == 0)
+                    McpLogger.LogInfo(NpmInstallSuccessMessage);
+                    if (!string.IsNullOrEmpty(output))
                     {
-                        Debug.Log("npm install completed successfully!");
-                        if (!string.IsNullOrEmpty(output))
-                        {
-                            Debug.Log($"Install output:\n{output}");
-                        }
-                        return true;
+                        McpLogger.LogDebug(string.Format(InstallOutputMessage, output));
                     }
-                    else
-                    {
-                        Debug.LogError($"npm install failed with exit code {process.ExitCode}");
-                        if (!string.IsNullOrEmpty(error))
-                        {
-                            Debug.LogError($"Install error:\n{error}");
-                        }
-                        if (!string.IsNullOrEmpty(output))
-                        {
-                            Debug.LogError($"Install output:\n{output}");
-                        }
-                        return false;
-                    }
+                    return true;
                 }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"Failed to start npm install process: {ex.Message}");
+                
+                McpLogger.LogError(string.Format(NpmInstallFailedMessage, process.ExitCode));
+                if (!string.IsNullOrEmpty(error))
+                {
+                    McpLogger.LogError(string.Format(InstallErrorMessage, error));
+                }
+                if (!string.IsNullOrEmpty(output))
+                {
+                    McpLogger.LogError(string.Format(InstallOutputMessage, output));
+                }
+                
                 return false;
             }
         }
@@ -131,61 +167,54 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private string GetNpmPath()
         {
-            Debug.Log("Searching for npm command...");
+            McpLogger.LogDebug(SearchingNpmMessage);
             
             // まずwhichコマンドでnpmを探す
-            try
+            SystemDiagnostics.ProcessStartInfo whichInfo = new SystemDiagnostics.ProcessStartInfo
             {
-                SystemDiagnostics.ProcessStartInfo whichInfo = new SystemDiagnostics.ProcessStartInfo
-                {
-                    FileName = "which",
-                    Arguments = "npm",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
+                FileName = WhichCommand,
+                Arguments = NpmExecutableName,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using (SystemDiagnostics.Process whichProcess = SystemDiagnostics.Process.Start(whichInfo))
+            {
+                string whichOutput = whichProcess.StandardOutput.ReadToEnd().Trim();
+                string whichError = whichProcess.StandardError.ReadToEnd().Trim();
+                whichProcess.WaitForExit();
                 
-                using (SystemDiagnostics.Process whichProcess = SystemDiagnostics.Process.Start(whichInfo))
+                McpLogger.LogDebug(string.Format(WhichNpmOutputMessage, whichOutput, whichError, whichProcess.ExitCode));
+                
+                if (whichProcess.ExitCode == 0 && !string.IsNullOrEmpty(whichOutput))
                 {
-                    string whichOutput = whichProcess.StandardOutput.ReadToEnd().Trim();
-                    string whichError = whichProcess.StandardError.ReadToEnd().Trim();
-                    whichProcess.WaitForExit();
-                    
-                    Debug.Log($"which npm output: '{whichOutput}', error: '{whichError}', exit code: {whichProcess.ExitCode}");
-                    
-                    if (whichProcess.ExitCode == 0 && !string.IsNullOrEmpty(whichOutput))
-                    {
-                        Debug.Log($"Found npm via which command: {whichOutput}");
-                        return whichOutput;
-                    }
+                    McpLogger.LogDebug(string.Format(FoundNpmViaWhichMessage, whichOutput));
+                    return whichOutput;
                 }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"Failed to run which command: {ex.Message}");
             }
             
             // whichで見つからない場合は、一般的なパスを試す
             string[] possiblePaths = {
-                "/usr/local/bin/npm", // Homebrewでインストールした場合
-                "/opt/homebrew/bin/npm", // Apple Silicon Macでのbrew
-                "/usr/bin/npm", // システムインストール
-                Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".nvm/versions/node/*/bin/npm") // nvm
+                Path.Combine(HomebrewBinPath, NpmExecutableName), // Homebrewでインストールした場合
+                Path.Combine(AppleSiliconBrewBinPath, NpmExecutableName), // Apple Silicon Macでのbrew
+                Path.Combine(SystemBinPath, NpmExecutableName), // システムインストール
+                Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), NvmVersionsNodePath, WildcardChar, BinDirName, NpmExecutableName) // nvm
             };
             
             foreach (string path in possiblePaths)
             {
-                if (path.Contains("*"))
+                if (path.Contains(WildcardChar))
                 {
                     // nvmパスの場合は展開して検索
-                    string nvmBasePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".nvm/versions/node");
+                    string nvmBasePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), NvmVersionsNodePath);
                     if (Directory.Exists(nvmBasePath))
                     {
                         string[] nodeDirs = Directory.GetDirectories(nvmBasePath);
                         foreach (string nodeDir in nodeDirs)
                         {
-                            string nvmNpmPath = Path.Combine(nodeDir, "bin", "npm");
+                            string nvmNpmPath = Path.Combine(nodeDir, BinDirName, NpmExecutableName);
                             if (File.Exists(nvmNpmPath))
                             {
                                 return nvmNpmPath;
@@ -195,17 +224,17 @@ namespace io.github.hatayama.uMCP
                 }
                 else
                 {
-                    Debug.Log($"Checking npm path: {path}");
+                    McpLogger.LogDebug(string.Format(CheckingNpmPathMessage, path));
                     // 直接パスをチェック
                     if (File.Exists(path))
                     {
-                        Debug.Log($"Found npm at: {path}");
+                        McpLogger.LogDebug(string.Format(FoundNpmAtMessage, path));
                         return path;
                     }
                 }
             }
             
-            Debug.LogError("npm command not found in any of the expected locations");
+            McpLogger.LogError(NpmNotFoundInExpectedLocationsError);
             return null;
         }
 
@@ -218,7 +247,7 @@ namespace io.github.hatayama.uMCP
             string npmDir = Path.GetDirectoryName(npmPath);
             
             // 現在のPATH環境変数を取得
-            string currentPath = System.Environment.GetEnvironmentVariable("PATH") ?? "";
+            string currentPath = System.Environment.GetEnvironmentVariable(PathEnvironmentVariable) ?? "";
             
             // 追加すべきパスのリスト
             List<string> additionalPaths = new List<string>();
@@ -231,9 +260,9 @@ namespace io.github.hatayama.uMCP
             
             // 一般的なNode.jsのパスを追加
             string[] commonNodePaths = {
-                "/usr/local/bin",
-                "/opt/homebrew/bin",
-                "/usr/bin"
+                HomebrewBinPath,
+                AppleSiliconBrewBinPath,
+                SystemBinPath
             };
             
             foreach (string path in commonNodePaths)
@@ -245,13 +274,13 @@ namespace io.github.hatayama.uMCP
             }
             
             // nvmのパスも追加
-            string nvmBasePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".nvm/versions/node");
+            string nvmBasePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), NvmVersionsNodePath);
             if (Directory.Exists(nvmBasePath))
             {
                 string[] nodeDirs = Directory.GetDirectories(nvmBasePath);
                 foreach (string nodeDir in nodeDirs)
                 {
-                    string binPath = Path.Combine(nodeDir, "bin");
+                    string binPath = Path.Combine(nodeDir, BinDirName);
                     if (Directory.Exists(binPath) && !additionalPaths.Contains(binPath))
                     {
                         additionalPaths.Add(binPath);
@@ -260,17 +289,17 @@ namespace io.github.hatayama.uMCP
             }
             
             // 新しいPATHを構築
-            string newPath = string.Join(":", additionalPaths) + ":" + currentPath;
+            string newPath = string.Join(PathSeparator, additionalPaths) + PathSeparator + currentPath;
             
             // 環境変数を設定
-            startInfo.EnvironmentVariables["PATH"] = newPath;
+            startInfo.EnvironmentVariables[PathEnvironmentVariable] = newPath;
             
-            Debug.Log($"Updated PATH for npm process: {newPath}");
+            McpLogger.LogDebug(string.Format(UpdatedPathMessage, newPath));
         }
 
         private void RunCommand(string command, string arguments, string workingDirectory)
         {
-            Debug.Log($"Running command: {command} {arguments} in directory: {workingDirectory}");
+            McpLogger.LogInfo(string.Format(RunningCommandMessage, command, arguments, workingDirectory));
             
             SystemDiagnostics.ProcessStartInfo startInfo = new SystemDiagnostics.ProcessStartInfo
             {
@@ -286,44 +315,35 @@ namespace io.github.hatayama.uMCP
             // 環境変数のPATHを設定
             SetupEnvironmentPath(startInfo, GetNpmPath());
             
-            try
+            using (SystemDiagnostics.Process process = SystemDiagnostics.Process.Start(startInfo))
             {
-                using (SystemDiagnostics.Process process = SystemDiagnostics.Process.Start(startInfo))
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                
+                process.WaitForExit();
+                
+                bool success = process.ExitCode == 0;
+                
+                if (success)
                 {
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    
-                    process.WaitForExit();
-                    
-                    bool success = process.ExitCode == 0;
-                    
-                    if (success)
+                    McpLogger.LogInfo(string.Format(CommandCompletedSuccessMessage, command, arguments));
+                    if (!string.IsNullOrEmpty(output))
                     {
-                        Debug.Log($"{command} {arguments} completed successfully!");
-                        if (!string.IsNullOrEmpty(output))
-                        {
-                            Debug.Log($"Output:\n{output}");
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError($"{command} {arguments} failed with exit code {process.ExitCode}");
-                        if (!string.IsNullOrEmpty(error))
-                        {
-                            Debug.LogError($"Error:\n{error}");
-                        }
-                        if (!string.IsNullOrEmpty(output))
-                        {
-                            Debug.LogError($"Output:\n{output}");
-                        }
+                        McpLogger.LogDebug(string.Format(OutputMessage, output));
                     }
                 }
-            }
-            catch (System.Exception ex)
-            {
-                string errorMsg = $"Failed to run command: {command} {arguments}: {ex.Message}";
-                Debug.LogError(errorMsg);
-                Debug.LogError("Make sure npm is installed and available in PATH");
+                else
+                {
+                    McpLogger.LogError(string.Format(CommandFailedMessage, command, arguments, process.ExitCode));
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        McpLogger.LogError(string.Format(ErrorMessage, error));
+                    }
+                    if (!string.IsNullOrEmpty(output))
+                    {
+                        McpLogger.LogError(string.Format(OutputMessage, output));
+                    }
+                }
             }
         }
     }

@@ -1,5 +1,3 @@
-using System;
-
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
@@ -41,43 +39,22 @@ namespace io.github.hatayama.uMCP
         {
             using (LogGetterModel model = new LogGetterModel())
             {
-                LogEntryDto[] allEntries = model.GetConsoleLogEntries();
-                
-                if (string.IsNullOrEmpty(logType))
-                {
-                    return new LogDisplayDto(allEntries, allEntries.Length);
-                }
-
-                LogEntryDto[] filteredEntries = FilterLogsByType(allEntries, logType);
+                LogEntryDto[] filteredEntries = model.GetConsoleLogEntries(logType);
                 return new LogDisplayDto(filteredEntries, filteredEntries.Length);
             }
         }
 
         /// <summary>
-        /// Consoleログの総数を取得する
+        /// Consoleログの総数を取得する（フィルター状態を無視）
         /// </summary>
         /// <returns>ログの総数</returns>
         public static int GetConsoleLogCount()
         {
             using (UnityLogEntriesAccessor accessor = new UnityLogEntriesAccessor())
             {
-                return accessor.GetLogCount();
+                return accessor.GetLogCountWithAllFlags();
             }
         }
 
-        private static LogEntryDto[] FilterLogsByType(LogEntryDto[] entries, string logType)
-        {
-            System.Collections.Generic.List<LogEntryDto> filtered = new System.Collections.Generic.List<LogEntryDto>();
-            
-            foreach (LogEntryDto entry in entries)
-            {
-                if (string.Equals(entry.LogType, logType, StringComparison.OrdinalIgnoreCase))
-                {
-                    filtered.Add(entry);
-                }
-            }
-            
-            return filtered.ToArray();
-        }
     }
 } 
