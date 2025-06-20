@@ -57,6 +57,18 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// ログタイプとメッセージ内容でConsoleログをフィルタリングして取得する
+        /// </summary>
+        /// <param name="logType">フィルタするログタイプ（null または "All" の場合は全てのタイプ）</param>
+        /// <param name="searchText">メッセージ内で検索するテキスト（null または空の場合は検索しない）</param>
+        /// <returns>フィルタされたログデータ</returns>
+        public static LogDisplayDto GetConsoleLog(string logType, string searchText)
+        {
+            LogEntryDto[] filteredEntries = LogManager.GetLogEntriesByTypeAndMessage(logType, searchText);
+            return new LogDisplayDto(filteredEntries, filteredEntries.Length);
+        }
+
+        /// <summary>
         /// Consoleログの総数を取得する
         /// </summary>
         /// <returns>ログの総数</returns>

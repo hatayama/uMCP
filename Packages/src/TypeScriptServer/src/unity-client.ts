@@ -180,7 +180,7 @@ export class UnityClient {
   /**
    * Unityコンソールのログを取得
    */
-  async getLogs(logType: string = 'All', maxCount: number = 100): Promise<{
+  async getLogs(logType: string = 'All', maxCount: number = 100, searchText: string = '', includeStackTrace: boolean = true): Promise<{
     logs: Array<{
       type: string;
       message: string;
@@ -201,8 +201,10 @@ export class UnityClient {
         id: requestId,
         method: 'getLogs',
         params: {
-          logType: logType,
-          maxCount: maxCount
+          logType: logType || 'All',
+          maxCount: maxCount || 100,
+          searchText: searchText || '',
+          includeStackTrace: includeStackTrace !== undefined ? includeStackTrace : true
         }
       });
 

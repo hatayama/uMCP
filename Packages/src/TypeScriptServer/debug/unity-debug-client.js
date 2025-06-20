@@ -120,7 +120,7 @@ export class UnityDebugClient {
     /**
      * Unityコンソールのログを取得
      */
-    async getLogs(logType = 'All', maxCount = 100) {
+    async getLogs(logType = 'All', maxCount = 100, searchText = '', includeStackTrace = true) {
         if (!this.connected) {
             throw new Error('Unity MCP Bridge is not connected');
         }
@@ -133,7 +133,9 @@ export class UnityDebugClient {
                 method: 'getLogs',
                 params: {
                     logType: logType,
-                    maxCount: maxCount
+                    maxCount: maxCount,
+                    searchText: searchText,
+                    includeStackTrace: includeStackTrace
                 }
             });
 

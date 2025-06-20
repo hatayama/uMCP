@@ -97,6 +97,53 @@ namespace io.github.hatayama.uMCP
             }
         }
 
+        public LogEntryDto[] GetLogEntriesByMessage(string searchText)
+        {
+            lock (lockObject)
+            {
+                if (string.IsNullOrEmpty(searchText))
+                {
+                    return logEntries.ToArray();
+                }
+
+                List<LogEntryDto> filteredEntries = new List<LogEntryDto>();
+                
+                foreach (LogEntryDto entry in logEntries)
+                {
+                    if (entry.Message.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        filteredEntries.Add(entry);
+                    }
+                }
+                
+                return filteredEntries.ToArray();
+            }
+        }
+
+        public LogEntryDto[] GetLogEntriesByTypeAndMessage(string logType, string searchText)
+        {
+            lock (lockObject)
+            {
+                List<LogEntryDto> filteredEntries = new List<LogEntryDto>();
+                
+                foreach (LogEntryDto entry in logEntries)
+                {
+                    bool typeMatch = string.IsNullOrEmpty(logType) || logType == "All" || 
+                                    string.Equals(entry.LogType, logType, StringComparison.OrdinalIgnoreCase);
+                    
+                    bool messageMatch = string.IsNullOrEmpty(searchText) || 
+                                       entry.Message.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                    
+                    if (typeMatch && messageMatch)
+                    {
+                        filteredEntries.Add(entry);
+                    }
+                }
+                
+                return filteredEntries.ToArray();
+            }
+        }
+
         public int GetLogCount()
         {
             lock (lockObject)

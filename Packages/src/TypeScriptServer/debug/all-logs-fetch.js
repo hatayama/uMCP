@@ -7,14 +7,16 @@ function showHelp() {
     console.log('  node test/test-all-logs.js [options]');
     console.log('');
     console.log('Options:');
-    console.log('  --count, -c <num>  取得する最大ログ数 (default: 100)');
-    console.log('  --stats, -s        統計情報のみ表示');
-    console.log('  --help, -h         このヘルプを表示');
+    console.log('  --count, -c <num>    取得する最大ログ数 (default: 100)');
+    console.log('  --search <text>      メッセージ内で検索するテキスト');
+    console.log('  --stats, -s          統計情報のみ表示');
+    console.log('  --help, -h           このヘルプを表示');
     console.log('');
     console.log('Examples:');
-    console.log('  node test/test-all-logs.js              # 全ログ100件取得+統計');
-    console.log('  node test/test-all-logs.js -c 200       # 全ログ200件取得');
-    console.log('  node test/test-all-logs.js --stats      # 統計情報のみ表示');
+    console.log('  node test/test-all-logs.js                # 全ログ100件取得+統計');
+    console.log('  node test/test-all-logs.js -c 200         # 全ログ200件取得');
+    console.log('  node test/test-all-logs.js --stats        # 統計情報のみ表示');
+    console.log('  node test/test-all-logs.js --search "エラー" # "エラー"を含むログを検索');
     console.log('');
 }
 
@@ -35,11 +37,19 @@ async function testAllLogs() {
         maxCount = parseInt(args[countIndex + 1], 10) || 100;
     }
     
+    // 検索テキストの取得
+    let searchText = '';
+    const searchIndex = args.findIndex(arg => arg === '--search');
+    if (searchIndex !== -1 && args[searchIndex + 1]) {
+        searchText = args[searchIndex + 1];
+    }
+    
     // 統計のみ表示フラグ
     const statsOnly = args.includes('--stats') || args.includes('-s');
     
     console.log('=== Unity All Logs Test ===');
     console.log(`Max Count: ${maxCount}`);
+    console.log(`Search Text: ${searchText || '(検索なし)'}`);
     console.log(`Stats Only: ${statsOnly ? 'ON' : 'OFF'}`);
     
     const client = new UnityDebugClient();
@@ -49,8 +59,8 @@ async function testAllLogs() {
         await client.connect();
         console.log('✓ Connected successfully!');
         
-        console.log(`\n2. Getting All logs (max ${maxCount})...`);
-        const allLogs = await client.getLogs('All', maxCount);
+        console.log(`\n2. Getting All logs (max ${maxCount}${searchText ? `, search: "${searchText}"` : ''})...`);
+        const allLogs = await client.getLogs('All', maxCount, searchText);
         console.log(`✓ Found ${allLogs.logs.length} logs (total: ${allLogs.totalCount})`);
         
         // ログタイプ別の集計
@@ -71,7 +81,7 @@ async function testAllLogs() {
         
         console.log('\n--- LOG STATISTICS ---');
         console.log(`Total logs in Unity: ${allLogs.totalCount}`);
-        console.log(`Retrieved logs: ${allLogs.logs.length}`);
+        console.log(`Retrieved logs: ${allLogs.logs.length}${searchText ? ` (filtered by: "${searchText}")` : ''}`);
         console.log(`Error logs: ${logCounts.Error}`);
         console.log(`Warning logs: ${logCounts.Warning}`);
         console.log(`Info logs: ${logCounts.Log}`);

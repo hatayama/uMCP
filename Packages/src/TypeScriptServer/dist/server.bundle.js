@@ -5606,7 +5606,7 @@ var UnityClient = class {
   /**
    * Unityコンソールのログを取得
    */
-  async getLogs(logType = "All", maxCount = 100) {
+  async getLogs(logType = "All", maxCount = 100, searchText = "", includeStackTrace = true) {
     if (!this.connected) {
       throw new Error("Unity MCP Bridge is not connected. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.");
     }
@@ -5617,8 +5617,10 @@ var UnityClient = class {
         id: requestId,
         method: "getLogs",
         params: {
-          logType,
-          maxCount
+          logType: logType || "All",
+          maxCount: maxCount || 100,
+          searchText: searchText || "",
+          includeStackTrace: includeStackTrace !== void 0 ? includeStackTrace : true
         }
       });
       this.socket.write(request + "\n");
@@ -5899,22 +5901,41 @@ var LogsTool = class extends BaseTool {
         type: "number",
         description: "\u53D6\u5F97\u3059\u308B\u6700\u5927\u30ED\u30B0\u6570",
         default: 100
+      },
+      searchText: {
+        type: "string",
+        description: "\u30ED\u30B0\u30E1\u30C3\u30BB\u30FC\u30B8\u5185\u3067\u691C\u7D22\u3059\u308B\u30C6\u30AD\u30B9\u30C8\uFF08\u7A7A\u306E\u5834\u5408\u306F\u5168\u3066\u53D6\u5F97\uFF09",
+        default: ""
+      },
+      includeStackTrace: {
+        type: "boolean",
+        description: "\u30B9\u30BF\u30C3\u30AF\u30C8\u30EC\u30FC\u30B9\u3092\u8868\u793A\u3059\u308B\u304B\u3069\u3046\u304B",
+        default: true
       }
-    }
+    },
+    required: []
   };
   validateArgs(args) {
     const schema = external_exports.object({
       logType: external_exports.enum(["Error", "Warning", "Log", "All"]).default("All"),
-      maxCount: external_exports.number().default(100)
+      maxCount: external_exports.number().default(100),
+      searchText: external_exports.string().default(""),
+      includeStackTrace: external_exports.boolean().default(true)
     });
-    return schema.parse(args || {});
+    const validatedArgs = schema.parse(args || {});
+    return validatedArgs;
   }
   async execute(args) {
     await this.context.unityClient.ensureConnected();
-    return await this.context.unityClient.getLogs(args.logType, args.maxCount);
+    const result = await this.context.unityClient.getLogs(args.logType, args.maxCount, args.searchText, args.includeStackTrace);
+    return result;
   }
   formatResponse(result) {
-    let responseText = `Unity Console Logs (Filter: ${result.logType}, Max: ${result.maxCount}):
+    const logType = result.requestedLogType || "All";
+    const maxCount = result.requestedMaxCount || 100;
+    const searchText = result.requestedSearchText || "";
+    const includeStackTrace = result.requestedIncludeStackTrace !== void 0 ? result.requestedIncludeStackTrace : true;
+    let responseText = `Unity Console Logs (Filter: ${logType}, Max: ${maxCount}${searchText ? `, Search: "${searchText}"` : ""}, StackTrace: ${includeStackTrace ? "ON" : "OFF"}):
 
 `;
     if (result.logs.length > 0) {
