@@ -1,8 +1,5 @@
-[![Unity](https://img.shields.io/badge/Unity-2020.3+-red.svg)](https://unity3d.com/)
+[![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
-
-# 注意
-**またpreview版です。動作が安定していません**
 
 # uMCP
 
@@ -17,66 +14,83 @@ Model Context Protocolを使用し、UnityエディターをLLMツールに接�
   - `forceRecompile` (boolean): 強制再コンパイルを行うかどうか（デフォルト: false）
 - **レスポンス**: 
   - `success` (boolean): コンパイルが成功したかどうか
+  - `errorCount` (number): エラーの総数
+  - `warningCount` (number): 警告の総数
+  - `completedAt` (string): コンパイル完了時刻（ISO形式）
   - `errors` (array): コンパイルエラーの配列（エラーがある場合）
     - `message` (string): エラーメッセージ
     - `file` (string): エラーが発生したファイルパス
     - `line` (number): エラーが発生した行番号
     - `column` (number): エラーが発生した列番号
-    - `errorCode` (string): エラーコード（CS0117など）
+    - `type` (string): エラータイプ
   - `warnings` (array): コンパイル警告の配列（警告がある場合）
     - `message` (string): 警告メッセージ
     - `file` (string): 警告が発生したファイルパス
     - `line` (number): 警告が発生した行番号
     - `column` (number): 警告が発生した列番号
-    - `warningCode` (string): 警告コード（CS0162など）
-  - `compileTime` (number): コンパイル所要時間（ミリ秒）
+    - `type` (string): 警告タイプ
 
 ### 2. unity.getLogs
 - **説明**: Unityコンソールのログ情報を取得する
 - **パラメータ**: 
   - `logType` (string): フィルタリングするログタイプ (Error, Warning, Log, All)（デフォルト: "All"）
   - `maxCount` (number): 取得する最大ログ数（デフォルト: 100）
+  - `searchText` (string): ログメッセージ内で検索するテキスト（空の場合は全て取得）（デフォルト: ""）
+  - `includeStackTrace` (boolean): スタックトレースを表示するかどうか（デフォルト: true）
 - **レスポンス**: 
   - `logs` (array): ログエントリの配列
     - `type` (string): ログタイプ (Error, Warning, Log)
     - `message` (string): ログメッセージ
-    - `stackTrace` (string): スタックトレース
+    - `stackTrace` (string): スタックトレース（includeStackTraceがtrueの場合）
+    - `file` (string): ログが発生したファイル名
+    - `line` (number): 行番号（現在は常に0）
     - `timestamp` (string): ログの時刻
   - `totalCount` (number): 取得したログの総数
-- **注意**
-  - 現状、Consoleの表示と連動しています。フィルターで非表示になっているlog typeは取得できません。これは将来的に改善する予定です
+  - `requestedLogType` (string): リクエストされたログタイプ
+  - `requestedMaxCount` (number): リクエストされた最大ログ数
+  - `requestedSearchText` (string): リクエストされた検索テキスト
+  - `requestedIncludeStackTrace` (boolean): リクエストされたスタックトレース表示設定
 
 ### 3. unity.runTests
 - **説明**: Unity Test Runnerを実行してテスト結果を取得する
 - **パラメータ**: 
   - `filterType` (string): テストフィルターの種類 (all, fullclassname, namespace, testname, assembly)（デフォルト: "all"）
   - `filterValue` (string): フィルター値（filterTypeがall以外の場合に指定）（デフォルト: ""）
+    - `fullclassname`: フルクラス名 (例: io.github.hatayama.uMCP.CompileCommandTests)
+    - `namespace`: ネームスペース (例: io.github.hatayama.uMCP)
+    - `testname`: 個別テスト名
+    - `assembly`: アセンブリ名
   - `saveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）
 - **レスポンス**: 
   - `success` (boolean): テスト実行が成功したかどうか
-  - `totalTests` (number): 実行されたテストの総数
-  - `passedTests` (number): 成功したテスト数
-  - `failedTests` (number): 失敗したテスト数
-  - `skippedTests` (number): スキップされたテスト数
-  - `executionTime` (number): テスト実行時間（秒）
-  - `results` (array): 個別テスト結果の配列
-    - `name` (string): テスト名
-    - `fullName` (string): テストのフルネーム
-    - `status` (string): テスト結果 (Passed, Failed, Skipped)
+  - `message` (string): 実行結果メッセージ
+  - `testResults` (object): テスト結果詳細
+    - `passedCount` (number): 成功したテスト数
+    - `failedCount` (number): 失敗したテスト数
+    - `skippedCount` (number): スキップされたテスト数
+    - `totalCount` (number): 実行されたテストの総数
     - `duration` (number): テスト実行時間（秒）
-    - `errorMessage` (string): エラーメッセージ（失敗時）
-    - `stackTrace` (string): スタックトレース（失敗時）
-    - `assertionFailures` (array): アサーション失敗の詳細（失敗時）
+    - `failedTests` (array): 失敗したテストの詳細
+      - `testName` (string): テスト名
+      - `fullName` (string): テストのフルネーム
+      - `message` (string): エラーメッセージ
+      - `stackTrace` (string): スタックトレース
+      - `duration` (number): テスト実行時間（秒）
   - `xmlPath` (string): XMLファイルのパス（saveXmlがtrueの場合）
+  - `filterType` (string): 使用されたフィルタータイプ
+  - `filterValue` (string): 使用されたフィルター値
+  - `saveXml` (boolean): XMLファイル保存設定
+  - `completedAt` (string): テスト完了時刻
  
 ### 4. unity.ping
 - **説明**: Unity側へのpingテスト（TCP/IP通信確認）
 - **パラメータ**: 
   - `message` (string): Unity側に送信するメッセージ（デフォルト: "Hello from TypeScript MCP Server"）
 - **レスポンス**: 
-  - `success` (boolean): 通信が成功したかどうか
-  - `response` (string): Unity側からの応答メッセージ
-  - `responseTime` (number): 応答時間（ミリ秒）
+  - Unity側からの応答メッセージ（文字列形式）
+- **注意**:
+  - 現在の実装では、通信成功・失敗の判定やレスポンス時間の計測は行っていません
+  - Unity側からの応答文字列のみが返されます
 
 [現状は上記の組み込み機能しか使えませんが、将来的にpackage外で自由にコマンドを増やす事ができる機能を検討しています](https://github.com/hatayama/uMCP/issues/14)
 
@@ -130,7 +144,7 @@ Model Context Protocolを使用し、UnityエディターをLLMツールに接�
 ## 前提条件
 
 ⚠️ **重要**: 以下のソフトウェアが必要です
-- **Unity 2020.3 以上**
+- **Unity 2022.3 以上**
 - **Node.js 18.0 以上** ⭐ **必須** - MCP Serverの実行に必要
 - node.jsのinstallは[こちら](https://nodejs.org/ja/download)
 
@@ -160,10 +174,6 @@ Scope(s)：io.github.hatayama.umcp
 ```
 
 3. Package Manager ウィンドウを開き、My Registries セクションの "hatayama" ページに移動します
-
-### Node.js関連
-- `node --version` でNode.js 18以上がインストールされているか確認
-- パスが正しく設定されているか確認
 
 ### Unity接続エラー
 - Unity MCP Bridge が起動しているか確認（Window > Unity MCP）
