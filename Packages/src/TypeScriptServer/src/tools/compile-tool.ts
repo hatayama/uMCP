@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
+import { TOOL_NAMES, COMPILE_CONFIG, UNITY_CONNECTION } from '../constants.js';
 
 /**
  * Unityコンパイルツール
  */
 export class CompileTool extends BaseTool {
-  readonly name = 'unity-compile';
+  readonly name = TOOL_NAMES.COMPILE;
   readonly description = 'Unityプロジェクトのコンパイルを実行し、エラー情報を取得する';
   readonly inputSchema = {
     type: 'object',
@@ -14,14 +15,14 @@ export class CompileTool extends BaseTool {
       forceRecompile: {
         type: 'boolean',
         description: '強制再コンパイルを行うかどうか',
-        default: false
+        default: COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE
       }
     }
   };
 
   protected validateArgs(args: unknown) {
     const schema = z.object({
-      forceRecompile: z.boolean().default(false)
+      forceRecompile: z.boolean().default(COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE)
     });
     return schema.parse(args || {});
   }
@@ -77,7 +78,7 @@ Completed: ${result.completedAt}`;
 Error: ${errorMessage}
 Stack: ${stack}
 
-Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || '7400'}.`
+Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT}.`
         }
       ]
     };

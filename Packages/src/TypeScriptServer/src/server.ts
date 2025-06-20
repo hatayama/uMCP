@@ -10,6 +10,7 @@ import {
 import { UnityClient } from './unity-client.js';
 import { ToolRegistry } from './tools/tool-registry.js';
 import { ToolContext } from './types/tool-types.js';
+import { SERVER_CONFIG } from './constants.js';
 
 /**
  * Unity MCP Server
@@ -24,8 +25,8 @@ class McpServer {
     console.log('🚀 Unity MCP Server initializing...');
     this.server = new Server(
       {
-        name: 'unity-mcp-server',
-        version: '0.1.0',
+        name: SERVER_CONFIG.NAME,
+        version: SERVER_CONFIG.VERSION,
       },
       {
         capabilities: {

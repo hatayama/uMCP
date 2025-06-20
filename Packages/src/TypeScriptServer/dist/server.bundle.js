@@ -5475,13 +5475,68 @@ var StdioServerTransport = class {
 
 // src/unity-client.ts
 import * as net from "net";
+
+// src/constants.ts
+var SERVER_CONFIG = {
+  NAME: "unity-mcp-server",
+  VERSION: "0.1.0"
+};
+var UNITY_CONNECTION = {
+  DEFAULT_PORT: "7400",
+  DEFAULT_HOST: "localhost",
+  CONNECTION_TEST_MESSAGE: "connection_test"
+};
+var JSONRPC = {
+  VERSION: "2.0"
+};
+var TIMEOUTS = {
+  PING: 5e3,
+  COMPILE: 3e4,
+  GET_LOGS: 1e4,
+  RUN_TESTS: 6e4
+};
+var LOG_CONFIG = {
+  TYPES: ["Error", "Warning", "Log", "All"],
+  DEFAULT_TYPE: "All",
+  DEFAULT_MAX_COUNT: 100,
+  DEFAULT_SEARCH_TEXT: "",
+  DEFAULT_INCLUDE_STACK_TRACE: true
+};
+var TEST_CONFIG = {
+  FILTER_TYPES: ["all", "fullclassname", "namespace", "testname", "assembly"],
+  DEFAULT_FILTER_TYPE: "all",
+  DEFAULT_FILTER_VALUE: "",
+  DEFAULT_SAVE_XML: false
+};
+var COMPILE_CONFIG = {
+  DEFAULT_FORCE_RECOMPILE: false
+};
+var TOOL_NAMES = {
+  PING: "mcp.ping",
+  UNITY_PING: "unity-ping",
+  COMPILE: "unity-compile",
+  GET_LOGS: "unity-get-logs",
+  RUN_TESTS: "unity-run-tests"
+};
+var DEFAULT_MESSAGES = {
+  PING: "Hello Unity MCP!",
+  UNITY_PING: "Hello from TypeScript MCP Server"
+};
+var ERROR_MESSAGES = {
+  NOT_CONNECTED: "Unity MCP Bridge is not connected",
+  CONNECTION_FAILED: "Unity connection failed",
+  TIMEOUT: "timeout",
+  INVALID_RESPONSE: "Invalid response from Unity"
+};
+
+// src/unity-client.ts
 var UnityClient = class {
   socket = null;
   _connected = false;
   port;
-  host = "localhost";
+  host = UNITY_CONNECTION.DEFAULT_HOST;
   constructor() {
-    this.port = parseInt(process.env.UNITY_TCP_PORT || "7400", 10);
+    this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
   }
   get connected() {
     return this._connected && this.socket !== null && !this.socket.destroyed;
@@ -5495,7 +5550,7 @@ var UnityClient = class {
       return false;
     }
     try {
-      await this.ping("connection_test");
+      await this.ping(UNITY_CONNECTION.CONNECTION_TEST_MESSAGE);
       return true;
     } catch {
       this._connected = false;
@@ -5541,7 +5596,7 @@ var UnityClient = class {
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const request = JSON.stringify({
-        jsonrpc: "2.0",
+        jsonrpc: JSONRPC.VERSION,
         id: requestId,
         method: "ping",
         params: {
@@ -5550,8 +5605,8 @@ var UnityClient = class {
       });
       this.socket.write(request + "\n");
       const timeout = setTimeout(() => {
-        reject(new Error("Unity ping timeout"));
-      }, 5e3);
+        reject(new Error(`Unity ping ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.PING);
       this.socket.once("data", (data) => {
         clearTimeout(timeout);
         try {
@@ -5572,12 +5627,12 @@ var UnityClient = class {
    */
   async compileProject(forceRecompile = false) {
     if (!this.connected) {
-      throw new Error("Unity MCP Bridge is not connected. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.");
+      throw new Error(`${ERROR_MESSAGES.NOT_CONNECTED}. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.`);
     }
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const request = JSON.stringify({
-        jsonrpc: "2.0",
+        jsonrpc: JSONRPC.VERSION,
         id: requestId,
         method: "compile",
         params: {
@@ -5586,8 +5641,8 @@ var UnityClient = class {
       });
       this.socket.write(request + "\n");
       const timeout = setTimeout(() => {
-        reject(new Error("Unity compile timeout"));
-      }, 3e4);
+        reject(new Error(`Unity compile ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.COMPILE);
       this.socket.once("data", (data) => {
         clearTimeout(timeout);
         try {
@@ -5598,7 +5653,7 @@ var UnityClient = class {
             resolve(response.result);
           }
         } catch (error) {
-          reject(new Error("Invalid compile response from Unity"));
+          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} compile`));
         }
       });
     });
@@ -5606,25 +5661,27 @@ var UnityClient = class {
   /**
    * Unityコンソールのログを取得
    */
-  async getLogs(logType = "All", maxCount = 100) {
+  async getLogs(logType = LOG_CONFIG.DEFAULT_TYPE, maxCount = LOG_CONFIG.DEFAULT_MAX_COUNT, searchText = LOG_CONFIG.DEFAULT_SEARCH_TEXT, includeStackTrace = LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE) {
     if (!this.connected) {
-      throw new Error("Unity MCP Bridge is not connected. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.");
+      throw new Error("${ERROR_MESSAGES.NOT_CONNECTED}. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.");
     }
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const request = JSON.stringify({
-        jsonrpc: "2.0",
+        jsonrpc: JSONRPC.VERSION,
         id: requestId,
         method: "getLogs",
         params: {
-          logType,
-          maxCount
+          logType: logType || LOG_CONFIG.DEFAULT_TYPE,
+          maxCount: maxCount || LOG_CONFIG.DEFAULT_MAX_COUNT,
+          searchText: searchText || LOG_CONFIG.DEFAULT_SEARCH_TEXT,
+          includeStackTrace: includeStackTrace !== void 0 ? includeStackTrace : LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE
         }
       });
       this.socket.write(request + "\n");
       const timeout = setTimeout(() => {
-        reject(new Error("Unity getLogs timeout"));
-      }, 1e4);
+        reject(new Error(`Unity getLogs ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.GET_LOGS);
       this.socket.once("data", (data) => {
         clearTimeout(timeout);
         try {
@@ -5635,7 +5692,7 @@ var UnityClient = class {
             resolve(response.result);
           }
         } catch (error) {
-          reject(new Error("Invalid getLogs response from Unity"));
+          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} getLogs`));
         }
       });
     });
@@ -5643,14 +5700,14 @@ var UnityClient = class {
   /**
    * Unity Test Runnerを実行
    */
-  async runTests(filterType = "all", filterValue = "", saveXml = false) {
+  async runTests(filterType = TEST_CONFIG.DEFAULT_FILTER_TYPE, filterValue = TEST_CONFIG.DEFAULT_FILTER_VALUE, saveXml = TEST_CONFIG.DEFAULT_SAVE_XML) {
     if (!this.connected) {
-      throw new Error("Unity MCP Bridge is not connected. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.");
+      throw new Error("${ERROR_MESSAGES.NOT_CONNECTED}. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.");
     }
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const request = JSON.stringify({
-        jsonrpc: "2.0",
+        jsonrpc: JSONRPC.VERSION,
         id: requestId,
         method: "runtests",
         params: {
@@ -5661,8 +5718,8 @@ var UnityClient = class {
       });
       this.socket.write(request + "\n");
       const timeout = setTimeout(() => {
-        reject(new Error("Unity runTests timeout"));
-      }, 6e4);
+        reject(new Error(`Unity runTests ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.RUN_TESTS);
       this.socket.once("data", (data) => {
         clearTimeout(timeout);
         try {
@@ -5673,7 +5730,7 @@ var UnityClient = class {
             resolve(response.result);
           }
         } catch (error) {
-          reject(new Error("Invalid runTests response from Unity"));
+          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} runTests`));
         }
       });
     });
@@ -5739,7 +5796,7 @@ var BaseTool = class {
 
 // src/tools/ping-tool.ts
 var PingTool = class extends BaseTool {
-  name = "mcp.ping";
+  name = TOOL_NAMES.PING;
   description = "Unity MCP Server\u63A5\u7D9A\u30C6\u30B9\u30C8\u7528\u306Eping\u30B3\u30DE\u30F3\u30C9\uFF08TypeScript\u5074\u306E\u307F\uFF09";
   inputSchema = {
     type: "object",
@@ -5747,13 +5804,13 @@ var PingTool = class extends BaseTool {
       message: {
         type: "string",
         description: "\u30C6\u30B9\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8",
-        default: "Hello Unity MCP!"
+        default: DEFAULT_MESSAGES.PING
       }
     }
   };
   validateArgs(args) {
     const schema = external_exports.object({
-      message: external_exports.string().default("Hello Unity MCP!")
+      message: external_exports.string().default(DEFAULT_MESSAGES.PING)
     });
     return schema.parse(args || {});
   }
@@ -5809,7 +5866,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
 
 // src/tools/compile-tool.ts
 var CompileTool = class extends BaseTool {
-  name = "unity-compile";
+  name = TOOL_NAMES.COMPILE;
   description = "Unity\u30D7\u30ED\u30B8\u30A7\u30AF\u30C8\u306E\u30B3\u30F3\u30D1\u30A4\u30EB\u3092\u5B9F\u884C\u3057\u3001\u30A8\u30E9\u30FC\u60C5\u5831\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5817,13 +5874,13 @@ var CompileTool = class extends BaseTool {
       forceRecompile: {
         type: "boolean",
         description: "\u5F37\u5236\u518D\u30B3\u30F3\u30D1\u30A4\u30EB\u3092\u884C\u3046\u304B\u3069\u3046\u304B",
-        default: false
+        default: COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE
       }
     }
   };
   validateArgs(args) {
     const schema = external_exports.object({
-      forceRecompile: external_exports.boolean().default(false)
+      forceRecompile: external_exports.boolean().default(COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE)
     });
     return schema.parse(args || {});
   }
@@ -5875,7 +5932,7 @@ ${index + 1}. ${warning.file}(${warning.line},${warning.column}): ${warning.mess
 Error: ${errorMessage}
 Stack: ${stack}
 
-Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || "7400"}.`
+Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT}.`
         }
       ]
     };
@@ -5884,7 +5941,7 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
 
 // src/tools/logs-tool.ts
 var LogsTool = class extends BaseTool {
-  name = "unity-get-logs";
+  name = TOOL_NAMES.GET_LOGS;
   description = "Unity\u30B3\u30F3\u30BD\u30FC\u30EB\u306E\u30ED\u30B0\u60C5\u5831\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5892,29 +5949,48 @@ var LogsTool = class extends BaseTool {
       logType: {
         type: "string",
         description: "\u30D5\u30A3\u30EB\u30BF\u30EA\u30F3\u30B0\u3059\u308B\u30ED\u30B0\u30BF\u30A4\u30D7 (Error, Warning, Log, All)",
-        enum: ["Error", "Warning", "Log", "All"],
-        default: "All"
+        enum: LOG_CONFIG.TYPES,
+        default: LOG_CONFIG.DEFAULT_TYPE
       },
       maxCount: {
         type: "number",
         description: "\u53D6\u5F97\u3059\u308B\u6700\u5927\u30ED\u30B0\u6570",
-        default: 100
+        default: LOG_CONFIG.DEFAULT_MAX_COUNT
+      },
+      searchText: {
+        type: "string",
+        description: "\u30ED\u30B0\u30E1\u30C3\u30BB\u30FC\u30B8\u5185\u3067\u691C\u7D22\u3059\u308B\u30C6\u30AD\u30B9\u30C8\uFF08\u7A7A\u306E\u5834\u5408\u306F\u5168\u3066\u53D6\u5F97\uFF09",
+        default: LOG_CONFIG.DEFAULT_SEARCH_TEXT
+      },
+      includeStackTrace: {
+        type: "boolean",
+        description: "\u30B9\u30BF\u30C3\u30AF\u30C8\u30EC\u30FC\u30B9\u3092\u8868\u793A\u3059\u308B\u304B\u3069\u3046\u304B",
+        default: LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE
       }
-    }
+    },
+    required: []
   };
   validateArgs(args) {
     const schema = external_exports.object({
-      logType: external_exports.enum(["Error", "Warning", "Log", "All"]).default("All"),
-      maxCount: external_exports.number().default(100)
+      logType: external_exports.enum(LOG_CONFIG.TYPES).default(LOG_CONFIG.DEFAULT_TYPE),
+      maxCount: external_exports.number().default(LOG_CONFIG.DEFAULT_MAX_COUNT),
+      searchText: external_exports.string().default(LOG_CONFIG.DEFAULT_SEARCH_TEXT),
+      includeStackTrace: external_exports.boolean().default(LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE)
     });
-    return schema.parse(args || {});
+    const validatedArgs = schema.parse(args || {});
+    return validatedArgs;
   }
   async execute(args) {
     await this.context.unityClient.ensureConnected();
-    return await this.context.unityClient.getLogs(args.logType, args.maxCount);
+    const result = await this.context.unityClient.getLogs(args.logType, args.maxCount, args.searchText, args.includeStackTrace);
+    return result;
   }
   formatResponse(result) {
-    let responseText = `Unity Console Logs (Filter: ${result.logType}, Max: ${result.maxCount}):
+    const logType = result.requestedLogType || LOG_CONFIG.DEFAULT_TYPE;
+    const maxCount = result.requestedMaxCount || LOG_CONFIG.DEFAULT_MAX_COUNT;
+    const searchText = result.requestedSearchText || "";
+    const includeStackTrace = result.requestedIncludeStackTrace !== void 0 ? result.requestedIncludeStackTrace : LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE;
+    let responseText = `Unity Console Logs (Filter: ${logType}, Max: ${maxCount}${searchText ? `, Search: "${searchText}"` : ""}, StackTrace: ${includeStackTrace ? "ON" : "OFF"}):
 
 `;
     if (result.logs.length > 0) {
@@ -5952,7 +6028,7 @@ Total logs: ${result.logs.length} (of ${result.totalCount} total)`;
 Error: ${errorMessage}
 Stack: ${stack}
 
-Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || "7400"}.`
+Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT}.`
         }
       ]
     };
@@ -5961,7 +6037,7 @@ Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY
 
 // src/tools/run-tests-tool.ts
 var RunTestsTool = class extends BaseTool {
-  name = "unity-run-tests";
+  name = TOOL_NAMES.RUN_TESTS;
   description = "Unity Test Runner\u3092\u5B9F\u884C\u3057\u3066\u30C6\u30B9\u30C8\u7D50\u679C\u3092\u53D6\u5F97\u3059\u308B";
   inputSchema = {
     type: "object",
@@ -5969,26 +6045,26 @@ var RunTestsTool = class extends BaseTool {
       filterType: {
         type: "string",
         description: "\u30C6\u30B9\u30C8\u30D5\u30A3\u30EB\u30BF\u30FC\u306E\u7A2E\u985E",
-        enum: ["all", "fullclassname", "namespace", "testname", "assembly"],
-        default: "all"
+        enum: TEST_CONFIG.FILTER_TYPES,
+        default: TEST_CONFIG.DEFAULT_FILTER_TYPE
       },
       filterValue: {
         type: "string",
         description: "\u30D5\u30A3\u30EB\u30BF\u30FC\u5024\uFF08filterType\u304Call\u4EE5\u5916\u306E\u5834\u5408\u306B\u6307\u5B9A\uFF09\n\u2022 fullclassname: \u30D5\u30EB\u30AF\u30E9\u30B9\u540D (\u4F8B: io.github.hatayama.uMCP.CompileCommandTests)\n\u2022 namespace: \u30CD\u30FC\u30E0\u30B9\u30DA\u30FC\u30B9 (\u4F8B: io.github.hatayama.uMCP)\n\u2022 testname: \u500B\u5225\u30C6\u30B9\u30C8\u540D\n\u2022 assembly: \u30A2\u30BB\u30F3\u30D6\u30EA\u540D",
-        default: ""
+        default: TEST_CONFIG.DEFAULT_FILTER_VALUE
       },
       saveXml: {
         type: "boolean",
         description: "\u30C6\u30B9\u30C8\u7D50\u679C\u3092XML\u30D5\u30A1\u30A4\u30EB\u3068\u3057\u3066\u4FDD\u5B58\u3059\u308B\u304B\u3069\u3046\u304B",
-        default: false
+        default: TEST_CONFIG.DEFAULT_SAVE_XML
       }
     }
   };
   validateArgs(args) {
     const schema = external_exports.object({
-      filterType: external_exports.enum(["all", "fullclassname", "namespace", "testname", "assembly"]).default("all"),
-      filterValue: external_exports.string().default(""),
-      saveXml: external_exports.boolean().default(false)
+      filterType: external_exports.enum(TEST_CONFIG.FILTER_TYPES).default(TEST_CONFIG.DEFAULT_FILTER_TYPE),
+      filterValue: external_exports.string().default(TEST_CONFIG.DEFAULT_FILTER_VALUE),
+      saveXml: external_exports.boolean().default(TEST_CONFIG.DEFAULT_SAVE_XML)
     });
     return schema.parse(args || {});
   }
@@ -6133,8 +6209,8 @@ var McpServer = class {
     console.log("\u{1F680} Unity MCP Server initializing...");
     this.server = new Server(
       {
-        name: "unity-mcp-server",
-        version: "0.1.0"
+        name: SERVER_CONFIG.NAME,
+        version: SERVER_CONFIG.VERSION
       },
       {
         capabilities: {

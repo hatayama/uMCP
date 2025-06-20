@@ -17,14 +17,21 @@ namespace io.github.hatayama.uMCP
         private const string SESSION_KEY_SELECTED_EDITOR_TYPE = "uMCP.SelectedEditorType";
         private const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
         
+        // UI定数
+        private const float MIN_WINDOW_WIDTH = 400f;
+        private const float MIN_WINDOW_HEIGHT = 200f;
+        private const float DEFAULT_COMMUNICATION_LOG_HEIGHT = 300f;
+        private const float MIN_COMMUNICATION_LOG_HEIGHT = 100f;
+        private const float MAX_COMMUNICATION_LOG_HEIGHT = 800f;
+        
         // UI状態
-        private int customPort = 7400;
+        private int customPort = McpServerConfig.DEFAULT_PORT;
         private bool autoStartServer = false;
         private bool showDeveloperTools = false;
         private bool showCommunicationLogs = false;
         private bool enableMcpLogs = false;
         private Vector2 communicationLogScrollPosition;
-        private float communicationLogHeight = 300f; // リサイズ可能な通信ログエリアの高さ
+        private float communicationLogHeight = DEFAULT_COMMUNICATION_LOG_HEIGHT; // リサイズ可能な通信ログエリアの高さ
         private bool isResizingCommunicationLog = false; // リサイズ中かどうか
         
         // エディタ選択用のUI状態
@@ -46,7 +53,7 @@ namespace io.github.hatayama.uMCP
         public static void ShowWindow()
         {
             McpEditorWindow window = GetWindow<McpEditorWindow>("uMCP");
-            window.minSize = new Vector2(400, 200);
+            window.minSize = new Vector2(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT);
             window.Show();
         }
 
@@ -72,7 +79,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.EnableDebugLog = enableMcpLogs;
             
             // 通信ログエリアの高さを復元（SessionStateから）
-            communicationLogHeight = SessionState.GetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, 300f);
+            communicationLogHeight = SessionState.GetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, DEFAULT_COMMUNICATION_LOG_HEIGHT);
             
             // ログ更新イベントを購読
             McpCommunicationLogger.OnLogUpdated += Repaint;
@@ -265,9 +272,9 @@ namespace io.github.hatayama.uMCP
         /// <returns>成功した場合true</returns>
         private bool ValidatePortAndStartServer()
         {
-            if (customPort < 1024 || customPort > 65535)
+            if (customPort < McpServerConfig.MIN_PORT_NUMBER || customPort > McpServerConfig.MAX_PORT_NUMBER)
             {
-                EditorUtility.DisplayDialog("Port Error", "Port must be between 1024 and 65535", "OK");
+                EditorUtility.DisplayDialog("Port Error", $"Port must be between {McpServerConfig.MIN_PORT_NUMBER} and {McpServerConfig.MAX_PORT_NUMBER}", "OK");
                 return false;
             }
 
@@ -700,7 +707,7 @@ namespace io.github.hatayama.uMCP
                     communicationLogHeight += Event.current.delta.y;
                     
                     // 最小・最大高さを制限
-                    communicationLogHeight = Mathf.Clamp(communicationLogHeight, 100f, 800f);
+                    communicationLogHeight = Mathf.Clamp(communicationLogHeight, MIN_COMMUNICATION_LOG_HEIGHT, MAX_COMMUNICATION_LOG_HEIGHT);
                     
                     // SessionStateに保存
                     SessionState.SetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, communicationLogHeight);

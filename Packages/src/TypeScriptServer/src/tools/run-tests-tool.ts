@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
+import { TOOL_NAMES, TEST_CONFIG } from '../constants.js';
 
 /**
  * Unity Test Runner実行ツール
  */
 export class RunTestsTool extends BaseTool {
-  readonly name = 'unity-run-tests';
+  readonly name = TOOL_NAMES.RUN_TESTS;
   readonly description = 'Unity Test Runnerを実行してテスト結果を取得する';
   readonly inputSchema = {
     type: 'object',
@@ -14,8 +15,8 @@ export class RunTestsTool extends BaseTool {
       filterType: {
         type: 'string',
         description: 'テストフィルターの種類',
-        enum: ['all', 'fullclassname', 'namespace', 'testname', 'assembly'],
-        default: 'all'
+        enum: TEST_CONFIG.FILTER_TYPES,
+        default: TEST_CONFIG.DEFAULT_FILTER_TYPE
       },
       filterValue: {
         type: 'string',
@@ -24,21 +25,21 @@ export class RunTestsTool extends BaseTool {
                     '• namespace: ネームスペース (例: io.github.hatayama.uMCP)\n' +
                     '• testname: 個別テスト名\n' +
                     '• assembly: アセンブリ名',
-        default: ''
+        default: TEST_CONFIG.DEFAULT_FILTER_VALUE
       },
       saveXml: {
         type: 'boolean',
         description: 'テスト結果をXMLファイルとして保存するかどうか',
-        default: false
+        default: TEST_CONFIG.DEFAULT_SAVE_XML
       }
     }
   };
 
   protected validateArgs(args: unknown) {
     const schema = z.object({
-      filterType: z.enum(['all', 'fullclassname', 'namespace', 'testname', 'assembly']).default('all'),
-      filterValue: z.string().default(''),
-      saveXml: z.boolean().default(false)
+      filterType: z.enum(TEST_CONFIG.FILTER_TYPES).default(TEST_CONFIG.DEFAULT_FILTER_TYPE),
+      filterValue: z.string().default(TEST_CONFIG.DEFAULT_FILTER_VALUE),
+      saveXml: z.boolean().default(TEST_CONFIG.DEFAULT_SAVE_XML)
     });
     return schema.parse(args || {});
   }

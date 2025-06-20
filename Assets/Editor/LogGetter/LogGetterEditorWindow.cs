@@ -26,6 +26,7 @@ namespace io.github.hatayama.uMCP
             presenter = new LogGetterPresenter();
             presenter.OnLogDataUpdated += OnLogDataUpdated;
             displayData = new LogDisplayDto(new LogEntryDto[0], 0);
+            
         }
 
         private void OnDisable()
@@ -76,6 +77,36 @@ namespace io.github.hatayama.uMCP
             if (GUILayout.Button("ログクリア", GUILayout.Height(25)))
             {
                 presenter.ClearLogs();
+                LogGetter.ClearCustomLogs();
+            }
+
+            GUILayout.Space(5);
+
+            // テスト用ログ生成セクション
+            GUILayout.Label("テスト用ログ生成", EditorStyles.boldLabel);
+            
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Debug.Log生成", GUILayout.Height(25)))
+            {
+                UnityEngine.Debug.Log($"テスト用Logメッセージ - {System.DateTime.Now:HH:mm:ss}");
+            }
+            if (GUILayout.Button("Debug.LogWarning生成", GUILayout.Height(25)))
+            {
+                UnityEngine.Debug.LogWarning($"テスト用Warningメッセージ - {System.DateTime.Now:HH:mm:ss}");
+            }
+            if (GUILayout.Button("Debug.LogError生成", GUILayout.Height(25)))
+            {
+                UnityEngine.Debug.LogError($"テスト用Errorメッセージ - {System.DateTime.Now:HH:mm:ss}");
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (GUILayout.Button("複数ログ一括生成", GUILayout.Height(25)))
+            {
+                string timestamp = System.DateTime.Now.ToString("HH:mm:ss");
+                UnityEngine.Debug.Log($"一括生成テスト Log 1 - {timestamp}");
+                UnityEngine.Debug.Log($"一括生成テスト Log 2 - {timestamp}");
+                UnityEngine.Debug.LogWarning($"一括生成テスト Warning - {timestamp}");
+                UnityEngine.Debug.LogError($"一括生成テスト Error - {timestamp}");
             }
 
             GUILayout.Space(10);
@@ -97,8 +128,8 @@ namespace io.github.hatayama.uMCP
 
         private void DrawLogStatistics()
         {
-            // 全ログの統計を取得
-            LogDisplayDto allLogs = LogGetter.GetConsoleLog();
+            // 現在表示中のログの統計を表示（無限ループ回避）
+            LogDisplayDto allLogs = displayData;
             
             int logCount = 0;
             int warningCount = 0;

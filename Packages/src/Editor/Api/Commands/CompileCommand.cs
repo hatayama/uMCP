@@ -11,6 +11,9 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class CompileCommand : IUnityCommand
     {
+        // SessionStateキー定数
+        private const string SESSION_KEY_COMPILE_FROM_MCP = "uMCP.CompileFromMCP";
+        
         public CommandType CommandType => CommandType.Compile;
 
         public async Task<object> ExecuteAsync(JToken paramsToken)
@@ -20,8 +23,8 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogDebug($"Compile request received: forceRecompile={forceRecompile}");
 
             // MCP経由のコンパイルであることを示すフラグを設定
-            SessionState.SetBool("uMCP.CompileFromMCP", true);
-            McpLogger.LogInfo("CompileCommand: Set uMCP.CompileFromMCP = true");
+            SessionState.SetBool(SESSION_KEY_COMPILE_FROM_MCP, true);
+            McpLogger.LogInfo($"CompileCommand: Set {SESSION_KEY_COMPILE_FROM_MCP} = true");
             
             // CompileCheckerを使用してコンパイル実行
             using CompileChecker compileChecker = new CompileChecker();
@@ -33,7 +36,7 @@ namespace io.github.hatayama.uMCP
                 success = result.Success,
                 errorCount = result.ErrorCount,
                 warningCount = result.WarningCount,
-                completedAt = result.CompletedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                completedAt = result.CompletedAt.ToString(McpServerConfig.ISO_DATETIME_FORMAT),
                 errors = result.Errors.Select(e => new
                 {
                     message = e.message,

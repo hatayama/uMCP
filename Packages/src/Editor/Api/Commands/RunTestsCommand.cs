@@ -61,7 +61,7 @@ namespace io.github.hatayama.uMCP
                     filterType = parameters.FilterType,
                     filterValue = parameters.FilterValue,
                     saveXml = parameters.SaveXml,
-                    completedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                    completedAt = DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
                 };
             }
             catch (Exception ex)
@@ -72,7 +72,7 @@ namespace io.github.hatayama.uMCP
                     success = false,
                     message = $"テスト実行エラー: {ex.Message}",
                     error = ex.ToString(),
-                    completedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                    completedAt = DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
                 };
             }
         }
@@ -229,7 +229,9 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class TestExecutionParameters
     {
-        public string FilterType { get; set; } = "all";
+        private const string DEFAULT_FILTER_TYPE = "all";
+        
+        public string FilterType { get; set; } = DEFAULT_FILTER_TYPE;
         public string FilterValue { get; set; } = "";
         public bool SaveXml { get; set; } = false;
     }

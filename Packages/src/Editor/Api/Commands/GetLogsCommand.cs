@@ -15,26 +15,31 @@ namespace io.github.hatayama.uMCP
 
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
-            string logType = paramsToken?["logType"]?.ToString() ?? "All";
-            int maxCount = paramsToken?["maxCount"]?.ToObject<int>() ?? 100;
-            
-            McpLogger.LogDebug($"GetLogs request received: logType={logType}, maxCount={maxCount}");
+            string logType = paramsToken?["logType"]?.ToString() ?? McpServerConfig.DEFAULT_LOG_TYPE;
+            int maxCount = paramsToken?["maxCount"]?.ToObject<int>() ?? McpServerConfig.DEFAULT_MAX_LOG_COUNT;
+            string searchText = paramsToken?["searchText"]?.ToString() ?? McpServerConfig.DEFAULT_SEARCH_TEXT;
+            bool includeStackTrace = paramsToken?["includeStackTrace"]?.ToObject<bool>() ?? McpServerConfig.DEFAULT_INCLUDE_STACK_TRACE;
             
             // MainThreadSwitcherを使用してメインスレッドに切り替え
             await MainThreadSwitcher.SwitchToMainThread();
             
             // LogGetterクラスを使ってUnity Console Logを取得
             LogDisplayDto logData;
-            if (logType == "All")
+            if (string.IsNullOrEmpty(searchText))
             {
-                logData = LogGetter.GetConsoleLog();
+                if (logType == McpServerConfig.DEFAULT_LOG_TYPE)
+                {
+                    logData = LogGetter.GetConsoleLog();
+                }
+                else
+                {
+                    logData = LogGetter.GetConsoleLog(logType);
+                }
             }
             else
             {
-                logData = LogGetter.GetConsoleLog(logType);
+                logData = LogGetter.GetConsoleLog(logType, searchText);
             }
-            
-            McpLogger.LogDebug($"LogGetter returned: TotalCount={logData.TotalCount}, LogEntries.Length={logData.LogEntries.Length}");
             
             // maxCountに応じてログを制限
             LogEntryDto[] limitedEntries = logData.LogEntries;
@@ -45,21 +50,35 @@ namespace io.github.hatayama.uMCP
                 limitedEntries = temp;
             }
             
-            McpLogger.LogDebug($"After maxCount limit: limitedEntries.Length={limitedEntries.Length}");
-            
             // レスポンス用のオブジェクトを作成
             List<object> logs = new List<object>();
             foreach (LogEntryDto entry in limitedEntries)
             {
-                McpLogger.LogDebug($"Processing log entry: Type={entry.LogType}, Message={entry.Message}");
-                logs.Add(new
+                object logEntry;
+                if (includeStackTrace)
                 {
-                    type = entry.LogType,
-                    message = entry.Message,
-                    file = entry.File,
-                    line = 0, // LogEntryDtoには行番号がないため0を設定
-                    timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                });
+                    logEntry = new
+                    {
+                        type = entry.LogType,
+                        message = entry.Message,
+                        stackTrace = entry.StackTrace,
+                        file = entry.File,
+                        line = McpServerConfig.DEFAULT_LINE_NUMBER, // LogEntryDtoには行番号がないため0を設定
+                        timestamp = System.DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
+                    };
+                }
+                else
+                {
+                    logEntry = new
+                    {
+                        type = entry.LogType,
+                        message = entry.Message,
+                        file = entry.File,
+                        line = McpServerConfig.DEFAULT_LINE_NUMBER, // LogEntryDtoには行番号がないため0を設定
+                        timestamp = System.DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
+                    };
+                }
+                logs.Add(logEntry);
             }
             
             object response = new
@@ -67,10 +86,10 @@ namespace io.github.hatayama.uMCP
                 logs = logs.ToArray(),
                 totalCount = logs.Count,
                 requestedLogType = logType,
-                requestedMaxCount = maxCount
+                requestedMaxCount = maxCount,
+                requestedSearchText = searchText,
+                requestedIncludeStackTrace = includeStackTrace
             };
-            
-            McpLogger.LogDebug($"GetLogs completed: Found {logs.Count} logs of type {logType}");
             
             return response;
         }
