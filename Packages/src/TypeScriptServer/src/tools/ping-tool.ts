@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
+import { TOOL_NAMES, DEFAULT_MESSAGES } from '../constants.js';
 
 /**
  * TypeScript側のPingツール
  */
 export class PingTool extends BaseTool {
-  readonly name = 'mcp.ping';
+  readonly name = TOOL_NAMES.PING;
   readonly description = 'Unity MCP Server接続テスト用のpingコマンド（TypeScript側のみ）';
   readonly inputSchema = {
     type: 'object',
@@ -14,14 +15,14 @@ export class PingTool extends BaseTool {
       message: {
         type: 'string',
         description: 'テストメッセージ',
-        default: 'Hello Unity MCP!'
+        default: DEFAULT_MESSAGES.PING
       }
     }
   };
 
   protected validateArgs(args: unknown) {
     const schema = z.object({
-      message: z.string().default('Hello Unity MCP!')
+      message: z.string().default(DEFAULT_MESSAGES.PING)
     });
     return schema.parse(args || {});
   }

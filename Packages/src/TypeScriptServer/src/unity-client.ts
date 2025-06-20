@@ -1,4 +1,12 @@
 import * as net from 'net';
+import { 
+  UNITY_CONNECTION, 
+  JSONRPC, 
+  TIMEOUTS, 
+  LOG_CONFIG, 
+  TEST_CONFIG, 
+  ERROR_MESSAGES 
+} from './constants.js';
 
 /**
  * Unity側との通信を行うTCP/IPクライアント
@@ -7,11 +15,11 @@ export class UnityClient {
   private socket: net.Socket | null = null;
   private _connected: boolean = false;
   private readonly port: number;
-  private readonly host: string = 'localhost';
+  private readonly host: string = UNITY_CONNECTION.DEFAULT_HOST;
 
   constructor() {
     // 環境変数UNITY_TCP_PORTからポート番号を取得、デフォルトは7400
-    this.port = parseInt(process.env.UNITY_TCP_PORT || '7400', 10);
+    this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
   }
 
   get connected(): boolean {
@@ -29,7 +37,7 @@ export class UnityClient {
 
     try {
       // 簡単なpingを送って実際に通信できるかテスト
-      await this.ping('connection_test');
+      await this.ping(UNITY_CONNECTION.CONNECTION_TEST_MESSAGE);
       return true;
     } catch {
       // 通信失敗の場合は接続を切断状態にする
@@ -86,7 +94,7 @@ export class UnityClient {
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const request = JSON.stringify({
-        jsonrpc: '2.0',
+        jsonrpc: JSONRPC.VERSION,
         id: requestId,
         method: 'ping',
         params: {
@@ -97,8 +105,8 @@ export class UnityClient {
       this.socket!.write(request + '\n');
 
       const timeout = setTimeout(() => {
-        reject(new Error('Unity ping timeout'));
-      }, 5000);
+        reject(new Error(`Unity ping ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.PING);
 
       this.socket!.once('data', (data) => {
         clearTimeout(timeout);
@@ -141,13 +149,13 @@ export class UnityClient {
   }> {
     if (!this.connected) {
       // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
-      throw new Error('Unity MCP Bridge is not connected. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.');
+      throw new Error(`${ERROR_MESSAGES.NOT_CONNECTED}. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.`);
     }
 
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const request = JSON.stringify({
-        jsonrpc: '2.0',
+        jsonrpc: JSONRPC.VERSION,
         id: requestId,
         method: 'compile',
         params: {
@@ -158,8 +166,8 @@ export class UnityClient {
       this.socket!.write(request + '\n');
 
       const timeout = setTimeout(() => {
-        reject(new Error('Unity compile timeout'));
-      }, 30000); // 30秒タイムアウト
+        reject(new Error(`Unity compile ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.COMPILE); // 30秒タイムアウト
 
       this.socket!.once('data', (data) => {
         clearTimeout(timeout);
@@ -171,7 +179,7 @@ export class UnityClient {
             resolve(response.result);
           }
         } catch (error) {
-          reject(new Error('Invalid compile response from Unity'));
+          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} compile`));
         }
       });
     });
@@ -180,7 +188,7 @@ export class UnityClient {
   /**
    * Unityコンソールのログを取得
    */
-  async getLogs(logType: string = 'All', maxCount: number = 100, searchText: string = '', includeStackTrace: boolean = true): Promise<{
+  async getLogs(logType: string = LOG_CONFIG.DEFAULT_TYPE, maxCount: number = LOG_CONFIG.DEFAULT_MAX_COUNT, searchText: string = LOG_CONFIG.DEFAULT_SEARCH_TEXT, includeStackTrace: boolean = LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE): Promise<{
     logs: Array<{
       type: string;
       message: string;
@@ -191,28 +199,28 @@ export class UnityClient {
   }> {
     if (!this.connected) {
       // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
-      throw new Error('Unity MCP Bridge is not connected. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.');
+      throw new Error('${ERROR_MESSAGES.NOT_CONNECTED}. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.');
     }
 
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const request = JSON.stringify({
-        jsonrpc: '2.0',
+        jsonrpc: JSONRPC.VERSION,
         id: requestId,
         method: 'getLogs',
         params: {
-          logType: logType || 'All',
-          maxCount: maxCount || 100,
-          searchText: searchText || '',
-          includeStackTrace: includeStackTrace !== undefined ? includeStackTrace : true
+          logType: logType || LOG_CONFIG.DEFAULT_TYPE,
+          maxCount: maxCount || LOG_CONFIG.DEFAULT_MAX_COUNT,
+          searchText: searchText || LOG_CONFIG.DEFAULT_SEARCH_TEXT,
+          includeStackTrace: includeStackTrace !== undefined ? includeStackTrace : LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE
         }
       });
 
       this.socket!.write(request + '\n');
 
       const timeout = setTimeout(() => {
-        reject(new Error('Unity getLogs timeout'));
-      }, 10000);
+        reject(new Error(`Unity getLogs ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.GET_LOGS);
 
       this.socket!.once('data', (data) => {
         clearTimeout(timeout);
@@ -224,7 +232,7 @@ export class UnityClient {
             resolve(response.result);
           }
         } catch (error) {
-          reject(new Error('Invalid getLogs response from Unity'));
+          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} getLogs`));
         }
       });
     });
@@ -233,7 +241,7 @@ export class UnityClient {
   /**
    * Unity Test Runnerを実行
    */
-  async runTests(filterType: string = 'all', filterValue: string = '', saveXml: boolean = false): Promise<{
+  async runTests(filterType: string = TEST_CONFIG.DEFAULT_FILTER_TYPE, filterValue: string = TEST_CONFIG.DEFAULT_FILTER_VALUE, saveXml: boolean = TEST_CONFIG.DEFAULT_SAVE_XML): Promise<{
     success: boolean;
     message: string;
     testResults?: {
@@ -256,13 +264,13 @@ export class UnityClient {
   }> {
     if (!this.connected) {
       // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
-      throw new Error('Unity MCP Bridge is not connected. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.');
+      throw new Error('${ERROR_MESSAGES.NOT_CONNECTED}. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.');
     }
 
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const request = JSON.stringify({
-        jsonrpc: '2.0',
+        jsonrpc: JSONRPC.VERSION,
         id: requestId,
         method: 'runtests',
         params: {
@@ -275,8 +283,8 @@ export class UnityClient {
       this.socket!.write(request + '\n');
 
       const timeout = setTimeout(() => {
-        reject(new Error('Unity runTests timeout'));
-      }, 60000); // 60秒タイムアウト（テスト実行は時間がかかる）
+        reject(new Error(`Unity runTests ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.RUN_TESTS); // 60秒タイムアウト（テスト実行は時間がかかる）
 
       this.socket!.once('data', (data) => {
         clearTimeout(timeout);
@@ -288,7 +296,7 @@ export class UnityClient {
             resolve(response.result);
           }
         } catch (error) {
-          reject(new Error('Invalid runTests response from Unity'));
+          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} runTests`));
         }
       });
     });

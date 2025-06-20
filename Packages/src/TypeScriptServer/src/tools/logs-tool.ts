@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
+import { TOOL_NAMES, LOG_CONFIG, UNITY_CONNECTION } from '../constants.js';
 
 /**
  * Unityログ取得ツール
  */
 export class LogsTool extends BaseTool {
-  readonly name = 'unity-get-logs';
+  readonly name = TOOL_NAMES.GET_LOGS;
   readonly description = 'Unityコンソールのログ情報を取得する';
   readonly inputSchema = {
     type: 'object',
@@ -14,23 +15,23 @@ export class LogsTool extends BaseTool {
       logType: {
         type: 'string',
         description: 'フィルタリングするログタイプ (Error, Warning, Log, All)',
-        enum: ['Error', 'Warning', 'Log', 'All'],
-        default: 'All'
+        enum: LOG_CONFIG.TYPES,
+        default: LOG_CONFIG.DEFAULT_TYPE
       },
       maxCount: {
         type: 'number',
         description: '取得する最大ログ数',
-        default: 100
+        default: LOG_CONFIG.DEFAULT_MAX_COUNT
       },
       searchText: {
         type: 'string',
         description: 'ログメッセージ内で検索するテキスト（空の場合は全て取得）',
-        default: ''
+        default: LOG_CONFIG.DEFAULT_SEARCH_TEXT
       },
       includeStackTrace: {
         type: 'boolean',
         description: 'スタックトレースを表示するかどうか',
-        default: true
+        default: LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE
       }
     },
     required: []
@@ -38,10 +39,10 @@ export class LogsTool extends BaseTool {
 
   protected validateArgs(args: unknown) {
     const schema = z.object({
-      logType: z.enum(['Error', 'Warning', 'Log', 'All']).default('All'),
-      maxCount: z.number().default(100),
-      searchText: z.string().default(''),
-      includeStackTrace: z.boolean().default(true)
+      logType: z.enum(LOG_CONFIG.TYPES).default(LOG_CONFIG.DEFAULT_TYPE),
+      maxCount: z.number().default(LOG_CONFIG.DEFAULT_MAX_COUNT),
+      searchText: z.string().default(LOG_CONFIG.DEFAULT_SEARCH_TEXT),
+      includeStackTrace: z.boolean().default(LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE)
     });
     
     const validatedArgs = schema.parse(args || {});
@@ -60,10 +61,10 @@ export class LogsTool extends BaseTool {
   }
 
   protected formatResponse(result: any): ToolResponse {
-    const logType = result.requestedLogType || 'All';
-    const maxCount = result.requestedMaxCount || 100;
+    const logType = result.requestedLogType || LOG_CONFIG.DEFAULT_TYPE;
+    const maxCount = result.requestedMaxCount || LOG_CONFIG.DEFAULT_MAX_COUNT;
     const searchText = result.requestedSearchText || '';
-    const includeStackTrace = result.requestedIncludeStackTrace !== undefined ? result.requestedIncludeStackTrace : true;
+    const includeStackTrace = result.requestedIncludeStackTrace !== undefined ? result.requestedIncludeStackTrace : LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE;
     
     let responseText = `Unity Console Logs (Filter: ${logType}, Max: ${maxCount}${searchText ? `, Search: "${searchText}"` : ''}, StackTrace: ${includeStackTrace ? 'ON' : 'OFF'}):\n\n`;
     
@@ -103,7 +104,7 @@ export class LogsTool extends BaseTool {
 Error: ${errorMessage}
 Stack: ${stack}
 
-Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || '7400'}.`
+Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT}.`
         }
       ]
     };
