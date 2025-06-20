@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/hatayama/uMCP/compare/v0.2.5...v0.3.0) (2025-06-20)
+
+
+### Features
+
+* add cursor mcp ([#21](https://github.com/hatayama/uMCP/issues/21)) ([f690741](https://github.com/hatayama/uMCP/commit/f69074142a026b053c177e9bcc979d761926a5f8))
+
+
+### Bug Fixes
+
+* Improvements to log acquisition functions ([#23](https://github.com/hatayama/uMCP/issues/23)) ([081cc83](https://github.com/hatayama/uMCP/commit/081cc83fa82a5a79862952e3d455356a16672bdf))
+
 ## [0.2.5](https://github.com/hatayama/uMCP/compare/v0.2.4...v0.2.5) (2025-06-19)
 
 
