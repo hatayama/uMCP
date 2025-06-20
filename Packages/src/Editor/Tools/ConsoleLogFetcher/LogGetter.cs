@@ -1,23 +1,29 @@
-using System;
+using UnityEditor;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Consoleログ取得のための汎用的な静的APIを提供するクラス
+    /// [InitializeOnLoad]でCustomLogManagerを適切に初期化・保持
     /// </summary>
+    [InitializeOnLoad]
     public static class LogGetter
     {
+        private static readonly CustomLogManager LogManager;
+        
+        static LogGetter()
+        {
+            LogManager = new CustomLogManager();
+        }
+
         /// <summary>
         /// Consoleログを取得して LogDisplayDto として返す
         /// </summary>
         /// <returns>取得したログデータ</returns>
         public static LogDisplayDto GetConsoleLog()
         {
-            using (LogGetterModel model = new LogGetterModel())
-            {
-                LogEntryDto[] logEntries = model.GetConsoleLogEntries();
-                return new LogDisplayDto(logEntries, logEntries.Length);
-            }
+            LogEntryDto[] logEntries = LogManager.GetAllLogEntries();
+            return new LogDisplayDto(logEntries, logEntries.Length);
         }
 
         /// <summary>
@@ -26,10 +32,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>ログエントリの配列</returns>
         public static LogEntryDto[] GetConsoleLogEntries()
         {
-            using (LogGetterModel model = new LogGetterModel())
-            {
-                return model.GetConsoleLogEntries();
-            }
+            return LogManager.GetAllLogEntries();
         }
 
         /// <summary>
@@ -39,18 +42,18 @@ namespace io.github.hatayama.uMCP
         /// <returns>フィルタされたログデータ</returns>
         public static LogDisplayDto GetConsoleLog(string logType)
         {
-            using (LogGetterModel model = new LogGetterModel())
+            LogEntryDto[] filteredEntries;
+            
+            if (string.IsNullOrEmpty(logType) || logType == "All")
             {
-                LogEntryDto[] allEntries = model.GetConsoleLogEntries();
-                
-                if (string.IsNullOrEmpty(logType))
-                {
-                    return new LogDisplayDto(allEntries, allEntries.Length);
-                }
-
-                LogEntryDto[] filteredEntries = FilterLogsByType(allEntries, logType);
-                return new LogDisplayDto(filteredEntries, filteredEntries.Length);
+                filteredEntries = LogManager.GetAllLogEntries();
             }
+            else
+            {
+                filteredEntries = LogManager.GetLogEntriesByType(logType);
+            }
+            
+            return new LogDisplayDto(filteredEntries, filteredEntries.Length);
         }
 
         /// <summary>
@@ -59,25 +62,15 @@ namespace io.github.hatayama.uMCP
         /// <returns>ログの総数</returns>
         public static int GetConsoleLogCount()
         {
-            using (UnityLogEntriesAccessor accessor = new UnityLogEntriesAccessor())
-            {
-                return accessor.GetLogCount();
-            }
+            return LogManager.GetLogCount();
         }
 
-        private static LogEntryDto[] FilterLogsByType(LogEntryDto[] entries, string logType)
+        /// <summary>
+        /// 独自ログマネージャーのログをクリアする
+        /// </summary>
+        public static void ClearCustomLogs()
         {
-            System.Collections.Generic.List<LogEntryDto> filtered = new System.Collections.Generic.List<LogEntryDto>();
-            
-            foreach (LogEntryDto entry in entries)
-            {
-                if (string.Equals(entry.LogType, logType, StringComparison.OrdinalIgnoreCase))
-                {
-                    filtered.Add(entry);
-                }
-            }
-            
-            return filtered.ToArray();
+            LogManager.ClearLogs();
         }
     }
-} 
+}
