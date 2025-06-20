@@ -10,6 +10,28 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class TypeScriptBuilder
     {
+        // ディレクトリ名定数
+        private const string TYPESCRIPT_SERVER_DIR = "TypeScriptServer";
+        
+        // npmコマンド定数
+        private const string NPM_COMMAND_CI = "ci";
+        private const string NPM_COMMAND_BUILD_BUNDLE = "run build:bundle";
+        private const string NPM_COMMAND_INSTALL = "install";
+        
+        // 一般的なNode.jsパス
+        private static readonly string[] COMMON_NODE_PATHS = {
+            "/usr/local/bin",
+            "/opt/homebrew/bin",
+            "/usr/bin"
+        };
+        
+        // npmの可能なパス
+        private static readonly string[] POSSIBLE_NPM_PATHS = {
+            "/usr/local/bin/npm", // Homebrewでインストールした場合
+            "/opt/homebrew/bin/npm", // Apple Silicon Macでのbrew
+            "/usr/bin/npm" // システムインストール
+        };
+        
         /// <summary>
         /// ビルド完了時のコールバック
         /// </summary>
@@ -32,7 +54,7 @@ namespace io.github.hatayama.uMCP
                 return;
             }
             
-            string typeScriptDir = Path.Combine(packageBasePath, "TypeScriptServer");
+            string typeScriptDir = Path.Combine(packageBasePath, TYPESCRIPT_SERVER_DIR);
             if (!Directory.Exists(typeScriptDir))
             {
                 Debug.LogError($"TypeScript directory not found: {typeScriptDir}");
@@ -53,10 +75,10 @@ namespace io.github.hatayama.uMCP
             Debug.Log($"Using npm at: {npmPath}");
             
             // npm ciを実行（package-lock.jsonから厳密にインストール）
-            RunCommand(npmPath, "ci", typeScriptDir);
+            RunCommand(npmPath, NPM_COMMAND_CI, typeScriptDir);
             
             // esbuildでバンドルビルドを実行
-            RunCommand(npmPath, "run build:bundle", typeScriptDir);
+            RunCommand(npmPath, NPM_COMMAND_BUILD_BUNDLE, typeScriptDir);
             
             Debug.Log("TypeScript server build completed.");
             onComplete?.Invoke(true, "", "TypeScript server build completed.");
@@ -75,7 +97,7 @@ namespace io.github.hatayama.uMCP
             SystemDiagnostics.ProcessStartInfo startInfo = new SystemDiagnostics.ProcessStartInfo
             {
                 FileName = npmPath,
-                Arguments = "install",
+                Arguments = NPM_COMMAND_INSTALL,
                 WorkingDirectory = workingDirectory,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -167,12 +189,8 @@ namespace io.github.hatayama.uMCP
             }
             
             // whichで見つからない場合は、一般的なパスを試す
-            string[] possiblePaths = {
-                "/usr/local/bin/npm", // Homebrewでインストールした場合
-                "/opt/homebrew/bin/npm", // Apple Silicon Macでのbrew
-                "/usr/bin/npm", // システムインストール
-                Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".nvm/versions/node/*/bin/npm") // nvm
-            };
+            List<string> possiblePaths = new List<string>(POSSIBLE_NPM_PATHS);
+            possiblePaths.Add(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".nvm/versions/node/*/bin/npm")); // nvm
             
             foreach (string path in possiblePaths)
             {
@@ -230,13 +248,8 @@ namespace io.github.hatayama.uMCP
             }
             
             // 一般的なNode.jsのパスを追加
-            string[] commonNodePaths = {
-                "/usr/local/bin",
-                "/opt/homebrew/bin",
-                "/usr/bin"
-            };
             
-            foreach (string path in commonNodePaths)
+            foreach (string path in COMMON_NODE_PATHS)
             {
                 if (Directory.Exists(path) && !additionalPaths.Contains(path))
                 {

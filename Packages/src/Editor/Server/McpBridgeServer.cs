@@ -14,6 +14,9 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class McpBridgeServer : IDisposable
     {
+        // SessionStateキー定数
+        private const string SESSION_KEY_DOMAIN_RELOAD = "uMCP.DomainReloadInProgress";
+        
         private TcpListener tcpListener;
         private CancellationTokenSource cancellationTokenSource;
         private Task serverTask;
@@ -194,7 +197,7 @@ namespace io.github.hatayama.uMCP
                     TcpClient client = await AcceptTcpClientAsync(tcpListener, cancellationToken);
                     if (client != null)
                     {
-                        string clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown";
+                        string clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? McpServerConfig.UNKNOWN_CLIENT_ENDPOINT;
                         McpLogger.LogClientConnection(clientEndpoint, true);
                         OnClientConnected?.Invoke(clientEndpoint);
                         
@@ -210,7 +213,7 @@ namespace io.github.hatayama.uMCP
                 catch (ThreadAbortException ex)
                 {
                     // ドメインリロード中の場合は正常な動作として扱う
-                    if (SessionState.GetBool("uMCP.DomainReloadInProgress", false))
+                    if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
                     {
                         McpLogger.LogInfo("Server thread aborted during domain reload (normal behavior)");
                     }
@@ -245,7 +248,7 @@ namespace io.github.hatayama.uMCP
             catch (ThreadAbortException ex)
             {
                 // ドメインリロード中の場合は正常な動作として扱う
-                if (SessionState.GetBool("uMCP.DomainReloadInProgress", false))
+                if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
                 {
                     McpLogger.LogInfo("AcceptTcpClient thread aborted during domain reload (normal behavior)");
                 }
@@ -266,7 +269,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private async Task HandleClient(TcpClient client, CancellationToken cancellationToken)
         {
-            string clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown";
+            string clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? McpServerConfig.UNKNOWN_CLIENT_ENDPOINT;
             
             try
             {
@@ -319,7 +322,7 @@ namespace io.github.hatayama.uMCP
             catch (ThreadAbortException ex)
             {
                 // ドメインリロード中の場合は正常な動作として扱う
-                if (SessionState.GetBool("uMCP.DomainReloadInProgress", false))
+                if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
                 {
                     McpLogger.LogInfo("Client handling thread aborted during domain reload (normal behavior)");
                 }
