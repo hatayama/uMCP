@@ -4,32 +4,32 @@ import { ToolResponse } from '../types/tool-types.js';
 import { TOOL_NAMES, TEST_CONFIG } from '../constants.js';
 
 /**
- * Unity Test Runner実行ツール
+ * Unity Test Runner execution tool
  */
 export class RunTestsTool extends BaseTool {
   readonly name = TOOL_NAMES.RUN_TESTS;
-  readonly description = 'Unity Test Runnerを実行してテスト結果を取得する';
+  readonly description = 'Execute Unity Test Runner and retrieve test results';
   readonly inputSchema = {
     type: 'object',
     properties: {
       filterType: {
         type: 'string',
-        description: 'テストフィルターの種類',
+        description: 'Type of test filter',
         enum: TEST_CONFIG.FILTER_TYPES,
         default: TEST_CONFIG.DEFAULT_FILTER_TYPE
       },
       filterValue: {
         type: 'string',
-        description: 'フィルター値（filterTypeがall以外の場合に指定）\n' +
-                    '• fullclassname: フルクラス名 (例: io.github.hatayama.uMCP.CompileCommandTests)\n' +
-                    '• namespace: ネームスペース (例: io.github.hatayama.uMCP)\n' +
-                    '• testname: 個別テスト名\n' +
-                    '• assembly: アセンブリ名',
+        description: 'Filter value (specify when filterType is not all)\n' +
+                    '• fullclassname: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)\n' +
+                    '• namespace: Namespace (e.g.: io.github.hatayama.uMCP)\n' +
+                    '• testname: Individual test name\n' +
+                    '• assembly: Assembly name',
         default: TEST_CONFIG.DEFAULT_FILTER_VALUE
       },
       saveXml: {
         type: 'boolean',
-        description: 'テスト結果をXMLファイルとして保存するかどうか',
+        description: 'Whether to save test results as XML file',
         default: TEST_CONFIG.DEFAULT_SAVE_XML
       }
     }
@@ -46,7 +46,7 @@ export class RunTestsTool extends BaseTool {
 
   protected async execute(args: { filterType: string; filterValue: string; saveXml: boolean }): Promise<string> {
     try {
-      // Unity側に接続（必要に応じて再接続）
+      // Connect to Unity (reconnect if necessary)
       await this.context.unityClient.ensureConnected();
 
       const response = await this.context.unityClient.runTests(
@@ -55,52 +55,52 @@ export class RunTestsTool extends BaseTool {
         args.saveXml
       );
 
-      // successの値に関係なく、テスト結果があれば詳細情報を表示
-      let result = response.success ? `✅ テスト実行完了\n` : `⚠️ テスト実行完了（失敗あり）\n`;
-      result += `📊 結果: ${response.message}\n`;
+      // Display detailed information if test results exist, regardless of success value
+      let result = response.success ? `✅ Test execution completed\n` : `⚠️ Test execution completed (with failures)\n`;
+      result += `📊 Result: ${response.message}\n`;
       
       if (response.testResults) {
         const testResults = response.testResults;
-        result += `\n📈 詳細統計:\n`;
-        result += `  • 成功: ${testResults.PassedCount}件\n`;
-        result += `  • 失敗: ${testResults.FailedCount}件\n`;
-        result += `  • スキップ: ${testResults.SkippedCount}件\n`;
-        result += `  • 合計: ${testResults.TotalCount}件\n`;
-        result += `  • 実行時間: ${testResults.Duration.toFixed(1)}秒\n`;
+        result += `\n📈 Detailed Statistics:\n`;
+        result += `  • Passed: ${testResults.PassedCount} tests\n`;
+        result += `  • Failed: ${testResults.FailedCount} tests\n`;
+        result += `  • Skipped: ${testResults.SkippedCount} tests\n`;
+        result += `  • Total: ${testResults.TotalCount} tests\n`;
+        result += `  • Execution time: ${testResults.Duration.toFixed(1)} seconds\n`;
         
-        // 失敗したテストの詳細を表示
+        // Display details of failed tests
         if (testResults.FailedTests && testResults.FailedTests.length > 0) {
-          result += `\n❌ 失敗したテスト:\n`;
+          result += `\n❌ Failed Tests:\n`;
           testResults.FailedTests.forEach((failedTest: any, index: number) => {
             result += `  ${index + 1}. ${failedTest.TestName}\n`;
-            result += `     フルネーム: ${failedTest.FullName}\n`;
+            result += `     Full name: ${failedTest.FullName}\n`;
             if (failedTest.Message) {
-              result += `     エラー: ${failedTest.Message}\n`;
+              result += `     Error: ${failedTest.Message}\n`;
             }
             if (failedTest.StackTrace) {
-              // スタックトレースは長いので最初の数行だけ表示
+              // Display only the first few lines of stack trace as it can be long
               const stackLines = failedTest.StackTrace.split('\n').slice(0, 3);
-              result += `     スタックトレース: ${stackLines.join('\n     ')}\n`;
+              result += `     Stack trace: ${stackLines.join('\n     ')}\n`;
             }
-            result += `     実行時間: ${failedTest.Duration.toFixed(3)}秒\n\n`;
+            result += `     Execution time: ${failedTest.Duration.toFixed(3)} seconds\n\n`;
           });
         }
       }
       
       if (response.xmlPath) {
-        result += `\n📄 XMLファイル保存: ${response.xmlPath}\n`;
+        result += `\n📄 XML file saved: ${response.xmlPath}\n`;
       }
       
-      result += `\n⏰ 完了時刻: ${response.completedAt}`;
+      result += `\n⏰ Completed at: ${response.completedAt}`;
       
-      // エラーがある場合のみエラー情報を追加
+      // Add error information only when there are errors
       if (!response.success && response.error && !response.testResults) {
-        result += `\n\n❌ エラー詳細:\n${response.error}`;
+        result += `\n\n❌ Error Details:\n${response.error}`;
       }
       
       return result;
     } catch (error) {
-      return `❌ テスト実行エラー: ${error instanceof Error ? error.message : String(error)}`;
+      return `❌ Test execution error: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 } 

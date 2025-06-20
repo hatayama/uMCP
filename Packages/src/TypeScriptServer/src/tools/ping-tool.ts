@@ -4,17 +4,17 @@ import { ToolResponse } from '../types/tool-types.js';
 import { TOOL_NAMES, DEFAULT_MESSAGES } from '../constants.js';
 
 /**
- * TypeScript側のPingツール
+ * Ping tool for TypeScript side
  */
 export class PingTool extends BaseTool {
   readonly name = TOOL_NAMES.PING;
-  readonly description = 'Unity MCP Server接続テスト用のpingコマンド（TypeScript側のみ）';
+  readonly description = 'Ping command for Unity MCP Server connection testing (TypeScript side only)';
   readonly inputSchema = {
     type: 'object',
     properties: {
       message: {
         type: 'string',
-        description: 'テストメッセージ',
+        description: 'Test message',
         default: DEFAULT_MESSAGES.PING
       }
     }

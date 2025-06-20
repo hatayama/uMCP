@@ -9,8 +9,8 @@ using System.Collections.Generic;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// テスト実行コマンドハンドラー
-    /// Unity Test Runnerを使用してテストを実行し、結果を返す
+    /// Test execution command handler
+    /// Executes tests using Unity Test Runner and returns the results
     /// </summary>
     public class RunTestsCommand : IUnityCommand
     {
@@ -18,22 +18,22 @@ namespace io.github.hatayama.uMCP
 
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
-            // パラメータを解析
+            // Parse parameters
             TestExecutionParameters parameters = ParseParameters(paramsToken);
             
-            McpLogger.LogInfo($"テスト実行開始 - フィルター: {parameters.FilterType}, 値: {parameters.FilterValue}, XML保存: {parameters.SaveXml}");
+            McpLogger.LogInfo($"Test execution started - Filter: {parameters.FilterType}, Value: {parameters.FilterValue}, Save XML: {parameters.SaveXml}");
 
             try
             {
-                // メインスレッドでテスト実行
+                // Execute tests on main thread
                 await MainThreadSwitcher.SwitchToMainThread();
                 
-                // TaskCompletionSourceを使ってテスト完了まで待機
+                // Wait for test completion using TaskCompletionSource
                 TaskCompletionSource<TestExecutionResult> completionSource = new TaskCompletionSource<TestExecutionResult>();
                 
                 if (parameters.FilterType == "all")
                 {
-                    // 全テスト実行 (UnityTestExecutionManager使用)
+                    // Execute all tests (using UnityTestExecutionManager)
                     UnityTestExecutionManager testManager = new UnityTestExecutionManager();
                     testManager.RunEditModeTests((result) => {
                         ProcessTestResult(result, parameters.SaveXml, completionSource);
@@ -41,7 +41,7 @@ namespace io.github.hatayama.uMCP
                 }
                 else
                 {
-                    // フィルター付きテスト実行 (UnityTestExecutionManager + TestExecutionFilter使用)
+                    // Execute filtered tests (using UnityTestExecutionManager + TestExecutionFilter)
                     TestExecutionFilter filter = CreateFilter(parameters.FilterType, parameters.FilterValue);
                     UnityTestExecutionManager testManager = new UnityTestExecutionManager();
                     testManager.RunEditModeTests(filter, (result) => {
@@ -49,7 +49,7 @@ namespace io.github.hatayama.uMCP
                     });
                 }
 
-                // テスト完了まで待機
+                // Wait for test completion
                 TestExecutionResult executionResult = await completionSource.Task;
                 
                 return new
@@ -66,11 +66,11 @@ namespace io.github.hatayama.uMCP
             }
             catch (Exception ex)
             {
-                McpLogger.LogError($"テスト実行エラー: {ex.Message}");
+                McpLogger.LogError($"Test execution error: {ex.Message}");
                 return new
                 {
                     success = false,
-                    message = $"テスト実行エラー: {ex.Message}",
+                    message = $"Test execution error: {ex.Message}",
                     error = ex.ToString(),
                     completedAt = DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
                 };
@@ -78,7 +78,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// パラメータを解析する
+        /// Parse parameters
         /// </summary>
         private TestExecutionParameters ParseParameters(JToken paramsToken)
         {
@@ -95,58 +95,58 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// テスト実行フィルターを作成する
+        /// Create test execution filter
         /// </summary>
         private TestExecutionFilter CreateFilter(string filterType, string filterValue)
         {
             return filterType.ToLower() switch
             {
-                "fullclassname" => TestExecutionFilter.ByClassName(filterValue), // フルクラス名 (例: io.github.hatayama.uMCP.CompileCommandTests)
-                "namespace" => TestExecutionFilter.ByNamespace(filterValue),      // ネームスペース (例: io.github.hatayama.uMCP)
-                "testname" => TestExecutionFilter.ByTestName(filterValue),        // 個別テスト名
-                "assembly" => TestExecutionFilter.ByAssemblyName(filterValue),    // アセンブリ名
-                _ => throw new ArgumentException($"未対応のフィルタータイプ: {filterType}")
+                "fullclassname" => TestExecutionFilter.ByClassName(filterValue), // Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)
+                "namespace" => TestExecutionFilter.ByNamespace(filterValue),      // Namespace (e.g.: io.github.hatayama.uMCP)
+                "testname" => TestExecutionFilter.ByTestName(filterValue),        // Individual test name
+                "assembly" => TestExecutionFilter.ByAssemblyName(filterValue),    // Assembly name
+                _ => throw new ArgumentException($"Unsupported filter type: {filterType}")
             };
         }
 
         /// <summary>
-        /// テスト結果を処理する
+        /// Process test results
         /// </summary>
         private void ProcessTestResult(ITestResultAdaptor result, bool saveXml, TaskCompletionSource<TestExecutionResult> completionSource)
         {
             try
             {
-                // テスト結果の統計を取得
+                // Get test result statistics
                 TestResultSummary summary = AnalyzeTestResult(result);
                 
-                McpLogger.LogInfo($"✅ テスト実行完了");
-                McpLogger.LogInfo($"📊 結果: テスト完了 - 成功:{summary.PassedCount} 失敗:{summary.FailedCount} スキップ:{summary.SkippedCount} ({result.Duration:F1}秒)");
+                McpLogger.LogInfo($"✅ Test execution completed");
+                McpLogger.LogInfo($"📊 Results: Test completed - Passed:{summary.PassedCount} Failed:{summary.FailedCount} Skipped:{summary.SkippedCount} ({result.Duration:F1}s)");
                 
                 string xmlPath = null;
                 if (saveXml)
                 {
-                    // XML保存
+                    // Save XML
                     xmlPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
                     if (!string.IsNullOrEmpty(xmlPath))
                     {
-                        McpLogger.LogInfo($"📄 XMLファイル保存: {xmlPath}");
+                        McpLogger.LogInfo($"📄 XML file saved: {xmlPath}");
                     }
                     else
                     {
-                        McpLogger.LogError("XMLファイルの保存に失敗しました");
+                        McpLogger.LogError("Failed to save XML file");
                     }
                 }
                 else
                 {
-                    // XMLをログ出力
+                    // Output XML to log
                     NUnitXmlResultExporter.LogTestResultAsXml(result);
-                    McpLogger.LogInfo("📄 XMLをコンソールに出力しました");
+                    McpLogger.LogInfo("📄 XML output to console");
                 }
                 
                 TestExecutionResult executionResult = new TestExecutionResult
                 {
                     Success = summary.FailedCount == 0,
-                    Message = $"テスト完了 - 成功:{summary.PassedCount} 失敗:{summary.FailedCount} スキップ:{summary.SkippedCount} ({result.Duration:F1}秒)",
+                    Message = $"Test completed - Passed:{summary.PassedCount} Failed:{summary.FailedCount} Skipped:{summary.SkippedCount} ({result.Duration:F1}s)",
                     TestResults = summary,
                     XmlPath = xmlPath
                 };
@@ -155,13 +155,13 @@ namespace io.github.hatayama.uMCP
             }
             catch (Exception ex)
             {
-                McpLogger.LogError($"テスト結果処理エラー: {ex.Message}");
+                McpLogger.LogError($"Test result processing error: {ex.Message}");
                 completionSource.SetException(ex);
             }
         }
 
         /// <summary>
-        /// テスト結果を分析する
+        /// Analyze test results
         /// </summary>
         private TestResultSummary AnalyzeTestResult(ITestResultAdaptor result)
         {
@@ -184,7 +184,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 結果を再帰的にカウントする
+        /// Recursively count results
         /// </summary>
         private void CountResults(ITestResultAdaptor result, ref int passed, ref int failed, ref int skipped, List<FailedTestInfo> failedTests)
         {
@@ -197,7 +197,7 @@ namespace io.github.hatayama.uMCP
                         break;
                     case TestStatus.Failed:
                         failed++;
-                        // 失敗したテストの詳細を記録
+                        // Record details of failed tests
                         failedTests.Add(new FailedTestInfo
                         {
                             TestName = result.Test.Name,
@@ -225,7 +225,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// テスト実行パラメータ
+    /// Test execution parameters
     /// </summary>
     public class TestExecutionParameters
     {
@@ -237,7 +237,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// テスト実行結果
+    /// Test execution result
     /// </summary>
     public class TestExecutionResult
     {
@@ -248,7 +248,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// テスト結果サマリー
+    /// Test result summary
     /// </summary>
     public class TestResultSummary
     {
@@ -261,7 +261,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// 失敗したテスト情報
+    /// Failed test information
     /// </summary>
     public class FailedTestInfo
     {

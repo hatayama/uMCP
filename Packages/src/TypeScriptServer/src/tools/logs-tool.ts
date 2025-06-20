@@ -4,33 +4,33 @@ import { ToolResponse } from '../types/tool-types.js';
 import { TOOL_NAMES, LOG_CONFIG, UNITY_CONNECTION } from '../constants.js';
 
 /**
- * Unityログ取得ツール
+ * Unity log retrieval tool
  */
 export class LogsTool extends BaseTool {
   readonly name = TOOL_NAMES.GET_LOGS;
-  readonly description = 'Unityコンソールのログ情報を取得する';
+  readonly description = 'Retrieve log information from Unity console';
   readonly inputSchema = {
     type: 'object',
     properties: {
       logType: {
         type: 'string',
-        description: 'フィルタリングするログタイプ (Error, Warning, Log, All)',
+        description: 'Log type to filter (Error, Warning, Log, All)',
         enum: LOG_CONFIG.TYPES,
         default: LOG_CONFIG.DEFAULT_TYPE
       },
       maxCount: {
         type: 'number',
-        description: '取得する最大ログ数',
+        description: 'Maximum number of logs to retrieve',
         default: LOG_CONFIG.DEFAULT_MAX_COUNT
       },
       searchText: {
         type: 'string',
-        description: 'ログメッセージ内で検索するテキスト（空の場合は全て取得）',
+        description: 'Text to search within log messages (retrieve all if empty)',
         default: LOG_CONFIG.DEFAULT_SEARCH_TEXT
       },
       includeStackTrace: {
         type: 'boolean',
-        description: 'スタックトレースを表示するかどうか',
+        description: 'Whether to display stack trace',
         default: LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE
       }
     },
@@ -51,10 +51,10 @@ export class LogsTool extends BaseTool {
   }
 
   protected async execute(args: { logType: string; maxCount: number; searchText: string; includeStackTrace: boolean }): Promise<any> {
-    // Unity側に接続（必要に応じて再接続）
+    // Connect to Unity (reconnect if necessary)
     await this.context.unityClient.ensureConnected();
 
-    // Unity側にスタックトレース情報も含めてログを取得
+    // Retrieve logs from Unity including stack trace information
     const result = await this.context.unityClient.getLogs(args.logType, args.maxCount, args.searchText, args.includeStackTrace);
     
     return result;

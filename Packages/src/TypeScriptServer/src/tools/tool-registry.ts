@@ -6,8 +6,8 @@ import { LogsTool } from './logs-tool.js';
 import { RunTestsTool } from './run-tests-tool.js';
 
 /**
- * ツールレジストリ
- * ツールの登録・管理・実行を担当
+ * Tool registry
+ * Responsible for tool registration, management, and execution
  */
 export class ToolRegistry {
   private tools: Map<string, ToolHandler> = new Map();
@@ -17,10 +17,10 @@ export class ToolRegistry {
   }
 
   /**
-   * デフォルトツールの登録
+   * Register default tools
    */
   private registerDefaultTools(context: ToolContext): void {
-    // 開発時のみPingToolを登録（NODE_ENV=development または ENABLE_PING_TOOL=true の場合）
+    // Register PingTool only during development (when NODE_ENV=development or ENABLE_PING_TOOL=true)
     const isDevelopment = process.env.NODE_ENV === 'development';
     const enablePingTool = process.env.ENABLE_PING_TOOL === 'true';
     
@@ -35,21 +35,21 @@ export class ToolRegistry {
   }
 
   /**
-   * ツールを登録
+   * Register a tool
    */
   register(tool: ToolHandler): void {
     this.tools.set(tool.name, tool);
   }
 
   /**
-   * ツールを取得
+   * Get a tool
    */
   get(name: string): ToolHandler | undefined {
     return this.tools.get(name);
   }
 
   /**
-   * 全ツールの定義を取得
+   * Get definitions of all tools
    */
   getAllDefinitions(): ToolDefinition[] {
     return Array.from(this.tools.values()).map(tool => ({
@@ -60,7 +60,7 @@ export class ToolRegistry {
   }
 
   /**
-   * ツールを実行
+   * Execute a tool
    */
   async execute(name: string, args: unknown) {
     const tool = this.get(name);
@@ -71,7 +71,7 @@ export class ToolRegistry {
   }
 
   /**
-   * 登録されているツール名の一覧を取得
+   * Get a list of registered tool names
    */
   getToolNames(): string[] {
     return Array.from(this.tools.keys());
