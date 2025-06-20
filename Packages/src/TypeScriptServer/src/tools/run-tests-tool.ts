@@ -6,7 +6,7 @@ import { ToolResponse } from '../types/tool-types.js';
  * Unity Test Runner実行ツール
  */
 export class RunTestsTool extends BaseTool {
-  readonly name = 'unity.runTests';
+  readonly name = 'unity-run-tests';
   readonly description = 'Unity Test Runnerを実行してテスト結果を取得する';
   readonly inputSchema = {
     type: 'object',

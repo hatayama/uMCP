@@ -6,7 +6,7 @@ import { ToolResponse } from '../types/tool-types.js';
  * Unityログ取得ツール
  */
 export class LogsTool extends BaseTool {
-  readonly name = 'unity.getLogs';
+  readonly name = 'unity-get-logs';
   readonly description = 'Unityコンソールのログ情報を取得する';
   readonly inputSchema = {
     type: 'object',

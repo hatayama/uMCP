@@ -11,6 +11,7 @@ namespace io.github.hatayama.uMCP
     {
         private const string CURSOR_CONFIG_DIR = ".cursor";
         private const string MCP_CONFIG_FILE = "mcp.json";
+        private const string CLAUDE_CODE_CONFIG_FILE = ".mcp.json";
 
         /// <summary>
         /// プロジェクトルートディレクトリのパスを取得
@@ -35,7 +36,7 @@ namespace io.github.hatayama.uMCP
         public static string GetClaudeCodeConfigPath()
         {
             string projectRoot = GetProjectRoot();
-            return Path.Combine(projectRoot, MCP_CONFIG_FILE);
+            return Path.Combine(projectRoot, CLAUDE_CODE_CONFIG_FILE);
         }
 
         /// <summary>
