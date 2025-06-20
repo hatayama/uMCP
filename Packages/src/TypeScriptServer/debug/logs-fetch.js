@@ -7,14 +7,17 @@ function showHelp() {
     console.log('  node test/test-logs.js [options]');
     console.log('');
     console.log('Options:');
-    console.log('  --type, -t <type>  ログタイプを指定 (All, Error, Warning, Log)');
-    console.log('  --count, -c <num>  取得する最大ログ数 (default: 10)');
-    console.log('  --help, -h         このヘルプを表示');
+    console.log('  --type, -t <type>    ログタイプを指定 (All, Error, Warning, Log)');
+    console.log('  --count, -c <num>    取得する最大ログ数 (default: 10)');
+    console.log('  --search, -s <text>  特定の文字列を含むログのみを取得');
+    console.log('  --help, -h           このヘルプを表示');
     console.log('');
     console.log('Examples:');
     console.log('  node test/test-logs.js                    # 全ログ10件取得');
     console.log('  node test/test-logs.js --type Error       # エラーログのみ取得');
     console.log('  node test/test-logs.js -t Warning -c 20   # 警告ログ20件取得');
+    console.log('  node test/test-logs.js -s "MCP"           # "MCP"を含むログのみ取得');
+    console.log('  node test/test-logs.js -t All -s "error" -c 30  # "error"を含むログを30件取得');
     console.log('');
 }
 
@@ -42,9 +45,19 @@ async function testGetLogs() {
         maxCount = parseInt(args[countIndex + 1], 10) || 10;
     }
     
+    // 検索文字列の取得
+    let searchText = '';
+    const searchIndex = args.findIndex(arg => arg === '--search' || arg === '-s');
+    if (searchIndex !== -1 && args[searchIndex + 1]) {
+        searchText = args[searchIndex + 1];
+    }
+    
     console.log('=== Unity Logs Test ===');
     console.log(`Log Type: ${logType}`);
     console.log(`Max Count: ${maxCount}`);
+    if (searchText) {
+        console.log(`Search Text: "${searchText}"`);
+    }
     
     const client = new UnityDebugClient();
     
@@ -53,9 +66,11 @@ async function testGetLogs() {
         await client.connect();
         console.log('✓ Connected successfully!');
         
-        console.log(`\n2. Getting ${logType} logs (max ${maxCount})...`);
-        const logs = await client.getLogs(logType, maxCount);
-        console.log(`✓ Found ${logs.logs.length} logs (total: ${logs.totalCount})`);
+        const searchInfo = searchText ? ` containing "${searchText}"` : '';
+        console.log(`\n2. Getting ${logType} logs${searchInfo} (max ${maxCount})...`);
+        const logs = await client.getLogs(logType, maxCount, searchText);
+        const searchSummary = searchText ? ` matching "${searchText}"` : '';
+        console.log(`✓ Found ${logs.logs.length} logs${searchSummary} (total: ${logs.totalCount})`);
         
         if (logs.logs.length > 0) {
             console.log(`\n--- ${logType.toUpperCase()} LOGS ---`);

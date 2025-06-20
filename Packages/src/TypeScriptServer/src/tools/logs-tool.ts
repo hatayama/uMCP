@@ -21,6 +21,11 @@ export class LogsTool extends BaseTool {
         type: 'number',
         description: '取得する最大ログ数',
         default: 100
+      },
+      searchText: {
+        type: 'string',
+        description: '特定の文字列を含むログのみを取得（空の場合は全て取得）',
+        default: ''
       }
     }
   };
@@ -28,21 +33,23 @@ export class LogsTool extends BaseTool {
   protected validateArgs(args: unknown) {
     const schema = z.object({
       logType: z.enum(['Error', 'Warning', 'Log', 'All']).default('All'),
-      maxCount: z.number().default(100)
+      maxCount: z.number().default(100),
+      searchText: z.string().default('')
     });
     return schema.parse(args || {});
   }
 
-  protected async execute(args: { logType: string; maxCount: number }): Promise<any> {
+  protected async execute(args: { logType: string; maxCount: number; searchText: string }): Promise<any> {
     // Unity側に接続（必要に応じて再接続）
     await this.context.unityClient.ensureConnected();
 
     // Unity側からログを取得
-    return await this.context.unityClient.getLogs(args.logType, args.maxCount);
+    return await this.context.unityClient.getLogs(args.logType, args.maxCount, args.searchText);
   }
 
   protected formatResponse(result: any): ToolResponse {
-    let responseText = `Unity Console Logs (Filter: ${result.logType}, Max: ${result.maxCount}):\n\n`;
+    const searchInfo = result.searchText ? `Search: "${result.searchText}", ` : '';
+    let responseText = `Unity Console Logs (Filter: ${result.logType}, ${searchInfo}Max: ${result.maxCount}):\n\n`;
     
     if (result.logs.length > 0) {
       responseText += result.logs.map((log: any) => {
@@ -56,7 +63,8 @@ export class LogsTool extends BaseTool {
       responseText += 'No logs found.';
     }
 
-    responseText += `\n\nTotal logs: ${result.logs.length} (of ${result.totalCount} total)`;
+    const searchSummary = result.searchText ? ` matching "${result.searchText}"` : '';
+    responseText += `\n\nTotal logs: ${result.logs.length}${searchSummary} (of ${result.totalCount} total)`;
 
     return {
       content: [

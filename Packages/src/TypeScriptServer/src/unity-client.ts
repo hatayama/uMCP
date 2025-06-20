@@ -180,7 +180,7 @@ export class UnityClient {
   /**
    * Unityコンソールのログを取得
    */
-  async getLogs(logType: string = 'All', maxCount: number = 100): Promise<{
+  async getLogs(logType: string = 'All', maxCount: number = 100, searchText: string = ''): Promise<{
     logs: Array<{
       type: string;
       message: string;
@@ -188,6 +188,9 @@ export class UnityClient {
       timestamp: string;
     }>;
     totalCount: number;
+    logType: string;
+    maxCount: number;
+    searchText?: string;
   }> {
     if (!this.connected) {
       // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
@@ -202,7 +205,8 @@ export class UnityClient {
         method: 'getLogs',
         params: {
           logType: logType,
-          maxCount: maxCount
+          maxCount: maxCount,
+          searchText: searchText
         }
       });
 

@@ -5606,7 +5606,7 @@ var UnityClient = class {
   /**
    * Unityコンソールのログを取得
    */
-  async getLogs(logType = "All", maxCount = 100) {
+  async getLogs(logType = "All", maxCount = 100, searchText = "") {
     if (!this.connected) {
       throw new Error("Unity MCP Bridge is not connected. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.");
     }
@@ -5618,7 +5618,8 @@ var UnityClient = class {
         method: "getLogs",
         params: {
           logType,
-          maxCount
+          maxCount,
+          searchText
         }
       });
       this.socket.write(request + "\n");
@@ -5899,22 +5900,29 @@ var LogsTool = class extends BaseTool {
         type: "number",
         description: "\u53D6\u5F97\u3059\u308B\u6700\u5927\u30ED\u30B0\u6570",
         default: 100
+      },
+      searchText: {
+        type: "string",
+        description: "\u7279\u5B9A\u306E\u6587\u5B57\u5217\u3092\u542B\u3080\u30ED\u30B0\u306E\u307F\u3092\u53D6\u5F97\uFF08\u7A7A\u306E\u5834\u5408\u306F\u5168\u3066\u53D6\u5F97\uFF09",
+        default: ""
       }
     }
   };
   validateArgs(args) {
     const schema = external_exports.object({
       logType: external_exports.enum(["Error", "Warning", "Log", "All"]).default("All"),
-      maxCount: external_exports.number().default(100)
+      maxCount: external_exports.number().default(100),
+      searchText: external_exports.string().default("")
     });
     return schema.parse(args || {});
   }
   async execute(args) {
     await this.context.unityClient.ensureConnected();
-    return await this.context.unityClient.getLogs(args.logType, args.maxCount);
+    return await this.context.unityClient.getLogs(args.logType, args.maxCount, args.searchText);
   }
   formatResponse(result) {
-    let responseText = `Unity Console Logs (Filter: ${result.logType}, Max: ${result.maxCount}):
+    const searchInfo = result.searchText ? `Search: "${result.searchText}", ` : "";
+    let responseText = `Unity Console Logs (Filter: ${result.logType}, ${searchInfo}Max: ${result.maxCount}):
 
 `;
     if (result.logs.length > 0) {
@@ -5929,9 +5937,10 @@ Stack Trace: ${log.stackTrace}`;
     } else {
       responseText += "No logs found.";
     }
+    const searchSummary = result.searchText ? ` matching "${result.searchText}"` : "";
     responseText += `
 
-Total logs: ${result.logs.length} (of ${result.totalCount} total)`;
+Total logs: ${result.logs.length}${searchSummary} (of ${result.totalCount} total)`;
     return {
       content: [
         {
