@@ -5867,7 +5867,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
 // src/tools/compile-tool.ts
 var CompileTool = class extends BaseTool {
   name = TOOL_NAMES.COMPILE;
-  description = "Execute Unity project compilation and retrieve error information";
+  description = "After executing AssetDatabase.Refresh(), compile. Return the compilation results.";
   inputSchema = {
     type: "object",
     properties: {
