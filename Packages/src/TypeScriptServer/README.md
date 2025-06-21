@@ -1,282 +1,282 @@
 # Unity MCP Server
 
-Unity と Cursor 間の橋渡しを行う Model Context Protocol (MCP) サーバーです。
+This is a Model Context Protocol (MCP) server that acts as a bridge between Unity and Cursor.
 
-## ビルドタイミング
+## Build Timing
 
-### 自動ビルド
-- **GitHub Actions**: mainブランチプッシュ時に自動ビルド・コミット
-- **postinstall**: npm install実行時に自動ビルド
-- **prepublishOnly**: パッケージ公開前に自動ビルド
+### Automatic Builds
+- **GitHub Actions**: Automatically builds and commits on push to the main branch.
+- **postinstall**: Automatically builds when `npm install` is run.
+- **prepublishOnly**: Automatically builds before publishing the package.
 
-### 手動ビルド
+### Manual Builds
 
-#### 🔧 npm installが必要な場合
+#### 🔧 When npm install is required
 ```bash
-# 新しい環境・初回セットアップ
+# New environment / initial setup
 npm install
 npm run build
 
-# package.json変更後
+# After changing package.json
 npm install
 npm run build
 
-# node_modules削除後
+# After deleting node_modules
 npm install
 npm run build
 ```
 
-#### ⚡ npm installが不要な場合
+#### ⚡ When npm install is not required
 ```bash
-# 既にnode_modulesがある継続開発
-npm run build  # 直接実行可能
+# For continuous development where node_modules already exists
+npm run build  # Can be run directly
 ```
 
-#### 🔍 確認方法
+#### 🔍 How to check
 ```bash
-# node_modulesの存在確認
-ls node_modules/ > /dev/null 2>&1 && echo "OK: npm run build可能" || echo "NG: npm install必要"
+# Check for the existence of node_modules
+ls node_modules/ > /dev/null 2>&1 && echo "OK: can run npm run build" || echo "NG: npm install required"
 
-# TypeScriptコンパイラの確認
-npx tsc --version || echo "npm install必要"
+# Check TypeScript compiler
+npx tsc --version || echo "npm install required"
 ```
 
-### ビルド成果物
-- `dist/server.js` - メインMCPサーバー
-- `dist/unity-client.js` - Unity通信クライアント
-- `dist/tools/` - 各種ツール
-- `dist/types/` - 型定義
+### Build Artifacts
+- `dist/server.js` - Main MCP server
+- `dist/unity-client.js` - Unity communication client
+- `dist/tools/` - Various tools
+- `dist/types/` - Type definitions
 
-## 概要
+## Overview
 
-このサーバーは、Cursor エディタから Unity エンジンを操作するためのツールセットを提供します。TCP/IP 通信を通じて Unity 側の MCP Bridge と連携し、コンパイル実行やログ取得などの操作を可能にします。
+This server provides a toolset for operating the Unity engine from the Cursor editor. It works in conjunction with the MCP Bridge on the Unity side via TCP/IP communication to enable operations such as compiling and fetching logs.
 
-## アーキテクチャ
+## Architecture
 
-### 設計原則
-- **高い凝集度**: 各コンポーネントが単一の責任を持つ
-- **拡張性**: 新しいツールを簡単に追加できる
-- **型安全性**: TypeScript の型システムを活用
+### Design Principles
+- **High Cohesion**: Each component has a single responsibility.
+- **Extensibility**: New tools can be easily added.
+- **Type Safety**: Utilizes TypeScript's type system.
 
-### ディレクトリ構成
+### Directory Structure
 
 ```
 src/
 ├── types/
-│   └── tool-types.ts          # ツール関連の型定義
+│   └── tool-types.ts          # Type definitions for tools
 ├── tools/
-│   ├── base-tool.ts           # ツールの基底クラス
-│   ├── ping-tool.ts           # TypeScript側Pingツール
-│   ├── unity-ping-tool.ts     # Unity側Pingツール
-│   ├── compile-tool.ts        # Unityコンパイルツール
-│   ├── logs-tool.ts           # Unityログ取得ツール
-│   └── tool-registry.ts       # ツールの登録・管理
-├── server.ts                  # MCPサーバーのメインクラス
-└── unity-client.ts           # Unity側との通信クライアント
+│   ├── base-tool.ts           # Base class for tools
+│   ├── ping-tool.ts           # Ping tool for TypeScript side
+│   ├── unity-ping-tool.ts     # Ping tool for Unity side
+│   ├── compile-tool.ts        # Unity compile tool
+│   ├── logs-tool.ts           # Unity log retrieval tool
+│   └── tool-registry.ts       # Tool registration and management
+├── server.ts                  # Main class for the MCP server
+└── unity-client.ts            # Communication client for the Unity side
 ```
 
-## 提供ツール
+## Provided Tools
 
-### 1. ping（開発時のみ）
-- **説明**: TypeScript側のMCPサーバー接続テスト（開発時のみ有効）
-- **パラメータ**: 
-  - `message` (string): テストメッセージ
-- **有効化条件**: `NODE_ENV=development` または `ENABLE_PING_TOOL=true`
+### 1. ping (development only)
+- **Description**: Connection test for the TypeScript-side MCP server (enabled only in development).
+- **Parameters**: 
+  - `message` (string): Test message.
+- **Activation Condition**: `NODE_ENV=development` or `ENABLE_PING_TOOL=true`.
 
 ### 2. unity.ping
-- **説明**: Unity側への接続テスト（TCP/IP通信確認）
-- **パラメータ**: 
-  - `message` (string): Unity側に送信するメッセージ
+- **Description**: Connection test to the Unity side (TCP/IP communication check).
+- **Parameters**: 
+  - `message` (string): Message to send to the Unity side.
 
 ### 3. action.compileUnity
-- **説明**: Unityプロジェクトのコンパイル実行とエラー情報取得
-- **パラメータ**: 
-  - `forceRecompile` (boolean): 強制再コンパイルフラグ
+- **Description**: Executes compilation of the Unity project and retrieves error information.
+- **Parameters**: 
+  - `forceRecompile` (boolean): Force recompile flag.
 
 ### 4. context.getUnityLogs
-- **説明**: Unityコンソールのログ情報取得
-- **パラメータ**: 
-  - `logType` (string): フィルタリングするログタイプ (Error, Warning, Log, All)
-  - `maxCount` (number): 取得する最大ログ数
+- **Description**: Retrieves log information from the Unity console.
+- **Parameters**: 
+  - `logType` (string): Log type to filter by (Error, Warning, Log, All).
+  - `maxCount` (number): Maximum number of logs to retrieve.
 
-## セットアップ
+## Setup
 
-### 前提条件
-- Node.js 18以上
-- Unity 2020.3以上
-- Unity MCP Bridge パッケージがインストール済み
+### Prerequisites
+- Node.js 18 or higher
+- Unity 2020.3 or higher
+- Unity MCP Bridge package installed.
 
-### インストール
+### Installation
 
 ```bash
 cd Packages/src/TypeScriptServer
 npm install
 ```
 
-### ビルド
+### Build
 
 ```bash
 npm run build
 ```
 
-### 実行
+### Run
 
-#### 本番環境（pingツール無効）
+#### Production Environment (ping tool disabled)
 ```bash
 npm start
 ```
 
-#### 開発環境（pingツール有効）
+#### Development Environment (ping tool enabled)
 ```bash
 npm run dev
-# または
+# or
 npm run start:dev
-# または環境変数で制御
+# Or control with environment variables
 ENABLE_PING_TOOL=true npm start
 ```
 
-## Unity側への直接通信テスト
+## Direct Communication Test with Unity
 
-Unity側のMCPサーバーが7400番ポートで起動している場合、直接JSON-RPC通信でコマンドを実行できます。
+If the MCP server on the Unity side is running on port 7400, you can execute commands directly via JSON-RPC communication.
 
-### コンパイル実行
+### Run Compilation
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"compile","params":{"forceRecompile":false}}' | nc localhost 7400
 ```
 
-### Ping送信
+### Send Ping
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"ping","params":{"message":"test"}}' | nc localhost 7400
 ```
 
-### ログ取得
+### Get Logs
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"getLogs","params":{"logType":"All","maxCount":10}}' | nc localhost 7400
 ```
 
-### テスト実行
+### Run Tests
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"runtests","params":{"filterType":"all","filterValue":"","saveXml":false}}' | nc localhost 7400
 ```
 
-### 注意事項
-- Unity側で「Window > Unity MCP > Start Server」を実行してMCPサーバーを起動している必要があります
-- デフォルトポートは7400番です（`McpServerConfig.DEFAULT_PORT`）
+### Notes
+- You need to start the MCP server on the Unity side by running "Window > Unity MCP > Start Server".
+- The default port is 7400 (`McpServerConfig.DEFAULT_PORT`).
 
-## デバッグスクリプト
+## Debug Scripts
 
-Unity側との通信を確認するための各種デバッグスクリプトです。
+These are various debug scripts for checking communication with the Unity side.
 
-### npmスクリプト経由での実行（推奨）
+### Execution via npm scripts (recommended)
 
 ```bash
-# TypeScriptサーバーディレクトリに移動
+# Move to the TypeScript server directory
 cd Packages/src/TypeScriptServer
 
-# コンパイル実行
+# Run compilation
 npm run debug:compile
 
-# 強制再コンパイル
+# Force recompile
 npm run debug:compile -- --force
 
-# ログ取得
+# Get logs
 npm run debug:logs
 
-# 接続確認
+# Check connection
 npm run debug:connection
 
-# 全ログ取得
+# Get all logs
 npm run debug:all-logs
 ```
 
-### 直接実行
+### Direct Execution
 
 ```bash
-# TypeScriptサーバーディレクトリに移動
+# Move to the TypeScript server directory
 cd Packages/src/TypeScriptServer
 
-# 通常コンパイル
+# Normal compilation
 node debug/compile-check.js
 
-# 強制再コンパイル
+# Force recompile
 node debug/compile-check.js --force
-# または
+# or
 node debug/compile-check.js -f
 
-# ヘルプ表示
+# Show help
 node debug/compile-check.js --help
 ```
 
-### 利用可能なデバッグスクリプト
+### Available Debug Scripts
 
-#### 1. コンパイル確認 (compile-check.js)
-Unity側との通信を確認し、実際にコンパイルを実行します。
+#### 1. Compilation Check (compile-check.js)
+Checks communication with the Unity side and actually executes the compilation.
 
 ```bash
-# 通常コンパイル
+# Normal compilation
 node debug/compile-check.js
 
-# 強制再コンパイル
+# Force recompile
 node debug/compile-check.js --force
 
-# ヘルプ表示
+# Show help
 node debug/compile-check.js --help
 ```
 
-#### 2. ログ取得 (logs-fetch.js)
-Unity コンソールのログを取得・表示します。
+#### 2. Get Logs (logs-fetch.js)
+Retrieves and displays logs from the Unity Console.
 
 ```bash
-# 全ログ10件取得
+# Get 10 of all logs
 node debug/logs-fetch.js
 
-# エラーログのみ取得
+# Get only error logs
 node debug/logs-fetch.js --type Error
 
-# 警告ログ20件取得
+# Get 20 warning logs
 node debug/logs-fetch.js -t Warning -c 20
 
-# ヘルプ表示
+# Show help
 node debug/logs-fetch.js --help
 ```
 
-#### 3. 接続確認 (connection-check.js)
-Unity側との基本的な接続・通信をテストします。
+#### 3. Connection Check (connection-check.js)
+Tests basic connection and communication with the Unity side.
 
 ```bash
-# 全機能テスト（ping + compile + logs）
+# Test all features (ping + compile + logs)
 node debug/connection-check.js
 
-# pingテストのみ実行
+# Run only ping test
 node debug/connection-check.js --quick
 
-# 詳細出力で実行
+# Run with verbose output
 node debug/connection-check.js --verbose
 
-# ヘルプ表示
+# Show help
 node debug/connection-check.js --help
 ```
 
-#### 4. 全ログ取得 (all-logs-fetch.js)
-大量のログを取得し、統計情報を表示します。
+#### 4. Get All Logs (all-logs-fetch.js)
+Retrieves a large number of logs and displays statistics.
 
 ```bash
-# 全ログ100件取得+統計表示
+# Get 100 of all logs + display statistics
 node debug/all-logs-fetch.js
 
-# 全ログ200件取得
+# Get 200 of all logs
 node debug/all-logs-fetch.js -c 200
 
-# 統計情報のみ表示
+# Display statistics only
 node debug/all-logs-fetch.js --stats
 
-# ヘルプ表示
+# Show help
 node debug/all-logs-fetch.js --help
 ```
 
-### 実行例
+### Execution Example
 
-**コンパイルテスト:**
+**Compile Test:**
 ```
 === Unity Compile Test ===
 Force Recompile: OFF
@@ -295,7 +295,7 @@ Completed at: 2025-06-18T23:20:14.775Z
 ✓ Disconnected
 ```
 
-**接続テスト（クイック）:**
+**Connection Test (Quick):**
 ```
 === Unity Connection Test ===
 Verbose: OFF
@@ -313,23 +313,23 @@ Quick Test: ON
 ✓ Disconnected
 ```
 
-### 前提条件
-- Unity側でMCPサーバーが起動済み（Window > Unity MCP > Start Server）
-- Unity側がlocalhostの7400番ポートで待機中
+### Prerequisites
+- MCP server is running on the Unity side (Window > Unity MCP > Start Server).
+- The Unity side is listening on localhost, port 7400.
 
-### 機能
-- Unity側への接続テスト
-- 通常コンパイル・強制再コンパイルの実行
-- ログ取得（タイプ別フィルタリング、統計表示）
-- コマンドライン引数による動作制御
-- エラー/警告の詳細取得と表示
-- 自動切断
+### Features
+- Connection test to the Unity side.
+- Execution of normal and forced re-compilation.
+- Log retrieval (filtering by type, statistics display).
+- Control of behavior via command-line arguments.
+- Retrieval and display of error/warning details.
+- Automatic disconnection.
 
-## 新しいツールの追加方法
+## How to Add a New Tool
 
-### 1. ツールクラスの作成
+### 1. Create a Tool Class
 
-`src/tools/` ディレクトリに新しいツールクラスを作成します：
+Create a new tool class in the `src/tools/` directory:
 
 ```typescript
 import { z } from 'zod';
@@ -337,13 +337,13 @@ import { BaseTool } from './base-tool.js';
 
 export class MyNewTool extends BaseTool {
   readonly name = 'my.newTool';
-  readonly description = '新しいツールの説明';
+  readonly description = 'Description of the new tool';
   readonly inputSchema = {
     type: 'object',
     properties: {
       param1: {
         type: 'string',
-        description: 'パラメータ1の説明'
+        description: 'Description of parameter 1'
       }
     }
   };
@@ -356,11 +356,11 @@ export class MyNewTool extends BaseTool {
   }
 
   protected async execute(args: { param1: string }): Promise<string> {
-    // ツールの実際の処理をここに実装
-    return `処理結果: ${args.param1}`;
+    // Implement the actual tool logic here
+    return `Processing result: ${args.param1}`;
   }
 
-  // 必要に応じてレスポンスフォーマットをカスタマイズ
+  // Optionally, customize the response format
   protected formatResponse(result: string): ToolResponse {
     return {
       content: [
@@ -374,9 +374,9 @@ export class MyNewTool extends BaseTool {
 }
 ```
 
-### 2. ツールレジストリへの登録
+### 2. Register in the Tool Registry
 
-`src/tools/tool-registry.ts` の `registerDefaultTools` メソッドに追加：
+Add it to the `registerDefaultTools` method in `src/tools/tool-registry.ts`:
 
 ```typescript
 private registerDefaultTools(context: ToolContext): void {
@@ -384,56 +384,56 @@ private registerDefaultTools(context: ToolContext): void {
   this.register(new UnityPingTool(context));
   this.register(new CompileTool(context));
   this.register(new LogsTool(context));
-  this.register(new MyNewTool(context)); // 追加
+  this.register(new MyNewTool(context)); // Add this
 }
 ```
 
-### 3. 型定義の追加（必要に応じて）
+### 3. Add Type Definitions (if necessary)
 
-新しい型が必要な場合は `src/types/tool-types.ts` に追加します。
+If new types are needed, add them to `src/types/tool-types.ts`.
 
-## 開発ガイドライン
+## Development Guidelines
 
-### コーディング規約
-- 型宣言は必須（`var` 禁止、明示的な型宣言を推奨）
-- 早期return でネストを浅く保つ
-- record型を活用した値オブジェクトの使用
-- エラーハンドリングは基底クラスで統一
+### Coding Standards
+- Type declarations are mandatory (no `var`, explicit type declarations are recommended).
+- Keep nesting shallow with early returns.
+- Use value objects utilizing record types.
+- Error handling is standardized in the base class.
 
-### テンプレートメソッドパターン
+### Template Method Pattern
 
-`BaseTool` クラスは以下のテンプレートメソッドパターンを提供：
+The `BaseTool` class provides the following template method pattern:
 
-1. **validateArgs**: 引数のバリデーション
-2. **execute**: 実際の処理
-3. **formatResponse**: 成功レスポンスのフォーマット
-4. **formatErrorResponse**: エラーレスポンスのフォーマット
+1. **validateArgs**: Argument validation.
+2. **execute**: Actual processing.
+3. **formatResponse**: Formatting for successful responses.
+4. **formatErrorResponse**: Formatting for error responses.
 
-## トラブルシューティング
+## Troubleshooting
 
-### Unity接続エラー
-- Unity MCP Bridge が起動しているか確認
-- Window > uMPC で設定したportが使用可能か確認
-- Unity側で "Window > Unity MCP > Start Server" を実行
+### Unity Connection Errors
+- Check if the Unity MCP Bridge is running.
+- Check if the port set in Window > uMPC is available.
+- Run "Window > Unity MCP > Start Server" on the Unity side.
 
-### コンパイルエラー
+### Compilation Errors
 ```bash
 npm run build
 ```
-でTypeScriptのコンパイルエラーを確認
+Check for TypeScript compilation errors.
 
-### 依存関係エラー
+### Dependency Errors
 ```bash
-# 依存関係の再インストール
+# Reinstall dependencies
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-### 型エラー
-- `src/types/tool-types.ts` で型定義を確認
-- MCPサーバーの戻り値型に合致しているか確認
+### Type Errors
+- Check type definitions in `src/types/tool-types.ts`.
+- Check if it matches the return type of the MCP server.
 
-## ライセンス
+## License
 
 MIT License
  
