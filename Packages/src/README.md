@@ -10,7 +10,7 @@ This enables you to call the following functions:
 ## ✨ Features
 
 ### 1. unity.compile
-- **Description**: After executing AssetDatabase.Refresh(), compile. Return the compilation results.
+- **Description**: Executes Unity project compilation and retrieves compilation results.
 - **Parameters**: 
   - `forceRecompile` (boolean): Whether to force recompilation (default: false)
 - **Response**: 
@@ -122,13 +122,13 @@ If necessary, you can manually edit Cursor's configuration file (`.cursor/mcp.js
 ```json
 {
   "mcpServers": {
-    "unity-mcp-{設定したport}": {
+    "unity-mcp-{port}": {
       "command": "node",
       "args": [
         "[Unity Package Path]/TypeScriptServer/dist/server.bundle.js"
       ],
       "env": {
-        "UNITY_TCP_PORT": "{設定したport}"
+        "UNITY_TCP_PORT": "{port}"
       }
     }
   }
@@ -150,28 +150,28 @@ If necessary, you can manually edit Cursor's configuration file (`.cursor/mcp.js
 - Install node.js from [here](https://nodejs.org/en/download)
 
 
-## インストール
+## Installation
 
-### Unity Package Manager
+### Via Unity Package Manager
 
-1. Unity Editorを開く
-2. Window > Package Manager を開く
-3. "+" ボタンをクリック
-4. "Add package from git URL" を選択
-5. 以下のURLを入力：
+1. Open the Unity Editor
+2. Open Window > Package Manager
+3. Click the "+" button
+4. Select "Add package from git URL"
+5. Enter the following URL:
 ```
 https://github.com/hatayama/uMCP.git?path=/Packages/src
 ```
 
-### OpenUPM経由 (推奨)
+### Via OpenUPM (Recommended)
 
 ### Using Scoped registry with Unity Package Manager
 1. Open the Project Settings window and navigate to the Package Manager page
 2. Add the following entry to the Scoped Registries list:
 ```
-Name：OpenUPM
+Name: OpenUPM
 URL: https://package.openupm.com
-Scope(s)：io.github.hatayama.umcp
+Scope(s): io.github.hatayama.umcp
 ```
 
 3. Open the Package Manager window and navigate to the "hatayama" page in the My Registries section
@@ -187,6 +187,3 @@ Scope(s)：io.github.hatayama.umcp
 
 ## License
 MIT License
-
-## Author
-Masamichi Hatayama
