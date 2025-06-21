@@ -69,11 +69,13 @@ namespace io.github.hatayama.uMCP
                 return new McpConfig(new Dictionary<string, McpServerConfigData>());
             }
 
-            string jsonContent = File.ReadAllText(configPath);
-            
-            // First, load the existing JSON as a dictionary.
-            Dictionary<string, object> rootObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonContent);
-            Dictionary<string, McpServerConfigData> servers = new();
+            try
+            {
+                string jsonContent = File.ReadAllText(configPath);
+                
+                // First, load the existing JSON as a dictionary.
+                Dictionary<string, object> rootObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonContent);
+                Dictionary<string, McpServerConfigData> servers = new();
             
             // Check if the mcpServers section exists.
             if (rootObject != null && rootObject.ContainsKey(McpConstants.JSON_KEY_MCP_SERVERS))
@@ -117,6 +119,12 @@ namespace io.github.hatayama.uMCP
             }
             
             return new McpConfig(servers);
+            }
+            catch (JsonException ex)
+            {
+                McpLogger.LogError($"Failed to parse JSON config file: {configPath}. Error: {ex.Message}");
+                throw;
+            }
         }
 
         /// <summary>

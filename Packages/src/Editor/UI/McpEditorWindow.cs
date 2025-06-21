@@ -14,8 +14,7 @@ namespace io.github.hatayama.uMCP
     public class McpEditorWindow : EditorWindow
     {
         // Constants for SessionState
-        private const string SESSION_KEY_SELECTED_EDITOR_TYPE = "uMCP.SelectedEditorType";
-        private const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
+
         
         // UI constants
         private const float MIN_WINDOW_WIDTH = 400f;
@@ -52,7 +51,7 @@ namespace io.github.hatayama.uMCP
         [MenuItem("Window/uMCP")]
         public static void ShowWindow()
         {
-            McpEditorWindow window = GetWindow<McpEditorWindow>("uMCP");
+            McpEditorWindow window = GetWindow<McpEditorWindow>(McpConstants.PROJECT_NAME);
             window.minSize = new Vector2(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT);
             window.Show();
         }
@@ -73,19 +72,19 @@ namespace io.github.hatayama.uMCP
             enableMcpLogs = settings.enableMcpLogs;
             
             // Restore editor selection state
-            selectedEditorType = (McpEditorType)SessionState.GetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
+            selectedEditorType = (McpEditorType)SessionState.GetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
             
             // Synchronize McpLogger settings
             McpLogger.EnableDebugLog = enableMcpLogs;
             
             // Restore communication log area height (from SessionState)
-            communicationLogHeight = SessionState.GetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, DEFAULT_COMMUNICATION_LOG_HEIGHT);
+            communicationLogHeight = SessionState.GetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, DEFAULT_COMMUNICATION_LOG_HEIGHT);
             
             // Subscribe to log update events
             McpCommunicationLogger.OnLogUpdated += Repaint;
             
             // Check if after compilation
-            bool isAfterCompile = SessionState.GetBool("uMCP.AfterCompile", false);
+            bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
             
             // Start server if after compilation or Auto Start Server is enabled
             if ((isAfterCompile || autoStartServer) && !McpServerController.IsServerRunning)
@@ -93,11 +92,11 @@ namespace io.github.hatayama.uMCP
                 // Clear flag if after compilation
                 if (isAfterCompile)
                 {
-                    SessionState.EraseBool("uMCP.AfterCompile");
+                    SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
                     McpLogger.LogInfo("McpEditorWindow detected post-compile state. Starting server immediately...");
                     
                     // Use saved port number
-                    int savedPort = SessionState.GetInt("uMCP.ServerPort", customPort);
+                    int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, customPort);
                     if (savedPort != customPort)
                     {
                         customPort = savedPort;
@@ -115,7 +114,7 @@ namespace io.github.hatayama.uMCP
             McpCommunicationLogger.OnLogUpdated -= Repaint;
             
             // Save editor selection state
-            SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+            SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             
             // Leave server management completely to McpServerController
             // Server does not stop when window is closed (treated as global resource)
@@ -337,7 +336,7 @@ namespace io.github.hatayama.uMCP
             if (EditorGUI.EndChangeCheck())
             {
                 // Save to session when selection changes
-                SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+                SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             }
             
             bool isServerRunning = McpServerController.IsServerRunning;
@@ -384,7 +383,16 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField($"{editorName} Settings", EditorStyles.boldLabel);
             
-            bool isConfigured = configService.IsConfigured();
+            bool isConfigured = false;
+            try
+            {
+                isConfigured = configService.IsConfigured();
+            }
+            catch (System.Exception ex)
+            {
+                EditorGUILayout.HelpBox($"Error loading {editorName} configuration: {ex.Message}", MessageType.Error);
+                throw;
+            }
             
             if (isConfigured)
             {
@@ -710,7 +718,7 @@ namespace io.github.hatayama.uMCP
                     communicationLogHeight = Mathf.Clamp(communicationLogHeight, MIN_COMMUNICATION_LOG_HEIGHT, MAX_COMMUNICATION_LOG_HEIGHT);
                     
                     // Save to SessionState
-                    SessionState.SetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, communicationLogHeight);
+                    SessionState.SetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, communicationLogHeight);
                     
                     Event.current.Use();
                     Repaint();

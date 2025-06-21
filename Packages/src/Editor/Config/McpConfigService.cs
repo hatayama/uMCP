@@ -23,15 +23,23 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public bool IsConfigured()
         {
-            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
-            if (!_repository.Exists(configPath))
+            try
             {
-                return false;
-            }
+                string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
+                if (!_repository.Exists(configPath))
+                {
+                    return false;
+                }
 
-            McpConfig config = _repository.Load(configPath);
-            // Check if a setting with a port number exists.
-            return config.mcpServers.Keys.Any(key => key.StartsWith(McpConstants.PROJECT_NAME));
+                McpConfig config = _repository.Load(configPath);
+                // Check if a setting with a port number exists.
+                return config.mcpServers.Keys.Any(key => key.StartsWith(McpConstants.PROJECT_NAME));
+            }
+            catch (System.Exception ex)
+            {
+                McpLogger.LogError($"Error checking configuration: {ex.Message}");
+                throw;
+            }
         }
 
         /// <summary>

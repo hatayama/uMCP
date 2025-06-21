@@ -37,8 +37,8 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class McpCommunicationLogger
     {
-        private const string LOGS_SESSION_KEY = "uMCP.CommunicationLogs";
-        private const string PENDING_REQUESTS_SESSION_KEY = "uMCP.PendingRequests";
+        private const string LOGS_SESSION_KEY = McpConstants.SESSION_KEY_COMMUNICATION_LOGS;
+        private const string PENDING_REQUESTS_SESSION_KEY = McpConstants.SESSION_KEY_PENDING_REQUESTS;
 
         private static List<McpCommunicationLogEntry> _logs;
         private static Dictionary<string, PendingRequest> _pendingRequests;
