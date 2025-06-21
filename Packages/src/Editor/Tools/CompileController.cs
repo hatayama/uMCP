@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unityのコンパイル処理を非同期で実行し、結果を監視するクラス
-    /// コンパイルの開始、進行状況の監視、結果の取得を行う
+    /// A class that asynchronously executes Unity's compilation process and monitors the results.
+    /// It handles starting compilation, monitoring its progress, and retrieving the results.
     /// </summary>
     public class CompileChecker : System.IDisposable
     {
@@ -18,60 +18,60 @@ namespace io.github.hatayama.uMCP
         private TaskCompletionSource<CompileResult> currentCompileTask;
 
         /// <summary>
-        /// コンパイル完了時に発生するイベント
+        /// Event that occurs when compilation is complete.
         /// </summary>
         public event Action<CompileResult> OnCompileCompleted;
         
         /// <summary>
-        /// コンパイル開始時に発生するイベント
+        /// Event that occurs when compilation starts.
         /// </summary>
         public event Action<string> OnCompileStarted;
         
         /// <summary>
-        /// アセンブリのコンパイル完了時に発生するイベント
+        /// Event that occurs when assembly compilation is complete.
         /// </summary>
         public event Action<string, CompilerMessage[]> OnAssemblyCompiled;
 
         /// <summary>
-        /// 現在コンパイル中かどうかを取得する
+        /// Gets whether a compilation is currently in progress.
         /// </summary>
         public bool IsCompiling => isCompiling;
         
         /// <summary>
-        /// 現在のコンパイルメッセージ一覧を取得する
+        /// Gets the current list of compiler messages.
         /// </summary>
         public IReadOnlyList<CompilerMessage> CompileMessages => compileMessages.AsReadOnly();
 
         /// <summary>
-        /// 非同期でコンパイルを実行する
+        /// Executes compilation asynchronously.
         /// </summary>
-        /// <param name="forceRecompile">強制再コンパイルを行うかどうか</param>
-        /// <returns>コンパイル結果</returns>
-        /// <exception cref="InvalidOperationException">コンパイル中にタスクが見つからない場合</exception>
+        /// <param name="forceRecompile">Whether to force a recompile.</param>
+        /// <returns>The compilation result.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when the task is not found during compilation.</exception>
         public async Task<CompileResult> TryCompileAsync(bool forceRecompile = false)
         {
             if (isCompiling)
             {
-                // 既にコンパイル中の場合は現在のタスクを待つ
+                // If compilation is already in progress, wait for the current task.
                 if (currentCompileTask != null)
                 {
                     return await currentCompileTask.Task;
                 }
-                throw new InvalidOperationException("コンパイル中じゃが、タスクが見つからんで");
+                throw new InvalidOperationException("Compilation is in progress, but the task could not be found.");
             }
 
             isCompiling = true;
             compileMessages.Clear();
             currentCompileTask = new TaskCompletionSource<CompileResult>();
 
-            // アセットリフレッシュを実行
+            // Execute asset refresh.
             AssetDatabase.Refresh();
 
-            // イベント登録
+            // Register events.
             CompilationPipeline.compilationFinished += HandleCompileFinished;
             CompilationPipeline.assemblyCompilationFinished += HandleAssemblyFinished;
 
-            string startMessage = forceRecompile ? "アセットリフレッシュ後、強制再コンパイル開始したで..." : "アセットリフレッシュ後、コンパイル開始したで...";
+            string startMessage = forceRecompile ? "Forced recompile started after asset refresh..." : "Compilation started after asset refresh...";
             OnCompileStarted?.Invoke(startMessage);
 
             if (forceRecompile)
@@ -87,7 +87,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コンパイルメッセージをクリアする
+        /// Clears the compiler messages.
         /// </summary>
         public void ClearMessages()
         {
@@ -95,12 +95,12 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コンパイル完了時のハンドラー
+        /// Handler for when compilation is complete.
         /// </summary>
-        /// <param name="context">コンパイルコンテキスト</param>
+        /// <param name="context">The compilation context.</param>
         private void HandleCompileFinished(object context)
         {
-            // イベント解除
+            // Unregister events.
             CompilationPipeline.compilationFinished -= HandleCompileFinished;
             CompilationPipeline.assemblyCompilationFinished -= HandleAssemblyFinished;
 
@@ -109,17 +109,17 @@ namespace io.github.hatayama.uMCP
             CompileResult result = CreateCompileResult();
             OnCompileCompleted?.Invoke(result);
 
-            // TaskCompletionSourceに結果を設定
+            // Set the result on the TaskCompletionSource.
             TaskCompletionSource<CompileResult> task = currentCompileTask;
             currentCompileTask = null;
             task?.SetResult(result);
         }
 
         /// <summary>
-        /// アセンブリコンパイル完了時のハンドラー
+        /// Handler for when assembly compilation is complete.
         /// </summary>
-        /// <param name="asmPath">アセンブリパス</param>
-        /// <param name="messages">コンパイルメッセージ</param>
+        /// <param name="asmPath">The assembly path.</param>
+        /// <param name="messages">The compiler messages.</param>
         private void HandleAssemblyFinished(string asmPath, CompilerMessage[] messages)
         {
             string assemblyName = System.IO.Path.GetFileName(asmPath);
@@ -133,9 +133,9 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コンパイル結果を作成する
+        /// Creates the compilation result.
         /// </summary>
-        /// <returns>コンパイル結果</returns>
+        /// <returns>The compilation result.</returns>
         private CompileResult CreateCompileResult()
         {
             int errorCount = compileMessages.Count(m => m.type == CompilerMessageType.Error);
@@ -156,15 +156,15 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// リソースをクリーンアップする
+        /// Cleans up resources.
         /// </summary>
         public void Cleanup()
         {
-            // 念のためイベント解除
+            // Unregister events just in case.
             CompilationPipeline.compilationFinished -= HandleCompileFinished;
             CompilationPipeline.assemblyCompilationFinished -= HandleAssemblyFinished;
 
-            // 未完了のタスクがあればキャンセル
+            // If there is an incomplete task, cancel it.
             if (currentCompileTask != null && !currentCompileTask.Task.IsCompleted)
             {
                 currentCompileTask.SetCanceled();
@@ -173,7 +173,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// リソースを解放する
+        /// Releases resources.
         /// </summary>
         public void Dispose()
         {
@@ -181,7 +181,7 @@ namespace io.github.hatayama.uMCP
             compileMessages?.Clear();
             compileMessages = null;
 
-            // イベントを全てクリア
+            // Clear all events.
             OnCompileCompleted = null;
             OnCompileStarted = null;
             OnAssemblyCompiled = null;
@@ -189,66 +189,66 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// コンパイル結果を表すクラス
-    /// エラー、警告の情報とコンパイル完了時刻を含む
+    /// A class that represents the result of a compilation.
+    /// Includes information on errors, warnings, and the completion time.
     /// </summary>
     public class CompileResult
     {
         /// <summary>
-        /// コンパイルが成功したかどうか
+        /// Whether the compilation was successful.
         /// </summary>
         public bool Success { get; }
         
         /// <summary>
-        /// エラー数
+        /// The number of errors.
         /// </summary>
         public int ErrorCount { get; }
         
         /// <summary>
-        /// 警告数
+        /// The number of warnings.
         /// </summary>
         public int WarningCount { get; }
         
         /// <summary>
-        /// コンパイル完了時刻
+        /// The time of compilation completion.
         /// </summary>
         public DateTime CompletedAt { get; }
         
         /// <summary>
-        /// 全てのコンパイルメッセージ
+        /// All compiler messages.
         /// </summary>
         public CompilerMessage[] Messages { get; }
         
         /// <summary>
-        /// エラーメッセージのみ
+        /// Error messages only.
         /// </summary>
         public CompilerMessage[] Errors { get; }
         
         /// <summary>
-        /// 警告メッセージのみ
+        /// Warning messages only.
         /// </summary>
         public CompilerMessage[] Warnings { get; }
 
         /// <summary>
-        /// エラーメッセージのエイリアス（下位互換用）
+        /// Alias for error messages (for backward compatibility).
         /// </summary>
         public CompilerMessage[] error => Errors;
         
         /// <summary>
-        /// 警告メッセージのエイリアス（下位互換用）
+        /// Alias for warning messages (for backward compatibility).
         /// </summary>
         public CompilerMessage[] warning => Warnings;
 
         /// <summary>
-        /// コンパイル結果を初期化する
+        /// Initializes the compilation result.
         /// </summary>
-        /// <param name="success">コンパイル成功フラグ</param>
-        /// <param name="errorCount">エラー数</param>
-        /// <param name="warningCount">警告数</param>
-        /// <param name="completedAt">完了時刻</param>
-        /// <param name="messages">全メッセージ</param>
-        /// <param name="errors">エラーメッセージ</param>
-        /// <param name="warnings">警告メッセージ</param>
+        /// <param name="success">The compilation success flag.</param>
+        /// <param name="errorCount">The number of errors.</param>
+        /// <param name="warningCount">The number of warnings.</param>
+        /// <param name="completedAt">The completion time.</param>
+        /// <param name="messages">All messages.</param>
+        /// <param name="errors">The error messages.</param>
+        /// <param name="warnings">The warning messages.</param>
         public CompileResult(bool success, int errorCount, int warningCount, DateTime completedAt, CompilerMessage[] messages, CompilerMessage[] errors, CompilerMessage[] warnings)
         {
             Success = success;

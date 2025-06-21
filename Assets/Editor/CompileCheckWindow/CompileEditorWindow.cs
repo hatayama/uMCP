@@ -16,7 +16,7 @@ namespace io.github.hatayama.uMCP
         private const string LOG_TEXT_KEY = "CompileEditorWindow.LogText";
         private const string HAS_DATA_KEY = "CompileEditorWindow.HasData";
 
-        [MenuItem("Tools/CompileWindow/Window")]
+        [MenuItem("uMCP/CompileWindow/Window")]
         public static void ShowWindow()
         {
             CompileEditorWindow window = GetWindow<CompileEditorWindow>();

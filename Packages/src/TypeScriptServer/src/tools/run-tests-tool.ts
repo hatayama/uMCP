@@ -57,11 +57,11 @@ export class RunTestsTool extends BaseTool {
 
       // Display detailed information if test results exist, regardless of success value
       let result = response.success ? `✅ Test execution completed\n` : `⚠️ Test execution completed (with failures)\n`;
-      result += `📊 Result: ${response.message}\n`;
+      result += `Result: ${response.message}\n`;
       
       if (response.testResults) {
         const testResults = response.testResults;
-        result += `\n📈 Detailed Statistics:\n`;
+        result += `\nDetailed Statistics:\n`;
         result += `  • Passed: ${testResults.PassedCount} tests\n`;
         result += `  • Failed: ${testResults.FailedCount} tests\n`;
         result += `  • Skipped: ${testResults.SkippedCount} tests\n`;
@@ -88,7 +88,7 @@ export class RunTestsTool extends BaseTool {
       }
       
       if (response.xmlPath) {
-        result += `\n📄 XML file saved: ${response.xmlPath}\n`;
+        result += `\nXML file saved: ${response.xmlPath}\n`;
       }
       
       result += `\n⏰ Completed at: ${response.completedAt}`;

@@ -1,12 +1,11 @@
 using UnityEditor;
 using UnityEngine;
-using System.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
 {
     public class CompileCheckerExample
     {
-        [MenuItem("Tools/CompileWindow/Compile Checker Usage Example")]
+        [MenuItem("uMCP/CompileWindow/Compile Checker Usage Example")]
         public static async void TestCompileChecker()
         {
             CompileChecker compileChecker = new CompileChecker();
@@ -40,7 +39,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        [MenuItem("Tools/CompileWindow/Force Compile Checker Usage Example")]
+        [MenuItem("uMCP/CompileWindow/Force Compile Checker Usage Example")]
         public static async void TestForceCompileChecker()
         {
             CompileChecker compileChecker = new CompileChecker();

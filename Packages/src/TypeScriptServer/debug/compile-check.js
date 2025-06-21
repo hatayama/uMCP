@@ -7,21 +7,21 @@ function showHelp() {
     console.log('  node debug/compile-check.js [options]');
     console.log('');
     console.log('Options:');
-    console.log('  --force, -f    強制再コンパイルを実行');
-    console.log('  --help, -h     このヘルプを表示');
+    console.log('  --force, -f    Force a recompile.');
+    console.log('  --help, -h     Show this help message.');
     console.log('');
     console.log('Examples:');
-    console.log('  node debug/compile-check.js           # 通常コンパイル');
-    console.log('  node debug/compile-check.js --force   # 強制再コンパイル');
-    console.log('  node debug/compile-check.js -f        # 強制再コンパイル（短縮形）');
+    console.log('  node debug/compile-check.js           # Normal compile');
+    console.log('  node debug/compile-check.js --force   # Force recompile');
+    console.log('  node debug/compile-check.js -f        # Force recompile (short form)');
     console.log('');
 }
 
 async function testCompile() {
-    // コマンドライン引数から強制コンパイルフラグを取得
+    // Get force recompile flag from command line arguments.
     const args = process.argv.slice(2);
     
-    // ヘルプ表示
+    // Show help.
     if (args.includes('--help') || args.includes('-h')) {
         showHelp();
         return;

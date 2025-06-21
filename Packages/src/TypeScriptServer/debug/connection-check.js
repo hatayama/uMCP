@@ -7,22 +7,22 @@ function showHelp() {
     console.log('  node debug/connection-check.js [options]');
     console.log('');
     console.log('Options:');
-    console.log('  --verbose, -v      詳細出力を表示');
-    console.log('  --quick, -q        ping テストのみ実行');
-    console.log('  --help, -h         このヘルプを表示');
+    console.log('  --verbose, -v      Show verbose output.');
+    console.log('  --quick, -q        Run ping test only.');
+    console.log('  --help, -h         Show this help message.');
     console.log('');
     console.log('Examples:');
-    console.log('  node debug/connection-check.js           # 全機能テスト');
-    console.log('  node debug/connection-check.js --quick   # pingテストのみ');
-    console.log('  node debug/connection-check.js -v        # 詳細出力');
+    console.log('  node debug/connection-check.js           # Run all tests.');
+    console.log('  node debug/connection-check.js --quick   # Run ping test only.');
+    console.log('  node debug/connection-check.js -v        # Show verbose output.');
     console.log('');
 }
 
 async function testUnityConnection() {
-    // コマンドライン引数の解析
+    // Parse command line arguments.
     const args = process.argv.slice(2);
     
-    // ヘルプ表示
+    // Show help.
     if (args.includes('--help') || args.includes('-h')) {
         showHelp();
         return;

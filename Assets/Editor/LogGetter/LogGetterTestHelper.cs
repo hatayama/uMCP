@@ -5,7 +5,7 @@ namespace io.github.hatayama.uMCP
 {
     public class LogGetterTestHelper
     {
-        [MenuItem("Tools/LogGetter/Output Test Logs")]
+        [MenuItem("uMCP/LogGetter/Output Test Logs")]
         public static void OutputTestLogs()
         {
             Debug.Log("This is a normal log.");

@@ -1,8 +1,8 @@
 import * as net from 'net';
 
 /**
- * Unity TCP/IP クライアント（デバッグ用直接通信版）
- * bundleされたファイルに依存せずに直接TCP/IP通信を行う
+ * Unity TCP/IP client (for direct communication debugging).
+ * This client communicates directly via TCP/IP without depending on bundled files.
  */
 export class UnityDebugClient {
     constructor() {
@@ -13,7 +13,7 @@ export class UnityDebugClient {
     }
 
     /**
-     * Unity側に接続
+     * Connect to the Unity side.
      */
     async connect() {
         return new Promise((resolve, reject) => {
@@ -36,7 +36,7 @@ export class UnityDebugClient {
     }
 
     /**
-     * Unity側にpingを送信
+     * Send a ping to the Unity side.
      */
     async ping(message) {
         if (!this.connected) {
@@ -77,7 +77,7 @@ export class UnityDebugClient {
     }
 
     /**
-     * Unityプロジェクトをコンパイル
+     * Compile the Unity project.
      */
     async compileProject(forceRecompile = false) {
         if (!this.connected) {
@@ -118,7 +118,7 @@ export class UnityDebugClient {
     }
 
     /**
-     * Unityコンソールのログを取得
+     * Get logs from the Unity console.
      */
     async getLogs(logType = 'All', maxCount = 100, searchText = '', includeStackTrace = true) {
         if (!this.connected) {
@@ -162,7 +162,7 @@ export class UnityDebugClient {
     }
 
     /**
-     * Unity Test Runnerを実行
+     * Run the Unity Test Runner.
      */
     async runTests(filterType = 'all', filterValue = '', saveXml = false) {
         if (!this.connected) {
@@ -186,7 +186,7 @@ export class UnityDebugClient {
 
             const timeout = setTimeout(() => {
                 reject(new Error('Unity runTests timeout'));
-            }, 60000); // 60秒タイムアウト
+            }, 60000); // 60 second timeout
 
             this.socket.once('data', (data) => {
                 clearTimeout(timeout);
@@ -205,7 +205,7 @@ export class UnityDebugClient {
     }
 
     /**
-     * 接続を切断
+     * Disconnect the connection.
      */
     disconnect() {
         if (this.socket) {

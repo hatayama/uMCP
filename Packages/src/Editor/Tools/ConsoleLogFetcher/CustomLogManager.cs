@@ -6,7 +6,7 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Application.logMessageReceivedを使用した独自ログ管理システム
+    /// Custom log management system using Application.logMessageReceived.
     /// </summary>
     public class CustomLogManager : IDisposable
     {
@@ -24,7 +24,7 @@ namespace io.github.hatayama.uMCP
         {
             Application.logMessageReceived += OnLogMessageReceived;
             
-            // Consoleのログクリア検知
+            // Detect Console log clearing.
             Type consoleWindowUtilityType = typeof(EditorWindow).Assembly.GetType("UnityEditor.ConsoleWindowUtility");
             if (consoleWindowUtilityType != null)
             {
@@ -50,7 +50,7 @@ namespace io.github.hatayama.uMCP
 
         private void OnConsoleLogsChanged()
         {
-            // Consoleがクリアされた場合、独自ログもクリア
+            // If the Console is cleared, clear the custom logs as well.
             ConsoleWindowUtility.GetConsoleLogCounts(out int err, out int warn, out int log);
             if (err == 0 && warn == 0 && log == 0)
             {

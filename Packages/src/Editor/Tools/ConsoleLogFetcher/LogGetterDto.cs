@@ -1,11 +1,11 @@
 namespace io.github.hatayama.uMCP
 {
-    public class LogEntryDto
+    public record LogEntryDto
     {
-        public string Message { get; }
-        public string LogType { get; }
-        public string StackTrace { get; }
-        public string File { get; }
+        public readonly string Message;
+        public readonly string LogType;
+        public readonly string StackTrace;
+        public readonly string File;
 
         public LogEntryDto(string message, string logType, string stackTrace, string file)
         {
@@ -16,10 +16,10 @@ namespace io.github.hatayama.uMCP
         }
     }
 
-    public class LogDisplayDto
+    public record LogDisplayDto
     {
-        public LogEntryDto[] LogEntries { get; }
-        public int TotalCount { get; }
+        public readonly LogEntryDto[] LogEntries;
+        public readonly int TotalCount;
 
         public LogDisplayDto(LogEntryDto[] logEntries, int totalCount)
         {
@@ -27,4 +27,4 @@ namespace io.github.hatayama.uMCP
             TotalCount = totalCount;
         }
     }
-} 
+}

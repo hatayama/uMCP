@@ -1,48 +1,48 @@
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// テスト実行フィルターの種類
+    /// Type of test execution filter.
     /// </summary>
     public enum TestExecutionFilterType
     {
         /// <summary>
-        /// 特定のテスト名でフィルタリング
+        /// Filter by a specific test name.
         /// </summary>
         TestName,
         
         /// <summary>
-        /// クラス名でフィルタリング
+        /// Filter by class name.
         /// </summary>
         ClassName,
         
         /// <summary>
-        /// ネームスペースでフィルタリング
+        /// Filter by namespace.
         /// </summary>
         Namespace,
         
         /// <summary>
-        /// アセンブリ名でフィルタリング
+        /// Filter by assembly name.
         /// </summary>
         AssemblyName
     }
     
     /// <summary>
-    /// テスト実行フィルター情報を保持するクラス
+    /// Class that holds test execution filter information.
     /// </summary>
     public class TestExecutionFilter
     {
         /// <summary>
-        /// フィルタータイプ
+        /// Filter type.
         /// </summary>
         public TestExecutionFilterType FilterType { get; }
         
         /// <summary>
-        /// フィルター値
+        /// Filter value.
         /// </summary>
         public string FilterValue { get; }
         
         /// <summary>
-        /// テスト実行フィルターを作成する
+        /// Creates a test execution filter.
         /// </summary>
         public TestExecutionFilter(TestExecutionFilterType filterType, string filterValue)
         {
@@ -51,7 +51,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// クラス名でフィルターを作成
+        /// Creates a filter by class name.
         /// </summary>
         public static TestExecutionFilter ByClassName(string className)
         {
@@ -59,7 +59,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// ネームスペースでフィルターを作成
+        /// Creates a filter by namespace.
         /// </summary>
         public static TestExecutionFilter ByNamespace(string namespaceName)
         {
@@ -67,7 +67,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// テスト名でフィルターを作成
+        /// Creates a filter by test name.
         /// </summary>
         public static TestExecutionFilter ByTestName(string testName)
         {
@@ -75,7 +75,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// アセンブリ名でフィルターを作成
+        /// Creates a filter by assembly name.
         /// </summary>
         public static TestExecutionFilter ByAssemblyName(string assemblyName)
         {

@@ -7,49 +7,49 @@ function showHelp() {
     console.log('  node test/test-all-logs.js [options]');
     console.log('');
     console.log('Options:');
-    console.log('  --count, -c <num>    取得する最大ログ数 (default: 100)');
-    console.log('  --search <text>      メッセージ内で検索するテキスト');
-    console.log('  --stats, -s          統計情報のみ表示');
-    console.log('  --help, -h           このヘルプを表示');
+    console.log('  --count, -c <num>    Max number of logs to retrieve (default: 100)');
+    console.log('  --search <text>      Text to search for within messages');
+    console.log('  --stats, -s          Display statistics only');
+    console.log('  --help, -h           Show this help message');
     console.log('');
     console.log('Examples:');
-    console.log('  node test/test-all-logs.js                # 全ログ100件取得+統計');
-    console.log('  node test/test-all-logs.js -c 200         # 全ログ200件取得');
-    console.log('  node test/test-all-logs.js --stats        # 統計情報のみ表示');
-    console.log('  node test/test-all-logs.js --search "エラー" # "エラー"を含むログを検索');
+    console.log('  node test/test-all-logs.js                # Get 100 logs + stats');
+    console.log('  node test/test-all-logs.js -c 200         # Get 200 logs');
+    console.log('  node test/test-all-logs.js --stats        # Display stats only');
+    console.log('  node test/test-all-logs.js --search "Error" # Search for logs containing "Error"');
     console.log('');
 }
 
 async function testAllLogs() {
-    // コマンドライン引数の解析
+    // Parse command line arguments.
     const args = process.argv.slice(2);
     
-    // ヘルプ表示
+    // Show help.
     if (args.includes('--help') || args.includes('-h')) {
         showHelp();
         return;
     }
     
-    // ログ数の取得
+    // Get the number of logs.
     let maxCount = 100;
     const countIndex = args.findIndex(arg => arg === '--count' || arg === '-c');
     if (countIndex !== -1 && args[countIndex + 1]) {
         maxCount = parseInt(args[countIndex + 1], 10) || 100;
     }
     
-    // 検索テキストの取得
+    // Get the search text.
     let searchText = '';
     const searchIndex = args.findIndex(arg => arg === '--search');
     if (searchIndex !== -1 && args[searchIndex + 1]) {
         searchText = args[searchIndex + 1];
     }
     
-    // 統計のみ表示フラグ
+    // Flag for displaying stats only.
     const statsOnly = args.includes('--stats') || args.includes('-s');
     
     console.log('=== Unity All Logs Test ===');
     console.log(`Max Count: ${maxCount}`);
-    console.log(`Search Text: ${searchText || '(検索なし)'}`);
+    console.log(`Search Text: ${searchText || '(none)'}`);
     console.log(`Stats Only: ${statsOnly ? 'ON' : 'OFF'}`);
     
     const client = new UnityDebugClient();
@@ -63,7 +63,7 @@ async function testAllLogs() {
         const allLogs = await client.getLogs('All', maxCount, searchText);
         console.log(`✓ Found ${allLogs.logs.length} logs (total: ${allLogs.totalCount})`);
         
-        // ログタイプ別の集計
+        // Aggregate by log type.
         const logCounts = {
             Error: 0,
             Warning: 0,
@@ -88,7 +88,7 @@ async function testAllLogs() {
         console.log(`Other logs: ${logCounts.Other}`);
         
         if (!statsOnly) {
-            // エラーログを表示
+            // Display error logs.
             if (logCounts.Error > 0) {
                 console.log('\n--- RECENT ERROR LOGS ---');
                 const errorLogs = allLogs.logs.filter(log => log.type === 'Error');
@@ -101,7 +101,7 @@ async function testAllLogs() {
                 });
             }
             
-            // 警告ログを表示
+            // Display warning logs.
             if (logCounts.Warning > 0) {
                 console.log('\n--- RECENT WARNING LOGS ---');
                 const warningLogs = allLogs.logs.filter(log => log.type === 'Warning');
@@ -114,7 +114,7 @@ async function testAllLogs() {
                 });
             }
             
-            // 情報ログを表示
+            // Display info logs.
             if (logCounts.Log > 0) {
                 console.log('\n--- RECENT INFO LOGS ---');
                 const infoLogs = allLogs.logs.filter(log => log.type === 'Log');

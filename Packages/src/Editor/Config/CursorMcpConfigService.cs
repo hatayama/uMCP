@@ -4,8 +4,8 @@ using System.Linq;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// MCP設定のビジネスロジックを担当するクラス
-    /// 単一責任原則：設定管理のビジネスロジックのみを担当
+    /// A class responsible for the business logic of MCP settings.
+    /// Single Responsibility Principle: Responsible only for the business logic of settings management.
     /// </summary>
     public class McpConfigService
     {
@@ -19,7 +19,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// エディタ設定が存在するかチェック
+        /// Checks if the editor settings exist.
         /// </summary>
         public bool IsConfigured()
         {
@@ -30,38 +30,38 @@ namespace io.github.hatayama.uMCP
             }
 
             McpConfig config = _repository.Load(configPath);
-            // ポート番号付きの設定が存在するかチェック
+            // Check if a setting with a port number exists.
             return config.mcpServers.Keys.Any(key => key.StartsWith("unity-mcp"));
         }
 
         /// <summary>
-        /// エディタ設定を自動設定
+        /// Auto-configures the editor settings.
         /// </summary>
-        /// <param name="port">使用するポート番号</param>
+        /// <param name="port">The port number to use.</param>
         public void AutoConfigure(int port)
         {
             string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
             
-            // 設定ディレクトリを作成（必要な場合のみ）
+            // Create the settings directory (only if necessary).
             _repository.CreateConfigDirectory(configPath);
 
-            // 既存設定を読み込み（存在しない場合は新規作成）
+            // Load existing settings (or create new ones if they don't exist).
             McpConfig config = _repository.Load(configPath);
 
-            // 既存設定の確認ログ
+            // Log for checking existing settings.
             McpLogger.LogInfo($"Loaded existing MCP servers: {string.Join(", ", config.mcpServers.Keys)}");
 
-            // ポート番号を含む設定キーを生成
+            // Generate a settings key that includes the port number.
             string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
 
-            // 新しい設定を作成
+            // Create new settings.
             string serverPath = UnityMcpPathResolver.GetTypeScriptServerPath();
             McpServerConfigData newConfig = McpServerConfigFactory.CreateUnityMcpConfig(port, serverPath);
 
-            // 既存設定を保持し、新しい設定を追加/更新
+            // Retain existing settings and add/update new settings.
             Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
 
-            // 既存設定と比較して、違いがあれば更新
+            // Compare with existing settings and update if there are differences.
             bool needsUpdate = true;
             if (updatedServers.ContainsKey(serverKey))
             {
@@ -88,7 +88,7 @@ namespace io.github.hatayama.uMCP
 
             if (needsUpdate)
             {
-                // Unity MCP設定を追加/更新
+                // Add/update Unity MCP settings.
                 updatedServers[serverKey] = newConfig;
 
                 McpConfig updatedConfig = new(updatedServers);
@@ -102,7 +102,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// エディタの表示名を取得
+        /// Gets the display name of the editor.
         /// </summary>
         private string GetEditorDisplayName(McpEditorType editorType)
         {
@@ -114,6 +114,4 @@ namespace io.github.hatayama.uMCP
             };
         }
     }
-
-
 } 

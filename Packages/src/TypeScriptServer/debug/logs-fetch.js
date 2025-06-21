@@ -7,60 +7,60 @@ function showHelp() {
     console.log('  node test/test-logs.js [options]');
     console.log('');
     console.log('Options:');
-    console.log('  --type, -t <type>    ログタイプを指定 (All, Error, Warning, Log)');
-    console.log('  --count, -c <num>    取得する最大ログ数 (default: 10)');
-    console.log('  --search, -s <text>  メッセージ内で検索するテキスト');
-    console.log('  --no-stack           スタックトレースを非表示');
-    console.log('  --help, -h           このヘルプを表示');
+    console.log('  --type, -t <type>    Specify log type (All, Error, Warning, Log)');
+    console.log('  --count, -c <num>    Max number of logs to retrieve (default: 10)');
+    console.log('  --search, -s <text>  Text to search for in messages');
+    console.log('  --no-stack           Hide stack traces');
+    console.log('  --help, -h           Show this help message');
     console.log('');
     console.log('Examples:');
-    console.log('  node test/test-logs.js                      # 全ログ10件取得（スタックトレース表示）');
-    console.log('  node test/test-logs.js --type Error         # エラーログのみ取得');
-    console.log('  node test/test-logs.js -t Warning -c 20     # 警告ログ20件取得');
-    console.log('  node test/test-logs.js --search "エラー"      # "エラー"を含むログを検索');
-    console.log('  node test/test-logs.js --no-stack           # スタックトレース非表示');
-    console.log('  node test/test-logs.js -t Error --no-stack  # エラーログ（スタックトレースなし）');
+    console.log('  node test/test-logs.js                      # Get 10 logs (with stack trace)');
+    console.log('  node test/test-logs.js --type Error         # Get only Error logs');
+    console.log('  node test/test-logs.js -t Warning -c 20     # Get 20 Warning logs');
+    console.log('  node test/test-logs.js --search "Error"     # Search for logs containing "Error"');
+    console.log('  node test/test-logs.js --no-stack           # Hide stack traces');
+    console.log('  node test/test-logs.js -t Error --no-stack  # Get Error logs (no stack trace)');
     console.log('');
 }
 
 async function testGetLogs() {
-    // コマンドライン引数の解析
+    // Parse command line arguments.
     const args = process.argv.slice(2);
     
-    // ヘルプ表示
+    // Show help.
     if (args.includes('--help') || args.includes('-h')) {
         showHelp();
         return;
     }
     
-    // ログタイプの取得
+    // Get log type.
     let logType = 'All';
     const typeIndex = args.findIndex(arg => arg === '--type' || arg === '-t');
     if (typeIndex !== -1 && args[typeIndex + 1]) {
         logType = args[typeIndex + 1];
     }
     
-    // ログ数の取得
+    // Get number of logs.
     let maxCount = 10;
     const countIndex = args.findIndex(arg => arg === '--count' || arg === '-c');
     if (countIndex !== -1 && args[countIndex + 1]) {
         maxCount = parseInt(args[countIndex + 1], 10) || 10;
     }
     
-    // 検索テキストの取得
+    // Get search text.
     let searchText = '';
     const searchIndex = args.findIndex(arg => arg === '--search' || arg === '-s');
     if (searchIndex !== -1 && args[searchIndex + 1]) {
         searchText = args[searchIndex + 1];
     }
     
-    // スタックトレース表示設定の取得
+    // Get stack trace display setting.
     const includeStackTrace = !args.includes('--no-stack');
     
     console.log('=== Unity Logs Test ===');
     console.log(`Log Type: ${logType}`);
     console.log(`Max Count: ${maxCount}`);
-    console.log(`Search Text: ${searchText || '(検索なし)'}`);
+    console.log(`Search Text: ${searchText || '(none)'}`);
     console.log(`Include StackTrace: ${includeStackTrace ? 'ON' : 'OFF'}`);
     
     const client = new UnityDebugClient();

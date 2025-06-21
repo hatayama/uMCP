@@ -5,7 +5,7 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity MCP Editor設定データ
+    /// Unity MCP Editor settings data.
     /// </summary>
     [Serializable]
     public record McpEditorSettingsData
@@ -18,8 +18,8 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// Unity MCP Editor設定の管理クラス
-    /// UserSettingsフォルダにJSONファイルとして保存する
+    /// Management class for Unity MCP Editor settings.
+    /// Saves as a JSON file in the UserSettings folder.
     /// </summary>
     public static class McpEditorSettings
     {
@@ -29,7 +29,7 @@ namespace io.github.hatayama.uMCP
         private static McpEditorSettingsData _cachedSettings;
         
         /// <summary>
-        /// 設定データを取得する
+        /// Gets the settings data.
         /// </summary>
         public static McpEditorSettingsData GetSettings()
         {
@@ -41,7 +41,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 設定データを保存する
+        /// Saves the settings data.
         /// </summary>
         public static void SaveSettings(McpEditorSettingsData settings)
         {
@@ -60,7 +60,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// カスタムポート番号を取得する
+        /// Gets the custom port number.
         /// </summary>
         public static int GetCustomPort()
         {
@@ -68,7 +68,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// カスタムポート番号を保存する
+        /// Saves the custom port number.
         /// </summary>
         public static void SetCustomPort(int port)
         {
@@ -78,7 +78,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 自動起動設定を取得する
+        /// Gets the auto-start setting.
         /// </summary>
         public static bool GetAutoStartServer()
         {
@@ -86,7 +86,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 自動起動設定を保存する
+        /// Saves the auto-start setting.
         /// </summary>
         public static void SetAutoStartServer(bool autoStart)
         {
@@ -96,7 +96,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// Developer Tools表示設定を取得する
+        /// Gets the Developer Tools display setting.
         /// </summary>
         public static bool GetShowDeveloperTools()
         {
@@ -104,7 +104,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// Developer Tools表示設定を保存する
+        /// Saves the Developer Tools display setting.
         /// </summary>
         public static void SetShowDeveloperTools(bool show)
         {
@@ -114,7 +114,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// MCPログ有効フラグを取得する
+        /// Gets the MCP log enabled flag.
         /// </summary>
         public static bool GetEnableMcpLogs()
         {
@@ -122,7 +122,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// MCPログ有効フラグを設定する
+        /// Sets the MCP log enabled flag.
         /// </summary>
         public static void SetEnableMcpLogs(bool enableMcpLogs)
         {
@@ -130,12 +130,12 @@ namespace io.github.hatayama.uMCP
             McpEditorSettingsData newSettings = settings with { enableMcpLogs = enableMcpLogs };
             SaveSettings(newSettings);
             
-            // McpLoggerの設定も同期
+            // Synchronize McpLogger settings as well.
             McpLogger.EnableDebugLog = enableMcpLogs;
         }
         
         /// <summary>
-        /// 設定ファイルを読み込む
+        /// Loads the settings file.
         /// </summary>
         private static void LoadSettings()
         {
@@ -149,7 +149,7 @@ namespace io.github.hatayama.uMCP
                 }
                 else
                 {
-                    // デフォルト設定を作成
+                    // Create default settings.
                     _cachedSettings = new McpEditorSettingsData();
                     SaveSettings(_cachedSettings);
                     McpLogger.LogInfo("Created default MCP Editor settings");
@@ -163,7 +163,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 設定ファイルのパスを取得する
+        /// Gets the path to the settings file.
         /// </summary>
         public static string GetSettingsFilePath()
         {

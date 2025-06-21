@@ -7,8 +7,8 @@ using Newtonsoft.Json;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// MCP通信ログのエントリー
-    /// Request/Responseがセットになったログ情報
+    /// An entry for the MCP communication log.
+    /// Log information that includes a request/response pair.
     /// </summary>
     public record McpCommunicationLogEntry
     {
@@ -33,7 +33,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// MCP通信ログの管理クラス
+    /// A class for managing MCP communication logs.
     /// </summary>
     public static class McpCommunicationLogger
     {
@@ -44,12 +44,12 @@ namespace io.github.hatayama.uMCP
         private static Dictionary<string, PendingRequest> _pendingRequests;
 
         /// <summary>
-        /// ログ更新時のイベント（UI更新用）
+        /// Event for when the log is updated (for UI updates).
         /// </summary>
         public static event System.Action OnLogUpdated;
 
         /// <summary>
-        /// 静的コンストラクタ（Domain Reload後に自動実行）
+        /// Static constructor (automatically executed after a domain reload).
         /// </summary>
         static McpCommunicationLogger()
         {
@@ -57,7 +57,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 保留中のリクエスト情報
+        /// Information about pending requests.
         /// </summary>
         private record PendingRequest
         {
@@ -74,7 +74,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 全てのログを取得
+        /// Gets all logs.
         /// </summary>
         public static IReadOnlyList<McpCommunicationLogEntry> GetAllLogs()
         {
@@ -82,7 +82,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// リクエストを記録（レスポンス待ち状態）
+        /// Records a request (awaiting response).
         /// </summary>
         public static async void LogRequest(string jsonRequest)
         {
@@ -98,7 +98,7 @@ namespace io.github.hatayama.uMCP
 
             _pendingRequests[id] = pendingRequest;
 
-            // メインスレッドに切り替えてSessionState保存とUI更新
+            // Switch to the main thread to save SessionState and update the UI.
             await MainThreadSwitcher.SwitchToMainThread();
             SaveToSessionState();
             OnLogUpdated?.Invoke();
@@ -107,7 +107,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// レスポンスを記録（リクエストとセットにしてログに追加）
+        /// Records a response (adds it to the log paired with its request).
         /// </summary>
         public static async void LogResponse(string jsonResponse)
         {
@@ -127,20 +127,20 @@ namespace io.github.hatayama.uMCP
             {
                 bool isError = response["error"] != null;
 
-                // 既存のログがある場合は全て閉じる（新しいログを追加する前に）
+                // If there are existing logs, close them all (before adding a new log).
                 foreach (McpCommunicationLogEntry existingLog in _logs)
                 {
                     existingLog.IsExpanded = false;
                 }
 
-                // 新しいログは閉じた状態で作成
+                // Create new logs in a closed state.
                 McpCommunicationLogEntry logEntry = new(
                     pendingRequest.CommandName,
                     pendingRequest.Timestamp,
                     pendingRequest.RequestJson,
                     jsonResponse,
                     isError,
-                    false // 最初からトグルを閉じた状態にする
+                    false // Start with the toggle closed.
                 );
 
                 _logs.Add(logEntry);
@@ -148,10 +148,10 @@ namespace io.github.hatayama.uMCP
 
                 McpLogger.LogDebug($"Response logged - Method: {pendingRequest.CommandName}, Total logs: {_logs.Count}");
 
-                // メインスレッドに切り替えてSessionState保存とUI更新
+                // Switch to the main thread to save SessionState and update the UI.
                 await MainThreadSwitcher.SwitchToMainThread();
 
-                // 即座にSessionStateに保存（Domain Reload対策）
+                // Save to SessionState immediately (to handle domain reloads).
                 SaveToSessionState();
 
                 OnLogUpdated?.Invoke();
@@ -163,14 +163,14 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 全てのログをクリア
+        /// Clears all logs.
         /// </summary>
         public static void ClearLogs()
         {
             _logs.Clear();
             _pendingRequests.Clear();
 
-            // SessionStateも完全に削除してUI更新をメインスレッドで実行
+            // Also completely delete from SessionState and execute UI update on the main thread.
             EditorApplication.delayCall += () =>
             {
                 ClearLogSessionState();
@@ -179,11 +179,11 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// SessionStateからデータを復元
+        /// Restores data from SessionState.
         /// </summary>
         private static void LoadFromSessionState()
         {
-            // ログの復元
+            // Restore logs.
             string logsJson = SessionState.GetString(LOGS_SESSION_KEY, "[]");
             try
             {
@@ -195,7 +195,7 @@ namespace io.github.hatayama.uMCP
                 _logs = new List<McpCommunicationLogEntry>();
             }
 
-            // 保留中リクエストの復元
+            // Restore pending requests.
             string pendingJson = SessionState.GetString(PENDING_REQUESTS_SESSION_KEY, "{}");
             try
             {
@@ -209,7 +209,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// SessionStateにデータを保存
+        /// Saves data to SessionState.
         /// </summary>
         public static void SaveToSessionState()
         {
@@ -228,7 +228,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 通信ログ関連のSessionStateをクリア（ログ問題修正用）
+        /// Clears SessionState related to communication logs (for fixing log issues).
         /// </summary>
         public static void ClearLogSessionState()
         {
@@ -239,9 +239,9 @@ namespace io.github.hatayama.uMCP
                 _logs?.Clear();
                 _pendingRequests?.Clear();
 
-                // SessionStateクリア完了（ログ出力なし）
+                // SessionState clear complete (no log output).
 
-                // UIの更新通知
+                // Notify UI of update.
                 EditorApplication.delayCall += () => OnLogUpdated?.Invoke();
             }
             catch (Exception ex)

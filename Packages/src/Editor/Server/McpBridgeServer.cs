@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -9,12 +10,12 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity MCP Bridge TCP/IPサーバー
-    /// TypeScript MCP Serverからの接続を受け付け、JSON-RPC 2.0通信を行う
+    /// Unity MCP Bridge TCP/IP Server.
+    /// Accepts connections from the TypeScript MCP Server and handles JSON-RPC 2.0 communication.
     /// </summary>
     public class McpBridgeServer : IDisposable
     {
-        // SessionStateキー定数
+        // SessionState key constant.
         private const string SESSION_KEY_DOMAIN_RELOAD = "uMCP.DomainReloadInProgress";
         
         private TcpListener tcpListener;
@@ -23,40 +24,35 @@ namespace io.github.hatayama.uMCP
         private bool isRunning = false;
         
         /// <summary>
-        /// サーバーが実行中かどうか
+        /// Whether the server is running.
         /// </summary>
         public bool IsRunning => isRunning;
         
         /// <summary>
-        /// サーバーのポート番号
+        /// The server's port number.
         /// </summary>
         public int Port { get; private set; } = McpServerConfig.DEFAULT_PORT;
         
         /// <summary>
-        /// クライアント接続時のイベント
+        /// Event on client connection.
         /// </summary>
         public event Action<string> OnClientConnected;
         
         /// <summary>
-        /// クライアント切断時のイベント
+        /// Event on client disconnection.
         /// </summary>
         public event Action<string> OnClientDisconnected;
         
         /// <summary>
-        /// エラー発生時のイベント
+        /// Event on error.
         /// </summary>
         public event Action<string> OnError;
-        
-        /// <summary>
-        /// JSON-RPCリクエスト受信時のイベント
-        /// </summary>
-        public event Action<string, string> OnJsonRpcReceived;
 
         /// <summary>
-        /// 指定されたポートが使用中かどうかをチェックする
+        /// Checks if the specified port is in use.
         /// </summary>
-        /// <param name="port">チェックするポート番号</param>
-        /// <returns>ポートが使用中の場合true</returns>
+        /// <param name="port">The port number to check.</param>
+        /// <returns>True if the port is in use.</returns>
         public static bool IsPortInUse(int port)
         {
             TcpListener tcpListener = null;
@@ -64,21 +60,21 @@ namespace io.github.hatayama.uMCP
             {
                 tcpListener = new TcpListener(IPAddress.Loopback, port);
                 tcpListener.Start();
-                return false; // ポートは使用可能
+                return false; // The port is available.
             }
             catch (SocketException ex)
             {
-                // ポートが既に使用されている場合
+                // If the port is already in use.
                 if (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
                 {
                     return true;
                 }
-                // その他のソケットエラーも使用中として扱う
+                // Treat other socket errors as "in use" as well.
                 return true;
             }
             catch
             {
-                // その他の例外も使用中として扱う
+                // Treat other exceptions as "in use" as well.
                 return true;
             }
             finally
@@ -88,9 +84,9 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーを開始する
+        /// Starts the server.
         /// </summary>
-        /// <param name="port">ポート番号（デフォルト: 7400）</param>
+        /// <param name="port">The port number (default: 7400).</param>
         public void StartServer(int port = McpServerConfig.DEFAULT_PORT)
         {
             if (isRunning)
@@ -131,7 +127,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーを停止する
+        /// Stops the server.
         /// </summary>
         public void StopServer()
         {
@@ -144,10 +140,10 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo("Stopping Unity MCP Server...");
             isRunning = false;
             
-            // キャンセレーションを要求
+            // Request cancellation.
             cancellationTokenSource?.Cancel();
             
-            // TCPリスナーを停止
+            // Stop the TCP listener.
             try
             {
                 tcpListener?.Stop();
@@ -157,7 +153,7 @@ namespace io.github.hatayama.uMCP
                 McpLogger.LogError($"Error stopping TcpListener: {ex.Message}");
             }
             
-            // サーバータスクの完了を待つ
+            // Wait for the server task to complete.
             try
             {
                 serverTask?.Wait(TimeSpan.FromSeconds(McpServerConfig.SHUTDOWN_TIMEOUT_SECONDS));
@@ -167,7 +163,7 @@ namespace io.github.hatayama.uMCP
                 McpLogger.LogError($"Error waiting for server task completion: {ex.Message}");
             }
             
-            // キャンセレーショントークンソースを破棄
+            // Dispose of the cancellation token source.
             try
             {
                 cancellationTokenSource?.Dispose();
@@ -178,7 +174,7 @@ namespace io.github.hatayama.uMCP
                 McpLogger.LogError($"Error disposing CancellationTokenSource: {ex.Message}");
             }
             
-            // TCPリスナーをnullに設定
+            // Set the TCP listener to null.
             tcpListener = null;
             serverTask = null;
             
@@ -186,7 +182,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーのメインループ
+        /// The server's main loop.
         /// </summary>
         private async Task ServerLoop(CancellationToken cancellationToken)
         {
@@ -201,18 +197,18 @@ namespace io.github.hatayama.uMCP
                         McpLogger.LogClientConnection(clientEndpoint, true);
                         OnClientConnected?.Invoke(clientEndpoint);
                         
-                        // クライアント処理を別タスクで実行（fire-and-forget）
+                        // Execute client handling in a separate task (fire-and-forget).
                         _ = Task.Run(() => HandleClient(client, cancellationToken));
                     }
                 }
                 catch (ObjectDisposedException)
                 {
-                    // サーバー停止時の正常な例外
+                    // Normal exception when stopping the server.
                     break;
                 }
                 catch (ThreadAbortException ex)
                 {
-                    // ドメインリロード中の場合は正常な動作として扱う
+                    // Treat as normal behavior if a domain reload is in progress.
                     if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
                     {
                         McpLogger.LogInfo("Server thread aborted during domain reload (normal behavior)");
@@ -222,7 +218,7 @@ namespace io.github.hatayama.uMCP
                         McpLogger.LogError($"Unexpected thread abort in server loop: {ex.Message}");
                         OnError?.Invoke($"Unexpected thread abort: {ex.Message}");
                     }
-                    break; // サーバーループを終了
+                    break; // Exit the server loop.
                 }
                 catch (Exception ex)
                 {
@@ -237,7 +233,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// TcpListenerからクライアントを非同期で受け付ける
+        /// Asynchronously accepts a client from the TcpListener.
         /// </summary>
         private async Task<TcpClient> AcceptTcpClientAsync(TcpListener listener, CancellationToken cancellationToken)
         {
@@ -247,10 +243,10 @@ namespace io.github.hatayama.uMCP
             }
             catch (ThreadAbortException ex)
             {
-                // ドメインリロード中の場合は正常な動作として扱う
+                // Treat as normal behavior if a domain reload is in progress.
                 if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
                 {
-                    McpLogger.LogInfo("AcceptTcpClient thread aborted during domain reload (normal behavior)");
+                    McpLogger.LogDebug($"AcceptTcpClientAsync aborted during domain reload (expected): {ex.Message}");
                 }
                 else
                 {
@@ -265,7 +261,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// クライアントとの通信を処理する
+        /// Handles communication with the client.
         /// </summary>
         private async Task HandleClient(TcpClient client, CancellationToken cancellationToken)
         {
@@ -284,69 +280,67 @@ namespace io.github.hatayama.uMCP
                         
                         if (bytesRead == 0)
                         {
-                            break; // クライアント切断
+                            break; // Client disconnected.
                         }
                         
-                        string jsonRequest = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        string receivedData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                         
-                        // デバッグ：受信データを詳細に確認
-                        McpLogger.LogDebug($"Raw data received ({bytesRead} bytes): {jsonRequest}");
-                        
-                        // compileリクエストの場合は特別にログ出力
-                        if (jsonRequest.Contains("\"method\":\"compile\""))
+                        // Debug: Check received data in detail.
+                        McpLogger.LogDebug($"Received raw from {clientEndpoint}: \"{receivedData.Replace("\n", "\\n")}\"");
+
+                        // Special logging for compile requests.
+                        if (receivedData.Contains("\"method\":\"compile\""))
                         {
-                            McpLogger.LogInfo($"[COMPILE REQUEST DETECTED] Raw JSON: {jsonRequest}");
+                             McpLogger.LogInfo($"<<<< Received COMPILE request from {clientEndpoint}");
                         }
-                        
-                        // 改行文字で分割して複数のリクエストを処理
-                        string[] requests = jsonRequest.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-                        
-                        McpLogger.LogDebug($"Found {requests.Length} request(s) in buffer");
-                        
-                        foreach (string request in requests)
+
+                        // Split by newline characters to process multiple requests.
+                        string[] requests = receivedData.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (string requestJson in requests)
                         {
-                            if (string.IsNullOrWhiteSpace(request)) continue;
+                            if (string.IsNullOrWhiteSpace(requestJson)) continue;
                             
-                            McpLogger.LogDebug($"Processing request: {request}");
+                            // JSON-RPC processing and response sending.
+                            string responseJson = await JsonRpcProcessor.ProcessRequest(requestJson);
                             
-                            OnJsonRpcReceived?.Invoke(clientEndpoint, request);
-                            
-                            // JSON-RPC処理とレスポンス送信
-                            string response = await JsonRpcProcessor.ProcessRequest(request);
-                            byte[] responseBytes = Encoding.UTF8.GetBytes(response);
-                            await stream.WriteAsync(responseBytes, 0, responseBytes.Length, cancellationToken);
+                            byte[] responseData = Encoding.UTF8.GetBytes(responseJson + "\n");
+                            await stream.WriteAsync(responseData, 0, responseData.Length, cancellationToken);
                         }
                     }
                 }
             }
-            catch (ThreadAbortException ex)
+            catch (ThreadAbortException)
             {
-                // ドメインリロード中の場合は正常な動作として扱う
+                // Treat as normal behavior if a domain reload is in progress.
                 if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
                 {
-                    McpLogger.LogInfo("Client handling thread aborted during domain reload (normal behavior)");
+                    McpLogger.LogInfo("Client handling thread aborted during domain reload.");
                 }
                 else
                 {
-                    McpLogger.LogError($"Unexpected thread abort in client handling: {ex.Message}");
+                    McpLogger.LogWarning($"Client handling thread for {clientEndpoint} was aborted.");
                 }
+            }
+            catch (IOException ex)
+            {
+                McpLogger.LogWarning($"I/O error with client {clientEndpoint}: {ex.Message}");
             }
             catch (Exception ex)
             {
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    McpLogger.LogError($"Client handling error: {ex.Message}");
-                }
+                McpLogger.LogError($"Error handling client {clientEndpoint}: {ex.Message}\n{ex.StackTrace}");
+                OnError?.Invoke(ex.Message);
             }
             finally
             {
+                client.Close();
                 McpLogger.LogClientConnection(clientEndpoint, false);
                 OnClientDisconnected?.Invoke(clientEndpoint);
             }
         }
 
         /// <summary>
-        /// リソースを解放する
+        /// Releases resources.
         /// </summary>
         public void Dispose()
         {

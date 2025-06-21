@@ -4,8 +4,8 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity MCP関連のパス解決を行うクラス
-    /// 単一責任原則：パス解決のみを担当
+    /// Class for resolving paths related to Unity MCP.
+    /// Single Responsibility Principle: Only responsible for path resolution.
     /// </summary>
     public static class UnityMcpPathResolver
     {
@@ -14,7 +14,7 @@ namespace io.github.hatayama.uMCP
         private const string CLAUDE_CODE_CONFIG_FILE = ".mcp.json";
 
         /// <summary>
-        /// プロジェクトルートディレクトリのパスを取得
+        /// Gets the path to the project root directory.
         /// </summary>
         public static string GetProjectRoot()
         {
@@ -22,7 +22,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// プロジェクトルートの.cursor/mcp.jsonパスを取得
+        /// Gets the path to .cursor/mcp.json in the project root.
         /// </summary>
         public static string GetMcpConfigPath()
         {
@@ -31,7 +31,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Claude Codeの設定ファイル(.mcp.json)のパスを取得
+        /// Gets the path to the Claude Code configuration file (.mcp.json).
         /// </summary>
         public static string GetClaudeCodeConfigPath()
         {
@@ -40,10 +40,10 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 指定されたエディタ用の設定ファイルパスを取得
+        /// Gets the configuration file path for the specified editor.
         /// </summary>
-        /// <param name="editorType">エディタの種類</param>
-        /// <returns>設定ファイルのパス</returns>
+        /// <param name="editorType">The type of editor.</param>
+        /// <returns>The path to the configuration file.</returns>
         public static string GetConfigPath(McpEditorType editorType)
         {
             return editorType switch
@@ -55,7 +55,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// .cursorディレクトリのパスを取得
+        /// Gets the path to the .cursor directory.
         /// </summary>
         public static string GetCursorConfigDirectory()
         {
@@ -64,23 +64,23 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 指定されたエディタ用の設定ディレクトリを取得（存在する場合のみ）
+        /// Gets the configuration directory for the specified editor (only if it exists).
         /// </summary>
-        /// <param name="editorType">エディタの種類</param>
-        /// <returns>設定ディレクトリのパス（Claude Codeの場合はnull）</returns>
+        /// <param name="editorType">The type of editor.</param>
+        /// <returns>The path to the configuration directory (null for Claude Code).</returns>
         public static string GetConfigDirectory(McpEditorType editorType)
         {
             return editorType switch
             {
                 McpEditorType.Cursor => GetCursorConfigDirectory(),
-                McpEditorType.ClaudeCode => null, // Claude Codeはプロジェクトルートに直接配置
+                McpEditorType.ClaudeCode => null, // Claude Code is placed directly in the project root.
                 _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
             };
         }
 
         /// <summary>
-        /// TypeScriptサーバーのパスを取得
-        /// Package Manager経由でインストールされた場合とローカル開発の場合の両方に対応
+        /// Gets the path to the TypeScript server.
+        /// Supports both installation via Package Manager and local development.
         /// </summary>
         public static string GetTypeScriptServerPath()
         {
@@ -94,14 +94,14 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// パッケージのベースパスを取得
-        /// Package Manager経由でインストールされた場合とローカル開発の場合の両方に対応
+        /// Gets the base path of the package.
+        /// Supports both installation via Package Manager and local development.
         /// </summary>
         public static string GetPackageBasePath()
         {
             string projectRoot = GetProjectRoot();
             
-            // 1. まずローカル開発用のパスをチェック（Packages/src）
+            // 1. First, check the path for local development (Packages/src).
             string localPath = Path.Combine(projectRoot, "Packages", "src");
             string localServerPath = Path.Combine(localPath, "TypeScriptServer", "dist", "server.bundle.js");
             if (File.Exists(localServerPath))
@@ -110,11 +110,11 @@ namespace io.github.hatayama.uMCP
                 return localPath;
             }
             
-            // 2. Package Manager経由でインストールされた場合のパスを検索
+            // 2. Search for the path when installed via Package Manager.
             string packageCacheDir = Path.Combine(projectRoot, "Library", "PackageCache");
             if (Directory.Exists(packageCacheDir))
             {
-                // io.github.hatayama.unitymcp@で始まるディレクトリを検索
+                // Search for directories starting with io.github.hatayama.umcp@.
                 string[] packageDirs = Directory.GetDirectories(packageCacheDir, "io.github.hatayama.umcp@*");
                 
                 foreach (string packageDir in packageDirs)
@@ -128,7 +128,7 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            // 3. どちらも見つからない場合はローカルパスを返す（エラーログ付き）
+            // 3. If neither is found, return the local path (with an error log).
             McpLogger.LogError($"Package base path not found. Checked paths:\n  Local: {localPath}\n  Package Cache: {packageCacheDir}/io.github.hatayama.unitymcp@*");
             
             return localPath;
@@ -136,7 +136,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// サポートするエディタの種類
+    /// Supported editor types.
     /// </summary>
     public enum McpEditorType
     {
