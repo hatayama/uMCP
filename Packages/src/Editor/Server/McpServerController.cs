@@ -8,10 +8,6 @@ namespace io.github.hatayama.uMCP
     [InitializeOnLoad]
     public static class McpServerController
     {
-        private const string SESSION_KEY_SERVER_RUNNING = "uMCP.ServerRunning";
-        private const string SESSION_KEY_SERVER_PORT = "uMCP.ServerPort";
-        private const string SESSION_KEY_AFTER_COMPILE = "uMCP.AfterCompile";
-        private const string SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS = "uMCP.DomainReloadInProgress";
         
         private static McpBridgeServer mcpServer;
         
@@ -64,8 +60,8 @@ namespace io.github.hatayama.uMCP
             mcpServer.StartServer(port);
             
             // Save the state to SessionState.
-            SessionState.SetBool(SESSION_KEY_SERVER_RUNNING, true);
-            SessionState.SetInt(SESSION_KEY_SERVER_PORT, port);
+            SessionState.SetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, true);
+            SessionState.SetInt(McpConstants.SESSION_KEY_SERVER_PORT, port);
             
             McpLogger.LogInfo($"Unity MCP Server started on port {port}");
         }
@@ -82,8 +78,8 @@ namespace io.github.hatayama.uMCP
             }
             
             // Delete the state from SessionState.
-            SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
-            SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
+            SessionState.EraseBool(McpConstants.SESSION_KEY_SERVER_RUNNING);
+            SessionState.EraseInt(McpConstants.SESSION_KEY_SERVER_PORT);
             
             McpLogger.LogInfo("Unity MCP Server stopped");
         }
@@ -96,7 +92,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: IsServerRunning={mcpServer?.IsRunning}");
             
             // Set the domain reload start flag.
-            SessionState.SetBool(SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS, true);
+            SessionState.SetBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS, true);
             McpLogger.LogInfo("Domain reload in progress flag set to true");
             
             // If the server is running, save its state and stop it.
@@ -105,9 +101,9 @@ namespace io.github.hatayama.uMCP
                 int portToSave = mcpServer.Port;
                 
                 // Execute SessionState operations immediately (to ensure they are saved before a domain reload).
-                SessionState.SetBool(SESSION_KEY_SERVER_RUNNING, true);
-                SessionState.SetInt(SESSION_KEY_SERVER_PORT, portToSave);
-                SessionState.SetBool(SESSION_KEY_AFTER_COMPILE, true); // Set the post-compilation flag.
+                SessionState.SetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, true);
+                SessionState.SetInt(McpConstants.SESSION_KEY_SERVER_PORT, portToSave);
+                SessionState.SetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, true); // Set the post-compilation flag.
                 
                 McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: Saved server state - port={portToSave}");
                 
@@ -136,10 +132,10 @@ namespace io.github.hatayama.uMCP
         private static void OnAfterAssemblyReload()
         {
             // Clear the compile-via-MCP flag (just in case).
-            SessionState.EraseBool("uMCP.CompileFromMCP");
+            SessionState.EraseBool(McpConstants.SESSION_KEY_COMPILE_FROM_MCP);
             
             // Clear the domain reload completion flag.
-            SessionState.EraseBool(SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS);
+            SessionState.EraseBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS);
             McpLogger.LogInfo("Domain reload in progress flag cleared");
             
             // Restore server state.
@@ -154,9 +150,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void RestoreServerStateIfNeeded()
         {
-            bool wasRunning = SessionState.GetBool(SESSION_KEY_SERVER_RUNNING, false);
-            int savedPort = SessionState.GetInt(SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
-            bool isAfterCompile = SessionState.GetBool(SESSION_KEY_AFTER_COMPILE, false);
+            bool wasRunning = SessionState.GetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, false);
+            int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
+            bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
             
             // If the server is already running (e.g., started from McpEditorWindow).
             if (mcpServer?.IsRunning == true)
@@ -164,7 +160,7 @@ namespace io.github.hatayama.uMCP
                 // Just clear the post-compilation flag and exit.
                 if (isAfterCompile)
                 {
-                    SessionState.EraseBool(SESSION_KEY_AFTER_COMPILE);
+                    SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
                     McpLogger.LogInfo("Server already running. Clearing post-compile flag.");
                 }
                 return;
@@ -173,7 +169,7 @@ namespace io.github.hatayama.uMCP
             // Clear the post-compilation flag.
             if (isAfterCompile)
             {
-                SessionState.EraseBool(SESSION_KEY_AFTER_COMPILE);
+                SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
             }
             
             if (wasRunning && (mcpServer == null || !mcpServer.IsRunning))
@@ -215,8 +211,8 @@ namespace io.github.hatayama.uMCP
                         McpLogger.LogInfo("Auto Start Server is disabled. Server will not be restored automatically.");
                         
                         // Clear SessionState (wait for the server to be started manually).
-                        SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
-                        SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
+                        SessionState.EraseBool(McpConstants.SESSION_KEY_SERVER_RUNNING);
+                        SessionState.EraseInt(McpConstants.SESSION_KEY_SERVER_PORT);
                     }
                 }
             }
@@ -261,8 +257,8 @@ namespace io.github.hatayama.uMCP
                 {
                     // If it ultimately fails, clear the SessionState.
                     McpLogger.LogError($"Failed to restore MCP Server on port {port} after {maxRetries + 1} attempts. Clearing session state.");
-                    SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
-                    SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
+                    SessionState.EraseBool(McpConstants.SESSION_KEY_SERVER_RUNNING);
+                    SessionState.EraseInt(McpConstants.SESSION_KEY_SERVER_PORT);
                 }
             }
         }
@@ -290,7 +286,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static (bool isRunning, int port, bool wasRestoredFromSession) GetServerStatus()
         {
-            bool wasRestored = SessionState.GetBool(SESSION_KEY_SERVER_RUNNING, false);
+            bool wasRestored = SessionState.GetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, false);
             return (IsServerRunning, ServerPort, wasRestored);
         }
 
@@ -299,8 +295,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static string GetDetailedServerStatus()
         {
-            bool sessionWasRunning = SessionState.GetBool(SESSION_KEY_SERVER_RUNNING, false);
-            int sessionPort = SessionState.GetInt(SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
+            bool sessionWasRunning = SessionState.GetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, false);
+            int sessionPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
             bool serverInstanceExists = mcpServer != null;
             bool serverInstanceRunning = mcpServer?.IsRunning ?? false;
             int serverInstancePort = mcpServer?.Port ?? -1;

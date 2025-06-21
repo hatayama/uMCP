@@ -23,8 +23,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class McpEditorSettings
     {
-        private const string SETTINGS_FILE_NAME = "UnityMcpSettings.json";
-        private static string SettingsFilePath => Path.Combine("UserSettings", SETTINGS_FILE_NAME);
+        private static string SettingsFilePath => Path.Combine(McpConstants.USER_SETTINGS_FOLDER, McpConstants.SETTINGS_FILE_NAME);
         
         private static McpEditorSettingsData _cachedSettings;
         

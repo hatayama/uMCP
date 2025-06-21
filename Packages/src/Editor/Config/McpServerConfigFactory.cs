@@ -17,9 +17,9 @@ namespace io.github.hatayama.uMCP
         public static McpServerConfigData CreateUnityMcpConfig(int port, string serverPath)
         {
             return new McpServerConfigData(
-                command: "node",
+                command: McpConstants.NODE_COMMAND,
                 args: new[] { serverPath },
-                env: new Dictionary<string, string> { { "UNITY_TCP_PORT", port.ToString() } }
+                env: new Dictionary<string, string> { { McpConstants.UNITY_TCP_PORT_ENV_KEY, port.ToString() } }
             );
         }
 
@@ -30,7 +30,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>The server key.</returns>
         public static string CreateUnityMcpServerKey(int port)
         {
-            return $"unity-mcp-{port}";
+            return $"{McpConstants.PROJECT_NAME}-{port}";
         }
     }
 } 

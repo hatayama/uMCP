@@ -76,10 +76,10 @@ namespace io.github.hatayama.uMCP
             Dictionary<string, McpServerConfigData> servers = new();
             
             // Check if the mcpServers section exists.
-            if (rootObject != null && rootObject.ContainsKey("mcpServers"))
+            if (rootObject != null && rootObject.ContainsKey(McpConstants.JSON_KEY_MCP_SERVERS))
             {
                 // Get mcpServers as a dictionary.
-                string mcpServersJson = JsonConvert.SerializeObject(rootObject["mcpServers"]);
+                string mcpServersJson = JsonConvert.SerializeObject(rootObject[McpConstants.JSON_KEY_MCP_SERVERS]);
                 Dictionary<string, object> mcpServersObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(mcpServersJson);
                 
                 if (mcpServersObject != null)
@@ -94,19 +94,19 @@ namespace io.github.hatayama.uMCP
                         
                         if (serverConfigObject != null)
                         {
-                            string command = serverConfigObject.ContainsKey("command") ? serverConfigObject["command"]?.ToString() ?? "" : "";
+                            string command = serverConfigObject.ContainsKey(McpConstants.JSON_KEY_COMMAND) ? serverConfigObject[McpConstants.JSON_KEY_COMMAND]?.ToString() ?? "" : "";
                             
                             string[] args = new string[0];
-                            if (serverConfigObject.ContainsKey("args"))
+                            if (serverConfigObject.ContainsKey(McpConstants.JSON_KEY_ARGS))
                             {
-                                string argsJson = JsonConvert.SerializeObject(serverConfigObject["args"]);
+                                string argsJson = JsonConvert.SerializeObject(serverConfigObject[McpConstants.JSON_KEY_ARGS]);
                                 args = JsonConvert.DeserializeObject<string[]>(argsJson) ?? new string[0];
                             }
                             
                             Dictionary<string, string> env = new();
-                            if (serverConfigObject.ContainsKey("env"))
+                            if (serverConfigObject.ContainsKey(McpConstants.JSON_KEY_ENV))
                             {
-                                string envJson = JsonConvert.SerializeObject(serverConfigObject["env"]);
+                                string envJson = JsonConvert.SerializeObject(serverConfigObject[McpConstants.JSON_KEY_ENV]);
                                 env = JsonConvert.DeserializeObject<Dictionary<string, string>>(envJson) ?? new Dictionary<string, string>();
                             }
                             
@@ -147,7 +147,7 @@ namespace io.github.hatayama.uMCP
             }
             
             // Update only the mcpServers section.
-            jsonStructure["mcpServers"] = config.mcpServers.ToDictionary(
+            jsonStructure[McpConstants.JSON_KEY_MCP_SERVERS] = config.mcpServers.ToDictionary(
                 kvp => kvp.Key,
                 kvp => new
                 {

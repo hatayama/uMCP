@@ -31,7 +31,7 @@ namespace io.github.hatayama.uMCP
 
             McpConfig config = _repository.Load(configPath);
             // Check if a setting with a port number exists.
-            return config.mcpServers.Keys.Any(key => key.StartsWith("unity-mcp"));
+            return config.mcpServers.Keys.Any(key => key.StartsWith(McpConstants.PROJECT_NAME));
         }
 
         /// <summary>
