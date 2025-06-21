@@ -1,6 +1,6 @@
 import { BaseTool } from '../base-tool';
 
-// Jestの型を明示的にimport
+// Explicitly import Jest types
 import { describe, it, expect } from '@jest/globals';
 
 type DummyContext = { unityClient: any };

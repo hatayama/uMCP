@@ -8,43 +8,43 @@ using Newtonsoft.Json.Linq;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity MCP Server制御用のEditor Window
-    /// サーバーの状態表示・起動・停止を行う
+    /// Editor Window for controlling Unity MCP Server
+    /// Displays server status and handles start/stop operations
     /// </summary>
     public class McpEditorWindow : EditorWindow
     {
-        // SessionState用の定数
+        // Constants for SessionState
         private const string SESSION_KEY_SELECTED_EDITOR_TYPE = "uMCP.SelectedEditorType";
         private const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
         
-        // UI定数
+        // UI constants
         private const float MIN_WINDOW_WIDTH = 400f;
         private const float MIN_WINDOW_HEIGHT = 200f;
         private const float DEFAULT_COMMUNICATION_LOG_HEIGHT = 300f;
         private const float MIN_COMMUNICATION_LOG_HEIGHT = 100f;
         private const float MAX_COMMUNICATION_LOG_HEIGHT = 800f;
         
-        // UI状態
+        // UI state
         private int customPort = McpServerConfig.DEFAULT_PORT;
         private bool autoStartServer = false;
         private bool showDeveloperTools = false;
         private bool showCommunicationLogs = false;
         private bool enableMcpLogs = false;
         private Vector2 communicationLogScrollPosition;
-        private float communicationLogHeight = DEFAULT_COMMUNICATION_LOG_HEIGHT; // リサイズ可能な通信ログエリアの高さ
-        private bool isResizingCommunicationLog = false; // リサイズ中かどうか
+        private float communicationLogHeight = DEFAULT_COMMUNICATION_LOG_HEIGHT; // Height of resizable communication log area
+        private bool isResizingCommunicationLog = false; // Whether currently resizing
         
-        // エディタ選択用のUI状態
+        // UI state for editor selection
         private McpEditorType selectedEditorType = McpEditorType.Cursor;
         
-        // ログエントリごとのスクロール位置を管理
+        // Manage scroll positions for each log entry
         private Dictionary<string, Vector2> requestScrollPositions = new Dictionary<string, Vector2>();
         private Dictionary<string, Vector2> responseScrollPositions = new Dictionary<string, Vector2>();
         
-        // ウィンドウ全体のスクロール位置
+        // Scroll position for entire window
         private Vector2 mainScrollPosition;
         
-        // 設定サービス
+        // Configuration services
         private readonly McpConfigRepository _repository = new(McpEditorType.Cursor);
         private McpConfigService _cursorConfigService;
         private McpConfigService _claudeCodeConfigService;
@@ -59,44 +59,44 @@ namespace io.github.hatayama.uMCP
 
         private void OnEnable()
         {
-            // 設定サービスを初期化
+            // Initialize configuration services
             McpConfigRepository cursorRepository = new(McpEditorType.Cursor);
             McpConfigRepository claudeCodeRepository = new(McpEditorType.ClaudeCode);
             _cursorConfigService = new McpConfigService(cursorRepository, McpEditorType.Cursor);
             _claudeCodeConfigService = new McpConfigService(claudeCodeRepository, McpEditorType.ClaudeCode);
             
-            // 保存された設定を読み込み
+            // Load saved settings
             McpEditorSettingsData settings = McpEditorSettings.GetSettings();
             customPort = settings.customPort;
             autoStartServer = settings.autoStartServer;
             showDeveloperTools = settings.showDeveloperTools;
             enableMcpLogs = settings.enableMcpLogs;
             
-            // エディタ選択状態を復元
+            // Restore editor selection state
             selectedEditorType = (McpEditorType)SessionState.GetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
             
-            // McpLoggerの設定を同期
+            // Synchronize McpLogger settings
             McpLogger.EnableDebugLog = enableMcpLogs;
             
-            // 通信ログエリアの高さを復元（SessionStateから）
+            // Restore communication log area height (from SessionState)
             communicationLogHeight = SessionState.GetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, DEFAULT_COMMUNICATION_LOG_HEIGHT);
             
-            // ログ更新イベントを購読
+            // Subscribe to log update events
             McpCommunicationLogger.OnLogUpdated += Repaint;
             
-            // コンパイル後かどうかチェック
+            // Check if after compilation
             bool isAfterCompile = SessionState.GetBool("uMCP.AfterCompile", false);
             
-            // コンパイル後またはAuto Start Serverが有効な場合、サーバーを起動
+            // Start server if after compilation or Auto Start Server is enabled
             if ((isAfterCompile || autoStartServer) && !McpServerController.IsServerRunning)
             {
-                // コンパイル後の場合、フラグをクリア
+                // Clear flag if after compilation
                 if (isAfterCompile)
                 {
                     SessionState.EraseBool("uMCP.AfterCompile");
                     McpLogger.LogInfo("McpEditorWindow detected post-compile state. Starting server immediately...");
                     
-                    // 保存されたポート番号を使用
+                    // Use saved port number
                     int savedPort = SessionState.GetInt("uMCP.ServerPort", customPort);
                     if (savedPort != customPort)
                     {
@@ -111,23 +111,23 @@ namespace io.github.hatayama.uMCP
 
         private void OnDisable()
         {
-            // ログ更新イベントの購読を解除
+            // Unsubscribe from log update events
             McpCommunicationLogger.OnLogUpdated -= Repaint;
             
-            // エディタ選択状態を保存
+            // Save editor selection state
             SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             
-            // サーバーの管理はMcpServerControllerに完全に任せる
-            // ウィンドウを閉じてもサーバーは停止しない（グローバルリソースとして扱う）
+            // Leave server management completely to McpServerController
+            // Server does not stop when window is closed (treated as global resource)
             McpLogger.LogInfo($"McpEditorWindow.OnDisable: Window closing, server will keep running if active");
         }
 
         private void OnGUI()
         {
-            // サーバーポートとUI設定を同期
+            // Synchronize server port and UI settings
             SyncPortSettings();
             
-            // ウィンドウ全体をスクロール可能にする
+            // Make entire window scrollable
             mainScrollPosition = EditorGUILayout.BeginScrollView(mainScrollPosition);
             
             DrawServerStatus();
@@ -140,31 +140,31 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーポートとUI設定を同期する
+        /// Synchronize server port and UI settings
         /// </summary>
         private void SyncPortSettings()
         {
-            // サーバーが動作中で、UIのポート設定と実際のサーバーポートが異なる場合は同期
+            // Synchronize if server is running and UI port setting differs from actual server port
             if (McpServerController.IsServerRunning)
             {
                 int actualServerPort = McpServerController.ServerPort;
                 if (customPort != actualServerPort)
                 {
                     customPort = actualServerPort;
-                    // 設定ファイルも更新
+                    // Update configuration file as well
                     McpEditorSettings.SetCustomPort(customPort);
                 }
             }
         }
 
         /// <summary>
-        /// サーバー状態セクションを描画
+        /// Draw server status section
         /// </summary>
         private void DrawServerStatus()
         {
             EditorGUILayout.BeginVertical("box");
             
-            // 状態表示
+            // Status display
             (bool isRunning, int port, bool wasRestored) = McpServerController.GetServerStatus();
             string status = isRunning ? "Running" : "Stopped";
             Color statusColor = isRunning ? Color.green : Color.red;
@@ -175,7 +175,7 @@ namespace io.github.hatayama.uMCP
                 fontStyle = FontStyle.Bold
             };
             
-            // Server Status、Status、Port を全て横並びで表示
+            // Display Server Status, Status, and Port all horizontally
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Server Status:", EditorStyles.boldLabel, GUILayout.Width(85));
             EditorGUILayout.LabelField($"{status}", statusStyle, GUILayout.Width(80));
@@ -191,13 +191,13 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバー制御セクションを描画
+        /// Draw server control section
         /// </summary>
         private void DrawServerControls()
         {
             EditorGUILayout.BeginVertical("box");
             
-            // 自動起動チェックボックス
+            // Auto start checkbox
             EditorGUI.BeginChangeCheck();
             bool newAutoStart = EditorGUILayout.Toggle("Auto Start Server", autoStartServer);
             if (EditorGUI.EndChangeCheck())
@@ -208,7 +208,7 @@ namespace io.github.hatayama.uMCP
             
             EditorGUILayout.Space();
             
-            // ポート設定
+            // Port settings
             bool isRunning = McpServerController.IsServerRunning;
             EditorGUI.BeginDisabledGroup(isRunning);
             
@@ -217,7 +217,7 @@ namespace io.github.hatayama.uMCP
             if (EditorGUI.EndChangeCheck())
             {
                 customPort = newPort;
-                // ポート番号が変更されたら即座に保存
+                // Save immediately when port number is changed
                 McpEditorSettings.SetCustomPort(customPort);
             }
             
@@ -225,7 +225,7 @@ namespace io.github.hatayama.uMCP
             
             EditorGUILayout.Space();
             
-            // 起動・停止ボタン
+            // Start/Stop buttons
             EditorGUILayout.BeginHorizontal();
             
             EditorGUI.BeginDisabledGroup(isRunning);
@@ -248,7 +248,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーを開始する（ユーザー操作用）
+        /// Start server (for user operations)
         /// </summary>
         private void StartServer()
         {
@@ -259,7 +259,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーを開始する（内部処理用）
+        /// Start server (for internal processing)
         /// </summary>
         private void StartServerInternal()
         {
@@ -267,9 +267,9 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// ポートを検証してサーバーを開始する
+        /// Validate port and start server
         /// </summary>
-        /// <returns>成功した場合true</returns>
+        /// <returns>True if successful</returns>
         private bool ValidatePortAndStartServer()
         {
             if (customPort < McpServerConfig.MIN_PORT_NUMBER || customPort > McpServerConfig.MAX_PORT_NUMBER)
@@ -278,14 +278,14 @@ namespace io.github.hatayama.uMCP
                 return false;
             }
 
-            // 既に同じポートで自分のサーバーが動いているかチェック
+            // Check if our own server is already running on the same port
             if (McpServerController.IsServerRunning && McpServerController.ServerPort == customPort)
             {
                 McpLogger.LogInfo($"MCP Server is already running on port {customPort}");
-                return true; // 既に動いているので成功扱い
+                return true; // Already running, treat as success
             }
 
-            // 他のプロセスが使用中かどうかをチェック
+            // Check if another process is using the port
             if (McpBridgeServer.IsPortInUse(customPort))
             {
                 EditorUtility.DisplayDialog("Port Error", 
@@ -301,13 +301,13 @@ namespace io.github.hatayama.uMCP
             }
             catch (InvalidOperationException ex)
             {
-                // ポート使用中エラーの場合
+                // In case of port in use error
                 EditorUtility.DisplayDialog("Server Start Error", ex.Message, "OK");
                 return false;
             }
             catch (Exception ex)
             {
-                // その他のエラー
+                // Other errors
                 EditorUtility.DisplayDialog("Server Start Error", 
                     $"Failed to start server: {ex.Message}", 
                     "OK");
@@ -316,7 +316,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーを停止する
+        /// Stop server
         /// </summary>
         private void StopServer()
         {
@@ -325,25 +325,25 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// エディタ設定セクションを描画
+        /// Draw editor configuration section
         /// </summary>
         private void DrawEditorConfigSection()
         {
             EditorGUILayout.LabelField("LLM Tool Settings", EditorStyles.boldLabel);
             
-            // エディタ選択プルダウン
+            // Editor selection dropdown
             EditorGUI.BeginChangeCheck();
             selectedEditorType = (McpEditorType)EditorGUILayout.EnumPopup("Target:", selectedEditorType);
             if (EditorGUI.EndChangeCheck())
             {
-                // 選択が変更されたらセッションに保存
+                // Save to session when selection changes
                 SessionState.SetInt(SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             }
             
             bool isServerRunning = McpServerController.IsServerRunning;
             int currentServerPort = McpServerController.ServerPort;
             
-            // 選択されたエディタの設定のみ表示
+            // Display only the selected editor's configuration
             McpConfigService configService = GetConfigService(selectedEditorType);
             string editorName = GetEditorDisplayName(selectedEditorType);
             
@@ -351,7 +351,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// エディタタイプから対応する設定サービスを取得
+        /// Get corresponding configuration service from editor type
         /// </summary>
         private McpConfigService GetConfigService(McpEditorType editorType)
         {
@@ -364,7 +364,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// エディタタイプから表示名を取得
+        /// Get display name from editor type
         /// </summary>
         private string GetEditorDisplayName(McpEditorType editorType)
         {
@@ -377,23 +377,23 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 個別の設定セクションを描画
+        /// Draw individual configuration section
         /// </summary>
         private void DrawConfigurationSection(string editorName, McpConfigService configService, bool isServerRunning, int currentServerPort)
         {
             EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField($"{editorName}設定", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"{editorName} Settings", EditorStyles.boldLabel);
             
             bool isConfigured = configService.IsConfigured();
             
             if (isConfigured)
             {
-                // ポート番号の不整合チェック
+                // Check for port number inconsistency
                 if (isServerRunning && currentServerPort != customPort)
                 {
-                    EditorGUILayout.HelpBox($"注意: {editorName}設定のポート番号と現在のサーバーポート({currentServerPort})が一致していない可能性があります。", MessageType.Warning);
+                    EditorGUILayout.HelpBox($"Warning: {editorName} settings port number may not match current server port ({currentServerPort}).", MessageType.Warning);
                     
-                    if (GUILayout.Button($"{editorName}設定をポート{currentServerPort}に更新"))
+                    if (GUILayout.Button($"Update {editorName} settings to port {currentServerPort}"))
                     {
                         configService.AutoConfigure(currentServerPort);
                         Repaint();
@@ -402,22 +402,22 @@ namespace io.github.hatayama.uMCP
                     EditorGUILayout.Space();
                 }
                 
-                EditorGUILayout.HelpBox($"{editorName}設定は既に構成されています。", MessageType.Info);
+                EditorGUILayout.HelpBox($"{editorName} settings are already configured.", MessageType.Info);
                 
                 string configPath = UnityMcpPathResolver.GetConfigPath(selectedEditorType);
-                if (GUILayout.Button("設定ファイルを開く"))
+                if (GUILayout.Button("Open Configuration File"))
                 {
                     EditorUtility.RevealInFinder(configPath);
                 }
             }
             else
             {
-                EditorGUILayout.HelpBox($"{editorName}設定が見つかりません。自動設定を実行してください。", MessageType.Warning);
+                EditorGUILayout.HelpBox($"{editorName} settings not found. Please run auto-configuration.", MessageType.Warning);
             }
             
             EditorGUILayout.Space();
             
-            string buttonText = isServerRunning ? $"{editorName}設定を自動構成 (ポート{currentServerPort})" : $"{editorName}設定を自動構成";
+            string buttonText = isServerRunning ? $"Auto-configure {editorName} settings (Port {currentServerPort})" : $"Auto-configure {editorName} settings";
             if (GUILayout.Button(buttonText))
             {
                 int portToUse = isServerRunning ? currentServerPort : customPort;
@@ -429,13 +429,13 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 開発者ツールセクションを描画
+        /// Draw developer tools section
         /// </summary>
         private void DrawDeveloperTools()
         {
             EditorGUILayout.BeginVertical("box");
             
-            // トグルヘッダー
+            // Toggle header
             EditorGUI.BeginChangeCheck();
             showDeveloperTools = EditorGUILayout.Foldout(showDeveloperTools, "Developer Tools", true);
             if (EditorGUI.EndChangeCheck())
@@ -443,12 +443,12 @@ namespace io.github.hatayama.uMCP
                 McpEditorSettings.SetShowDeveloperTools(showDeveloperTools);
             }
             
-            // Developer Toolsの内容（展開時のみ表示）
+            // Developer Tools content (display only when expanded)
             if (showDeveloperTools)
             {
                 EditorGUILayout.Space();
                 
-                // ログ制御トグル
+                // Log control toggle
                 EditorGUI.BeginChangeCheck();
                 bool newEnableMcpLogs = EditorGUILayout.Toggle("Enable MCP Logs", enableMcpLogs);
                 if (EditorGUI.EndChangeCheck())
@@ -459,7 +459,7 @@ namespace io.github.hatayama.uMCP
                 
                 EditorGUILayout.Space();
                 
-                // デバッグ情報表示ボタン
+                // Debug information display button
                 if (GUILayout.Button("Show Debug Info"))
                 {
                     string debugInfo = McpServerController.GetDetailedServerStatus();
@@ -468,7 +468,7 @@ namespace io.github.hatayama.uMCP
                 
                 EditorGUILayout.Space();
                 
-                // TypeScriptビルドボタン
+                // TypeScript build button
                 if (GUILayout.Button("Rebuild TypeScript Server", GUILayout.Height(30)))
                 {
                     RebuildTypeScriptServer();
@@ -480,19 +480,19 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 通信ログセクションを描画
+        /// Draw communication logs section
         /// </summary>
         private void DrawCommunicationLogs()
         {
             EditorGUILayout.BeginVertical("box");
             
-            // ヘッダーとクリアボタン
+            // Header and clear button
             EditorGUILayout.BeginHorizontal();
-            showCommunicationLogs = EditorGUILayout.Foldout(showCommunicationLogs, "通信ログ", true);
+            showCommunicationLogs = EditorGUILayout.Foldout(showCommunicationLogs, "Communication Logs", true);
             
             if (showCommunicationLogs)
             {
-                if (GUILayout.Button("クリア", GUILayout.Width(60)))
+                if (GUILayout.Button("Clear", GUILayout.Width(60)))
                 {
                     McpCommunicationLogger.ClearLogs();
                 }
@@ -507,17 +507,17 @@ namespace io.github.hatayama.uMCP
                 IReadOnlyList<McpCommunicationLogEntry> logs = McpCommunicationLogger.GetAllLogs();
                 if (logs.Count == 0)
                 {
-                    EditorGUILayout.HelpBox("通信ログはまだありません", MessageType.Info);
+                    EditorGUILayout.HelpBox("No communication logs yet", MessageType.Info);
                 }
                 else
                 {
-                    // スクロールビュー（リサイズ可能）
+                    // Scroll view (resizable)
                     communicationLogScrollPosition = EditorGUILayout.BeginScrollView(
                         communicationLogScrollPosition, 
                         GUILayout.Height(communicationLogHeight)
                     );
                     
-                    for (int i = logs.Count - 1; i >= 0; i--) // 最新から表示
+                    for (int i = logs.Count - 1; i >= 0; i--) // Display from latest
                     {
                         McpCommunicationLogEntry log = logs[i];
                         DrawLogEntry(log);
@@ -526,7 +526,7 @@ namespace io.github.hatayama.uMCP
                     
                     EditorGUILayout.EndScrollView();
                     
-                    // リサイズハンドル
+                    // Resize handle
                     DrawCommunicationLogResizeHandle();
                 }
             }
@@ -536,13 +536,13 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 個別のログエントリーを描画
+        /// Draw individual log entry
         /// </summary>
         private void DrawLogEntry(McpCommunicationLogEntry log)
         {
             EditorGUILayout.BeginVertical("box");
             
-            // ヘッダー（クリック可能なトグル）
+            // Header (clickable toggle)
             string toggleSymbol = log.IsExpanded ? "▼" : "▶";
             string headerText = $"{toggleSymbol} {log.HeaderText}";
             
@@ -559,7 +559,7 @@ namespace io.github.hatayama.uMCP
                 log.IsExpanded = !log.IsExpanded;
             }
             
-            // 内容（展開時のみ）
+            // Content (only when expanded)
             if (log.IsExpanded)
             {
                 EditorGUILayout.Space();
@@ -587,7 +587,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// JSONを整形する
+        /// Format JSON
         /// </summary>
         private string FormatJson(string json)
         {
@@ -598,91 +598,91 @@ namespace io.github.hatayama.uMCP
             }
             catch
             {
-                return json; // パースできない場合はそのまま返す
+                return json; // Return as-is if cannot parse
             }
         }
 
         /// <summary>
-        /// JSON内容を適切な高さで描画する
+        /// Draw JSON content with appropriate height
         /// </summary>
         private void DrawJsonContent(string jsonContent)
         {
             GUIStyle textAreaStyle = new GUIStyle(EditorStyles.textArea);
             textAreaStyle.wordWrap = true;
             
-            // 内容の行数を計算して適切な高さを設定
+            // Calculate number of lines in content and set appropriate height
             string[] lines = jsonContent.Split('\n');
             int lineCount = lines.Length;
             float lineHeight = EditorGUIUtility.singleLineHeight;
-            float contentHeight = Mathf.Max(80f, Mathf.Min(lineCount * lineHeight + 20f, 200f)); // 最小80px、最大200px
+            float contentHeight = Mathf.Max(80f, Mathf.Min(lineCount * lineHeight + 20f, 200f)); // Minimum 80px, maximum 200px
             
-            // 通常のSelectableLabelで表示（スクロールは外側の通信ログ全体で対応）
+            // Display with regular SelectableLabel (scrolling handled by outer communication log)
             EditorGUILayout.SelectableLabel(jsonContent, textAreaStyle, GUILayout.Height(contentHeight));
         }
 
         /// <summary>
-        /// JSON内容をスクロール可能な領域で描画する
+        /// Draw JSON content in scrollable area
         /// </summary>
         private void DrawJsonContentWithScroll(string jsonContent, string scrollKey, Dictionary<string, Vector2> scrollPositions)
         {
             GUIStyle textAreaStyle = new GUIStyle(EditorStyles.textArea);
             textAreaStyle.wordWrap = true;
             
-            // 内容の行数を計算
+            // Calculate number of lines in content
             string[] lines = jsonContent.Split('\n');
             int lineCount = lines.Length;
             float lineHeight = EditorGUIUtility.singleLineHeight;
             
-            // 固定高さ（150px）でスクロール可能な領域を作成
+            // Create scrollable area with fixed height (150px)
             float fixedHeight = 150f;
             
-            // コンテンツの実際の高さを計算（十分な余白を確保）
-            float contentHeight = lineCount * lineHeight + 50f; // 上下のパディング + 余白を多めに
+            // Calculate actual content height (ensure sufficient margin)
+            float contentHeight = lineCount * lineHeight + 50f; // Top/bottom padding + generous margin
             
-            // スクロール位置を取得（存在しない場合は初期化）
+            // Get scroll position (initialize if not exists)
             if (!scrollPositions.ContainsKey(scrollKey))
             {
                 scrollPositions[scrollKey] = Vector2.zero;
             }
             
-            // スクロールビューを作成
+            // Create scroll view
             scrollPositions[scrollKey] = EditorGUILayout.BeginScrollView(
                 scrollPositions[scrollKey], 
                 GUILayout.Height(fixedHeight)
             );
             
-            // JSON内容を表示（十分な高さを確保）
+            // Display JSON content (ensure sufficient height)
             EditorGUILayout.SelectableLabel(jsonContent, textAreaStyle, GUILayout.Height(contentHeight));
             
             EditorGUILayout.EndScrollView();
         }
 
         /// <summary>
-        /// 通信ログエリアのリサイズハンドルを描画
+        /// Draw resize handle for communication log area
         /// </summary>
         private void DrawCommunicationLogResizeHandle()
         {
-            // リサイズハンドルの領域を取得（高さを8pxに増やして見やすく）
+            // Get resize handle area (increase height to 8px for better visibility)
             Rect handleRect = GUILayoutUtility.GetRect(0, 8, GUILayout.ExpandWidth(true));
             
-            // マウスカーソルをリサイズカーソルに変更
+            // Change mouse cursor to resize cursor
             EditorGUIUtility.AddCursorRect(handleRect, MouseCursor.ResizeVertical);
             
-            // リサイズハンドルの見た目を描画（より見やすく）
+            // Draw resize handle appearance (more visible)
             if (Event.current.type == EventType.Repaint)
             {
                 Color originalColor = GUI.color;
                 
-                // 背景を少し暗く
+                // Make background slightly darker
                 GUI.color = new Color(0.3f, 0.3f, 0.3f, 0.3f);
                 GUI.DrawTexture(handleRect, EditorGUIUtility.whiteTexture);
                 
-                // 中央に3つの点を描画してハンドルらしく
+                // Draw three dots in center to look like a handle
                 GUI.color = new Color(0.6f, 0.6f, 0.6f, 0.8f);
                 float centerX = handleRect.x + handleRect.width * 0.5f;
                 float centerY = handleRect.y + handleRect.height * 0.5f;
                 
-                // 3つの点を描画
+                // Draw three dots
                 for (int i = -1; i <= 1; i++)
                 {
                     Rect dotRect = new Rect(centerX + i * 4 - 1, centerY - 1, 2, 2);
@@ -692,7 +692,7 @@ namespace io.github.hatayama.uMCP
                 GUI.color = originalColor;
             }
             
-            // マウスイベントの処理
+            // Handle mouse events
             if (Event.current.type == EventType.MouseDown && handleRect.Contains(Event.current.mousePosition))
             {
                 isResizingCommunicationLog = true;
@@ -703,13 +703,13 @@ namespace io.github.hatayama.uMCP
             {
                 if (Event.current.type == EventType.MouseDrag)
                 {
-                    // ドラッグ量に応じて高さを調整
+                    // Adjust height according to drag amount
                     communicationLogHeight += Event.current.delta.y;
                     
-                    // 最小・最大高さを制限
+                    // Limit minimum and maximum height
                     communicationLogHeight = Mathf.Clamp(communicationLogHeight, MIN_COMMUNICATION_LOG_HEIGHT, MAX_COMMUNICATION_LOG_HEIGHT);
                     
-                    // SessionStateに保存
+                    // Save to SessionState
                     SessionState.SetFloat(SESSION_KEY_COMMUNICATION_LOG_HEIGHT, communicationLogHeight);
                     
                     Event.current.Use();
@@ -724,27 +724,27 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// TypeScriptサーバーをリビルドする
+        /// Rebuild TypeScript server
         /// </summary>
         private void RebuildTypeScriptServer()
         {
-            // 必要な時にTypeScriptBuilderを作成
+            // Create TypeScriptBuilder when needed
             TypeScriptBuilder builder = new TypeScriptBuilder();
             
             builder.BuildTypeScriptServer((success, output, error) => {
                 if (success)
                 {
-                    // サーバーが動いている場合は自動再起動
+                    // Auto-restart if server is running
                     if (McpServerController.IsServerRunning)
                     {
                         Debug.Log("Restarting server with new build...");
                         McpServerController.StopServer();
                         
-                        // 少し待ってから再起動（サーバーの完全停止を待つ）
+                        // Wait a bit before restarting (wait for server to completely stop)
                         EditorApplication.delayCall += () => {
                             McpServerController.StartServer(customPort);
                             Debug.Log("Server restarted with updated TypeScript build!");
-                            Repaint(); // UIを更新
+                            Repaint(); // Update UI
                         };
                     }
                     else
@@ -752,7 +752,7 @@ namespace io.github.hatayama.uMCP
                         Debug.Log("Server is not running. Start the server manually to use the updated build.");
                     }
                 }
-                // エラー処理はTypeScriptBuilder内で行われる
+                // Error handling is performed within TypeScriptBuilder
             });
         }
     }

@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "displayName": "uMCP",
   "description": "Connect your Unity Editor to LLMs using the Model Context Protocol.",
-  "unity": "2020.3",
+  "unity": "2022.3",
   "documentationUrl": "https://github.com/hatayama/uMCP/blob/main/Packages/src/README.md",
   "licensesUrl": "https://github.com/hatayama/uMCP/blob/main/LICENSE.md",
   "author": {

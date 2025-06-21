@@ -9,15 +9,15 @@ namespace io.github.hatayama.uMCP
         private Vector2 scrollPosition;
         private LogDisplayDto displayData;
         
-        // ログタイプフィルタ用
+        // For log type filtering
         private string selectedLogType = "All";
         private readonly string[] logTypeOptions = { "All", "Log", "Warning", "Error", "Assert" };
 
-        [MenuItem("Tools/ログゲッター/Window")]
+        [MenuItem("Tools/LogGetter/Window")]
         public static void ShowWindow()
         {
             LogGetterEditorWindow window = GetWindow<LogGetterEditorWindow>();
-            window.titleContent = new GUIContent("ログゲッター");
+            window.titleContent = new GUIContent("Log Getter");
             window.Show();
         }
 
@@ -49,12 +49,12 @@ namespace io.github.hatayama.uMCP
         {
             if (presenter == null) return;
 
-            GUILayout.Label("Unity Console ログゲッター", EditorStyles.boldLabel);
+            GUILayout.Label("Unity Console Log Getter", EditorStyles.boldLabel);
             GUILayout.Space(10);
 
-            // ログタイプ選択UI
+            // Log type selection UI
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("ログタイプ:", GUILayout.Width(80));
+            GUILayout.Label("Log Type:", GUILayout.Width(80));
             
             int selectedIndex = System.Array.IndexOf(logTypeOptions, selectedLogType);
             if (selectedIndex == -1) selectedIndex = 0;
@@ -65,8 +65,8 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(5);
 
-            // ログ取得ボタン
-            string buttonText = selectedLogType == "All" ? "全ログ取得" : $"{selectedLogType}ログ取得";
+            // Get Logs button
+            string buttonText = selectedLogType == "All" ? "Get All Logs" : $"Get {selectedLogType} Logs";
             if (GUILayout.Button(buttonText, GUILayout.Height(30)))
             {
                 presenter.GetLogs(selectedLogType);
@@ -74,7 +74,7 @@ namespace io.github.hatayama.uMCP
 
             GUILayout.Space(5);
 
-            if (GUILayout.Button("ログクリア", GUILayout.Height(25)))
+            if (GUILayout.Button("Clear Logs", GUILayout.Height(25)))
             {
                 presenter.ClearLogs();
                 LogGetter.ClearCustomLogs();
@@ -82,39 +82,39 @@ namespace io.github.hatayama.uMCP
 
             GUILayout.Space(5);
 
-            // テスト用ログ生成セクション
-            GUILayout.Label("テスト用ログ生成", EditorStyles.boldLabel);
+            // Test log generation section
+            GUILayout.Label("Generate Test Logs", EditorStyles.boldLabel);
             
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Debug.Log生成", GUILayout.Height(25)))
+            if (GUILayout.Button("Generate Debug.Log", GUILayout.Height(25)))
             {
-                UnityEngine.Debug.Log($"テスト用Logメッセージ - {System.DateTime.Now:HH:mm:ss}");
+                UnityEngine.Debug.Log($"Test Log message - {System.DateTime.Now:HH:mm:ss}");
             }
-            if (GUILayout.Button("Debug.LogWarning生成", GUILayout.Height(25)))
+            if (GUILayout.Button("Generate Debug.LogWarning", GUILayout.Height(25)))
             {
-                UnityEngine.Debug.LogWarning($"テスト用Warningメッセージ - {System.DateTime.Now:HH:mm:ss}");
+                UnityEngine.Debug.LogWarning($"Test Warning message - {System.DateTime.Now:HH:mm:ss}");
             }
-            if (GUILayout.Button("Debug.LogError生成", GUILayout.Height(25)))
+            if (GUILayout.Button("Generate Debug.LogError", GUILayout.Height(25)))
             {
-                UnityEngine.Debug.LogError($"テスト用Errorメッセージ - {System.DateTime.Now:HH:mm:ss}");
+                UnityEngine.Debug.LogError($"Test Error message - {System.DateTime.Now:HH:mm:ss}");
             }
             EditorGUILayout.EndHorizontal();
 
-            if (GUILayout.Button("複数ログ一括生成", GUILayout.Height(25)))
+            if (GUILayout.Button("Generate Multiple Logs at Once", GUILayout.Height(25)))
             {
                 string timestamp = System.DateTime.Now.ToString("HH:mm:ss");
-                UnityEngine.Debug.Log($"一括生成テスト Log 1 - {timestamp}");
-                UnityEngine.Debug.Log($"一括生成テスト Log 2 - {timestamp}");
-                UnityEngine.Debug.LogWarning($"一括生成テスト Warning - {timestamp}");
-                UnityEngine.Debug.LogError($"一括生成テスト Error - {timestamp}");
+                UnityEngine.Debug.Log($"Bulk generation test Log 1 - {timestamp}");
+                UnityEngine.Debug.Log($"Bulk generation test Log 2 - {timestamp}");
+                UnityEngine.Debug.LogWarning($"Bulk generation test Warning - {timestamp}");
+                UnityEngine.Debug.LogError($"Bulk generation test Error - {timestamp}");
             }
 
             GUILayout.Space(10);
 
-            // ログ統計表示
+            // Display log statistics
             DrawLogStatistics();
 
-            GUILayout.Label($"表示ログ数: {displayData.TotalCount}件", EditorStyles.boldLabel);
+            GUILayout.Label($"Displayed Logs: {displayData.TotalCount} items", EditorStyles.boldLabel);
 
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(400));
 
@@ -128,7 +128,7 @@ namespace io.github.hatayama.uMCP
 
         private void DrawLogStatistics()
         {
-            // 現在表示中のログの統計を表示（無限ループ回避）
+            // Display statistics of currently displayed logs (to avoid infinite loops)
             LogDisplayDto allLogs = displayData;
             
             int logCount = 0;

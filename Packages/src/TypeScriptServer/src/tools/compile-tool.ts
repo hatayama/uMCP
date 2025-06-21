@@ -4,17 +4,17 @@ import { ToolResponse } from '../types/tool-types.js';
 import { TOOL_NAMES, COMPILE_CONFIG, UNITY_CONNECTION } from '../constants.js';
 
 /**
- * Unityコンパイルツール
+ * Unity compilation tool
  */
 export class CompileTool extends BaseTool {
   readonly name = TOOL_NAMES.COMPILE;
-  readonly description = 'Unityプロジェクトのコンパイルを実行し、エラー情報を取得する';
+  readonly description = 'Execute Unity project compilation and retrieve error information';
   readonly inputSchema = {
     type: 'object',
     properties: {
       forceRecompile: {
         type: 'boolean',
-        description: '強制再コンパイルを行うかどうか',
+        description: 'Whether to perform forced recompilation',
         default: COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE
       }
     }
@@ -28,10 +28,10 @@ export class CompileTool extends BaseTool {
   }
 
   protected async execute(args: { forceRecompile: boolean }): Promise<any> {
-    // Unity側に接続（必要に応じて再接続）
+    // Connect to Unity (reconnect if necessary)
     await this.context.unityClient.ensureConnected();
 
-    // Unity側でコンパイルを実行
+    // Execute compilation on Unity side
     return await this.context.unityClient.compileProject(args.forceRecompile);
   }
 

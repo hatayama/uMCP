@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { ToolHandler, ToolResponse, ToolContext } from '../types/tool-types.js';
 
 /**
- * ツールの基底クラス
- * 共通処理とテンプレートメソッドパターンを提供
+ * Base class for tools
+ * Provides common processing and template method pattern
  */
 export abstract class BaseTool implements ToolHandler {
   abstract readonly name: string;
@@ -17,7 +17,7 @@ export abstract class BaseTool implements ToolHandler {
   }
 
   /**
-   * ツール実行のメインメソッド
+   * Main method for tool execution
    */
   async handle(args: unknown): Promise<ToolResponse> {
     try {
@@ -30,17 +30,17 @@ export abstract class BaseTool implements ToolHandler {
   }
 
   /**
-   * 引数のバリデーション（サブクラスで実装）
+   * Argument validation (implemented in subclass)
    */
   protected abstract validateArgs(args: unknown): any;
 
   /**
-   * 実際の処理（サブクラスで実装）
+   * Actual processing (implemented in subclass)
    */
   protected abstract execute(args: any): Promise<any>;
 
   /**
-   * 成功レスポンスのフォーマット（サブクラスでオーバーライド可能）
+   * Format success response (can be overridden in subclass)
    */
   protected formatResponse(result: any): ToolResponse {
     return {
@@ -54,7 +54,7 @@ export abstract class BaseTool implements ToolHandler {
   }
 
   /**
-   * エラーレスポンスのフォーマット
+   * Format error response
    */
   protected formatErrorResponse(error: unknown): ToolResponse {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

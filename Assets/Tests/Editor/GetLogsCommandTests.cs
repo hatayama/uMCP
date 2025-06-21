@@ -15,8 +15,8 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コマンドタイプのテスト
-        /// - コマンドタイプがGetLogsであることを確認
+        /// Test for command type.
+        /// - Asserts that the command type is GetLogs.
         /// </summary>
         [Test]
         public void CommandType_ShouldReturnGetLogs()
@@ -26,11 +26,11 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// デフォルトパラメータでのログ取得テスト
-        /// - すべてのログタイプを取得できること
-        /// - デフォルトの最大取得数（100）が設定されていること
-        /// - 結果オブジェクトに必要なプロパティが含まれていること
-        /// - ログの総数が取得できること
+        /// Test for getting logs with default parameters.
+        /// - All log types can be retrieved.
+        /// - The default maximum number of logs to retrieve (100) is set.
+        /// - The result object contains the required properties.
+        /// - The total number of logs can be retrieved.
         /// </summary>
         [Test]
         public async Task ExecuteAsync_WithDefaultParams_ShouldReturnAllLogs()
@@ -44,24 +44,24 @@ namespace io.github.hatayama.uMCP
             // Assert
             Assert.That(result, Is.Not.Null);
             
-            // resultをJTokenとして変換して検証
+            // Convert result to JToken for verification.
             JToken resultToken = JToken.FromObject(result);
             Assert.That(resultToken["logs"], Is.Not.Null, "logs property should exist");
             Assert.That(resultToken["totalCount"], Is.Not.Null, "totalCount property should exist");
             Assert.That(resultToken["requestedLogType"]?.ToString(), Is.EqualTo("All"), "requestedLogType should be 'All'");
             Assert.That(resultToken["requestedMaxCount"]?.ToObject<int>(), Is.EqualTo(100), "requestedMaxCount should be 100");
             
-            // logs配列の型チェック
+            // Type check for the logs array.
             JArray logsArray = resultToken["logs"] as JArray;
             Assert.That(logsArray, Is.Not.Null, "logs should be an array");
         }
 
         /// <summary>
-        /// カスタムパラメータでのログ取得テスト
-        /// - 特定のログタイプ（Error）のみを取得できること
-        /// - カスタムの最大取得数（50）が設定されていること
-        /// - 結果オブジェクトに必要なプロパティが含まれていること
-        /// - ログの総数が取得できること
+        /// Test for getting logs with custom parameters.
+        /// - Only a specific log type (Error) can be retrieved.
+        /// - A custom maximum number of logs to retrieve (50) is set.
+        /// - The result object contains the required properties.
+        /// - The total number of logs can be retrieved.
         /// </summary>
         [Test]
         public async Task ExecuteAsync_WithCustomParams_ShouldReturnFilteredLogs()
@@ -79,14 +79,14 @@ namespace io.github.hatayama.uMCP
             // Assert
             Assert.That(result, Is.Not.Null);
             
-            // resultをJTokenとして変換して検証
+            // Convert result to JToken for verification.
             JToken resultToken = JToken.FromObject(result);
             Assert.That(resultToken["logs"], Is.Not.Null, "logs property should exist");
             Assert.That(resultToken["totalCount"], Is.Not.Null, "totalCount property should exist");
             Assert.That(resultToken["requestedLogType"]?.ToString(), Is.EqualTo("Error"), "requestedLogType should be 'Error'");
             Assert.That(resultToken["requestedMaxCount"]?.ToObject<int>(), Is.EqualTo(50), "requestedMaxCount should be 50");
             
-            // logs配列の型チェック
+            // Type check for the logs array.
             JArray logsArray = resultToken["logs"] as JArray;
             Assert.That(logsArray, Is.Not.Null, "logs should be an array");
         }

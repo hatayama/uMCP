@@ -1,108 +1,122 @@
-[![Unity](https://img.shields.io/badge/Unity-2020.3+-red.svg)](https://unity3d.com/)
+[![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
-
-# 注意
-**またpreview版です。動作が安定していません**
 
 # uMCP
 
-Model Context Protocolを使用し、UnityエディターをLLMツールに接続します。
-それにより、下記の機能を呼び出せるようになります。
+Connects Unity Editor to LLM tools using Model Context Protocol.
+This enables you to call the following functions:
 
-## ✨機能
+## ✨ Features
 
 ### 1. unity.compile
-- **説明**: Unityプロジェクトのコンパイルを実行し、コンパイル結果を取得する
-- **パラメータ**: 
-  - `forceRecompile` (boolean): 強制再コンパイルを行うかどうか（デフォルト: false）
-- **レスポンス**: 
-  - `success` (boolean): コンパイルが成功したかどうか
-  - `errors` (array): コンパイルエラーの配列（エラーがある場合）
-    - `message` (string): エラーメッセージ
-    - `file` (string): エラーが発生したファイルパス
-    - `line` (number): エラーが発生した行番号
-    - `column` (number): エラーが発生した列番号
-    - `errorCode` (string): エラーコード（CS0117など）
-  - `warnings` (array): コンパイル警告の配列（警告がある場合）
-    - `message` (string): 警告メッセージ
-    - `file` (string): 警告が発生したファイルパス
-    - `line` (number): 警告が発生した行番号
-    - `column` (number): 警告が発生した列番号
-    - `warningCode` (string): 警告コード（CS0162など）
-  - `compileTime` (number): コンパイル所要時間（ミリ秒）
+- **Description**: Executes Unity project compilation and retrieves compilation results
+- **Parameters**: 
+  - `forceRecompile` (boolean): Whether to force recompilation (default: false)
+- **Response**: 
+  - `success` (boolean): Whether compilation was successful
+  - `errorCount` (number): Total number of errors
+  - `warningCount` (number): Total number of warnings
+  - `completedAt` (string): Compilation completion time (ISO format)
+  - `errors` (array): Array of compilation errors (if any)
+    - `message` (string): Error message
+    - `file` (string): File path where error occurred
+    - `line` (number): Line number where error occurred
+    - `column` (number): Column number where error occurred
+    - `type` (string): Error type
+  - `warnings` (array): Array of compilation warnings (if any)
+    - `message` (string): Warning message
+    - `file` (string): File path where warning occurred
+    - `line` (number): Line number where warning occurred
+    - `column` (number): Column number where warning occurred
+    - `type` (string): Warning type
 
 ### 2. unity.getLogs
-- **説明**: Unityコンソールのログ情報を取得する
-- **パラメータ**: 
-  - `logType` (string): フィルタリングするログタイプ (Error, Warning, Log, All)（デフォルト: "All"）
-  - `maxCount` (number): 取得する最大ログ数（デフォルト: 100）
-- **レスポンス**: 
-  - `logs` (array): ログエントリの配列
-    - `type` (string): ログタイプ (Error, Warning, Log)
-    - `message` (string): ログメッセージ
-    - `stackTrace` (string): スタックトレース
-    - `timestamp` (string): ログの時刻
-  - `totalCount` (number): 取得したログの総数
-- **注意**
-  - 現状、Consoleの表示と連動しています。フィルターで非表示になっているlog typeは取得できません。これは将来的に改善する予定です
+- **Description**: Retrieves log information from Unity console
+- **Parameters**: 
+  - `logType` (string): Log type to filter (Error, Warning, Log, All) (default: "All")
+  - `maxCount` (number): Maximum number of logs to retrieve (default: 100)
+  - `searchText` (string): Text to search within log messages (retrieve all if empty) (default: "")
+  - `includeStackTrace` (boolean): Whether to display stack traces (default: true)
+- **Response**: 
+  - `logs` (array): Array of log entries
+    - `type` (string): Log type (Error, Warning, Log)
+    - `message` (string): Log message
+    - `stackTrace` (string): Stack trace (if includeStackTrace is true)
+    - `file` (string): File name where log occurred
+    - `line` (number): Line number (currently always 0)
+    - `timestamp` (string): Log timestamp
+  - `totalCount` (number): Total number of retrieved logs
+  - `requestedLogType` (string): Requested log type
+  - `requestedMaxCount` (number): Requested maximum log count
+  - `requestedSearchText` (string): Requested search text
+  - `requestedIncludeStackTrace` (boolean): Requested stack trace display setting
 
 ### 3. unity.runTests
-- **説明**: Unity Test Runnerを実行してテスト結果を取得する
-- **パラメータ**: 
-  - `filterType` (string): テストフィルターの種類 (all, fullclassname, namespace, testname, assembly)（デフォルト: "all"）
-  - `filterValue` (string): フィルター値（filterTypeがall以外の場合に指定）（デフォルト: ""）
-  - `saveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）
-- **レスポンス**: 
-  - `success` (boolean): テスト実行が成功したかどうか
-  - `totalTests` (number): 実行されたテストの総数
-  - `passedTests` (number): 成功したテスト数
-  - `failedTests` (number): 失敗したテスト数
-  - `skippedTests` (number): スキップされたテスト数
-  - `executionTime` (number): テスト実行時間（秒）
-  - `results` (array): 個別テスト結果の配列
-    - `name` (string): テスト名
-    - `fullName` (string): テストのフルネーム
-    - `status` (string): テスト結果 (Passed, Failed, Skipped)
-    - `duration` (number): テスト実行時間（秒）
-    - `errorMessage` (string): エラーメッセージ（失敗時）
-    - `stackTrace` (string): スタックトレース（失敗時）
-    - `assertionFailures` (array): アサーション失敗の詳細（失敗時）
-  - `xmlPath` (string): XMLファイルのパス（saveXmlがtrueの場合）
+- **Description**: Executes Unity Test Runner and retrieves test results
+- **Parameters**: 
+  - `filterType` (string): Type of test filter (all, fullclassname, namespace, testname, assembly) (default: "all")
+  - `filterValue` (string): Filter value (specify when filterType is other than all) (default: "")
+    - `fullclassname`: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)
+    - `namespace`: Namespace (e.g.: io.github.hatayama.uMCP)
+    - `testname`: Individual test name
+    - `assembly`: Assembly name
+  - `saveXml` (boolean): Whether to save test results as XML file (default: false)
+- **Response**: 
+  - `success` (boolean): Whether test execution was successful
+  - `message` (string): Execution result message
+  - `testResults` (object): Test result details
+    - `passedCount` (number): Number of successful tests
+    - `failedCount` (number): Number of failed tests
+    - `skippedCount` (number): Number of skipped tests
+    - `totalCount` (number): Total number of executed tests
+    - `duration` (number): Test execution time (seconds)
+    - `failedTests` (array): Details of failed tests
+      - `testName` (string): Test name
+      - `fullName` (string): Full name of test
+      - `message` (string): Error message
+      - `stackTrace` (string): Stack trace
+      - `duration` (number): Test execution time (seconds)
+  - `xmlPath` (string): XML file path (if saveXml is true)
+  - `filterType` (string): Used filter type
+  - `filterValue` (string): Used filter value
+  - `saveXml` (boolean): XML file save setting
+  - `completedAt` (string): Test completion time
  
 ### 4. unity.ping
-- **説明**: Unity側へのpingテスト（TCP/IP通信確認）
-- **パラメータ**: 
-  - `message` (string): Unity側に送信するメッセージ（デフォルト: "Hello from TypeScript MCP Server"）
-- **レスポンス**: 
-  - `success` (boolean): 通信が成功したかどうか
-  - `response` (string): Unity側からの応答メッセージ
-  - `responseTime` (number): 応答時間（ミリ秒）
+- **Description**: Ping test to Unity side (TCP/IP communication verification)
+- **Parameters**: 
+  - `message` (string): Message to send to Unity side (default: "Hello from TypeScript MCP Server")
+- **Response**: 
+  - Response message from Unity side (string format)
+- **Note**:
+  - Current implementation does not determine communication success/failure or measure response time
+  - Only the response string from Unity side is returned
 
-[現状は上記の組み込み機能しか使えませんが、将来的にpackage外で自由にコマンドを増やす事ができる機能を検討しています](https://github.com/hatayama/uMCP/issues/14)
+[Currently only the above built-in functions are available, but we are considering a feature that allows freely adding commands outside the package in the future](https://github.com/hatayama/uMCP/issues/14)
 
-## 使用方法
-1. Window > uMCP を選択。専用windowが立ち上がります。"Start Server"ボタンを押します。
+## Usage
+1. Select Window > uMCP. A dedicated window will open. Press the "Start Server" button.
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/0a1b5ed4-56a9-4209-b2e7-0acbca3cb9a9" />
 
 
-下記のように表示が変われば成功です。
+If the display changes as shown below, it's successful.
 
 
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/9f5d8294-2cde-4d30-ab22-f527e6c3bf66" />
 
 
 
-2. 次はLLM Tool Settings項目で接続先のIDEを選択します。"設定を自動構成" ボタンを押すと、自動的にIDEに接続されます。
+2. Next, select the target IDE in the LLM Tool Settings section. Press the "Auto Configure Settings" button to automatically connect to the IDE.
 
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/379fe674-dee7-4962-9d93-6f43fca13227" />
 
 
-3. IDEの接続確認
-  - 例えばCursorでは、設定ページのTools & Integrationsをチェックして、unity-mcp-{port番号} を見つけます。toggleをクリックし、mcpが動いた状態にしてください。黄色や赤の丸が表示される場合、Cursorを再起動してください。
+3. IDE connection verification
+  - For example, in Cursor, check Tools & Integrations on the settings page and find unity-mcp-{port number}. Click the toggle to enable MCP. If yellow or red circles appear, restart Cursor.
 <img width="657" alt="image" src="https://github.com/user-attachments/assets/14352ec0-c0a4-443d-98d5-35a6c86acd45" />
 
-4. 手動設定 (通常は不要です)
-必要に応じて、Cursorの設定ファイル（`.cursor/mcp.json`）を手動で編集することも可能です：
+4. Manual configuration (usually not required)
+If necessary, you can manually edit Cursor's configuration file (`.cursor/mcp.json`):
 
 ```json
 {
@@ -120,19 +134,19 @@ Model Context Protocolを使用し、UnityエディターをLLMツールに接�
 }
 ```
 
-**パス例**:
-- **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umpc@[hash]/TypeScriptServer/dist/server.bundle.js"`
-> **注意**: Package Manager経由でインストールした場合、パッケージは`Library/PackageCache`に配置され、ハッシュ付きのディレクトリ名になります。「Auto Configure Cursor」ボタンを使用することで、正しいパスが自動的に設定されます。
+**Path examples**:
+- **Via Package Manager**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umpc@[hash]/TypeScriptServer/dist/server.bundle.js"`
+> **Note**: When installed via Package Manager, the package is placed in `Library/PackageCache` with a hashed directory name. Using the "Auto Configure Cursor" button will automatically set the correct path.
 
-5. 複数Unity起動への対応
-  - port番号を変更する事で、複数のUnity起動に対応しています
+5. Support for multiple Unity instances
+  - Supports multiple Unity instances by changing port numbers
 
-## 前提条件
+## Prerequisites
 
-⚠️ **重要**: 以下のソフトウェアが必要です
-- **Unity 2020.3 以上**
-- **Node.js 18.0 以上** ⭐ **必須** - MCP Serverの実行に必要
-- node.jsのinstallは[こちら](https://nodejs.org/ja/download)
+⚠️ **Important**: The following software is required
+- **Unity 2022.3 or higher**
+- **Node.js 18.0 or higher** ⭐ **Required** - Necessary for MCP Server execution
+- Install node.js from [here](https://nodejs.org/en/download)
 
 
 ## インストール
@@ -150,29 +164,25 @@ https://github.com/hatayama/uMCP.git?path=/Packages/src
 
 ### OpenUPM経由 (推奨)
 
-### Unity Package ManagerでScoped registryを使用する方法
-1. Project Settings ウィンドウを開き、Package Manager ページに移動します
-2. Scoped Registries リストに以下のエントリを追加します：
+### Using Scoped registry with Unity Package Manager
+1. Open the Project Settings window and navigate to the Package Manager page
+2. Add the following entry to the Scoped Registries list:
 ```
 Name：OpenUPM
 URL: https://package.openupm.com
 Scope(s)：io.github.hatayama.umcp
 ```
 
-3. Package Manager ウィンドウを開き、My Registries セクションの "hatayama" ページに移動します
+3. Open the Package Manager window and navigate to the "hatayama" page in the My Registries section
 
-### Node.js関連
-- `node --version` でNode.js 18以上がインストールされているか確認
-- パスが正しく設定されているか確認
+### Unity connection errors
+- Verify that Unity MCP Bridge is running (Window > Unity MCP)
+- Check that the configured port is not being used by other applications
 
-### Unity接続エラー
-- Unity MCP Bridge が起動しているか確認（Window > Unity MCP）
-- 設定したポートが他のアプリケーションで使用されていないか確認
-
-### Cursor設定エラー
-- `.cursor/mcp.json` のパスが正しいか確認
-- JSON形式が正しいか確認
-- CursorのTools & Integrations > MCP Toolsで認識されているか確認。0 tool enableや赤丸が表示されていたらCursorを再起動する
+### Cursor configuration errors
+- Verify that the path in `.cursor/mcp.json` is correct
+- Check that JSON format is correct
+- Check if it's recognized in Cursor's Tools & Integrations > MCP Tools. If "0 tool enable" or red circle is displayed, restart Cursor
 
 ## License
 MIT License

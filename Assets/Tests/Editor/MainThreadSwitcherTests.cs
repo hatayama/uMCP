@@ -15,12 +15,12 @@ namespace io.github.hatayama.uMCP
         [SetUp]
         public void Setup()
         {
-            // メインスレッドIDを記録
+            // Record the main thread ID
             mainThreadId = Thread.CurrentThread.ManagedThreadId;
         }
 
         /// <summary>
-        /// メインスレッドで呼び出した場合、即座に実行されることを確認
+        /// Verifies that when called from the main thread, it executes immediately
         /// </summary>
         [Test]
         public async Task SwitchToMainThread_WhenCalledFromMainThread_ShouldExecuteImmediately()
@@ -40,7 +40,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// バックグラウンドスレッドから呼び出した場合、メインスレッドに切り替わることを確認
+        /// Verifies that when called from a background thread, it switches to the main thread
         /// </summary>
         [UnityTest]
         public IEnumerator SwitchToMainThread_WhenCalledFromBackgroundThread_ShouldSwitchToMainThread()
@@ -61,7 +61,7 @@ namespace io.github.hatayama.uMCP
                 taskCompleted = true;
             });
 
-            // タスクが完了するまで待機（最大5秒）
+            // Wait until the task is completed (maximum 5 seconds)
             float timeoutTime = Time.realtimeSinceStartup + 5f;
             while (!taskCompleted && Time.realtimeSinceStartup < timeoutTime)
             {
@@ -75,7 +75,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// CancellationTokenがキャンセルされた場合、OperationCanceledExceptionがスローされることを確認
+        /// Verifies that if the CancellationToken is canceled, an OperationCanceledException is thrown
         /// </summary>
         [Test]
         public void SwitchToMainThread_WhenCancellationRequested_ShouldThrowOperationCanceledException()
@@ -92,7 +92,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// PlayerLoopTimingを指定できることを確認
+        /// Verifies that PlayerLoopTiming can be specified
         /// </summary>
         [Test]
         public async Task SwitchToMainThread_WithPlayerLoopTiming_ShouldAcceptTiming()
@@ -110,7 +110,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 複数のスレッドから同時にSwitchToMainThreadを呼び出した場合の動作確認
+        /// Verifies the behavior when SwitchToMainThread is called simultaneously from multiple threads
         /// </summary>
         [UnityTest]
         public IEnumerator SwitchToMainThread_WhenCalledFromMultipleThreads_ShouldAllSwitchToMainThread()
@@ -124,7 +124,7 @@ namespace io.github.hatayama.uMCP
             // Act
             for (int i = 0; i < threadCount; i++)
             {
-                int index = i; // キャプチャ用
+                int index = i; // for capture
                 Task.Run(async () =>
                 {
                     threadIds[index] = Thread.CurrentThread.ManagedThreadId;
@@ -136,7 +136,7 @@ namespace io.github.hatayama.uMCP
                 });
             }
 
-            // すべてのタスクが完了するまで待機（最大10秒）
+            // Wait until all tasks are completed (maximum 10 seconds)
             float timeoutTime = Time.realtimeSinceStartup + 10f;
             while (Time.realtimeSinceStartup < timeoutTime)
             {

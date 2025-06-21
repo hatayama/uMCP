@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * ツールハンドラーの基底インターフェース
+ * Base interface for tool handlers
  */
 export interface ToolHandler {
   readonly name: string;
@@ -11,7 +11,7 @@ export interface ToolHandler {
 }
 
 /**
- * ツールレスポンスの型（MCPサーバーの戻り値に合わせる）
+ * Tool response type (aligned with MCP server return values)
  */
 export interface ToolResponse {
   content: Array<{
@@ -22,14 +22,14 @@ export interface ToolResponse {
 }
 
 /**
- * ツール実行コンテキスト
+ * Tool execution context
  */
 export interface ToolContext {
-  unityClient: any; // UnityClientの型は後で定義
+  unityClient: any; // UnityClient type will be defined later
 }
 
 /**
- * ツール定義の型
+ * Tool definition type
  */
 export interface ToolDefinition {
   name: string;

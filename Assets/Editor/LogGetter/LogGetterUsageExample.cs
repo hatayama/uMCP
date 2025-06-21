@@ -4,57 +4,57 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// LogGetter汎用APIの使用例
+    /// Usage examples for the LogGetter generic API.
     /// </summary>
     public class LogGetterUsageExample
     {
         
-        [MenuItem("Tools/ログゲッター/LogGetter直接テスト")]
+        [MenuItem("Tools/LogGetter/Direct Test")]
         public static void TestLogGetter()
         {
-            Debug.Log("=== LogGetter直接テスト開始 ===");
+            Debug.Log("=== LogGetter Direct Test Start ===");
 
             var logData = LogGetter.GetConsoleLog();
-            Debug.Log($"LogGetter結果: TotalCount={logData.TotalCount}, LogEntries.Length={logData.LogEntries.Length}");
+            Debug.Log($"LogGetter Result: TotalCount={logData.TotalCount}, LogEntries.Length={logData.LogEntries.Length}");
 
             foreach (var entry in logData.LogEntries)
             {
-                Debug.Log($"ログエントリ: Type={entry.LogType}, Message={entry.Message}");
+                Debug.Log($"Log Entry: Type={entry.LogType}, Message={entry.Message}");
             }
 
-            Debug.Log("=== LogGetter直接テスト終了 ===");
+            Debug.Log("=== LogGetter Direct Test End ===");
         }
 
-        [MenuItem("Tools/ログゲッター/使用例実行")]
+        [MenuItem("Tools/LogGetter/Run Usage Examples")]
         public static void RunUsageExamples()
         {
-            Debug.Log("=== LogGetter使用例開始 ===");
+            Debug.Log("=== LogGetter Usage Examples Start ===");
 
-            // 基本的な使用方法
+            // Basic usage
             BasicUsage();
 
-            // フィルタリング使用例
+            // Filtering usage example
             FilteringUsage();
 
-            // ログ数取得例
+            // Example of getting the log count
             CountUsage();
 
-            Debug.Log("=== LogGetter使用例完了 ===");
+            Debug.Log("=== LogGetter Usage Examples Complete ===");
         }
 
         private static void BasicUsage()
         {
-            Debug.Log("--- 基本的な使用方法 ---");
+            Debug.Log("--- Basic Usage ---");
 
-            // まさみちが要求した使い方
+            // How Masamichi requested to use it
             LogDisplayDto log = LogGetter.GetConsoleLog();
-            Debug.Log($"取得したログ数: {log.TotalCount}");
+            Debug.Log($"Number of logs retrieved: {log.TotalCount}");
 
-            // ログエントリを直接取得
+            // Get log entries directly
             LogEntryDto[] entries = LogGetter.GetConsoleLogEntries();
-            Debug.Log($"ログエントリ配列の長さ: {entries.Length}");
+            Debug.Log($"Length of log entries array: {entries.Length}");
 
-            // 各ログの詳細を表示
+            // Display details of each log
             foreach (LogEntryDto entry in entries)
             {
                 Debug.Log($"[{entry.LogType}] {entry.Message}");
@@ -63,36 +63,36 @@ namespace io.github.hatayama.uMCP
 
         private static void FilteringUsage()
         {
-            Debug.Log("--- フィルタリング使用例 ---");
+            Debug.Log("--- Filtering Usage Example ---");
 
-            // エラーログのみ取得
+            // Get only error logs
             LogDisplayDto errorLogs = LogGetter.GetConsoleLog("Error");
-            Debug.Log($"エラーログ数: {errorLogs.TotalCount}");
+            Debug.Log($"Number of error logs: {errorLogs.TotalCount}");
 
-            // 警告ログのみ取得
+            // Get only warning logs
             LogDisplayDto warningLogs = LogGetter.GetConsoleLog("Warning");
-            Debug.Log($"警告ログ数: {warningLogs.TotalCount}");
+            Debug.Log($"Number of warning logs: {warningLogs.TotalCount}");
 
-            // 通常ログのみ取得
+            // Get only normal logs
             LogDisplayDto normalLogs = LogGetter.GetConsoleLog("Log");
-            Debug.Log($"通常ログ数: {normalLogs.TotalCount}");
+            Debug.Log($"Number of normal logs: {normalLogs.TotalCount}");
         }
 
         private static void CountUsage()
         {
-            Debug.Log("--- ログ数取得例 ---");
+            Debug.Log("--- Log Count Retrieval Example ---");
 
-            // ログの総数のみ取得（軽量）
+            // Get only the total number of logs (lightweight)
             int totalCount = LogGetter.GetConsoleLogCount();
-            Debug.Log($"Console総ログ数: {totalCount}");
+            Debug.Log($"Total number of console logs: {totalCount}");
         }
 
-        [MenuItem("Tools/ログゲッター/カスタム処理例")]
+        [MenuItem("Tools/LogGetter/Custom Processing Example")]
         public static void CustomProcessingExample()
         {
-            Debug.Log("=== カスタム処理例 ===");
+            Debug.Log("=== Custom Processing Example ===");
 
-            // ログを取得してカスタム処理
+            // Get logs and perform custom processing
             LogDisplayDto logs = LogGetter.GetConsoleLog();
 
             int errorCount = 0;
@@ -115,7 +115,7 @@ namespace io.github.hatayama.uMCP
                 }
             }
 
-            Debug.Log($"ログ統計 - エラー: {errorCount}, 警告: {warningCount}, 通常: {logCount}");
+            Debug.Log($"Log Statistics - Errors: {errorCount}, Warnings: {warningCount}, Normal: {logCount}");
         }
     }
 }

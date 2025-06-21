@@ -82,6 +82,7 @@ crashlytics-build.properties
 .cursor
 .claude
 CLAUDE.md
+.mcp.json
 
 # VSCode
 .vscode

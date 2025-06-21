@@ -3,17 +3,17 @@ import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
 
 /**
- * Unity側へのPingツール
+ * Ping tool for Unity
  */
 export class UnityPingTool extends BaseTool {
   readonly name = 'unity-ping';
-  readonly description = 'Unity側へのpingテスト（TCP/IP通信確認）';
+  readonly description = 'Ping test to Unity (TCP/IP communication verification)';
   readonly inputSchema = {
     type: 'object',
     properties: {
       message: {
         type: 'string',
-        description: 'Unity側に送信するメッセージ',
+        description: 'Message to send to Unity',
         default: 'Hello from TypeScript MCP Server'
       }
     }
@@ -27,7 +27,7 @@ export class UnityPingTool extends BaseTool {
   }
 
   protected async execute(args: { message: string }): Promise<string> {
-    // Unity側に接続（必要に応じて再接続）
+    // Connect to Unity (reconnect if necessary)
     await this.context.unityClient.ensureConnected();
 
     const response = await this.context.unityClient.ping(args.message);

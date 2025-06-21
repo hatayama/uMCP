@@ -14,7 +14,7 @@ import { SERVER_CONFIG } from './constants.js';
 
 /**
  * Unity MCP Server
- * CursorとUnity間の橋渡しを行うMCPサーバー
+ * MCP server that bridges communication between Cursor and Unity
  */
 class McpServer {
   private server: Server;
@@ -37,7 +37,7 @@ class McpServer {
 
     this.unityClient = new UnityClient();
     
-    // ツールコンテキストを作成
+    // Create tool context
     const context: ToolContext = {
       unityClient: this.unityClient
     };
@@ -47,7 +47,7 @@ class McpServer {
   }
 
   private setupHandlers(): void {
-    // ツール一覧の提供
+    // Provide tool list
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const toolDefinitions = this.toolRegistry.getAllDefinitions();
       return {
@@ -59,12 +59,12 @@ class McpServer {
       };
     });
 
-    // ツール実行の処理
+    // Handle tool execution
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
       const result = await this.toolRegistry.execute(name, args);
       
-      // MCP SDKの期待する形式に変換
+      // Convert to format expected by MCP SDK
       return {
         content: result.content,
         isError: result.isError || false
@@ -73,7 +73,7 @@ class McpServer {
   }
 
   /**
-   * サーバーを開始する
+   * Start the server
    */
   async start(): Promise<void> {
     const transport = new StdioServerTransport();
@@ -83,17 +83,17 @@ class McpServer {
   }
 
   /**
-   * クリーンアップ
+   * Cleanup
    */
   cleanup(): void {
     this.unityClient.disconnect();
   }
 }
 
-// サーバーを起動
+// Start server
 const server = new McpServer();
 
-// プロセス終了時のクリーンアップ
+// Cleanup on process termination
 process.on('SIGINT', () => {
   server.cleanup();
   process.exit(0);

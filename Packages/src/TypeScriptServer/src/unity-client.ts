@@ -9,7 +9,7 @@ import {
 } from './constants.js';
 
 /**
- * Unity側との通信を行うTCP/IPクライアント
+ * TCP/IP client for communication with Unity
  */
 export class UnityClient {
   private socket: net.Socket | null = null;
@@ -18,7 +18,7 @@ export class UnityClient {
   private readonly host: string = UNITY_CONNECTION.DEFAULT_HOST;
 
   constructor() {
-    // 環境変数UNITY_TCP_PORTからポート番号を取得、デフォルトは7400
+    // Get port number from environment variable UNITY_TCP_PORT, default is 7400
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
   }
 
@@ -27,8 +27,8 @@ export class UnityClient {
   }
 
   /**
-   * Unity側の接続状態を実際にテストする
-   * ソケットの状態だけでなく、実際の通信可能性を確認
+   * Actually test Unity's connection status
+   * Check actual communication possibility, not just socket status
    */
   async testConnection(): Promise<boolean> {
     if (!this._connected || this.socket === null || this.socket.destroyed) {
@@ -36,32 +36,32 @@ export class UnityClient {
     }
 
     try {
-      // 簡単なpingを送って実際に通信できるかテスト
+      // Send a simple ping to test if actual communication is possible
       await this.ping(UNITY_CONNECTION.CONNECTION_TEST_MESSAGE);
       return true;
     } catch {
-      // 通信失敗の場合は接続を切断状態にする
+      // Set connection to disconnected state if communication fails
       this._connected = false;
       return false;
     }
   }
 
   /**
-   * Unity側に接続（必要に応じて再接続）
+   * Connect to Unity (reconnect if necessary)
    */
   async ensureConnected(): Promise<void> {
-    // 既に接続済みで実際に通信可能な場合はそのまま
+    // Return as is if already connected and actual communication is possible
     if (await this.testConnection()) {
       return;
     }
 
-    // 接続が失われている場合は再接続
+    // Reconnect if connection is lost
     this.disconnect();
     await this.connect();
   }
 
   /**
-   * Unity側に接続
+   * Connect to Unity
    */
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -84,7 +84,7 @@ export class UnityClient {
   }
 
   /**
-   * Unity側にpingを送信
+   * Send ping to Unity
    */
   async ping(message: string): Promise<string> {
     if (!this.connected) {
@@ -125,7 +125,7 @@ export class UnityClient {
   }
 
   /**
-   * Unityプロジェクトをコンパイル
+   * Compile Unity project
    */
   async compileProject(forceRecompile: boolean = false): Promise<{
     success: boolean;
@@ -148,7 +148,7 @@ export class UnityClient {
     }>;
   }> {
     if (!this.connected) {
-      // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
+      // Throw a clear error if not connected (do not return dummy data)
       throw new Error(`${ERROR_MESSAGES.NOT_CONNECTED}. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.`);
     }
 
@@ -167,7 +167,7 @@ export class UnityClient {
 
       const timeout = setTimeout(() => {
         reject(new Error(`Unity compile ${ERROR_MESSAGES.TIMEOUT}`));
-      }, TIMEOUTS.COMPILE); // 30秒タイムアウト
+      }, TIMEOUTS.COMPILE); // 30 second timeout
 
       this.socket!.once('data', (data) => {
         clearTimeout(timeout);
@@ -186,7 +186,7 @@ export class UnityClient {
   }
 
   /**
-   * Unityコンソールのログを取得
+   * Retrieve Unity console logs
    */
   async getLogs(logType: string = LOG_CONFIG.DEFAULT_TYPE, maxCount: number = LOG_CONFIG.DEFAULT_MAX_COUNT, searchText: string = LOG_CONFIG.DEFAULT_SEARCH_TEXT, includeStackTrace: boolean = LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE): Promise<{
     logs: Array<{
@@ -198,7 +198,7 @@ export class UnityClient {
     totalCount: number;
   }> {
     if (!this.connected) {
-      // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
+      // Throw a clear error if not connected (do not return dummy data)
       throw new Error('${ERROR_MESSAGES.NOT_CONNECTED}. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.');
     }
 
@@ -239,7 +239,7 @@ export class UnityClient {
   }
 
   /**
-   * Unity Test Runnerを実行
+   * Execute Unity Test Runner
    */
   async runTests(filterType: string = TEST_CONFIG.DEFAULT_FILTER_TYPE, filterValue: string = TEST_CONFIG.DEFAULT_FILTER_VALUE, saveXml: boolean = TEST_CONFIG.DEFAULT_SAVE_XML): Promise<{
     success: boolean;
@@ -263,7 +263,7 @@ export class UnityClient {
     error?: string;
   }> {
     if (!this.connected) {
-      // 接続されていない場合は明確なエラーを投げる（ダミーデータは返さない）
+      // Throw a clear error if not connected (do not return dummy data)
       throw new Error('${ERROR_MESSAGES.NOT_CONNECTED}. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.');
     }
 
@@ -284,7 +284,7 @@ export class UnityClient {
 
       const timeout = setTimeout(() => {
         reject(new Error(`Unity runTests ${ERROR_MESSAGES.TIMEOUT}`));
-      }, TIMEOUTS.RUN_TESTS); // 60秒タイムアウト（テスト実行は時間がかかる）
+      }, TIMEOUTS.RUN_TESTS); // 60 second timeout (test execution takes time)
 
       this.socket!.once('data', (data) => {
         clearTimeout(timeout);
@@ -303,7 +303,7 @@ export class UnityClient {
   }
 
   /**
-   * 接続を切断
+   * Disconnect
    */
   disconnect(): void {
     if (this.socket) {

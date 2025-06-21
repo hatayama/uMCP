@@ -15,8 +15,8 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コマンドタイプのテスト
-        /// - コマンドタイプがCompileであることを確認
+        /// Test for command type.
+        /// - Asserts that the command type is Compile.
         /// </summary>
         [Test]
         public void CommandType_ShouldReturnCompile()
@@ -26,10 +26,10 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// デフォルトパラメータでのコンパイル実行テスト
-        /// ※UnityのコンパイルAPIはテストランナーで実行不可のためスキップ
+        /// Test for compilation execution with default parameters.
+        /// *Skipped because the Unity compilation API cannot be executed in the test runner.
         /// </summary>
-        [Ignore("UnityのコンパイルAPIはテストランナーで実行不可のためスキップ")]
+        [Ignore("Cannot run Unity's compilation API in the test runner.")]
         [Test]
         public async Task ExecuteAsync_WithDefaultParams_ShouldCompileWithoutForceRecompile()
         {
@@ -51,10 +51,10 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 強制再コンパイルのテスト
-        /// ※UnityのコンパイルAPIはテストランナーで実行不可のためスキップ
+        /// Test for forced re-compilation.
+        /// *Skipped because the Unity compilation API cannot be executed in the test runner.
         /// </summary>
-        [Ignore("UnityのコンパイルAPIはテストランナーで実行不可のためスキップ")]
+        [Ignore("Cannot run Unity's compilation API in the test runner.")]
         [Test]
         public async Task ExecuteAsync_WithForceRecompile_ShouldCompileWithForceRecompile()
         {

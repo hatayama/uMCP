@@ -6,8 +6,8 @@ using Newtonsoft.Json.Linq;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// GetLogsコマンドハンドラー
-    /// Unity Consoleのログを取得する
+    /// GetLogs command handler.
+    /// Retrieves logs from the Unity Console.
     /// </summary>
     public class GetLogsCommand : IUnityCommand
     {
@@ -20,10 +20,10 @@ namespace io.github.hatayama.uMCP
             string searchText = paramsToken?["searchText"]?.ToString() ?? McpServerConfig.DEFAULT_SEARCH_TEXT;
             bool includeStackTrace = paramsToken?["includeStackTrace"]?.ToObject<bool>() ?? McpServerConfig.DEFAULT_INCLUDE_STACK_TRACE;
             
-            // MainThreadSwitcherを使用してメインスレッドに切り替え
+            // Switch to the main thread using MainThreadSwitcher.
             await MainThreadSwitcher.SwitchToMainThread();
             
-            // LogGetterクラスを使ってUnity Console Logを取得
+            // Get Unity Console Log using the LogGetter class.
             LogDisplayDto logData;
             if (string.IsNullOrEmpty(searchText))
             {
@@ -41,7 +41,7 @@ namespace io.github.hatayama.uMCP
                 logData = LogGetter.GetConsoleLog(logType, searchText);
             }
             
-            // maxCountに応じてログを制限
+            // Limit logs according to maxCount.
             LogEntryDto[] limitedEntries = logData.LogEntries;
             if (limitedEntries.Length > maxCount)
             {
@@ -50,7 +50,7 @@ namespace io.github.hatayama.uMCP
                 limitedEntries = temp;
             }
             
-            // レスポンス用のオブジェクトを作成
+            // Create a response object.
             List<object> logs = new List<object>();
             foreach (LogEntryDto entry in limitedEntries)
             {
@@ -63,7 +63,7 @@ namespace io.github.hatayama.uMCP
                         message = entry.Message,
                         stackTrace = entry.StackTrace,
                         file = entry.File,
-                        line = McpServerConfig.DEFAULT_LINE_NUMBER, // LogEntryDtoには行番号がないため0を設定
+                        line = McpServerConfig.DEFAULT_LINE_NUMBER, // LogEntryDto does not have a line number, so set it to 0.
                         timestamp = System.DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
                     };
                 }
@@ -74,7 +74,7 @@ namespace io.github.hatayama.uMCP
                         type = entry.LogType,
                         message = entry.Message,
                         file = entry.File,
-                        line = McpServerConfig.DEFAULT_LINE_NUMBER, // LogEntryDtoには行番号がないため0を設定
+                        line = McpServerConfig.DEFAULT_LINE_NUMBER, // LogEntryDto does not have a line number, so set it to 0.
                         timestamp = System.DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
                     };
                 }

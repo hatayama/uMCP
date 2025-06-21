@@ -3,7 +3,7 @@ using System;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// LogGetterEditorWindow用のPresenterクラス
+    /// Presenter class for LogGetterEditorWindow.
     /// </summary>
     public class LogGetterPresenter : IDisposable
     {
