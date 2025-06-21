@@ -6,6 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
+  ToolListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { UnityClient } from './unity-client.js';
 import { ToolRegistry } from './tools/tool-registry.js';
@@ -31,7 +32,9 @@ class McpServer {
       },
       {
         capabilities: {
-          tools: {},
+          tools: {
+            listChanged: true
+          },
         },
       }
     );
@@ -44,6 +47,12 @@ class McpServer {
     };
     
     this.toolRegistry = new ToolRegistry(context);
+    
+    // Set up tool change notification handler
+    this.toolRegistry.onToolsChanged(() => {
+      this.notifyToolsChanged();
+    });
+    
     this.setupHandlers();
   }
 
@@ -102,9 +111,25 @@ class McpServer {
   }
 
   /**
+   * Notify clients that the tools list has changed
+   */
+  private notifyToolsChanged(): void {
+    if (this.isInitialized) {
+      console.error('[MCP Server] Sending tools/list_changed notification');
+      this.server.notification({
+        method: "notifications/tools/list_changed",
+        params: {}
+      });
+    } else {
+      console.error('[MCP Server] Skipping notification - server not initialized');
+    }
+  }
+
+  /**
    * Cleanup
    */
   cleanup(): void {
+    this.toolRegistry.stopPolling();
     this.unityClient.disconnect();
   }
 }

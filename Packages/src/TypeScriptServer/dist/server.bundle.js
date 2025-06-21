@@ -5508,9 +5508,6 @@ var TEST_CONFIG = {
   DEFAULT_FILTER_VALUE: "",
   DEFAULT_SAVE_XML: false
 };
-var COMPILE_CONFIG = {
-  DEFAULT_FORCE_RECOMPILE: false
-};
 var TOOL_NAMES = {
   PING: "mcp.ping",
   UNITY_PING: "unity-ping",
@@ -5941,282 +5938,6 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
   }
 };
 
-// src/tools/compile-tool.ts
-var CompileTool = class extends BaseTool {
-  name = TOOL_NAMES.COMPILE;
-  description = "After executing AssetDatabase.Refresh(), compile. Return the compilation results.";
-  inputSchema = {
-    type: "object",
-    properties: {
-      forceRecompile: {
-        type: "boolean",
-        description: "Whether to perform forced recompilation",
-        default: COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE
-      }
-    }
-  };
-  validateArgs(args) {
-    const schema = external_exports.object({
-      forceRecompile: external_exports.boolean().default(COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE)
-    });
-    return schema.parse(args || {});
-  }
-  async execute(args) {
-    await this.context.unityClient.ensureConnected();
-    return await this.context.unityClient.compileProject(args.forceRecompile);
-  }
-  formatResponse(result) {
-    let responseText = `Unity Compile ${result.forceRecompile ? "(Force Recompile)" : ""} Result:
-Success: ${result.success}
-Errors: ${result.errorCount || 0}
-Warnings: ${result.warningCount || 0}
-Completed: ${result.completedAt}`;
-    if (result.errors && result.errors.length > 0) {
-      responseText += `
-
-Errors:`;
-      result.errors.forEach((error, index) => {
-        responseText += `
-${index + 1}. ${error.file}(${error.line},${error.column}): ${error.message}`;
-      });
-    }
-    if (result.warnings && result.warnings.length > 0) {
-      responseText += `
-
-Warnings:`;
-      result.warnings.forEach((warning, index) => {
-        responseText += `
-${index + 1}. ${warning.file}(${warning.line},${warning.column}): ${warning.message}`;
-      });
-    }
-    return {
-      content: [
-        {
-          type: "text",
-          text: responseText
-        }
-      ]
-    };
-  }
-  formatErrorResponse(error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const stack = error instanceof Error ? error.stack : "No stack trace";
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Unity Compile Failed!
-Error: ${errorMessage}
-Stack: ${stack}
-
-Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT}.`
-        }
-      ]
-    };
-  }
-};
-
-// src/tools/logs-tool.ts
-var LogsTool = class extends BaseTool {
-  name = TOOL_NAMES.GET_LOGS;
-  description = "Retrieve log information from Unity console";
-  inputSchema = {
-    type: "object",
-    properties: {
-      logType: {
-        type: "string",
-        description: "Log type to filter (Error, Warning, Log, All)",
-        enum: LOG_CONFIG.TYPES,
-        default: LOG_CONFIG.DEFAULT_TYPE
-      },
-      maxCount: {
-        type: "number",
-        description: "Maximum number of logs to retrieve",
-        default: LOG_CONFIG.DEFAULT_MAX_COUNT
-      },
-      searchText: {
-        type: "string",
-        description: "Text to search within log messages (retrieve all if empty)",
-        default: LOG_CONFIG.DEFAULT_SEARCH_TEXT
-      },
-      includeStackTrace: {
-        type: "boolean",
-        description: "Whether to display stack trace",
-        default: LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE
-      }
-    },
-    required: []
-  };
-  validateArgs(args) {
-    const schema = external_exports.object({
-      logType: external_exports.enum(LOG_CONFIG.TYPES).default(LOG_CONFIG.DEFAULT_TYPE),
-      maxCount: external_exports.number().default(LOG_CONFIG.DEFAULT_MAX_COUNT),
-      searchText: external_exports.string().default(LOG_CONFIG.DEFAULT_SEARCH_TEXT),
-      includeStackTrace: external_exports.boolean().default(LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE)
-    });
-    const validatedArgs = schema.parse(args || {});
-    return validatedArgs;
-  }
-  async execute(args) {
-    await this.context.unityClient.ensureConnected();
-    const result = await this.context.unityClient.getLogs(args.logType, args.maxCount, args.searchText, args.includeStackTrace);
-    return result;
-  }
-  formatResponse(result) {
-    const logType = result.requestedLogType || LOG_CONFIG.DEFAULT_TYPE;
-    const maxCount = result.requestedMaxCount || LOG_CONFIG.DEFAULT_MAX_COUNT;
-    const searchText = result.requestedSearchText || "";
-    const includeStackTrace = result.requestedIncludeStackTrace !== void 0 ? result.requestedIncludeStackTrace : LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE;
-    let responseText = `Unity Console Logs (Filter: ${logType}, Max: ${maxCount}${searchText ? `, Search: "${searchText}"` : ""}, StackTrace: ${includeStackTrace ? "ON" : "OFF"}):
-
-`;
-    if (result.logs.length > 0) {
-      responseText += result.logs.map((log) => {
-        let logLine = `[${log.timestamp}] ${log.type}: ${log.message}`;
-        if (log.stackTrace) {
-          logLine += `
-Stack Trace: ${log.stackTrace}`;
-        }
-        return logLine;
-      }).join("\n\n");
-    } else {
-      responseText += "No logs found.";
-    }
-    responseText += `
-
-Total logs: ${result.logs.length} (of ${result.totalCount} total)`;
-    return {
-      content: [
-        {
-          type: "text",
-          text: responseText
-        }
-      ]
-    };
-  }
-  formatErrorResponse(error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const stack = error instanceof Error ? error.stack : "No stack trace";
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Unity Get Logs Failed!
-Error: ${errorMessage}
-Stack: ${stack}
-
-Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT}.`
-        }
-      ]
-    };
-  }
-};
-
-// src/tools/run-tests-tool.ts
-var RunTestsTool = class extends BaseTool {
-  name = TOOL_NAMES.RUN_TESTS;
-  description = "Execute Unity Test Runner and retrieve test results";
-  inputSchema = {
-    type: "object",
-    properties: {
-      filterType: {
-        type: "string",
-        description: "Type of test filter",
-        enum: TEST_CONFIG.FILTER_TYPES,
-        default: TEST_CONFIG.DEFAULT_FILTER_TYPE
-      },
-      filterValue: {
-        type: "string",
-        description: "Filter value (specify when filterType is not all)\n\u2022 fullclassname: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)\n\u2022 namespace: Namespace (e.g.: io.github.hatayama.uMCP)\n\u2022 testname: Individual test name\n\u2022 assembly: Assembly name",
-        default: TEST_CONFIG.DEFAULT_FILTER_VALUE
-      },
-      saveXml: {
-        type: "boolean",
-        description: "Whether to save test results as XML file",
-        default: TEST_CONFIG.DEFAULT_SAVE_XML
-      }
-    }
-  };
-  validateArgs(args) {
-    const schema = external_exports.object({
-      filterType: external_exports.enum(TEST_CONFIG.FILTER_TYPES).default(TEST_CONFIG.DEFAULT_FILTER_TYPE),
-      filterValue: external_exports.string().default(TEST_CONFIG.DEFAULT_FILTER_VALUE),
-      saveXml: external_exports.boolean().default(TEST_CONFIG.DEFAULT_SAVE_XML)
-    });
-    return schema.parse(args || {});
-  }
-  async execute(args) {
-    try {
-      await this.context.unityClient.ensureConnected();
-      const response = await this.context.unityClient.runTests(
-        args.filterType,
-        args.filterValue,
-        args.saveXml
-      );
-      let result = response.success ? `\u2705 Test execution completed
-` : `\u26A0\uFE0F Test execution completed (with failures)
-`;
-      result += `Result: ${response.message}
-`;
-      if (response.testResults) {
-        const testResults = response.testResults;
-        result += `
-Detailed Statistics:
-`;
-        result += `  \u2022 Passed: ${testResults.PassedCount} tests
-`;
-        result += `  \u2022 Failed: ${testResults.FailedCount} tests
-`;
-        result += `  \u2022 Skipped: ${testResults.SkippedCount} tests
-`;
-        result += `  \u2022 Total: ${testResults.TotalCount} tests
-`;
-        result += `  \u2022 Execution time: ${testResults.Duration.toFixed(1)} seconds
-`;
-        if (testResults.FailedTests && testResults.FailedTests.length > 0) {
-          result += `
-\u274C Failed Tests:
-`;
-          testResults.FailedTests.forEach((failedTest, index) => {
-            result += `  ${index + 1}. ${failedTest.TestName}
-`;
-            result += `     Full name: ${failedTest.FullName}
-`;
-            if (failedTest.Message) {
-              result += `     Error: ${failedTest.Message}
-`;
-            }
-            if (failedTest.StackTrace) {
-              const stackLines = failedTest.StackTrace.split("\n").slice(0, 3);
-              result += `     Stack trace: ${stackLines.join("\n     ")}
-`;
-            }
-            result += `     Execution time: ${failedTest.Duration.toFixed(3)} seconds
-
-`;
-          });
-        }
-      }
-      if (response.xmlPath) {
-        result += `
-XML file saved: ${response.xmlPath}
-`;
-      }
-      result += `
-\u23F0 Completed at: ${response.completedAt}`;
-      if (!response.success && response.error && !response.testResults) {
-        result += `
-
-\u274C Error Details:
-${response.error}`;
-      }
-      return result;
-    } catch (error) {
-      return `\u274C Test execution error: ${error instanceof Error ? error.message : String(error)}`;
-    }
-  }
-};
-
 // src/tools/get-available-commands-tool.ts
 var GetAvailableCommandsTool = class extends BaseTool {
   name = "unity-get-available-commands";
@@ -6316,6 +6037,9 @@ var DynamicUnityCommandTool = class extends BaseTool {
 // src/tools/tool-registry.ts
 var ToolRegistry = class {
   tools = /* @__PURE__ */ new Map();
+  toolsChangedCallback;
+  lastKnownCommands = [];
+  pollingInterval;
   constructor(context) {
     this.registerDefaultTools(context);
   }
@@ -6324,6 +6048,7 @@ var ToolRegistry = class {
    */
   async initializeDynamicTools(context) {
     await this.loadDynamicTools(context);
+    this.startPolling(context);
   }
   /**
    * Register default tools
@@ -6335,9 +6060,6 @@ var ToolRegistry = class {
       this.register(new PingTool(context));
     }
     this.register(new UnityPingTool(context));
-    this.register(new CompileTool(context));
-    this.register(new LogsTool(context));
-    this.register(new RunTestsTool(context));
     this.register(new GetAvailableCommandsTool(context));
   }
   /**
@@ -6347,7 +6069,7 @@ var ToolRegistry = class {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1e3));
       const commands = await context.unityClient.getCommandDetails();
-      const standardCommands = ["ping", "compile", "getlogs", "runtests", "getversion", "getavailablecommands"];
+      const standardCommands = ["ping", "getavailablecommands"];
       for (const command of commands) {
         const commandName = command.Name || command.name;
         const commandDescription = command.Description || command.description;
@@ -6365,6 +6087,7 @@ var ToolRegistry = class {
    */
   register(tool) {
     this.tools.set(tool.name, tool);
+    this.notifyToolsChanged();
   }
   /**
    * Get a tool
@@ -6402,11 +6125,72 @@ var ToolRegistry = class {
    * Reload dynamic tools from Unity
    */
   async reloadDynamicTools(context) {
-    const toolsToRemove = Array.from(this.tools.keys()).filter((name) => name.startsWith("unity-") && !["unity-ping", "unity-compile", "unity-getlogs", "unity-runtests", "unity-get-available-commands"].includes(name));
+    const toolsToRemove = Array.from(this.tools.keys()).filter((name) => name.startsWith("unity-") && !["unity-ping", "unity-get-available-commands"].includes(name));
     for (const toolName of toolsToRemove) {
       this.tools.delete(toolName);
     }
     await this.loadDynamicTools(context);
+    this.notifyToolsChanged();
+  }
+  /**
+   * Set callback for tools changed notification
+   */
+  onToolsChanged(callback) {
+    this.toolsChangedCallback = callback;
+  }
+  /**
+   * Notify that tools have changed
+   */
+  notifyToolsChanged() {
+    if (this.toolsChangedCallback) {
+      this.toolsChangedCallback();
+    }
+  }
+  /**
+   * Start polling Unity for command changes
+   */
+  startPolling(context) {
+    this.pollingInterval = setInterval(async () => {
+      try {
+        await this.checkForCommandChanges(context);
+      } catch (error) {
+        console.warn("Error checking for command changes:", error);
+      }
+    }, 2e3);
+  }
+  /**
+   * Check if Unity commands have changed
+   */
+  async checkForCommandChanges(context) {
+    try {
+      const commands = await context.unityClient.getCommandDetails();
+      const currentCommands = commands.map(
+        (cmd) => cmd.Name || cmd.name
+      ).filter(Boolean).sort();
+      if (this.lastKnownCommands.length === 0) {
+        this.lastKnownCommands = currentCommands;
+        return;
+      }
+      const hasChanged = currentCommands.length !== this.lastKnownCommands.length || !currentCommands.every((cmd, index) => cmd === this.lastKnownCommands[index]);
+      if (hasChanged) {
+        console.error("[Tool Registry] Unity commands changed, reloading dynamic tools...");
+        console.error(`[Tool Registry] Previous: [${this.lastKnownCommands.join(", ")}]`);
+        console.error(`[Tool Registry] Current: [${currentCommands.join(", ")}]`);
+        await this.reloadDynamicTools(context);
+        this.lastKnownCommands = currentCommands;
+      }
+    } catch (error) {
+      console.warn("Failed to check for command changes:", error);
+    }
+  }
+  /**
+   * Stop polling
+   */
+  stopPolling() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = void 0;
+    }
   }
 };
 
@@ -6425,7 +6209,9 @@ var McpServer = class {
       },
       {
         capabilities: {
-          tools: {}
+          tools: {
+            listChanged: true
+          }
         }
       }
     );
@@ -6434,6 +6220,9 @@ var McpServer = class {
       unityClient: this.unityClient
     };
     this.toolRegistry = new ToolRegistry(context);
+    this.toolRegistry.onToolsChanged(() => {
+      this.notifyToolsChanged();
+    });
     this.setupHandlers();
   }
   /**
@@ -6477,9 +6266,24 @@ var McpServer = class {
     console.error("Unity MCP Server started successfully");
   }
   /**
+   * Notify clients that the tools list has changed
+   */
+  notifyToolsChanged() {
+    if (this.isInitialized) {
+      console.error("[MCP Server] Sending tools/list_changed notification");
+      this.server.notification({
+        method: "notifications/tools/list_changed",
+        params: {}
+      });
+    } else {
+      console.error("[MCP Server] Skipping notification - server not initialized");
+    }
+  }
+  /**
    * Cleanup
    */
   cleanup() {
+    this.toolRegistry.stopPolling();
     this.unityClient.disconnect();
   }
 };

@@ -35,6 +35,7 @@ namespace io.github.hatayama.uMCP
         {
             SharedRegistry.RegisterCommand(command);
             McpLogger.LogInfo($"Custom command registered: {command.CommandName}");
+            NotifyToolsChanged();
         }
 
         /// <summary>
@@ -45,6 +46,7 @@ namespace io.github.hatayama.uMCP
         {
             SharedRegistry.UnregisterCommand(commandName);
             McpLogger.LogInfo($"Custom command unregistered: {commandName}");
+            NotifyToolsChanged();
         }
 
         /// <summary>
@@ -91,6 +93,15 @@ namespace io.github.hatayama.uMCP
         public static string GetDebugInfo()
         {
             return $"Registry instance: {SharedRegistry.GetHashCode()}, Commands: [{string.Join(", ", SharedRegistry.GetRegisteredCommandNames())}]";
+        }
+
+        /// <summary>
+        /// Notify MCP clients that tools have changed
+        /// </summary>
+        private static void NotifyToolsChanged()
+        {
+            // This will be picked up by the TypeScript server when it polls for command updates
+            McpLogger.LogInfo("Tools list changed - MCP clients will be notified on next command list request");
         }
     }
 } 
