@@ -3,13 +3,14 @@
 
 # uMCP
 
-Connects Unity Editor to LLM tools using Model Context Protocol.
-This enables you to call the following functions:
+Connects Unity Editor to LLM tools using Model Context Protocol.  
+It has an automatic connection function to `Cursor` and `Claude Code`.  
+This enables you to call the following functions:  
 
 ## ✨ Features
 
 ### 1. unity.compile
-- **Description**: Executes Unity project compilation and retrieves compilation results
+- **Description**: After executing AssetDatabase.Refresh(), compile. Return the compilation results.
 - **Parameters**: 
   - `forceRecompile` (boolean): Whether to force recompilation (default: false)
 - **Response**: 
