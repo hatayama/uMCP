@@ -8,7 +8,7 @@ import { TOOL_NAMES, COMPILE_CONFIG, UNITY_CONNECTION } from '../constants.js';
  */
 export class CompileTool extends BaseTool {
   readonly name = TOOL_NAMES.COMPILE;
-  readonly description = 'Execute Unity project compilation and retrieve error information';
+  readonly description = 'After executing AssetDatabase.Refresh(), compile. Return the compilation results.';
   readonly inputSchema = {
     type: 'object',
     properties: {

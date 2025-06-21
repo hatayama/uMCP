@@ -10,7 +10,7 @@ This enables you to call the following functions:
 ## ✨ Features
 
 ### 1. unity.compile
-- **Description**: Executes Unity project compilation and retrieves compilation results.
+- **Description**: After executing AssetDatabase.Refresh(), compile. Return the compilation results.
 - **Parameters**: 
   - `forceRecompile` (boolean): Whether to force recompilation (default: false)
 - **Response**: 
