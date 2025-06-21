@@ -6079,12 +6079,12 @@ var RunTestsTool = class extends BaseTool {
       let result = response.success ? `\u2705 Test execution completed
 ` : `\u26A0\uFE0F Test execution completed (with failures)
 `;
-      result += `\u{1F4CA} Result: ${response.message}
+      result += `Result: ${response.message}
 `;
       if (response.testResults) {
         const testResults = response.testResults;
         result += `
-\u{1F4C8} Detailed Statistics:
+Detailed Statistics:
 `;
         result += `  \u2022 Passed: ${testResults.PassedCount} tests
 `;
@@ -6122,7 +6122,7 @@ var RunTestsTool = class extends BaseTool {
       }
       if (response.xmlPath) {
         result += `
-\u{1F4C4} XML file saved: ${response.xmlPath}
+XML file saved: ${response.xmlPath}
 `;
       }
       result += `
@@ -6206,7 +6206,7 @@ var McpServer = class {
   unityClient;
   toolRegistry;
   constructor() {
-    console.log("\u{1F680} Unity MCP Server initializing...");
+    console.log("Starting Unity MCP Server...");
     this.server = new Server(
       {
         name: SERVER_CONFIG.NAME,
