@@ -3,7 +3,7 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// MCP Serverの状態をSessionStateで管理し、アセンブリリロード時に自動復旧する
+    /// Manages the state of the MCP Server with SessionState and automatically restores it on assembly reload.
     /// </summary>
     [InitializeOnLoad]
     public static class McpServerController
@@ -16,54 +16,54 @@ namespace io.github.hatayama.uMCP
         private static McpBridgeServer mcpServer;
         
         /// <summary>
-        /// 現在のMCPサーバーインスタンス
+        /// The current MCP server instance.
         /// </summary>
         public static McpBridgeServer CurrentServer => mcpServer;
         
         /// <summary>
-        /// サーバーが実行中かどうか
+        /// Whether the server is running.
         /// </summary>
         public static bool IsServerRunning => mcpServer?.IsRunning ?? false;
         
         /// <summary>
-        /// サーバーのポート番号
+        /// The server's port number.
         /// </summary>
         public static int ServerPort => mcpServer?.Port ?? McpServerConfig.DEFAULT_PORT;
 
         static McpServerController()
         {
-            // Unity終了時のクリーンアップ登録
+            // Register cleanup for when Unity exits.
             EditorApplication.quitting += OnEditorQuitting;
             
-            // アセンブリリロード前の処理
+            // Processing before assembly reload.
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             
-            // アセンブリリロード後の処理
+            // Processing after assembly reload.
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
             
-            // 初期化時にサーバー状態を復旧
+            // Restore server state on initialization.
             RestoreServerStateIfNeeded();
         }
 
         /// <summary>
-        /// サーバーを開始する
+        /// Starts the server.
         /// </summary>
         public static void StartServer(int port = McpServerConfig.DEFAULT_PORT)
         {
-            // 既存のサーバーを必ず停止する（ポートを解放するため）
+            // Always stop the existing server (to release the port).
             if (mcpServer != null)
             {
                 McpLogger.LogInfo($"Stopping existing server before starting new one...");
                 StopServer();
                 
-                // TCP接続が確実に解放されるよう少し待機
+                // Wait a moment to ensure the TCP connection is properly released.
                 System.Threading.Thread.Sleep(200);
             }
 
             mcpServer = new McpBridgeServer();
             mcpServer.StartServer(port);
             
-            // SessionStateに状態を保存
+            // Save the state to SessionState.
             SessionState.SetBool(SESSION_KEY_SERVER_RUNNING, true);
             SessionState.SetInt(SESSION_KEY_SERVER_PORT, port);
             
@@ -71,7 +71,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーを停止する
+        /// Stops the server.
         /// </summary>
         public static void StopServer()
         {
@@ -81,7 +81,7 @@ namespace io.github.hatayama.uMCP
                 mcpServer = null;
             }
             
-            // SessionStateから状態を削除
+            // Delete the state from SessionState.
             SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
             SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
             
@@ -89,38 +89,38 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// アセンブリリロード前の処理
+        /// Processing before assembly reload.
         /// </summary>
         private static void OnBeforeAssemblyReload()
         {
             McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: IsServerRunning={mcpServer?.IsRunning}");
             
-            // ドメインリロード開始フラグを設定
+            // Set the domain reload start flag.
             SessionState.SetBool(SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS, true);
             McpLogger.LogInfo("Domain reload in progress flag set to true");
             
-            // サーバーが動作中の場合、状態を保存してサーバーを停止
+            // If the server is running, save its state and stop it.
             if (mcpServer?.IsRunning == true)
             {
                 int portToSave = mcpServer.Port;
                 
-                // SessionState操作を即座に実行（Domain Reload前に確実に保存）
+                // Execute SessionState operations immediately (to ensure they are saved before a domain reload).
                 SessionState.SetBool(SESSION_KEY_SERVER_RUNNING, true);
                 SessionState.SetInt(SESSION_KEY_SERVER_PORT, portToSave);
-                SessionState.SetBool(SESSION_KEY_AFTER_COMPILE, true); // コンパイル後フラグを設定
+                SessionState.SetBool(SESSION_KEY_AFTER_COMPILE, true); // Set the post-compilation flag.
                 
                 McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: Saved server state - port={portToSave}");
                 
-                // 通信ログも強制的に保存
+                // Force-save the communication log as well.
                 McpCommunicationLogger.SaveToSessionState();
                 
-                // サーバーを完全に停止（TCP接続を確実に解放するためDisposeを使用）
+                // Stop the server completely (using Dispose to ensure the TCP connection is released).
                 try
                 {
                     mcpServer.Dispose();
                     mcpServer = null;
                     
-                    // 少し待機してTCP接続が確実に解放されるようにする
+                    // Wait a moment to ensure the TCP connection is properly released.
                     System.Threading.Thread.Sleep(100);
                 }
                 catch (System.Exception ex)
@@ -131,26 +131,26 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// アセンブリリロード後の処理
+        /// Processing after assembly reload.
         /// </summary>
         private static void OnAfterAssemblyReload()
         {
-            // MCP経由コンパイルフラグをクリア（念のため）
+            // Clear the compile-via-MCP flag (just in case).
             SessionState.EraseBool("uMCP.CompileFromMCP");
             
-            // ドメインリロード完了フラグをクリア
+            // Clear the domain reload completion flag.
             SessionState.EraseBool(SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS);
             McpLogger.LogInfo("Domain reload in progress flag cleared");
             
-            // サーバー状態を復旧
+            // Restore server state.
             RestoreServerStateIfNeeded();
             
-            // 保留中のコンパイルリクエストを処理
+            // Process pending compile requests.
             ProcessPendingCompileRequests();
         }
 
         /// <summary>
-        /// 必要に応じてサーバー状態を復旧する
+        /// Restores the server state if necessary.
         /// </summary>
         private static void RestoreServerStateIfNeeded()
         {
@@ -158,10 +158,10 @@ namespace io.github.hatayama.uMCP
             int savedPort = SessionState.GetInt(SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
             bool isAfterCompile = SessionState.GetBool(SESSION_KEY_AFTER_COMPILE, false);
             
-            // サーバーが既に起動している場合（McpEditorWindowで起動済みなど）
+            // If the server is already running (e.g., started from McpEditorWindow).
             if (mcpServer?.IsRunning == true)
             {
-                // コンパイル後フラグだけクリアして終了
+                // Just clear the post-compilation flag and exit.
                 if (isAfterCompile)
                 {
                     SessionState.EraseBool(SESSION_KEY_AFTER_COMPILE);
@@ -170,7 +170,7 @@ namespace io.github.hatayama.uMCP
                 return;
             }
             
-            // コンパイル後フラグをクリア
+            // Clear the post-compilation flag.
             if (isAfterCompile)
             {
                 SessionState.EraseBool(SESSION_KEY_AFTER_COMPILE);
@@ -178,12 +178,12 @@ namespace io.github.hatayama.uMCP
             
             if (wasRunning && (mcpServer == null || !mcpServer.IsRunning))
             {
-                // コンパイル後の場合は即座に再起動（Auto Start Serverの設定に関わらず）
+                // If it's after a compilation, restart immediately (regardless of the Auto Start Server setting).
                 if (isAfterCompile)
                 {
                     McpLogger.LogInfo("Detected post-compile state. Restoring server immediately...");
                     
-                    // 少しだけ待機してからすぐに再起動（TCP解放のため）
+                    // Wait a short while before restarting immediately (to release TCP).
                     EditorApplication.delayCall += () =>
                     {
                         TryRestoreServerWithRetry(savedPort, 0);
@@ -191,18 +191,18 @@ namespace io.github.hatayama.uMCP
                 }
                 else
                 {
-                    // Unity起動時など、コンパイル以外の場合
-                    // Auto Start Serverの設定を確認
+                    // For non-compilation scenarios, such as Unity startup.
+                    // Check the Auto Start Server setting.
                     bool autoStartEnabled = McpEditorSettings.GetAutoStartServer();
                     
                     if (autoStartEnabled)
                     {
                         McpLogger.LogInfo("Auto Start Server is enabled. Restoring server with delay...");
                         
-                        // Auto Start Serverがonの場合は従来通りの遅延処理
+                        // If Auto Start Server is on, use the conventional delayed processing.
                         EditorApplication.delayCall += () =>
                         {
-                            // さらに遅延を追加（合計で約200-300ms待機）
+                            // Add an additional delay (for a total wait of about 200-300ms).
                             EditorApplication.delayCall += () =>
                             {
                                 TryRestoreServerWithRetry(savedPort, 0);
@@ -211,10 +211,10 @@ namespace io.github.hatayama.uMCP
                     }
                     else
                     {
-                        // Auto Start Serverがoffの場合はサーバーを起動しない
+                        // If Auto Start Server is off, do not start the server.
                         McpLogger.LogInfo("Auto Start Server is disabled. Server will not be restored automatically.");
                         
-                        // SessionStateをクリア（手動でサーバーを起動するまで待つ）
+                        // Clear SessionState (wait for the server to be started manually).
                         SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
                         SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
                     }
@@ -223,7 +223,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// サーバーの復旧を再試行付きで実行する
+        /// Executes server recovery with retries.
         /// </summary>
         private static void TryRestoreServerWithRetry(int port, int retryCount)
         {
@@ -231,7 +231,7 @@ namespace io.github.hatayama.uMCP
             
             try
             {
-                // 既存のサーバーインスタンスがある場合は確実に停止
+                // If there is an existing server instance, ensure it is stopped.
                 if (mcpServer != null)
                 {
                     mcpServer.Dispose();
@@ -248,27 +248,27 @@ namespace io.github.hatayama.uMCP
             {
                 McpLogger.LogError($"Failed to restore MCP Server on port {port} (attempt {retryCount + 1}): {ex.Message}");
                 
-                // 最大リトライ回数に達していない場合は再試行
+                // If the maximum number of retries has not been reached, try again.
                 if (retryCount < maxRetries)
                 {
                     EditorApplication.delayCall += () =>
                     {
-                        // ポート番号は変更せず、同じポートで再試行
+                        // Do not change the port number; retry with the same port.
                         TryRestoreServerWithRetry(port, retryCount + 1);
                     };
                 }
                 else
                 {
-                    // 最終的に失敗した場合はSessionStateをクリア
+                    // If it ultimately fails, clear the SessionState.
                     McpLogger.LogError($"Failed to restore MCP Server on port {port} after {maxRetries + 1} attempts. Clearing session state.");
                     SessionState.EraseBool(SESSION_KEY_SERVER_RUNNING);
                     SessionState.EraseInt(SESSION_KEY_SERVER_PORT);
                 }
             }
         }
-
+        
         /// <summary>
-        /// Unity終了時のクリーンアップ
+        /// Cleanup on Unity exit.
         /// </summary>
         private static void OnEditorQuitting()
         {
@@ -276,16 +276,17 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 保留中のコンパイルリクエストを処理する
+        /// Processes pending compile requests.
         /// </summary>
         private static void ProcessPendingCompileRequests()
         {
-            // SessionState操作によるメインスレッドエラーを回避するため一時的に無効化
-            // TODO: メインスレッド問題を解決後に再有効化
+            // Temporarily disabled to avoid main thread errors due to SessionState operations.
+            // TODO: Re-enable after resolving the main thread issue.
+            // CompileSessionState.StartForcedRecompile();
         }
 
         /// <summary>
-        /// サーバーの状態情報を取得する
+        /// Gets server status information.
         /// </summary>
         public static (bool isRunning, int port, bool wasRestoredFromSession) GetServerStatus()
         {
@@ -294,7 +295,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// デバッグ用：詳細なサーバー状態を取得する
+        /// For debugging: Gets detailed server status.
         /// </summary>
         public static string GetDetailedServerStatus()
         {

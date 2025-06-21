@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// MCP設定のデータ構造
-    /// mcp.jsonファイルの構造を表現するimmutableなクラス
+    /// Data structure for MCP settings.
+    /// An immutable class representing the structure of the mcp.json file.
     /// </summary>
     public class McpConfig
     {
@@ -17,8 +17,8 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// MCP サーバー設定のデータ構造
-    /// 各サーバーの設定情報を表現するimmutableなクラス
+    /// Data structure for MCP server settings.
+    /// An immutable class representing the configuration information for each server.
     /// </summary>
     public class McpServerConfigData
     {

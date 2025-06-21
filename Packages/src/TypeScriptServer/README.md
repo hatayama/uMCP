@@ -11,7 +11,7 @@ This is a Model Context Protocol (MCP) server that acts as a bridge between Unit
 
 ### Manual Builds
 
-#### 🔧 When npm install is required
+#### When is `npm install` required?
 ```bash
 # New environment / initial setup
 npm install
@@ -32,7 +32,7 @@ npm run build
 npm run build  # Can be run directly
 ```
 
-#### 🔍 How to check
+#### How to Check
 ```bash
 # Check for the existence of node_modules
 ls node_modules/ > /dev/null 2>&1 && echo "OK: can run npm run build" || echo "NG: npm install required"

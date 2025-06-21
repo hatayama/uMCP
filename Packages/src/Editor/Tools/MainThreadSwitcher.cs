@@ -7,7 +7,7 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// PlayerLoopTimingの列挙型（Editor版ではダミー実装）
+    /// Enum for PlayerLoopTiming (dummy implementation in Editor version).
     /// </summary>
     public enum PlayerLoopTiming
     {
@@ -20,8 +20,8 @@ namespace io.github.hatayama.uMCP
         PostLateUpdate = 6
     }
     /// <summary>
-    /// UniTaskのSwitchToMainThreadと同等の機能を提供するクラス
-    /// メインスレッドへの切り替えを行う
+    /// A class that provides functionality equivalent to UniTask's SwitchToMainThread.
+    /// Handles switching to the main thread.
     /// </summary>
     public static class MainThreadSwitcher
     {
@@ -29,30 +29,30 @@ namespace io.github.hatayama.uMCP
         private static SynchronizationContext unitySynchronizationContext;
         
         /// <summary>
-        /// メインスレッドのIDを取得する
+        /// Gets the ID of the main thread.
         /// </summary>
         public static int MainThreadId => mainThreadId;
         
         /// <summary>
-        /// 現在のスレッドがメインスレッドかどうかを判定する
+        /// Determines whether the current thread is the main thread.
         /// </summary>
         public static bool IsMainThread => Thread.CurrentThread.ManagedThreadId == mainThreadId;
 
         /// <summary>
-        /// UnitySynchronizationContextを取得する
+        /// Gets the UnitySynchronizationContext.
         /// </summary>
         public static SynchronizationContext UnitySynchronizationContext => unitySynchronizationContext;
 
         [InitializeOnLoadMethod]
         static void Initialize()
         {
-            // メインスレッドのIDとSynchronizationContextを記録
+            // Record the main thread ID and SynchronizationContext.
             mainThreadId = Thread.CurrentThread.ManagedThreadId;
             unitySynchronizationContext = SynchronizationContext.Current;
         }
 
         /// <summary>
-        /// メインスレッドに切り替える（SynchronizationContext版）
+        /// Switches to the main thread (SynchronizationContext version).
         /// </summary>
         public static SwitchToMainThreadAwaitable SwitchToMainThread()
         {
@@ -60,7 +60,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// メインスレッドに切り替える（CancellationToken付き）
+        /// Switches to the main thread (with CancellationToken).
         /// </summary>
         public static SwitchToMainThreadAwaitable SwitchToMainThread(CancellationToken cancellationToken)
         {
@@ -68,8 +68,8 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// メインスレッドに切り替える（PlayerLoopTiming指定）
-        /// Editor版ではPlayerLoopTimingは無視される
+        /// Switches to the main thread (with PlayerLoopTiming specified).
+        /// PlayerLoopTiming is ignored in the Editor version.
         /// </summary>
         public static SwitchToMainThreadAwaitable SwitchToMainThread(PlayerLoopTiming timing)
         {
@@ -77,8 +77,8 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// メインスレッドに切り替える（PlayerLoopTimingとCancellationToken指定）
-        /// Editor版ではPlayerLoopTimingは無視される
+        /// Switches to the main thread (with PlayerLoopTiming and CancellationToken specified).
+        /// PlayerLoopTiming is ignored in the Editor version.
         /// </summary>
         public static SwitchToMainThreadAwaitable SwitchToMainThread(PlayerLoopTiming timing, CancellationToken cancellationToken)
         {
@@ -86,7 +86,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// メインスレッドに切り替える（EditorApplication.delayCall版）
+        /// Switches to the main thread (EditorApplication.delayCall version).
         /// </summary>
         public static SwitchToMainThreadDelayCallAwaitable SwitchToMainThreadDelayCall()
         {
@@ -95,7 +95,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// SynchronizationContextを使ったメインスレッド切り替え用のAwaitable
+    /// An awaitable for switching to the main thread using SynchronizationContext.
     /// </summary>
     public struct SwitchToMainThreadAwaitable
     {
@@ -141,14 +141,14 @@ namespace io.github.hatayama.uMCP
                     return;
                 }
 
-                // 保存されたUnitySynchronizationContextを優先使用
+                // Prioritize using the saved UnitySynchronizationContext.
                 if (MainThreadSwitcher.UnitySynchronizationContext != null)
                 {
                     MainThreadSwitcher.UnitySynchronizationContext.Post(_ => continuation(), null);
                 }
                 else
                 {
-                    // フォールバック: EditorApplication.delayCallを使用
+                    // Fallback: Use EditorApplication.delayCall.
                     EditorApplication.delayCall += () => continuation();
                 }
             }
@@ -156,7 +156,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// EditorApplication.delayCallを使ったメインスレッド切り替え用のAwaitable
+    /// An awaitable for switching to the main thread using EditorApplication.delayCall.
     /// </summary>
     public struct SwitchToMainThreadDelayCallAwaitable
     {
@@ -176,14 +176,14 @@ namespace io.github.hatayama.uMCP
                     return;
                 }
 
-                // EditorApplication.delayCallを使ってメインスレッドで実行
+                // Execute on the main thread using EditorApplication.delayCall.
                 EditorApplication.delayCall += () => continuation();
             }
         }
     }
 
     /// <summary>
-    /// TaskSchedulerを使った高度なメインスレッド切り替え
+    /// Advanced main thread switching using TaskScheduler.
     /// </summary>
     public static class AdvancedMainThreadSwitcher
     {
@@ -192,12 +192,12 @@ namespace io.github.hatayama.uMCP
         [InitializeOnLoadMethod]
         static void Initialize()
         {
-            // UnityのメインスレッドでTaskSchedulerを作成
+            // Create a TaskScheduler on Unity's main thread.
             unityTaskScheduler = TaskScheduler.FromCurrentSynchronizationContext();
         }
 
         /// <summary>
-        /// TaskSchedulerを使ってメインスレッドに切り替える
+        /// Switches to the main thread using TaskScheduler.
         /// </summary>
         public static Task SwitchToMainThreadAsync()
         {

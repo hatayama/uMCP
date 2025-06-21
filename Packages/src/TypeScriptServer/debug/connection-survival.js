@@ -1,8 +1,8 @@
 import { UnityDebugClient } from './unity-debug-client.js';
 
 /**
- * TCP接続の生存確認テスト
- * Domain Reload前後での接続状態を詳しく調査
+ * TCP connection survival test.
+ * Investigates the connection state before and after a Domain Reload.
  */
 async function testConnectionSurvival() {
     console.log('=== TCP Connection Survival Test ===');
@@ -21,10 +21,10 @@ async function testConnectionSurvival() {
         console.log('\n3. Starting compile (this will trigger Domain Reload)...');
         const compileStart = Date.now();
         
-        // 長時間のコンパイル要求（強制コンパイル）
+        // Long-running compile request (forced compilation)
         const compilePromise = client.compileProject(true);
         
-        // 定期的に接続状態をチェック
+        // Periodically check the connection status.
         let connectionChecks = 0;
         const checkInterval = setInterval(async () => {
             connectionChecks++;
@@ -32,8 +32,8 @@ async function testConnectionSurvival() {
             console.log(`⏱️  [${elapsed}ms] Checking connection status... (Check #${connectionChecks})`);
             
             try {
-                // 別の軽量リクエストで接続状態を確認
-                // 注意: 同じソケットで複数リクエストは通常できないが、テスト目的
+                // Check connection status with another lightweight request.
+                // Note: Multiple requests on the same socket are not normally possible, this is for testing purposes.
                 console.log(`   Connection alive: ${client.socket && !client.socket.destroyed}`);
                 console.log(`   Socket readable: ${client.socket?.readable}`);
                 console.log(`   Socket writable: ${client.socket?.writable}`);
@@ -52,7 +52,7 @@ async function testConnectionSurvival() {
             
             console.log('\n4. Post-compile connection verification...');
             
-            // コンパイル後に接続がまだ生きているかテスト
+            // Test if the connection is still alive after compilation.
             try {
                 const postPingResult = await client.ping('Post-compile ping');
                 console.log(`✓ Post-compile ping successful: ${postPingResult}`);

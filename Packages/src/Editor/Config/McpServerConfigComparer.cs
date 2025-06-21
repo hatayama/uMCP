@@ -3,21 +3,21 @@ using System.Collections.Generic;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// MCP サーバー設定の比較を担当するクラス
-    /// 単一責任原則：設定の比較のみを担当
+    /// Class responsible for comparing MCP server settings.
+    /// Single Responsibility Principle: Only responsible for comparing settings.
     /// </summary>
     public static class McpServerConfigComparer
     {
         /// <summary>
-        /// 2つの設定が等しいかチェック
+        /// Checks if two settings are equal.
         /// </summary>
         public static bool AreEqual(McpServerConfigData config1, McpServerConfigData config2)
         {
-            // commandの比較
+            // Compare command.
             if (config1.command != config2.command)
                 return false;
 
-            // argsの比較
+            // Compare args.
             if (config1.args.Length != config2.args.Length)
                 return false;
             
@@ -27,7 +27,7 @@ namespace io.github.hatayama.uMCP
                     return false;
             }
 
-            // envの比較
+            // Compare env.
             if (config1.env.Count != config2.env.Count)
                 return false;
 

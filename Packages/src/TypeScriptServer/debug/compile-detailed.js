@@ -1,8 +1,8 @@
 import { UnityDebugClient } from './unity-debug-client.js';
 
 /**
- * コンパイルリクエストの詳細テスト
- * レスポンス受信タイミングとDomain Reload前後の動作を詳しく調査する
+ * Detailed test for the compile request.
+ * Investigates response reception timing and behavior before/after Domain Reload.
  */
 async function testCompileDetailed() {
     console.log('=== Unity Compile Response Analysis ===');
@@ -21,16 +21,16 @@ async function testCompileDetailed() {
         const requestStart = Date.now();
         console.log(`Request sent at: ${new Date(requestStart).toISOString()}`);
         
-        // コマンドライン引数から強制コンパイルフラグを取得
+        // Get the force recompile flag from command line arguments.
         const args = process.argv.slice(2);
         const forceRecompile = args.includes('--force') || args.includes('-f');
         
         console.log(`Force Recompile: ${forceRecompile ? 'ON' : 'OFF'}`);
         
-        // タイムアウトを長めに設定してレスポンス待機
+        // Set a long timeout to wait for the response.
         const compilePromise = client.compileProject(forceRecompile);
         
-        // 定期的に状態をチェック
+        // Periodically check the status.
         const statusInterval = setInterval(() => {
             const elapsed = Date.now() - requestStart;
             console.log(`⏱️  Waiting for response... (${elapsed}ms elapsed)`);
@@ -54,7 +54,7 @@ async function testCompileDetailed() {
             console.log(`Completed at: ${compileResult.completedAt}`);
             console.log(`Full response:`, JSON.stringify(compileResult, null, 2));
             
-            // レスポンス内容の整合性チェック
+            // Check consistency of the response content.
             if (compileResult.completedAt) {
                 const unityTime = new Date(compileResult.completedAt);
                 const requestTime = new Date(requestStart);
@@ -97,7 +97,7 @@ async function testCompileDetailed() {
     } catch (error) {
         console.error('\n❌ Test failed:', error.message);
         
-        // エラーの種類を分析
+        // Analyze the type of error.
         if (error.message.includes('connection')) {
             console.log('🔌 Connection-related error - server may have stopped');
         } else if (error.message.includes('timeout')) {

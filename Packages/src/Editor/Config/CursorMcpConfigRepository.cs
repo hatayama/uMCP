@@ -6,8 +6,8 @@ using Newtonsoft.Json;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// MCP設定の永続化を担当するクラス
-    /// 単一責任原則：設定ファイルの読み書きのみを担当
+    /// Class responsible for persisting MCP settings.
+    /// Single Responsibility Principle: Only responsible for reading and writing configuration files.
     /// </summary>
     public class McpConfigRepository
     {
@@ -19,7 +19,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 設定ファイルが存在するかチェック
+        /// Checks if the configuration file exists.
         /// </summary>
         public bool Exists(string configPath)
         {
@@ -27,7 +27,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 設定ファイルが存在するかチェック（エディタタイプ自動解決版）
+        /// Checks if the configuration file exists (with automatic editor type resolution).
         /// </summary>
         public bool Exists()
         {
@@ -36,7 +36,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 設定ディレクトリを作成
+        /// Creates the configuration directory.
         /// </summary>
         public void CreateConfigDirectory(string configPath)
         {
@@ -48,7 +48,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 設定ディレクトリを作成（エディタタイプ自動解決版）
+        /// Creates the configuration directory (with automatic editor type resolution).
         /// </summary>
         public void CreateConfigDirectory()
         {
@@ -60,7 +60,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// mcp.json設定を読み込み
+        /// Loads the mcp.json settings.
         /// </summary>
         public McpConfig Load(string configPath)
         {
@@ -71,14 +71,14 @@ namespace io.github.hatayama.uMCP
 
             string jsonContent = File.ReadAllText(configPath);
             
-            // まず、既存のJSONを辞書として読み込み
+            // First, load the existing JSON as a dictionary.
             Dictionary<string, object> rootObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonContent);
             Dictionary<string, McpServerConfigData> servers = new();
             
-            // mcpServersセクションが存在するかチェック
+            // Check if the mcpServers section exists.
             if (rootObject != null && rootObject.ContainsKey("mcpServers"))
             {
-                // mcpServersを辞書として取得
+                // Get mcpServers as a dictionary.
                 string mcpServersJson = JsonConvert.SerializeObject(rootObject["mcpServers"]);
                 Dictionary<string, object> mcpServersObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(mcpServersJson);
                 
@@ -88,7 +88,7 @@ namespace io.github.hatayama.uMCP
                     {
                         string serverName = serverEntry.Key;
                         
-                        // 各サーバー設定を辞書として取得
+                        // Get each server's settings as a dictionary.
                         string serverConfigJson = JsonConvert.SerializeObject(serverEntry.Value);
                         Dictionary<string, object> serverConfigObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(serverConfigJson);
                         
@@ -120,7 +120,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// mcp.json設定を読み込み（エディタタイプ自動解決版）
+        /// Loads the mcp.json settings (with automatic editor type resolution).
         /// </summary>
         public McpConfig Load()
         {
@@ -129,13 +129,13 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// mcp.json設定を保存
+        /// Saves the mcp.json settings.
         /// </summary>
         public void Save(string configPath, McpConfig config)
         {
             Dictionary<string, object> jsonStructure;
             
-            // 既存ファイルがある場合は、既存の構造を保持
+            // If the file exists, retain its existing structure.
             if (File.Exists(configPath))
             {
                 string existingContent = File.ReadAllText(configPath);
@@ -146,7 +146,7 @@ namespace io.github.hatayama.uMCP
                 jsonStructure = new Dictionary<string, object>();
             }
             
-            // mcpServersセクションのみを更新
+            // Update only the mcpServers section.
             jsonStructure["mcpServers"] = config.mcpServers.ToDictionary(
                 kvp => kvp.Key,
                 kvp => new
@@ -162,13 +162,13 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// mcp.json設定を保存（エディタタイプ自動解決版）
+        /// Saves the mcp.json settings (with automatic editor type resolution).
         /// </summary>
         public void Save(McpConfig config)
         {
             string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
             
-            // ディレクトリが必要な場合は作成
+            // Create the directory if it's needed.
             CreateConfigDirectory(configPath);
             
             Save(configPath, config);

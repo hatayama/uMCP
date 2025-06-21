@@ -3,8 +3,8 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Consoleログ取得のための汎用的な静的APIを提供するクラス
-    /// [InitializeOnLoad]でCustomLogManagerを適切に初期化・保持
+    /// A class that provides a general-purpose static API for retrieving console logs.
+    /// Initializes and retains CustomLogManager appropriately with [InitializeOnLoad].
     /// </summary>
     [InitializeOnLoad]
     public static class LogGetter
@@ -17,9 +17,9 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Consoleログを取得して LogDisplayDto として返す
+        /// Retrieves console logs and returns them as a LogDisplayDto.
         /// </summary>
-        /// <returns>取得したログデータ</returns>
+        /// <returns>The retrieved log data.</returns>
         public static LogDisplayDto GetConsoleLog()
         {
             LogEntryDto[] logEntries = LogManager.GetAllLogEntries();
@@ -27,19 +27,19 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Consoleログエントリの配列を直接取得する
+        /// Directly retrieves an array of console log entries.
         /// </summary>
-        /// <returns>ログエントリの配列</returns>
+        /// <returns>An array of log entries.</returns>
         public static LogEntryDto[] GetConsoleLogEntries()
         {
             return LogManager.GetAllLogEntries();
         }
 
         /// <summary>
-        /// 指定した条件でConsoleログをフィルタリングして取得する
+        /// Filters and retrieves console logs based on specified conditions.
         /// </summary>
-        /// <param name="logType">フィルタするログタイプ（null の場合は全て取得）</param>
-        /// <returns>フィルタされたログデータ</returns>
+        /// <param name="logType">The log type to filter by (if null, all types are retrieved).</param>
+        /// <returns>The filtered log data.</returns>
         public static LogDisplayDto GetConsoleLog(string logType)
         {
             LogEntryDto[] filteredEntries;
@@ -57,11 +57,11 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// ログタイプとメッセージ内容でConsoleログをフィルタリングして取得する
+        /// Filters and retrieves console logs by log type and message content.
         /// </summary>
-        /// <param name="logType">フィルタするログタイプ（null または "All" の場合は全てのタイプ）</param>
-        /// <param name="searchText">メッセージ内で検索するテキスト（null または空の場合は検索しない）</param>
-        /// <returns>フィルタされたログデータ</returns>
+        /// <param name="logType">The log type to filter by (if null or "All", all types are included).</param>
+        /// <param name="searchText">The text to search for within messages (if null or empty, no search is performed).</param>
+        /// <returns>The filtered log data.</returns>
         public static LogDisplayDto GetConsoleLog(string logType, string searchText)
         {
             LogEntryDto[] filteredEntries = LogManager.GetLogEntriesByTypeAndMessage(logType, searchText);
@@ -69,16 +69,16 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Consoleログの総数を取得する
+        /// Gets the total number of console logs.
         /// </summary>
-        /// <returns>ログの総数</returns>
+        /// <returns>The total number of logs.</returns>
         public static int GetConsoleLogCount()
         {
             return LogManager.GetLogCount();
         }
 
         /// <summary>
-        /// 独自ログマネージャーのログをクリアする
+        /// Clears the logs of the custom log manager.
         /// </summary>
         public static void ClearCustomLogs()
         {

@@ -9,29 +9,29 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// テスト結果をNUnit形式のXMLでエクスポートするクラス
+    /// Class to export test results as NUnit XML.
     /// </summary>
     public static class NUnitXmlResultExporter
     {
         /// <summary>
-        /// テスト結果のXMLをログ出力する
+        /// Logs the test result as XML.
         /// </summary>
         public static void LogTestResultAsXml(ITestResultAdaptor testResult)
         {
             try
             {
                 string xmlContent = GenerateNUnitXml(testResult);
-                McpLogger.LogInfo("テスト結果XML:");
+                McpLogger.LogInfo("Test Result XML:");
                 McpLogger.LogInfo(xmlContent);
             }
             catch (Exception ex)
             {
-                McpLogger.LogError($"XML生成エラー: {ex.Message}");
+                McpLogger.LogError($"XML generation error: {ex.Message}");
             }
         }
         
         /// <summary>
-        /// テスト結果をXMLファイルとして保存する
+        /// Saves the test result as an XML file.
         /// </summary>
         public static string SaveTestResultAsXml(ITestResultAdaptor testResult)
         {
@@ -44,31 +44,31 @@ namespace io.github.hatayama.uMCP
                 string xmlContent = GenerateNUnitXml(testResult);
                 File.WriteAllText(filePath, xmlContent, Encoding.UTF8);
                 
-                // Assetsフォルダをリフレッシュ
+                // Refresh Assets folder.
                 AssetDatabase.Refresh();
                 
-                McpLogger.LogInfo($"テスト結果XMLを保存: {fileName}");
+                McpLogger.LogInfo($"Test result XML saved: {fileName}");
                 return filePath;
             }
             catch (Exception ex)
             {
-                McpLogger.LogError($"XMLファイル保存エラー: {ex.Message}");
+                McpLogger.LogError($"XML file save error: {ex.Message}");
                 return null;
             }
         }
         
         /// <summary>
-        /// NUnit形式のXMLを生成する
+        /// Generates NUnit format XML.
         /// </summary>
         private static string GenerateNUnitXml(ITestResultAdaptor testResult)
         {
             XmlDocument doc = new XmlDocument();
             
-            // XML宣言を追加
+            // Add XML declaration.
             XmlDeclaration declaration = doc.CreateXmlDeclaration("1.0", "UTF-8", null);
             doc.AppendChild(declaration);
             
-            // ルート要素を作成
+            // Create root element.
             XmlElement testRun = doc.CreateElement("test-run");
             testRun.SetAttribute("id", "2");
             testRun.SetAttribute("testcasecount", CountTestCases(testResult).ToString());
@@ -82,11 +82,11 @@ namespace io.github.hatayama.uMCP
             testRun.SetAttribute("duration", testResult.Duration.ToString("F3"));
             doc.AppendChild(testRun);
             
-            // テストスイートを追加
+            // Add test suite.
             XmlElement testSuite = CreateTestSuiteElement(doc, testResult);
             testRun.AppendChild(testSuite);
             
-            // フォーマット済みのXMLを返す
+            // Return formatted XML.
             using (StringWriter stringWriter = new StringWriter())
             {
                 XmlWriterSettings settings = new XmlWriterSettings
@@ -107,7 +107,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// テストスイート要素を作成する（再帰的）
+        /// Creates a test suite element (recursive).
         /// </summary>
         private static XmlElement CreateTestSuiteElement(XmlDocument doc, ITestResultAdaptor result)
         {
@@ -126,7 +126,7 @@ namespace io.github.hatayama.uMCP
                 suite.SetAttribute("failed", CountFailed(result).ToString());
                 suite.SetAttribute("skipped", CountSkipped(result).ToString());
                 
-                // 子要素を追加
+                // Add child elements.
                 if (result.Children != null)
                 {
                     foreach (ITestResultAdaptor child in result.Children)
@@ -140,7 +140,7 @@ namespace io.github.hatayama.uMCP
             }
             else
             {
-                // テストケース
+                // Test case.
                 XmlElement testCase = doc.CreateElement("test-case");
                 testCase.SetAttribute("name", result.Test.Name);
                 testCase.SetAttribute("fullname", result.Test.FullName);
@@ -149,7 +149,7 @@ namespace io.github.hatayama.uMCP
                 testCase.SetAttribute("end-time", result.EndTime.ToString("yyyy-MM-dd HH:mm:ss"));
                 testCase.SetAttribute("duration", result.Duration.ToString("F3"));
                 
-                // 失敗の場合はメッセージとスタックトレースを追加
+                // If failed, add message and stack trace.
                 if (result.TestStatus == TestStatus.Failed)
                 {
                     XmlElement failure = doc.CreateElement("failure");
@@ -176,7 +176,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 全体の結果を取得する
+        /// Gets the overall result.
         /// </summary>
         private static string GetOverallResult(ITestResultAdaptor result)
         {
@@ -188,7 +188,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// テストケース数をカウントする
+        /// Counts the number of test cases.
         /// </summary>
         private static int CountTestCases(ITestResultAdaptor result)
         {
@@ -207,7 +207,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 成功したテスト数をカウントする
+        /// Counts the number of passed tests.
         /// </summary>
         private static int CountPassed(ITestResultAdaptor result)
         {
@@ -226,7 +226,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 失敗したテスト数をカウントする
+        /// Counts the number of failed tests.
         /// </summary>
         private static int CountFailed(ITestResultAdaptor result)
         {
@@ -245,7 +245,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// スキップされたテスト数をカウントする
+        /// Counts the number of skipped tests.
         /// </summary>
         private static int CountSkipped(ITestResultAdaptor result)
         {

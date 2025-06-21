@@ -22,7 +22,7 @@ class McpServer {
   private toolRegistry: ToolRegistry;
 
   constructor() {
-    console.log('🚀 Unity MCP Server initializing...');
+    console.log('Starting Unity MCP Server...');
     this.server = new Server(
       {
         name: SERVER_CONFIG.NAME,

@@ -7,7 +7,7 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity Test Runnerの実行を管理するクラス
+    /// Class to manage the execution of the Unity Test Runner.
     /// </summary>
     public class UnityTestExecutionManager : ICallbacks
     {
@@ -18,11 +18,11 @@ namespace io.github.hatayama.uMCP
         
         public UnityTestExecutionManager()
         {
-            // TestRunnerApiはstaticメソッドを使うので、インスタンス作成は不要
+            // No instance creation is necessary as TestRunnerApi uses static methods.
         }
         
         /// <summary>
-        /// EditModeテストを実行する
+        /// Executes EditMode tests.
         /// </summary>
         public void RunEditModeTests(Action<ITestResultAdaptor> onComplete = null)
         {
@@ -30,34 +30,34 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 特定のEditModeテストを実行する
+        /// Executes specific EditMode tests.
         /// </summary>
-        /// <param name="testFilter">テスト実行フィルター（null の場合は全テスト実行）</param>
-        /// <param name="onComplete">完了時コールバック</param>
+        /// <param name="testFilter">Test execution filter (if null, all tests are run).</param>
+        /// <param name="onComplete">Callback on completion.</param>
         public void RunEditModeTests(TestExecutionFilter testFilter, Action<ITestResultAdaptor> onComplete = null)
         {
             if (isRunning)
             {
-                McpLogger.LogWarning("テスト実行中です");
+                McpLogger.LogWarning("Tests are already running.");
                 return;
             }
             
             isRunning = true;
             onRunFinished = onComplete;
             
-            // TestRunnerApiのインスタンスを作成（公式の方法）
+            // Create an instance of TestRunnerApi (official method).
             testRunnerApi = ScriptableObject.CreateInstance<TestRunnerApi>();
             
-            // コールバックを登録
+            // Register callbacks.
             testRunnerApi.RegisterCallbacks(this);
             
-            // EditModeのフィルターを作成
+            // Create a filter for EditMode.
             Filter filter = new Filter()
             {
                 testMode = TestMode.EditMode
             };
             
-            // カスタムフィルターを適用
+            // Apply custom filter.
             if (testFilter != null)
             {
                 switch (testFilter.FilterType)
@@ -66,11 +66,11 @@ namespace io.github.hatayama.uMCP
                         filter.testNames = new string[] { testFilter.FilterValue };
                         break;
                     case TestExecutionFilterType.ClassName:
-                        // クラス名でフィルタリング - フルネームとして扱う
+                        // Filter by class name - treated as a full name.
                         filter.testNames = new string[] { testFilter.FilterValue };
                         break;
                     case TestExecutionFilterType.Namespace:
-                        // ネームスペースでのフィルタリング
+                        // Filtering by namespace.
                         filter.testNames = new string[] { testFilter.FilterValue };
                         break;
                     case TestExecutionFilterType.AssemblyName:
@@ -79,43 +79,43 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            // テストを実行
+            // Execute tests.
             testRunnerApi.Execute(new ExecutionSettings(filter));
         }
         
-        // ICallbacks実装
+        // ICallbacks implementation.
         public void RunStarted(ITestAdaptor testsToRun)
         {
-            // テスト開始ログは削除（不要）
+            // Test start log removed (unnecessary).
         }
         
         public void RunFinished(ITestResultAdaptor result)
         {
             isRunning = false;
             
-            // コールバックを解除
+            // Unregister callbacks.
             testRunnerApi.UnregisterCallbacks(this);
             
-            // 結果をログ出力
+            // Log the results.
             LogTestResults(result);
             
-            // 完了コールバックを実行
+            // Execute completion callback.
             onRunFinished?.Invoke(result);
         }
         
         public void TestStarted(ITestAdaptor test)
         {
-            // 個別テスト開始ログは不要
+            // Individual test start log is unnecessary.
         }
         
         public void TestFinished(ITestResultAdaptor result)
         {
-            // 個別テスト完了ログは不要
+            // Individual test completion log is unnecessary.
             onTestFinished?.Invoke(result);
         }
         
         /// <summary>
-        /// テスト数をカウントする
+        /// Counts the number of tests.
         /// </summary>
         private int CountTests(ITestAdaptor test)
         {
@@ -131,7 +131,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// テスト結果をログ出力する
+        /// Logs the test results.
         /// </summary>
         private void LogTestResults(ITestResultAdaptor result)
         {
@@ -141,11 +141,11 @@ namespace io.github.hatayama.uMCP
             
             CountResults(result, ref passedCount, ref failedCount, ref skippedCount);
             
-            McpLogger.LogInfo($"テスト完了 - 成功:{passedCount} 失敗:{failedCount} スキップ:{skippedCount} ({result.Duration:F1}秒)");
+            McpLogger.LogInfo($"Test complete - Success:{passedCount} Failure:{failedCount} Skipped:{skippedCount} ({result.Duration:F1}s)");
         }
         
         /// <summary>
-        /// 結果を再帰的にカウントする
+        /// Recursively counts the results.
         /// </summary>
         private void CountResults(ITestResultAdaptor result, ref int passed, ref int failed, ref int skipped)
         {

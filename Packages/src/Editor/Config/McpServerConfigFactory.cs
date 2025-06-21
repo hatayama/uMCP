@@ -3,17 +3,17 @@ using System.Collections.Generic;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// MCP サーバー設定オブジェクトの生成を担当するクラス
-    /// 単一責任原則：設定オブジェクトの生成のみを担当
+    /// Class responsible for creating MCP server configuration objects.
+    /// Single Responsibility Principle: Only responsible for creating configuration objects.
     /// </summary>
     public static class McpServerConfigFactory
     {
         /// <summary>
-        /// Unity MCP用の設定を作成
+        /// Creates settings for Unity MCP.
         /// </summary>
-        /// <param name="port">使用するポート番号</param>
-        /// <param name="serverPath">TypeScriptサーバーのパス</param>
-        /// <returns>Unity MCP用の設定データ</returns>
+        /// <param name="port">The port number to use.</param>
+        /// <param name="serverPath">The path to the TypeScript server.</param>
+        /// <returns>Settings data for Unity MCP.</returns>
         public static McpServerConfigData CreateUnityMcpConfig(int port, string serverPath)
         {
             return new McpServerConfigData(
@@ -24,10 +24,10 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Unity MCP設定のサーバーキーを生成
+        /// Generates a server key for the Unity MCP settings.
         /// </summary>
-        /// <param name="port">ポート番号</param>
-        /// <returns>サーバーキー</returns>
+        /// <param name="port">The port number.</param>
+        /// <returns>The server key.</returns>
         public static string CreateUnityMcpServerKey(int port)
         {
             return $"unity-mcp-{port}";
