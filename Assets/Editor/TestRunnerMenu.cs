@@ -5,7 +5,7 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Test Runner関連のメニューアイテムを提供するクラス
+    /// Class that provides menu items related to the Test Runner.
     /// </summary>
     public static class TestRunnerMenu
     {
@@ -15,7 +15,7 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Test Runner/Run EditMode Tests (Save XML)")]
         public static void RunEditModeTestsAndSaveXml()
         {
-            Debug.Log("まさみち、EditModeテストを実行してXMLに保存するで！");
+            Debug.Log("Masamichi, I'm running the EditMode tests and saving to XML!");
             
             shouldSaveXml = true;
             testRunnerController = new UnityTestExecutionManager();
@@ -25,7 +25,7 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Test Runner/Run EditMode Tests (Log XML)")]
         public static void RunEditModeTestsAndLogXml()
         {
-            Debug.Log("まさみち、EditModeテストを実行してXMLをログ出力するで！");
+            Debug.Log("Masamichi, I'm running the EditMode tests and logging the XML!");
             
             shouldSaveXml = false;
             testRunnerController = new UnityTestExecutionManager();
@@ -35,21 +35,21 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Test Runner/Open Test Runner Window")]
         public static void OpenTestRunnerWindow()
         {
-            // UnityのTest Runner Windowを開く
+            // Open Unity's Test Runner Window
             EditorApplication.ExecuteMenuItem("Window/General/Test Runner");
             
-            Debug.Log("Test Runner Window開いたで！");
+            Debug.Log("Opened the Test Runner Window!");
         }
         
-        // ===== 特定のテストクラスを実行するメニュー =====
+        // ===== Menu to run a specific test class =====
         
         [MenuItem("uMCP/Test Runner/Run Specific Test/CompileCommandTests")]
         public static void RunCompileCommandTests()
         {
-            Debug.Log("CompileCommandTestsだけ実行するで！");
+            Debug.Log("Running only CompileCommandTests!");
             shouldSaveXml = false;
             testRunnerController = new UnityTestExecutionManager();
-            // io.github.hatayama.uMCP ネームスペースのテスト
+            // Tests for the io.github.hatayama.uMCP namespace
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.CompileCommandTests");
             testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
         }
@@ -57,7 +57,7 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Test Runner/Run Specific Test/GetLogsCommandTests")]
         public static void RunGetLogsCommandTests()
         {
-            Debug.Log("GetLogsCommandTestsだけ実行するで！");
+            Debug.Log("Running only GetLogsCommandTests!");
             shouldSaveXml = false;
             testRunnerController = new UnityTestExecutionManager();
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.GetLogsCommandTests");
@@ -67,7 +67,7 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Test Runner/Run Specific Test/MainThreadSwitcherTests")]
         public static void RunMainThreadSwitcherTests()
         {
-            Debug.Log("MainThreadSwitcherTestsだけ実行するで！");
+            Debug.Log("Running only MainThreadSwitcherTests!");
             shouldSaveXml = false;
             testRunnerController = new UnityTestExecutionManager();
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.MainThreadSwitcherTests");
@@ -77,7 +77,7 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Test Runner/Run Specific Test/SampleEditModeTest")]
         public static void RunSampleEditModeTest()
         {
-            Debug.Log("SampleEditModeTestだけ実行するで！");
+            Debug.Log("Running only SampleEditModeTest!");
             shouldSaveXml = false;
             testRunnerController = new UnityTestExecutionManager();
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("Tests.SampleEditModeTest");
@@ -85,22 +85,22 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// テスト実行完了時のコールバック
+        /// Callback on test run completion.
         /// </summary>
         private static void OnTestRunComplete(ITestResultAdaptor result)
         {
-            Debug.Log("まさみち、テスト実行完了したで！");
+            Debug.Log("Masamichi, the test run is complete!");
             
             if (shouldSaveXml)
             {
-                // XML保存処理を呼び出す
+                // Call the XML save process
                 string savedPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
                 
                 if (!string.IsNullOrEmpty(savedPath))
                 {
-                    Debug.Log($"XMLファイルが正常に保存されたで！\nパス: {savedPath}");
+                    Debug.Log($"XML file saved successfully!\nPath: {savedPath}");
                     
-                    // ファイルをProjectビューで選択
+                    // Select the file in the Project view
                     UnityEngine.Object xmlAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(
                         savedPath.Replace(Application.dataPath, "Assets"));
                     if (xmlAsset != null)
@@ -111,14 +111,14 @@ namespace io.github.hatayama.uMCP
                 }
                 else
                 {
-                    Debug.LogError("XMLファイルの保存に失敗したわ...");
+                    Debug.LogError("Failed to save the XML file...");
                 }
             }
             else
             {
-                // XMLをログ出力
+                // Log XML to console
                 NUnitXmlResultExporter.LogTestResultAsXml(result);
-                Debug.Log("XMLをコンソールに出力したで！上のログを確認してや〜");
+                Debug.Log("Outputted XML to the console! Check the logs above~");
             }
         }
     }

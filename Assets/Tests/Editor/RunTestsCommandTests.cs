@@ -15,8 +15,8 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コマンドタイプのテスト
-        /// - コマンドタイプがRunTestsであることを確認
+        /// Test for command type.
+        /// - Asserts that the command type is RunTests.
         /// </summary>
         [Test]
         public void CommandType_ShouldReturnRunTests()
@@ -26,10 +26,10 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// デフォルトパラメータでのテスト実行
-        /// ※実際のテスト実行は時間がかかるためスキップ
+        /// Test execution with default parameters.
+        /// *Skipped because actual test execution takes time.
         /// </summary>
-        [Ignore("実際のテスト実行は時間がかかるためスキップ")]
+        [Ignore("Skipping because actual test execution is time-consuming.")]
         [Test]
         public async Task ExecuteAsync_WithDefaultParams_ShouldRunAllTests()
         {
@@ -48,7 +48,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// フィルター付きテスト実行のパラメータ解析テスト
+        /// Parameter parsing test for filtered test execution.
         /// </summary>
         [Test]
         public void ParseParameters_ShouldParseCorrectly()
@@ -61,7 +61,7 @@ namespace io.github.hatayama.uMCP
                 ["saveXml"] = true
             };
 
-            // Act - リフレクションを使ってプライベートメソッドを呼び出し
+            // Act - Invoke private method using reflection.
             System.Reflection.MethodInfo parseMethod = typeof(RunTestsCommand)
                 .GetMethod("ParseParameters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
@@ -74,12 +74,12 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// nullパラメータでのデフォルト値テスト
+        /// Default value test with null parameters.
         /// </summary>
         [Test]
         public void ParseParameters_WithNullParams_ShouldReturnDefaults()
         {
-            // Act - リフレクションを使ってプライベートメソッドを呼び出し
+            // Act - Invoke private method using reflection.
             System.Reflection.MethodInfo parseMethod = typeof(RunTestsCommand)
                 .GetMethod("ParseParameters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
@@ -92,12 +92,12 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// フィルター作成のテスト
+        /// Test for filter creation.
         /// </summary>
         [Test]
         public void CreateFilter_ShouldCreateCorrectFilter()
         {
-            // Act - リフレクションを使ってプライベートメソッドを呼び出し
+            // Act - Invoke private method using reflection.
             System.Reflection.MethodInfo createFilterMethod = typeof(RunTestsCommand)
                 .GetMethod("CreateFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
@@ -109,12 +109,12 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 未対応フィルタータイプのテスト
+        /// Test for unsupported filter types.
         /// </summary>
         [Test]
         public void CreateFilter_WithUnsupportedType_ShouldThrowException()
         {
-            // Act & Assert - リフレクションを使ってプライベートメソッドを呼び出し
+            // Act & Assert - Invoke private method using reflection.
             System.Reflection.MethodInfo createFilterMethod = typeof(RunTestsCommand)
                 .GetMethod("CreateFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             

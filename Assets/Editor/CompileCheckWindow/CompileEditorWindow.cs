@@ -12,7 +12,7 @@ namespace io.github.hatayama.uMCP
         private Vector2 scrollPosition;
         private bool forceRecompile = false;
 
-        // SessionStateのキー
+        // Keys for SessionState
         private const string LOG_TEXT_KEY = "CompileEditorWindow.LogText";
         private const string HAS_DATA_KEY = "CompileEditorWindow.HasData";
 
@@ -20,19 +20,19 @@ namespace io.github.hatayama.uMCP
         public static void ShowWindow()
         {
             CompileEditorWindow window = GetWindow<CompileEditorWindow>();
-            window.titleContent = new GUIContent("コンパイルツール");
+            window.titleContent = new GUIContent("Compile Tool");
             window.Show();
         }
 
         private void OnEnable()
         {
-            // インスタンスがまだない場合のみ作成
+            // Create instances only if they don't exist yet
             if (compileChecker == null || logDisplay == null)
             {
                 compileChecker = new CompileChecker();
                 logDisplay = new CompileLogDisplay();
 
-                // SessionStateから永続化されたログを復元
+                // Restore persisted logs from SessionState
                 bool hasPersistedData = SessionState.GetBool(HAS_DATA_KEY, false);
                 if (hasPersistedData)
                 {
@@ -40,14 +40,14 @@ namespace io.github.hatayama.uMCP
                     logDisplay.RestoreFromText(persistentLogText);
                 }
 
-                // イベント購読
+                // Subscribe to events
                 compileChecker.OnCompileStarted += logDisplay.AppendStartMessage;
                 compileChecker.OnAssemblyCompiled += logDisplay.AppendAssemblyMessage;
                 compileChecker.OnCompileCompleted += OnCompileCompleted;
             }
             else
             {
-                // 既存インスタンスがある場合、イベント購読が切れている可能性があるので再購読
+                // If an instance already exists, re-subscribe as the event subscription might have been lost
                 if (!compileChecker.IsCompiling)
                 {
                     compileChecker.OnCompileStarted += logDisplay.AppendStartMessage;
@@ -61,7 +61,7 @@ namespace io.github.hatayama.uMCP
         {
             DisposeInstances();
 
-            // OnDisable時のみnullにして完全にクリーンアップ
+            // Set to null only on OnDisable for a complete cleanup
             compileChecker = null;
             logDisplay = null;
         }
@@ -70,7 +70,7 @@ namespace io.github.hatayama.uMCP
         {
             if (compileChecker != null)
             {
-                // イベント購読解除
+                // Unsubscribe from events
                 if (logDisplay != null)
                 {
                     compileChecker.OnCompileStarted -= logDisplay.AppendStartMessage;
@@ -79,13 +79,13 @@ namespace io.github.hatayama.uMCP
                 compileChecker.OnCompileCompleted -= OnCompileCompleted;
 
                 compileChecker.Dispose();
-                // OnDisable時のみnullにする
+                // Set to null only on OnDisable
             }
 
             if (logDisplay != null)
             {
                 logDisplay.Dispose();
-                // OnDisable時のみnullにする
+                // Set to null only on OnDisable
             }
         }
 
@@ -93,33 +93,33 @@ namespace io.github.hatayama.uMCP
         {
             if (compileChecker == null || logDisplay == null) return;
 
-            GUILayout.Label("Unity コンパイルツール", EditorStyles.boldLabel);
+            GUILayout.Label("Unity Compile Tool", EditorStyles.boldLabel);
 
-            // 強制再コンパイルオプション
-            forceRecompile = EditorGUILayout.Toggle("強制再コンパイル", forceRecompile);
+            // Force recompile option
+            forceRecompile = EditorGUILayout.Toggle("Force Recompile", forceRecompile);
             GUILayout.Space(5);
 
             EditorGUI.BeginDisabledGroup(compileChecker.IsCompiling);
-            string buttonText = compileChecker.IsCompiling ? "コンパイル中..." :
-                               (forceRecompile ? "強制コンパイル実行" : "コンパイル実行");
+            string buttonText = compileChecker.IsCompiling ? "Compiling..." :
+                               (forceRecompile ? "Run Force Compile" : "Run Compile");
             if (GUILayout.Button(buttonText, GUILayout.Height(30)))
             {
-                // async/awaitを使ったコンパイル実行
+                // Execute compilation using async/await
                 _ = ExecuteCompileAsync();
             }
             EditorGUI.EndDisabledGroup();
 
             GUILayout.Space(5);
 
-            // クリアボタン
-            if (GUILayout.Button("ログクリア", GUILayout.Height(25)))
+            // Clear button
+            if (GUILayout.Button("Clear Log", GUILayout.Height(25)))
             {
                 ClearLog();
             }
 
             GUILayout.Space(10);
 
-            GUILayout.Label("コンパイル結果:", EditorStyles.boldLabel);
+            GUILayout.Label("Compilation Result:", EditorStyles.boldLabel);
 
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(300));
             EditorGUILayout.TextArea(logDisplay.LogText, GUILayout.ExpandHeight(true));
@@ -132,15 +132,15 @@ namespace io.github.hatayama.uMCP
         {
             CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
             
-            // 結果をログに出力（デバッグ用）
-            UnityEngine.Debug.Log($"コンパイル完了: 成功={result.Success}, エラー数={result.error.Length}, 警告数={result.warning.Length}");
+            // Output result to log (for debugging)
+            UnityEngine.Debug.Log($"Compilation finished: Success={result.Success}, Errors={result.error.Length}, Warnings={result.warning.Length}");
         }
 
         private void OnCompileCompleted(CompileResult result)
         {
             logDisplay.AppendCompletionMessage(result);
 
-            // ログをSessionStateに永続化
+            // Persist log to SessionState
             SessionState.SetString(LOG_TEXT_KEY, logDisplay.LogText);
             SessionState.SetBool(HAS_DATA_KEY, true);
 
@@ -153,14 +153,14 @@ namespace io.github.hatayama.uMCP
             if (messages.Count > 0)
             {
                 GUILayout.Space(10);
-                GUILayout.Label($"エラー・警告詳細 ({messages.Count}件):", EditorStyles.boldLabel);
+                GUILayout.Label($"Error/Warning Details ({messages.Count} items):", EditorStyles.boldLabel);
 
                 foreach (CompilerMessage message in messages)
                 {
                     GUIStyle style = message.type == CompilerMessageType.Error ?
                         EditorStyles.helpBox : EditorStyles.helpBox;
 
-                    string prefix = message.type == CompilerMessageType.Error ? "[エラー]" : "[警告]";
+                    string prefix = message.type == CompilerMessageType.Error ? "[Error]" : "[Warning]";
                     EditorGUILayout.LabelField($"{prefix} {message.message}", style);
                 }
             }
@@ -171,7 +171,7 @@ namespace io.github.hatayama.uMCP
             logDisplay.Clear();
             compileChecker.ClearMessages();
 
-            // SessionStateもクリア
+            // Also clear SessionState
             SessionState.EraseString(LOG_TEXT_KEY);
             SessionState.EraseBool(HAS_DATA_KEY);
 

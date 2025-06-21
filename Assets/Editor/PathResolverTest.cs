@@ -5,7 +5,7 @@ using System.IO;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// パス解決機能のテスト用ユーティリティ
+    /// Utility for testing the path resolution feature.
     /// </summary>
     public static class PathResolverTest
     {
@@ -21,7 +21,7 @@ namespace io.github.hatayama.uMCP
             {
                 McpLogger.LogInfo("✓ Server file exists");
                 
-                // ファイルサイズも表示
+                // Also display the file size
                 FileInfo fileInfo = new FileInfo(serverPath);
                 McpLogger.LogInfo($"  File size: {fileInfo.Length} bytes");
                 McpLogger.LogInfo($"  Last modified: {fileInfo.LastWriteTime}");
@@ -31,17 +31,17 @@ namespace io.github.hatayama.uMCP
                 McpLogger.LogError("✗ Server file not found");
             }
             
-            // 検索対象パスの詳細情報も表示
+            // Also display detailed information of the search target path
             string projectRoot = Path.GetDirectoryName(Application.dataPath);
             
             McpLogger.LogInfo("=== Search Details ===");
             McpLogger.LogInfo($"Project root: {projectRoot}");
             
-            // ローカルパスのチェック
+            // Check local path
             string localPath = Path.Combine(projectRoot, "Packages", "src", "TypeScriptServer", "dist", "server.js");
             McpLogger.LogInfo($"Local path: {localPath} - {(File.Exists(localPath) ? "EXISTS" : "NOT FOUND")}");
             
-            // Package Cacheのチェック
+            // Check Package Cache
             string packageCacheDir = Path.Combine(projectRoot, "Library", "PackageCache");
             McpLogger.LogInfo($"Package cache dir: {packageCacheDir} - {(Directory.Exists(packageCacheDir) ? "EXISTS" : "NOT FOUND")}");
             

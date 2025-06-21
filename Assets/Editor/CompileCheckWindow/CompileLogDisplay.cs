@@ -7,13 +7,13 @@ namespace io.github.hatayama.uMCP
     {
         private StringBuilder logBuilder = new StringBuilder();
 
-        public string LogText => logBuilder?.ToString() ?? "コンパイル結果がここに表示されるで";
+        public string LogText => logBuilder?.ToString() ?? "Compile results will be displayed here.";
 
         public void Clear()
         {
             if (logBuilder == null) return;
             logBuilder.Clear();
-            logBuilder.AppendLine("コンパイル結果がここに表示されるで");
+            logBuilder.AppendLine("Compile results will be displayed here.");
         }
 
         public void RestoreFromText(string text)
@@ -32,17 +32,17 @@ namespace io.github.hatayama.uMCP
         public void AppendAssemblyMessage(string assemblyName, CompilerMessage[] messages)
         {
             if (logBuilder == null) return;
-            logBuilder.AppendLine($"アセンブリ [{assemblyName}] コンパイル完了");
+            logBuilder.AppendLine($"Assembly [{assemblyName}] compilation finished.");
 
             foreach (CompilerMessage message in messages)
             {
                 if (message.type == CompilerMessageType.Error)
                 {
-                    logBuilder.AppendLine($"  [エラー] {message.message}");
+                    logBuilder.AppendLine($"  [Error] {message.message}");
                 }
                 else if (message.type == CompilerMessageType.Warning)
                 {
-                    logBuilder.AppendLine($"  [警告] {message.message}");
+                    logBuilder.AppendLine($"  [Warning] {message.message}");
                 }
             }
         }
@@ -52,30 +52,30 @@ namespace io.github.hatayama.uMCP
             if (logBuilder == null) return;
 
             string resultMessage = result.Success ?
-                "コンパイル成功じゃ！問題なしや。" :
-                "コンパイル失敗じゃ！エラーを確認してくれや。";
+                "Compilation successful! No issues." :
+                "Compilation failed! Please check the errors.";
 
             logBuilder.AppendLine();
 
-            // アセンブリが処理されなかった場合（変更なし）の表示
+            // Display for when no assemblies were processed (no changes)
             if (result.Messages.Length == 0)
             {
-                logBuilder.AppendLine("変更がないから、コンパイルはスキップされたで");
-                logBuilder.AppendLine("でも問題なく終わったで！");
+                logBuilder.AppendLine("No changes, so compilation was skipped.");
+                logBuilder.AppendLine("But it finished without any problems!");
             }
 
-            logBuilder.AppendLine("=== コンパイル完了 ===");
-            logBuilder.AppendLine($"結果: {resultMessage}");
-            logBuilder.AppendLine($"エラーあり: {!result.Success}");
-            logBuilder.AppendLine($"完了時刻: {result.CompletedAt:HH:mm:ss}");
+            logBuilder.AppendLine("=== Compilation Finished ===");
+            logBuilder.AppendLine($"Result: {resultMessage}");
+            logBuilder.AppendLine($"Has Errors: {!result.Success}");
+            logBuilder.AppendLine($"Completion Time: {result.CompletedAt:HH:mm:ss}");
 
             if (result.Messages.Length > 0)
             {
-                logBuilder.AppendLine($"エラー数: {result.ErrorCount}, 警告数: {result.WarningCount}");
+                logBuilder.AppendLine($"Errors: {result.ErrorCount}, Warnings: {result.WarningCount}");
             }
             else
             {
-                logBuilder.AppendLine("処理されたアセンブリ: なし（変更なし）");
+                logBuilder.AppendLine("Processed Assemblies: None (no changes)");
             }
         }
 

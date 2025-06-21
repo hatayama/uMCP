@@ -5,23 +5,23 @@ namespace io.github.hatayama.uMCP
 {
     public class LogGetterTestHelper
     {
-        [MenuItem("Tools/ログゲッター/テストログ出力")]
+        [MenuItem("Tools/LogGetter/Output Test Logs")]
         public static void OutputTestLogs()
         {
-            Debug.Log("これは通常のログじゃ");
-            Debug.LogWarning("これは警告ログじゃで");
-            Debug.LogError("これはエラーログじゃけぇ");
+            Debug.Log("This is a normal log.");
+            Debug.LogWarning("This is a warning log.");
+            Debug.LogError("This is an error log.");
             
-            Debug.Log("スタックトレース付きのログじゃ\nUnityEngine.Debug:Log(Object)\nLogGetterTestHelper:OutputTestLogs() (at Assets/Editor/LogGetter/LogGetterTestHelper.cs:12)");
+            Debug.Log("This is a log with a stack trace\nUnityEngine.Debug:Log(Object)\nLogGetterTestHelper:OutputTestLogs() (at Assets/Editor/LogGetter/LogGetterTestHelper.cs:12)");
             
-            Debug.LogException(new System.Exception("テスト用の例外じゃ"));
+            Debug.LogException(new System.Exception("This is a test exception."));
             
-            Debug.Log("ログゲッターのテスト完了じゃ！");
+            Debug.Log("LogGetter test complete!");
             
-            Debug.Log("追加ログ1: 情報メッセージ");
-            Debug.Log("追加ログ2: デバッグ情報");
-            Debug.LogWarning("追加警告: 注意が必要じゃ");
-            Debug.LogError("追加エラー: 問題が発生したで");
+            Debug.Log("Additional Log 1: Informational message");
+            Debug.Log("Additional Log 2: Debug information");
+            Debug.LogWarning("Additional Warning: Caution is necessary");
+            Debug.LogError("Additional Error: A problem has occurred");
         }
     }
 } 
