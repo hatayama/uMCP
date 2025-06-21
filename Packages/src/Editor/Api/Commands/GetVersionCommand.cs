@@ -11,7 +11,8 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class GetVersionCommand : IUnityCommand
     {
-        public CommandType CommandType => CommandType.GetVersion;
+        public string CommandName => "getversion";
+        public string Description => "Get Unity version and project information";
 
         public Task<object> ExecuteAsync(JToken paramsToken)
         {

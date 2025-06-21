@@ -14,7 +14,8 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class RunTestsCommand : IUnityCommand
     {
-        public CommandType CommandType => CommandType.RunTests;
+        public string CommandName => "runtests";
+        public string Description => "Execute Unity tests using Test Runner";
 
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
@@ -25,73 +26,63 @@ namespace io.github.hatayama.uMCP
 
             try
             {
-                // Execute tests on main thread
-                await MainThreadSwitcher.SwitchToMainThread();
+                // Create test execution manager
+                UnityTestExecutionManager testManager = new UnityTestExecutionManager();
                 
-                // Wait for test completion using TaskCompletionSource
+                // Create completion source for async operation
                 TaskCompletionSource<TestExecutionResult> completionSource = new TaskCompletionSource<TestExecutionResult>();
                 
-                if (parameters.FilterType == "all")
+                // Set up result processing
+                void ProcessResult(ITestResultAdaptor result)
                 {
-                    // Execute all tests (using UnityTestExecutionManager)
-                    UnityTestExecutionManager testManager = new UnityTestExecutionManager();
-                    testManager.RunEditModeTests((result) => {
-                        ProcessTestResult(result, parameters.SaveXml, completionSource);
-                    });
+                    ProcessTestResult(result, parameters.SaveXml, completionSource);
+                }
+                
+                // Execute tests based on filter
+                if (string.IsNullOrEmpty(parameters.FilterValue))
+                {
+                    testManager.RunEditModeTests(ProcessResult);
                 }
                 else
                 {
-                    // Execute filtered tests (using UnityTestExecutionManager + TestExecutionFilter)
                     TestExecutionFilter filter = CreateFilter(parameters.FilterType, parameters.FilterValue);
-                    UnityTestExecutionManager testManager = new UnityTestExecutionManager();
-                    testManager.RunEditModeTests(filter, (result) => {
-                        ProcessTestResult(result, parameters.SaveXml, completionSource);
-                    });
+                    testManager.RunEditModeTests(filter, ProcessResult);
                 }
-
-                // Wait for test completion
-                TestExecutionResult executionResult = await completionSource.Task;
+                
+                // Wait for completion
+                TestExecutionResult result = await completionSource.Task;
+                
+                McpLogger.LogInfo($"Test execution completed: Success={result.Success}, Message={result.Message}");
                 
                 return new
                 {
-                    success = executionResult.Success,
-                    message = executionResult.Message,
-                    testResults = executionResult.TestResults,
-                    xmlPath = executionResult.XmlPath,
-                    filterType = parameters.FilterType,
-                    filterValue = parameters.FilterValue,
-                    saveXml = parameters.SaveXml,
-                    completedAt = DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
+                    success = result.Success,
+                    message = result.Message,
+                    completedAt = result.CompletedAt,
+                    testCount = result.TestCount,
+                    passedCount = result.PassedCount,
+                    failedCount = result.FailedCount,
+                    skippedCount = result.SkippedCount,
+                    xmlPath = result.XmlPath
                 };
             }
             catch (Exception ex)
             {
-                McpLogger.LogError($"Test execution error: {ex.Message}");
-                return new
-                {
-                    success = false,
-                    message = $"Test execution error: {ex.Message}",
-                    error = ex.ToString(),
-                    completedAt = DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
-                };
+                McpLogger.LogError($"Test execution failed: {ex.Message}");
+                throw;
             }
         }
 
         /// <summary>
-        /// Parse parameters
+        /// Parse parameters from JSON token
         /// </summary>
         private TestExecutionParameters ParseParameters(JToken paramsToken)
         {
-            TestExecutionParameters parameters = new TestExecutionParameters();
-
-            if (paramsToken != null)
-            {
-                parameters.FilterType = paramsToken["filterType"]?.ToString() ?? "all";
-                parameters.FilterValue = paramsToken["filterValue"]?.ToString() ?? "";
-                parameters.SaveXml = paramsToken["saveXml"]?.ToObject<bool>() ?? false;
-            }
-
-            return parameters;
+            string filterType = paramsToken?["filterType"]?.ToString() ?? "all";
+            string filterValue = paramsToken?["filterValue"]?.ToString() ?? "";
+            bool saveXml = paramsToken?["saveXml"]?.ToObject<bool>() ?? false;
+            
+            return new TestExecutionParameters(filterType, filterValue, saveXml);
         }
 
         /// <summary>
@@ -116,100 +107,83 @@ namespace io.github.hatayama.uMCP
         {
             try
             {
-                // Get test result statistics
-                TestResultSummary summary = AnalyzeTestResult(result);
-                
-                McpLogger.LogInfo($"✅ Test execution completed");
-                McpLogger.LogInfo($"📊 Results: Test completed - Passed:{summary.PassedCount} Failed:{summary.FailedCount} Skipped:{summary.SkippedCount} ({result.Duration:F1}s)");
-                
-                string xmlPath = null;
+                TestExecutionResult testResult = new TestExecutionResult
+                {
+                    Success = result.TestStatus == TestStatus.Passed,
+                    Message = $"Test execution completed with status: {result.TestStatus}",
+                    CompletedAt = DateTime.Now,
+                    TestCount = CountTotalTests(result),
+                    PassedCount = CountPassedTests(result),
+                    FailedCount = CountFailedTests(result),
+                    SkippedCount = CountSkippedTests(result)
+                };
+
+                // Save XML if requested
                 if (saveXml)
                 {
-                    // Save XML
-                    xmlPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
-                    if (!string.IsNullOrEmpty(xmlPath))
-                    {
-                        McpLogger.LogInfo($"📄 XML file saved: {xmlPath}");
-                    }
-                    else
-                    {
-                        McpLogger.LogError("Failed to save XML file");
-                    }
+                    string xmlPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
+                    testResult.XmlPath = xmlPath;
+                    McpLogger.LogInfo($"Test results saved to XML: {xmlPath}");
                 }
-                else
-                {
-                    // Output XML to log
-                    NUnitXmlResultExporter.LogTestResultAsXml(result);
-                    McpLogger.LogInfo("📄 XML output to console");
-                }
-                
-                TestExecutionResult executionResult = new TestExecutionResult
-                {
-                    Success = summary.FailedCount == 0,
-                    Message = $"Test completed - Passed:{summary.PassedCount} Failed:{summary.FailedCount} Skipped:{summary.SkippedCount} ({result.Duration:F1}s)",
-                    TestResults = summary,
-                    XmlPath = xmlPath
-                };
-                
-                completionSource.SetResult(executionResult);
+
+                completionSource.SetResult(testResult);
             }
             catch (Exception ex)
             {
-                McpLogger.LogError($"Test result processing error: {ex.Message}");
                 completionSource.SetException(ex);
             }
         }
 
         /// <summary>
-        /// Analyze test results
+        /// Count total tests
         /// </summary>
-        private TestResultSummary AnalyzeTestResult(ITestResultAdaptor result)
+        private int CountTotalTests(ITestResultAdaptor result)
         {
-            int passedCount = 0;
-            int failedCount = 0;
-            int skippedCount = 0;
-            List<FailedTestInfo> failedTests = new List<FailedTestInfo>();
-
-            CountResults(result, ref passedCount, ref failedCount, ref skippedCount, failedTests);
-
-            return new TestResultSummary
-            {
-                PassedCount = passedCount,
-                FailedCount = failedCount,
-                SkippedCount = skippedCount,
-                TotalCount = passedCount + failedCount + skippedCount,
-                Duration = result.Duration,
-                FailedTests = failedTests.ToArray()
-            };
+            int count = 0;
+            CountTestsByStatus(result, ref count, null);
+            return count;
         }
 
         /// <summary>
-        /// Recursively count results
+        /// Count passed tests
         /// </summary>
-        private void CountResults(ITestResultAdaptor result, ref int passed, ref int failed, ref int skipped, List<FailedTestInfo> failedTests)
+        private int CountPassedTests(ITestResultAdaptor result)
+        {
+            int count = 0;
+            CountTestsByStatus(result, ref count, TestStatus.Passed);
+            return count;
+        }
+
+        /// <summary>
+        /// Count failed tests
+        /// </summary>
+        private int CountFailedTests(ITestResultAdaptor result)
+        {
+            int count = 0;
+            CountTestsByStatus(result, ref count, TestStatus.Failed);
+            return count;
+        }
+
+        /// <summary>
+        /// Count skipped tests
+        /// </summary>
+        private int CountSkippedTests(ITestResultAdaptor result)
+        {
+            int count = 0;
+            CountTestsByStatus(result, ref count, TestStatus.Skipped);
+            return count;
+        }
+
+        /// <summary>
+        /// Recursively count tests by status
+        /// </summary>
+        private void CountTestsByStatus(ITestResultAdaptor result, ref int count, TestStatus? targetStatus)
         {
             if (!result.Test.IsSuite)
             {
-                switch (result.TestStatus)
+                if (targetStatus == null || result.TestStatus == targetStatus)
                 {
-                    case TestStatus.Passed:
-                        passed++;
-                        break;
-                    case TestStatus.Failed:
-                        failed++;
-                        // Record details of failed tests
-                        failedTests.Add(new FailedTestInfo
-                        {
-                            TestName = result.Test.Name,
-                            FullName = result.Test.FullName,
-                            Message = result.Message,
-                            StackTrace = result.StackTrace,
-                            Duration = result.Duration
-                        });
-                        break;
-                    case TestStatus.Skipped:
-                        skipped++;
-                        break;
+                    count++;
                 }
                 return;
             }
@@ -218,7 +192,7 @@ namespace io.github.hatayama.uMCP
             {
                 foreach (ITestResultAdaptor child in result.Children)
                 {
-                    CountResults(child, ref passed, ref failed, ref skipped, failedTests);
+                    CountTestsByStatus(child, ref count, targetStatus);
                 }
             }
         }
@@ -229,11 +203,16 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class TestExecutionParameters
     {
-        private const string DEFAULT_FILTER_TYPE = "all";
-        
-        public string FilterType { get; set; } = DEFAULT_FILTER_TYPE;
-        public string FilterValue { get; set; } = "";
-        public bool SaveXml { get; set; } = false;
+        public string FilterType { get; }
+        public string FilterValue { get; }
+        public bool SaveXml { get; }
+
+        public TestExecutionParameters(string filterType, string filterValue, bool saveXml)
+        {
+            FilterType = filterType;
+            FilterValue = filterValue;
+            SaveXml = saveXml;
+        }
     }
 
     /// <summary>
@@ -242,33 +221,12 @@ namespace io.github.hatayama.uMCP
     public class TestExecutionResult
     {
         public bool Success { get; set; }
-        public string Message { get; set; }
-        public TestResultSummary TestResults { get; set; }
-        public string XmlPath { get; set; }
-    }
-
-    /// <summary>
-    /// Test result summary
-    /// </summary>
-    public class TestResultSummary
-    {
+        public string Message { get; set; } = "";
+        public DateTime CompletedAt { get; set; }
+        public int TestCount { get; set; }
         public int PassedCount { get; set; }
         public int FailedCount { get; set; }
         public int SkippedCount { get; set; }
-        public int TotalCount { get; set; }
-        public double Duration { get; set; }
-        public FailedTestInfo[] FailedTests { get; set; }
-    }
-
-    /// <summary>
-    /// Failed test information
-    /// </summary>
-    public class FailedTestInfo
-    {
-        public string TestName { get; set; }
-        public string FullName { get; set; }
-        public string Message { get; set; }
-        public string StackTrace { get; set; }
-        public double Duration { get; set; }
+        public string XmlPath { get; set; }
     }
 } 

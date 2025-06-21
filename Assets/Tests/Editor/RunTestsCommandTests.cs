@@ -15,14 +15,14 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Test for command type.
-        /// - Asserts that the command type is RunTests.
+        /// Test for command name.
+        /// - Asserts that the command name is "runtests".
         /// </summary>
         [Test]
-        public void CommandType_ShouldReturnRunTests()
+        public void CommandName_ShouldReturnRunTests()
         {
             // Assert
-            Assert.That(runTestsCommand.CommandType, Is.EqualTo(CommandType.RunTests));
+            Assert.That(runTestsCommand.CommandName, Is.EqualTo("runtests"));
         }
 
         /// <summary>

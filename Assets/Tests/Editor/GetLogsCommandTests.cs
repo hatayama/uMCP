@@ -15,14 +15,14 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Test for command type.
-        /// - Asserts that the command type is GetLogs.
+        /// Test for command name.
+        /// - Asserts that the command name is "getlogs".
         /// </summary>
         [Test]
-        public void CommandType_ShouldReturnGetLogs()
+        public void CommandName_ShouldReturnGetLogs()
         {
             // Assert
-            Assert.That(getLogsCommand.CommandType, Is.EqualTo(CommandType.GetLogs));
+            Assert.That(getLogsCommand.CommandName, Is.EqualTo("getlogs"));
         }
 
         /// <summary>
@@ -48,8 +48,8 @@ namespace io.github.hatayama.uMCP
             JToken resultToken = JToken.FromObject(result);
             Assert.That(resultToken["logs"], Is.Not.Null, "logs property should exist");
             Assert.That(resultToken["totalCount"], Is.Not.Null, "totalCount property should exist");
-            Assert.That(resultToken["requestedLogType"]?.ToString(), Is.EqualTo("All"), "requestedLogType should be 'All'");
-            Assert.That(resultToken["requestedMaxCount"]?.ToObject<int>(), Is.EqualTo(100), "requestedMaxCount should be 100");
+            Assert.That(resultToken["logType"]?.ToString(), Is.EqualTo("All"), "logType should be 'All'");
+            Assert.That(resultToken["maxCount"]?.ToObject<int>(), Is.EqualTo(100), "maxCount should be 100");
             
             // Type check for the logs array.
             JArray logsArray = resultToken["logs"] as JArray;
@@ -83,8 +83,8 @@ namespace io.github.hatayama.uMCP
             JToken resultToken = JToken.FromObject(result);
             Assert.That(resultToken["logs"], Is.Not.Null, "logs property should exist");
             Assert.That(resultToken["totalCount"], Is.Not.Null, "totalCount property should exist");
-            Assert.That(resultToken["requestedLogType"]?.ToString(), Is.EqualTo("Error"), "requestedLogType should be 'Error'");
-            Assert.That(resultToken["requestedMaxCount"]?.ToObject<int>(), Is.EqualTo(50), "requestedMaxCount should be 50");
+            Assert.That(resultToken["logType"]?.ToString(), Is.EqualTo("Error"), "logType should be 'Error'");
+            Assert.That(resultToken["maxCount"]?.ToObject<int>(), Is.EqualTo(50), "maxCount should be 50");
             
             // Type check for the logs array.
             JArray logsArray = resultToken["logs"] as JArray;

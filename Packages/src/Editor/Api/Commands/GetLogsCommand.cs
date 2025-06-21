@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
@@ -11,7 +12,8 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class GetLogsCommand : IUnityCommand
     {
-        public CommandType CommandType => CommandType.GetLogs;
+        public string CommandName => "getlogs";
+        public string Description => "Retrieve logs from Unity Console";
 
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
@@ -45,51 +47,28 @@ namespace io.github.hatayama.uMCP
             LogEntryDto[] limitedEntries = logData.LogEntries;
             if (limitedEntries.Length > maxCount)
             {
-                LogEntryDto[] temp = new LogEntryDto[maxCount];
-                Array.Copy(limitedEntries, temp, maxCount);
-                limitedEntries = temp;
+                Array.Resize(ref limitedEntries, maxCount);
             }
             
-            // Create a response object.
-            List<object> logs = new List<object>();
-            foreach (LogEntryDto entry in limitedEntries)
-            {
-                object logEntry;
-                if (includeStackTrace)
-                {
-                    logEntry = new
-                    {
-                        type = entry.LogType,
-                        message = entry.Message,
-                        stackTrace = entry.StackTrace,
-                        file = entry.File,
-                        line = McpServerConfig.DEFAULT_LINE_NUMBER, // LogEntryDto does not have a line number, so set it to 0.
-                        timestamp = System.DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
-                    };
-                }
-                else
-                {
-                    logEntry = new
-                    {
-                        type = entry.LogType,
-                        message = entry.Message,
-                        file = entry.File,
-                        line = McpServerConfig.DEFAULT_LINE_NUMBER, // LogEntryDto does not have a line number, so set it to 0.
-                        timestamp = System.DateTime.Now.ToString(McpServerConfig.TIMESTAMP_FORMAT)
-                    };
-                }
-                logs.Add(logEntry);
-            }
-            
+            // Create response object
             object response = new
             {
-                logs = logs.ToArray(),
-                totalCount = logs.Count,
-                requestedLogType = logType,
-                requestedMaxCount = maxCount,
-                requestedSearchText = searchText,
-                requestedIncludeStackTrace = includeStackTrace
+                totalCount = logData.TotalCount,
+                displayedCount = limitedEntries.Length,
+                logType = logType,
+                maxCount = maxCount,
+                searchText = searchText,
+                includeStackTrace = includeStackTrace,
+                                 logs = limitedEntries.Select(entry => new
+                 {
+                     type = entry.LogType,
+                     message = entry.Message,
+                     stackTrace = includeStackTrace ? entry.StackTrace : null,
+                     file = entry.File
+                 }).ToArray()
             };
+            
+            McpLogger.LogDebug($"GetLogs completed: Retrieved {limitedEntries.Length} logs out of {logData.TotalCount} total");
             
             return response;
         }

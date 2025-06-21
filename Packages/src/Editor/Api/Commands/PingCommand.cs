@@ -9,7 +9,8 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class PingCommand : IUnityCommand
     {
-        public CommandType CommandType => CommandType.Ping;
+        public string CommandName => "ping";
+        public string Description => "Connection test and message echo";
 
         public Task<object> ExecuteAsync(JToken paramsToken)
         {

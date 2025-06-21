@@ -1,17 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Unity MCPコマンドのレジストリクラス
-    /// Open-Closed原則に従い、新しいコマンドの追加を容易にする
+    /// 動的なコマンド登録をサポートし、ユーザーが独自のコマンドを追加できる
     /// </summary>
     public class UnityCommandRegistry
     {
-        private readonly Dictionary<CommandType, IUnityCommand> commands = new Dictionary<CommandType, IUnityCommand>();
+        private readonly Dictionary<string, IUnityCommand> commands = new Dictionary<string, IUnityCommand>();
 
         /// <summary>
         /// デフォルトコンストラクタ
@@ -31,8 +33,6 @@ namespace io.github.hatayama.uMCP
             RegisterCommand(new CompileCommand());
             RegisterCommand(new GetLogsCommand());
             RegisterCommand(new RunTestsCommand());
-            
-            // 新しいコマンドの追加例
             RegisterCommand(new GetVersionCommand());
         }
 
@@ -47,8 +47,25 @@ namespace io.github.hatayama.uMCP
                 throw new ArgumentNullException(nameof(command));
             }
 
-            commands[command.CommandType] = command;
-            McpLogger.LogDebug($"Command registered: {command.CommandType}");
+            if (string.IsNullOrWhiteSpace(command.CommandName))
+            {
+                throw new ArgumentException("Command name cannot be null or empty", nameof(command));
+            }
+
+            commands[command.CommandName] = command;
+            McpLogger.LogDebug($"Command registered: {command.CommandName}");
+        }
+
+        /// <summary>
+        /// コマンドを登録解除する
+        /// </summary>
+        /// <param name="commandName">登録解除するコマンド名</param>
+        public void UnregisterCommand(string commandName)
+        {
+            if (commands.Remove(commandName))
+            {
+                McpLogger.LogDebug($"Command unregistered: {commandName}");
+            }
         }
 
         /// <summary>
@@ -60,14 +77,9 @@ namespace io.github.hatayama.uMCP
         /// <exception cref="ArgumentException">未知のコマンドの場合</exception>
         public async Task<object> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
-            if (!Enum.TryParse<CommandType>(commandName, true, out CommandType commandType))
+            if (!commands.TryGetValue(commandName, out IUnityCommand command))
             {
                 throw new ArgumentException($"Unknown command: {commandName}");
-            }
-
-            if (!commands.TryGetValue(commandType, out IUnityCommand command))
-            {
-                throw new ArgumentException($"Command not registered: {commandName}");
             }
 
             McpLogger.LogDebug($"Executing command: {commandName}");
@@ -81,13 +93,16 @@ namespace io.github.hatayama.uMCP
         /// <returns>コマンド名の配列</returns>
         public string[] GetRegisteredCommandNames()
         {
-            string[] commandNames = new string[commands.Count];
-            int i = 0;
-            foreach (CommandType commandType in commands.Keys)
-            {
-                commandNames[i++] = commandType.GetCommandName();
-            }
-            return commandNames;
+            return commands.Keys.ToArray();
+        }
+
+        /// <summary>
+        /// 登録されているコマンドの詳細情報を取得する
+        /// </summary>
+        /// <returns>コマンド情報の配列</returns>
+        public CommandInfo[] GetRegisteredCommands()
+        {
+            return commands.Values.Select(cmd => new CommandInfo(cmd.CommandName, cmd.Description)).ToArray();
         }
 
         /// <summary>
@@ -97,8 +112,25 @@ namespace io.github.hatayama.uMCP
         /// <returns>登録されている場合はtrue</returns>
         public bool IsCommandRegistered(string commandName)
         {
-            return Enum.TryParse<CommandType>(commandName, true, out CommandType commandType) &&
-                   commands.ContainsKey(commandType);
+            return commands.ContainsKey(commandName);
+        }
+    }
+
+    /// <summary>
+    /// コマンド情報を表すクラス
+    /// </summary>
+    public class CommandInfo
+    {
+        [JsonProperty("name")]
+        public string Name { get; }
+        
+        [JsonProperty("description")]
+        public string Description { get; }
+
+        public CommandInfo(string name, string description)
+        {
+            Name = name;
+            Description = description;
         }
     }
 } 

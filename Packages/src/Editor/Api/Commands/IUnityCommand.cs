@@ -11,9 +11,14 @@ namespace io.github.hatayama.uMCP
     public interface IUnityCommand
     {
         /// <summary>
-        /// コマンドの種類を取得する
+        /// コマンド名を取得する
         /// </summary>
-        CommandType CommandType { get; }
+        string CommandName { get; }
+        
+        /// <summary>
+        /// コマンドの説明を取得する
+        /// </summary>
+        string Description { get; }
         
         /// <summary>
         /// コマンドを実行する

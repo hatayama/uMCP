@@ -303,6 +303,102 @@ export class UnityClient {
   }
 
   /**
+   * Get available commands from Unity
+   */
+  async getAvailableCommands(): Promise<string[]> {
+    await this.ensureConnected();
+    
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: "getAvailableCommands",
+      params: {}
+    };
+
+    const response = await this.sendRequest(request);
+    
+    if (response.error) {
+      throw new Error(`Failed to get available commands: ${response.error.message}`);
+    }
+
+    return response.result || [];
+  }
+
+  /**
+   * Get command details from Unity
+   */
+  async getCommandDetails(): Promise<Array<{name: string, description: string}>> {
+    await this.ensureConnected();
+    
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: "getCommandDetails",
+      params: {}
+    };
+
+    const response = await this.sendRequest(request);
+    
+    if (response.error) {
+      throw new Error(`Failed to get command details: ${response.error.message}`);
+    }
+
+    return response.result || [];
+  }
+
+  /**
+   * Execute any Unity command dynamically
+   */
+  async executeCommand(commandName: string, params: any = {}): Promise<any> {
+    await this.ensureConnected();
+    
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: commandName,
+      params: params
+    };
+
+    const response = await this.sendRequest(request);
+    
+    if (response.error) {
+      throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
+    }
+
+    return response.result;
+  }
+
+  /**
+   * Generate unique request ID
+   */
+  private generateId(): number {
+    return Date.now();
+  }
+
+  /**
+   * Send request and wait for response
+   */
+  private async sendRequest(request: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
+      }, TIMEOUTS.PING);
+
+      this.socket!.write(JSON.stringify(request) + '\n');
+
+      this.socket!.once('data', (data) => {
+        clearTimeout(timeout);
+        try {
+          const response = JSON.parse(data.toString());
+          resolve(response);
+        } catch (error) {
+          reject(new Error('Invalid response from Unity'));
+        }
+      });
+    });
+  }
+
+  /**
    * Disconnect
    */
   disconnect(): void {

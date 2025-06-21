@@ -9,15 +9,11 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class UnityApiHandler
     {
-        private static readonly UnityCommandRegistry commandRegistry = new UnityCommandRegistry();
-
         /// <summary>
         /// コマンドレジストリを取得する
         /// 新しいコマンドを追加する場合はこのレジストリを使用する
         /// </summary>
-        public static UnityCommandRegistry CommandRegistry => commandRegistry;
-
-
+        public static UnityCommandRegistry CommandRegistry => CustomCommandManager.GetRegistry();
 
         /// <summary>
         /// 汎用コマンド実行メソッド
@@ -28,7 +24,41 @@ namespace io.github.hatayama.uMCP
         /// <returns>実行結果</returns>
         public static async Task<object> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
-            return await commandRegistry.ExecuteCommandAsync(commandName, paramsToken);
+            // 特別なメタコマンドをチェック
+            if (commandName == "getAvailableCommands")
+            {
+                return await HandleGetAvailableCommands(paramsToken);
+            }
+            if (commandName == "getCommandDetails")
+            {
+                return await HandleGetCommandDetails(paramsToken);
+            }
+
+            return await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
+        }
+
+        /// <summary>
+        /// 利用可能なコマンド一覧を取得する
+        /// </summary>
+        private static Task<object> HandleGetAvailableCommands(JToken request)
+        {
+            UnityCommandRegistry registry = CustomCommandManager.GetRegistry();
+            string[] commandNames = registry.GetRegisteredCommandNames();
+            
+            McpLogger.LogDebug($"GetAvailableCommands: Returning {commandNames.Length} commands");
+            return Task.FromResult<object>(commandNames);
+        }
+
+        /// <summary>
+        /// コマンドの詳細情報を取得する
+        /// </summary>
+        private static Task<object> HandleGetCommandDetails(JToken request)
+        {
+            UnityCommandRegistry registry = CustomCommandManager.GetRegistry();
+            CommandInfo[] commands = registry.GetRegisteredCommands();
+            
+            McpLogger.LogDebug($"GetCommandDetails: Returning {commands.Length} command details");
+            return Task.FromResult<object>(commands);
         }
     }
 } 

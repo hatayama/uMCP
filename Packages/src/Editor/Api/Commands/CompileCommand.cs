@@ -14,7 +14,8 @@ namespace io.github.hatayama.uMCP
         // SessionStateキー定数
         private const string SESSION_KEY_COMPILE_FROM_MCP = "uMCP.CompileFromMCP";
         
-        public CommandType CommandType => CommandType.Compile;
+        public string CommandName => "compile";
+        public string Description => "Execute Unity project compilation";
 
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
@@ -34,31 +35,15 @@ namespace io.github.hatayama.uMCP
             object response = new
             {
                 success = result.Success,
-                errorCount = result.ErrorCount,
-                warningCount = result.WarningCount,
-                completedAt = result.CompletedAt.ToString(McpServerConfig.ISO_DATETIME_FORMAT),
-                errors = result.Errors.Select(e => new
-                {
-                    message = e.message,
-                    file = e.file,
-                    line = e.line,
-                    column = e.column,
-                    type = e.type.ToString()
-                }).ToArray(),
-                warnings = result.Warnings.Select(w => new
-                {
-                    message = w.message,
-                    file = w.file,
-                    line = w.line,
-                    column = w.column,
-                    type = w.type.ToString()
-                }).ToArray()
+                errorCount = result.error.Length,
+                warningCount = result.warning.Length,
+                completedAt = result.CompletedAt,
+                errors = result.error.Select(e => new { message = e.message, file = e.file, line = e.line }).ToArray(),
+                warnings = result.warning.Select(w => new { message = w.message, file = w.file, line = w.line }).ToArray()
             };
 
-            // MCP経由コンパイルフラグはアセンブリリロード後にクリアされるため、ここではクリアしない
-
-            McpLogger.LogDebug($"Compile completed: Success={result.Success}, Errors={result.ErrorCount}, Warnings={result.WarningCount}");
-
+            McpLogger.LogInfo($"Compile completed: Success={result.Success}, Errors={result.error.Length}, Warnings={result.warning.Length}");
+            
             return response;
         }
     }
