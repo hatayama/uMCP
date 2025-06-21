@@ -310,7 +310,7 @@ namespace io.github.hatayama.uMCP
                     }
                 }
             }
-            catch (ThreadAbortException ex)
+            catch (ThreadAbortException)
             {
                 // Treat as normal behavior if a domain reload is in progress.
                 if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
