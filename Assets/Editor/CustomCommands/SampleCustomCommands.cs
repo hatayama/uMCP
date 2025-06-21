@@ -7,23 +7,23 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// カスタムコマンドのサンプル実装
-    /// ユーザーが独自のコマンドを追加する際の参考例
+    /// Sample implementation of custom commands
+    /// Reference example for users to add their own commands
     /// </summary>
     [InitializeOnLoad]
     public static class SampleCustomCommands
     {
         /// <summary>
-        /// Unity起動時に自動実行される静的コンストラクタ
+        /// Static constructor that runs automatically when Unity starts
         /// </summary>
         static SampleCustomCommands()
         {
-            // Unity起動時にサンプルコマンドを自動登録
+            // Auto-register sample commands when Unity starts
             RegisterSampleCommandsAutomatically();
         }
 
         /// <summary>
-        /// Unity起動時にサンプルコマンドを自動登録する
+        /// Auto-register sample commands when Unity starts
         /// </summary>
         private static void RegisterSampleCommandsAutomatically()
         {
@@ -43,7 +43,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// カスタムコマンドを登録する
+        /// Register custom commands
         /// </summary>
         [MenuItem("uMCP/Custom Commands/Register Sample Commands")]
         public static void RegisterSampleCommands()
@@ -58,7 +58,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// カスタムコマンドを登録解除する
+        /// Unregister custom commands
         /// </summary>
         [MenuItem("uMCP/Custom Commands/Unregister Sample Commands")]
         public static void UnregisterSampleCommands()
@@ -72,7 +72,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 現在登録されているコマンドの一覧を表示する
+        /// Display list of currently registered commands
         /// </summary>
         [MenuItem("uMCP/Custom Commands/Show Registered Commands")]
         public static void ShowRegisteredCommands()
@@ -85,15 +85,15 @@ namespace io.github.hatayama.uMCP
                 Debug.Log($"{i + 1}. {commands[i].Name} - {commands[i].Description}");
             }
             
-            // さらに詳細なデバッグ情報
+            // Additional detailed debug information
             Debug.Log("=== Debug Info ===");
             Debug.Log(CustomCommandManager.GetDebugInfo());
         }
     }
 
     /// <summary>
-    /// Hello World カスタムコマンド
-    /// 基本的なカスタムコマンドの実装例
+    /// Hello World custom command
+    /// Basic implementation example of a custom command
     /// </summary>
     public class HelloWorldCommand : IUnityCommand
     {
@@ -117,8 +117,8 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// プロジェクト情報取得カスタムコマンド
-    /// Unityプロジェクトの詳細情報を取得する例
+    /// Project information retrieval custom command
+    /// Example of retrieving detailed Unity project information
     /// </summary>
     public class GetProjectInfoCommand : IUnityCommand
     {
@@ -158,8 +158,8 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// コンソールクリアカスタムコマンド
-    /// Unityコンソールをクリアする例
+    /// Console clear custom command
+    /// Example of clearing Unity console
     /// </summary>
     public class ClearConsoleCommand : IUnityCommand
     {
@@ -170,7 +170,7 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("ClearConsole command executed");
             
-            // Unityコンソールをクリアする
+            // Clear Unity console
             LogGetter.ClearCustomLogs();
             
             return Task.FromResult<object>(new
@@ -183,8 +183,8 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// シーン情報取得カスタムコマンド
-    /// 現在のシーン情報を取得する例
+    /// Scene information retrieval custom command
+    /// Example of retrieving current scene information
     /// </summary>
     public class GetSceneInfoCommand : IUnityCommand
     {
@@ -203,8 +203,8 @@ namespace io.github.hatayama.uMCP
                 scenePath = currentScene.path,
                 sceneIndex = currentScene.buildIndex,
                 isLoaded = currentScene.isLoaded,
+                isDirty = currentScene.isDirty,
                 rootCount = currentScene.rootCount,
-                gameObjectCount = currentScene.GetRootGameObjects().Length,
                 timestamp = System.DateTime.Now,
                 commandName = CommandName
             });

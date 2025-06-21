@@ -66,13 +66,6 @@ class McpServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const toolDefinitions = this.toolRegistry.getAllDefinitions();
       
-      // デバッグログ: 登録されているツール一覧を出力
-      console.error('=== MCP Server Debug: Tool Registry Status ===');
-      console.error(`Total tools registered: ${toolDefinitions.length}`);
-      console.error('Tool names:', toolDefinitions.map(def => def.name));
-      console.error('Tool registry keys:', this.toolRegistry.getToolNames());
-      console.error('=== End Debug ===');
-      
       return {
         tools: toolDefinitions.map(def => ({
           name: def.name,
@@ -85,13 +78,6 @@ class McpServer {
     // Handle tool execution
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      
-      // デバッグログ: ツール実行の詳細
-      console.error(`=== MCP Server Debug: Tool Execution ===`);
-      console.error(`Executing tool: ${name}`);
-      console.error(`Available tools: ${this.toolRegistry.getToolNames().join(', ')}`);
-      console.error('=== End Debug ===');
-      
       const result = await this.toolRegistry.execute(name, args);
       
       // Convert to format expected by MCP SDK

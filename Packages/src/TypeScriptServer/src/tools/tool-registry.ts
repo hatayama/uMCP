@@ -15,11 +15,7 @@ export class ToolRegistry {
   private tools: Map<string, ToolHandler> = new Map();
 
   constructor(context: ToolContext) {
-    console.error('=== ToolRegistry Debug: Initialization ===');
     this.registerDefaultTools(context);
-    console.error(`After registerDefaultTools: ${this.tools.size} tools registered`);
-    console.error(`Tool names: ${Array.from(this.tools.keys()).join(', ')}`);
-    console.error('=== End ToolRegistry Debug ===');
   }
 
   /**
@@ -37,65 +33,43 @@ export class ToolRegistry {
     const isDevelopment = process.env.NODE_ENV === 'development';
     const enablePingTool = process.env.ENABLE_PING_TOOL === 'true';
     
-    console.error(`=== Default Tools Registration Debug ===`);
-    console.error(`isDevelopment: ${isDevelopment}, enablePingTool: ${enablePingTool}`);
-    
     if (isDevelopment || enablePingTool) {
       this.register(new PingTool(context));
-      console.error('Registered: PingTool');
     }
     
     this.register(new UnityPingTool(context));
-    console.error('Registered: UnityPingTool');
     this.register(new CompileTool(context));
-    console.error('Registered: CompileTool');
     this.register(new LogsTool(context));
-    console.error('Registered: LogsTool');
     this.register(new RunTestsTool(context));
-    console.error('Registered: RunTestsTool');
     this.register(new GetAvailableCommandsTool(context));
-    console.error('Registered: GetAvailableCommandsTool');
-    console.error(`=== End Default Tools Registration Debug ===`);
   }
 
   /**
    * Load dynamic tools from Unity commands
    */
   private async loadDynamicTools(context: ToolContext): Promise<void> {
-    console.error('=== Dynamic Tools Loading Debug ===');
     try {
       // Wait a bit for Unity to be ready
       await new Promise(resolve => setTimeout(resolve, 1000));
-      console.error('Attempting to get command details from Unity...');
       
       const commands = await context.unityClient.getCommandDetails();
-      console.error(`Received ${commands.length} commands from Unity:`, commands);
       
       // Skip standard commands that are already registered as specific tools
       const standardCommands = ['ping', 'compile', 'getlogs', 'runtests', 'getversion', 'getavailablecommands'];
       
-      let dynamicToolsCount = 0;
       for (const command of commands) {
         const commandName = (command as any).Name || (command as any).name;
         const commandDescription = (command as any).Description || (command as any).description;
         
-        console.error(`Processing command: ${commandName}, isStandard: ${standardCommands.includes(commandName?.toLowerCase())}`);
-        
         if (commandName && !standardCommands.includes(commandName.toLowerCase())) {
           const dynamicTool = new DynamicUnityCommandTool(context, commandName, commandDescription);
           this.register(dynamicTool);
-          dynamicToolsCount++;
-          console.error(`Registered dynamic tool: ${commandName}`);
         }
       }
-      
-      console.error(`Total dynamic tools registered: ${dynamicToolsCount}`);
-      console.error(`Total tools after dynamic loading: ${this.tools.size}`);
       
     } catch (error) {
       console.warn('Failed to load dynamic tools:', error);
     }
-    console.error('=== End Dynamic Tools Loading Debug ===');
   }
 
   /**

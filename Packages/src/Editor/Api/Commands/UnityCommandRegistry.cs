@@ -8,16 +8,16 @@ using Newtonsoft.Json.Linq;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity MCPコマンドのレジストリクラス
-    /// 動的なコマンド登録をサポートし、ユーザーが独自のコマンドを追加できる
+    /// Unity MCP command registry class
+    /// Supports dynamic command registration, allowing users to add their own commands
     /// </summary>
     public class UnityCommandRegistry
     {
         private readonly Dictionary<string, IUnityCommand> commands = new Dictionary<string, IUnityCommand>();
 
         /// <summary>
-        /// デフォルトコンストラクタ
-        /// 標準コマンドを自動登録する
+        /// Default constructor
+        /// Auto-registers standard commands
         /// </summary>
         public UnityCommandRegistry()
         {
@@ -25,7 +25,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 標準コマンドを登録する
+        /// Register standard commands
         /// </summary>
         private void RegisterDefaultCommands()
         {
@@ -37,9 +37,9 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コマンドを登録する
+        /// Register command
         /// </summary>
-        /// <param name="command">登録するコマンド</param>
+        /// <param name="command">Command to register</param>
         public void RegisterCommand(IUnityCommand command)
         {
             if (command == null)
@@ -57,9 +57,9 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コマンドを登録解除する
+        /// Unregister command
         /// </summary>
-        /// <param name="commandName">登録解除するコマンド名</param>
+        /// <param name="commandName">Name of command to unregister</param>
         public void UnregisterCommand(string commandName)
         {
             if (commands.Remove(commandName))
@@ -69,12 +69,12 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コマンドを実行する
+        /// Execute command
         /// </summary>
-        /// <param name="commandName">コマンド名</param>
-        /// <param name="paramsToken">パラメータ</param>
-        /// <returns>実行結果</returns>
-        /// <exception cref="ArgumentException">未知のコマンドの場合</exception>
+        /// <param name="commandName">Command name</param>
+        /// <param name="paramsToken">Parameters</param>
+        /// <returns>Execution result</returns>
+        /// <exception cref="ArgumentException">When command is unknown</exception>
         public async Task<object> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
             if (!commands.TryGetValue(commandName, out IUnityCommand command))
@@ -88,28 +88,28 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 登録されているコマンド名の一覧を取得する
+        /// Get list of registered command names
         /// </summary>
-        /// <returns>コマンド名の配列</returns>
+        /// <returns>Array of command names</returns>
         public string[] GetRegisteredCommandNames()
         {
             return commands.Keys.ToArray();
         }
 
         /// <summary>
-        /// 登録されているコマンドの詳細情報を取得する
+        /// Get detailed information of registered commands
         /// </summary>
-        /// <returns>コマンド情報の配列</returns>
+        /// <returns>Array of command information</returns>
         public CommandInfo[] GetRegisteredCommands()
         {
             return commands.Values.Select(cmd => new CommandInfo(cmd.CommandName, cmd.Description)).ToArray();
         }
 
         /// <summary>
-        /// 指定されたコマンドが登録されているかを確認する
+        /// Check if specified command is registered
         /// </summary>
-        /// <param name="commandName">コマンド名</param>
-        /// <returns>登録されている場合はtrue</returns>
+        /// <param name="commandName">Command name</param>
+        /// <returns>True if registered</returns>
         public bool IsCommandRegistered(string commandName)
         {
             return commands.ContainsKey(commandName);
@@ -117,7 +117,7 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// コマンド情報を表すクラス
+    /// Class representing command information
     /// </summary>
     public class CommandInfo
     {

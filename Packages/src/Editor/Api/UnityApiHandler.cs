@@ -4,27 +4,27 @@ using Newtonsoft.Json.Linq;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity API呼び出しを専門に扱うクラス
-    /// 新しいコマンドベースの構造に対応
+    /// Class specialized in handling Unity API calls
+    /// Supports new command-based structure
     /// </summary>
     public static class UnityApiHandler
     {
         /// <summary>
-        /// コマンドレジストリを取得する
-        /// 新しいコマンドを追加する場合はこのレジストリを使用する
+        /// Get command registry
+        /// Use this registry when adding new commands
         /// </summary>
         public static UnityCommandRegistry CommandRegistry => CustomCommandManager.GetRegistry();
 
         /// <summary>
-        /// 汎用コマンド実行メソッド
-        /// 新しいコマンドベースの構造を使用する
+        /// Generic command execution method
+        /// Uses new command-based structure
         /// </summary>
-        /// <param name="commandName">コマンド名</param>
-        /// <param name="paramsToken">パラメータ</param>
-        /// <returns>実行結果</returns>
+        /// <param name="commandName">Command name</param>
+        /// <param name="paramsToken">Parameters</param>
+        /// <returns>Execution result</returns>
         public static async Task<object> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
-            // 特別なメタコマンドをチェック
+            // Check for special meta commands
             if (commandName == "getAvailableCommands")
             {
                 return await HandleGetAvailableCommands(paramsToken);
@@ -38,7 +38,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 利用可能なコマンド一覧を取得する
+        /// Get list of available commands
         /// </summary>
         private static Task<object> HandleGetAvailableCommands(JToken request)
         {
@@ -50,7 +50,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// コマンドの詳細情報を取得する
+        /// Get detailed command information
         /// </summary>
         private static Task<object> HandleGetCommandDetails(JToken request)
         {

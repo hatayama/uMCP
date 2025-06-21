@@ -376,23 +376,14 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Draw individual configuration section
+        /// Draw configuration section for the selected editor
         /// </summary>
         private void DrawConfigurationSection(string editorName, McpConfigService configService, bool isServerRunning, int currentServerPort)
         {
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField($"{editorName} Settings", EditorStyles.boldLabel);
             
-            bool isConfigured = false;
-            try
-            {
-                isConfigured = configService.IsConfigured();
-            }
-            catch (System.Exception ex)
-            {
-                EditorGUILayout.HelpBox($"Error loading {editorName} configuration: {ex.Message}", MessageType.Error);
-                throw;
-            }
+            bool isConfigured = configService.IsConfigured();
             
             if (isConfigured)
             {
