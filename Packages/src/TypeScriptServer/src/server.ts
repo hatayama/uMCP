@@ -24,7 +24,10 @@ class McpServer {
   private isInitialized: boolean = false;
 
   constructor() {
+    console.error('=== Unity MCP Server Starting ===');
+    console.error('Log: Constructor called');
     console.log('Starting Unity MCP Server...');
+    
     this.server = new Server(
       {
         name: SERVER_CONFIG.NAME,
@@ -61,6 +64,15 @@ class McpServer {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
+    
+    // Establish persistent connection to Unity for notifications
+    try {
+      await this.unityClient.connect();
+      console.error('[MCP Server] Connected to Unity for notifications');
+    } catch (error) {
+      console.error('[MCP Server] Failed to connect to Unity:', error);
+      // Continue anyway - tools will connect on demand
+    }
     
     const context: ToolContext = {
       unityClient: this.unityClient
@@ -108,6 +120,16 @@ class McpServer {
     await this.server.connect(transport);
     
     console.error('Unity MCP Server started successfully');
+    
+    // Start periodic notification test for debugging
+    // This will send notifications/tools/list_changed every 10 seconds
+    console.error('[MCP Server] Starting periodic notification test every 10 seconds');
+    setInterval(() => {
+      this.sendTestNotification();
+    }, 10000);
+    
+    // Send initial test notification
+    this.sendTestNotification();
   }
 
   /**
@@ -116,12 +138,22 @@ class McpServer {
   private notifyToolsChanged(): void {
     if (this.isInitialized) {
       console.error('[MCP Server] Sending tools/list_changed notification');
-      this.server.notification({
-        method: "notifications/tools/list_changed",
-        params: {}
-      });
+      fileLogger.logNotification('notifications/tools/list_changed', { source: 'Unity event' });
+      
+      try {
+        this.server.notification({
+          method: "notifications/tools/list_changed",
+          params: {}
+        });
+        console.error('[MCP Server] tools/list_changed notification sent successfully');
+        fileLogger.log('INFO', 'tools/list_changed notification sent successfully from Unity event');
+      } catch (error) {
+        console.error('[MCP Server] Failed to send tools/list_changed notification:', error);
+        fileLogger.log('ERROR', 'Failed to send tools/list_changed notification from Unity event', error);
+      }
     } else {
       console.error('[MCP Server] Skipping notification - server not initialized');
+      fileLogger.log('WARN', 'Skipping notification - server not initialized');
     }
   }
 
@@ -129,6 +161,8 @@ class McpServer {
    * Cleanup
    */
   cleanup(): void {
+    fileLogger.log('INFO', 'Cleaning up Unity MCP Server');
+    this.notificationTester.stopPeriodicTest();
     this.toolRegistry.stopPolling();
     this.unityClient.disconnect();
   }

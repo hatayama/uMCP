@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
@@ -13,6 +14,8 @@ namespace io.github.hatayama.uMCP
     {
         public string CommandName => "getversion";
         public string Description => "Get Unity version and project information";
+
+        public CommandParameterSchema ParameterSchema => new CommandParameterSchema();
 
         public Task<object> ExecuteAsync(JToken paramsToken)
         {

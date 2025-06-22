@@ -6,32 +6,48 @@ import * as net from 'net';
  */
 export class UnityDebugClient {
     constructor() {
+        this.socket = null;
+        this._connected = false;
         this.port = parseInt(process.env.UNITY_TCP_PORT || '7400', 10);
         this.host = 'localhost';
-        this.socket = null;
-        this.connected = false;
+    }
+
+    get connected() {
+        return this._connected && this.socket && !this.socket.destroyed;
     }
 
     /**
      * Connect to the Unity side.
      */
     async connect() {
+        console.log(`Attempting to connect to Unity at ${this.host}:${this.port}...`);
         return new Promise((resolve, reject) => {
             this.socket = new net.Socket();
             
             this.socket.connect(this.port, this.host, () => {
-                this.connected = true;
+                this._connected = true;
+                console.log('✅ Connected to Unity successfully');
                 resolve();
             });
 
             this.socket.on('error', (error) => {
-                this.connected = false;
+                this._connected = false;
+                console.error('❌ Connection error:', error.message);
                 reject(new Error(`Unity connection failed: ${error.message}`));
             });
 
             this.socket.on('close', () => {
-                this.connected = false;
+                this._connected = false;
+                console.log('🔌 Disconnected from Unity');
             });
+
+            // Add timeout
+            setTimeout(() => {
+                if (!this._connected) {
+                    this.socket.destroy();
+                    reject(new Error('Connection timeout'));
+                }
+            }, 5000);
         });
     }
 
@@ -204,6 +220,55 @@ export class UnityDebugClient {
         });
     }
 
+    async getCommandDetails() {
+        if (!this.connected) {
+            throw new Error('Not connected to Unity');
+        }
+        
+        console.log('📤 Sending getCommandDetails request...');
+        const request = {
+            jsonrpc: '2.0',
+            id: Date.now(),
+            method: "getCommandDetails",
+            params: {}
+        };
+
+        console.log('📋 Request:', JSON.stringify(request, null, 2));
+        const response = await this.sendRequest(request);
+        console.log('📥 Raw response:', JSON.stringify(response, null, 2));
+        
+        if (response.error) {
+            throw new Error(`Failed to get command details: ${response.error.message}`);
+        }
+
+        return response.result || [];
+    }
+
+    async sendRequest(request) {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                console.error('⏰ Request timeout');
+                reject(new Error('Request timeout'));
+            }, 10000);
+
+            this.socket.write(JSON.stringify(request) + '\n');
+            console.log('📡 Request sent to Unity');
+
+            this.socket.once('data', (data) => {
+                clearTimeout(timeout);
+                console.log('📨 Received data from Unity');
+                try {
+                    const response = JSON.parse(data.toString());
+                    resolve(response);
+                } catch (error) {
+                    console.error('❌ Failed to parse response:', error.message);
+                    console.error('Raw data:', data.toString());
+                    reject(new Error('Invalid response from Unity'));
+                }
+            });
+        });
+    }
+
     /**
      * Disconnect the connection.
      */
@@ -212,6 +277,6 @@ export class UnityDebugClient {
             this.socket.destroy();
             this.socket = null;
         }
-        this.connected = false;
+        this._connected = false;
     }
 }

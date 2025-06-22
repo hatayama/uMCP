@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
@@ -12,6 +13,8 @@ namespace io.github.hatayama.uMCP
     {
         public string CommandName => "getsceneinfo";
         public string Description => "Get current scene information";
+
+        public CommandParameterSchema ParameterSchema => new CommandParameterSchema();
 
         public Task<object> ExecuteAsync(JToken paramsToken)
         {

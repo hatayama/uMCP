@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
+import { TOOL_NAMES } from '../constants.js';
 
 /**
- * Ping tool for Unity
+ * Unity ping tool for full MCP system communication testing
  */
 export class UnityPingTool extends BaseTool {
-  readonly name = 'unity-ping';
-  readonly description = 'Ping test to Unity (TCP/IP communication verification)';
+  readonly name = TOOL_NAMES.PING;
+  readonly description = 'Full MCP ping test (Cursor ↔ Node server ↔ Unity communication)';
   readonly inputSchema = {
     type: 'object',
     properties: {

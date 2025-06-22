@@ -17,6 +17,15 @@ namespace io.github.hatayama.uMCP
         public string CommandName => "runtests";
         public string Description => "Execute Unity tests using Test Runner";
 
+        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
+            new Dictionary<string, ParameterInfo>
+            {
+                ["filterType"] = new ParameterInfo("string", "Type of test filter", "all", new[] { "all", "fullclassname", "namespace", "testname", "assembly" }),
+                ["filterValue"] = new ParameterInfo("string", "Filter value (specify when filterType is not all)\n• fullclassname: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)\n• namespace: Namespace (e.g.: io.github.hatayama.uMCP)\n• testname: Individual test name\n• assembly: Assembly name", ""),
+                ["saveXml"] = new ParameterInfo("boolean", "Whether to save test results as XML file", false)
+            }
+        );
+
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
             // Parse parameters

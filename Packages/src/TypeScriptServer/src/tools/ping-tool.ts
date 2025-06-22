@@ -4,11 +4,11 @@ import { ToolResponse } from '../types/tool-types.js';
 import { TOOL_NAMES, DEFAULT_MESSAGES } from '../constants.js';
 
 /**
- * Ping tool for TypeScript side
+ * MCP Ping tool for Cursor ↔ Node server communication testing
  */
 export class PingTool extends BaseTool {
-  readonly name = TOOL_NAMES.PING;
-  readonly description = 'Ping command for Unity MCP Server connection testing (TypeScript side only)';
+  readonly name = TOOL_NAMES.MCP_PING;
+  readonly description = 'MCP ping test (Cursor ↔ Node server communication only)';
   readonly inputSchema = {
     type: 'object',
     properties: {

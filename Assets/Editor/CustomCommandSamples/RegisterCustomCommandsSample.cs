@@ -7,9 +7,14 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Sample implementation of custom commands
     /// Reference example for users to add their own commands
-    /// </summary>
+    /// </summary>\
+    [InitializeOnLoad]
     public static class RegisterCustomCommandsSample
     {
+        static RegisterCustomCommandsSample()
+        {
+            RegisterSampleCommands();
+        }
         /// <summary>
         /// Register custom commands
         /// </summary>

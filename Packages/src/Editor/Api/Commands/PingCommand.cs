@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
@@ -11,6 +12,13 @@ namespace io.github.hatayama.uMCP
     {
         public string CommandName => "ping";
         public string Description => "Connection test and message echo";
+
+        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
+            new Dictionary<string, ParameterInfo>
+            {
+                ["message"] = new ParameterInfo("string", "Message to send to Unity", "Hello from TypeScript MCP Server")
+            }
+        );
 
         public Task<object> ExecuteAsync(JToken paramsToken)
         {

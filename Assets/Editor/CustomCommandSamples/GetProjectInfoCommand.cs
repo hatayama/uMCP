@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
@@ -12,6 +13,8 @@ namespace io.github.hatayama.uMCP
     {
         public string CommandName => "getprojectinfo";
         public string Description => "Get detailed Unity project information";
+
+        public CommandParameterSchema ParameterSchema => new CommandParameterSchema();
 
         public Task<object> ExecuteAsync(JToken paramsToken)
         {
@@ -40,7 +43,8 @@ namespace io.github.hatayama.uMCP
                 processorCount = SystemInfo.processorCount,
                 systemMemorySize = SystemInfo.systemMemorySize,
                 graphicsDeviceName = SystemInfo.graphicsDeviceName,
-                graphicsMemorySize = SystemInfo.graphicsMemorySize
+                timestamp = System.DateTime.Now,
+                commandName = CommandName
             });
         }
     }

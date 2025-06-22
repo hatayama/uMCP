@@ -14,6 +14,11 @@ namespace io.github.hatayama.uMCP
     public class UnityCommandRegistry
     {
         private readonly Dictionary<string, IUnityCommand> commands = new Dictionary<string, IUnityCommand>();
+        
+        /// <summary>
+        /// Event triggered when commands are changed (added/removed)
+        /// </summary>
+        public static event Action OnCommandsChanged;
 
         /// <summary>
         /// Default constructor
@@ -52,8 +57,15 @@ namespace io.github.hatayama.uMCP
                 throw new ArgumentException("Command name cannot be null or empty", nameof(command));
             }
 
+            bool isNewCommand = !commands.ContainsKey(command.CommandName);
             commands[command.CommandName] = command;
             McpLogger.LogDebug($"Command registered: {command.CommandName}");
+            
+            // Trigger event notification if this is a new command
+            if (isNewCommand)
+            {
+                NotifyCommandsChanged();
+            }
         }
 
         /// <summary>
@@ -65,6 +77,7 @@ namespace io.github.hatayama.uMCP
             if (commands.Remove(commandName))
             {
                 McpLogger.LogDebug($"Command unregistered: {commandName}");
+                NotifyCommandsChanged();
             }
         }
 
@@ -102,7 +115,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>Array of command information</returns>
         public CommandInfo[] GetRegisteredCommands()
         {
-            return commands.Values.Select(cmd => new CommandInfo(cmd.CommandName, cmd.Description)).ToArray();
+            return commands.Values.Select(cmd => new CommandInfo(cmd.CommandName, cmd.Description, cmd.ParameterSchema)).ToArray();
         }
 
         /// <summary>
@@ -113,6 +126,29 @@ namespace io.github.hatayama.uMCP
         public bool IsCommandRegistered(string commandName)
         {
             return commands.ContainsKey(commandName);
+        }
+        
+        /// <summary>
+        /// Notify TypeScript side that commands have changed
+        /// </summary>
+        private void NotifyCommandsChanged()
+        {
+            McpLogger.LogDebug("Commands changed, notifying TypeScript side...");
+            McpLogger.LogInfo($"[DEBUG] NotifyCommandsChanged called - OnCommandsChanged subscribers: {OnCommandsChanged?.GetInvocationList()?.Length ?? 0}");
+            OnCommandsChanged?.Invoke();
+            McpLogger.LogInfo("[DEBUG] NotifyCommandsChanged completed - event invoked");
+        }
+        
+        /// <summary>
+        /// Manually trigger commands changed notification
+        /// Useful for external triggers like compilation completion
+        /// </summary>
+        public static void TriggerCommandsChangedNotification()
+        {
+            McpLogger.LogDebug("Manually triggering commands changed notification");
+            McpLogger.LogInfo($"[DEBUG] TriggerCommandsChangedNotification called - OnCommandsChanged subscribers: {OnCommandsChanged?.GetInvocationList()?.Length ?? 0}");
+            OnCommandsChanged?.Invoke();
+            McpLogger.LogInfo("[DEBUG] TriggerCommandsChangedNotification completed - event invoked");
         }
     }
 
@@ -126,11 +162,15 @@ namespace io.github.hatayama.uMCP
         
         [JsonProperty("description")]
         public string Description { get; }
+        
+        [JsonProperty("parameterSchema")]
+        public CommandParameterSchema ParameterSchema { get; }
 
-        public CommandInfo(string name, string description)
+        public CommandInfo(string name, string description, CommandParameterSchema parameterSchema)
         {
             Name = name;
             Description = description;
+            ParameterSchema = parameterSchema;
         }
     }
 } 

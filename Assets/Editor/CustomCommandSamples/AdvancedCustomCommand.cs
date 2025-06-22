@@ -16,6 +16,19 @@ namespace io.github.hatayama.uMCP
         public string CommandName => "advancedcustom";
         public string Description => "Advanced custom command with multiple parameter types and file operations";
 
+        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
+            new Dictionary<string, ParameterInfo>
+            {
+                ["operation"] = new ParameterInfo("string", "Operation to perform", "getinfo", new[] { "listfiles", "createfile", "readfile", "getinfo" }),
+                ["path"] = new ParameterInfo("string", "File or directory path", Application.dataPath),
+                ["content"] = new ParameterInfo("string", "Content for file creation", ""),
+                ["extensions"] = new ParameterInfo("array", "File extensions to filter (for listfiles operation)", new[] { ".cs", ".txt" }),
+                ["maxResults"] = new ParameterInfo("number", "Maximum number of results to return", 10),
+                ["includeHidden"] = new ParameterInfo("boolean", "Whether to include hidden files", false),
+                ["recursive"] = new ParameterInfo("boolean", "Whether to search recursively", false)
+            }
+        );
+
         public Task<object> ExecuteAsync(JToken paramsToken)
         {
             // Parse various parameter types

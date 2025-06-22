@@ -15,6 +15,16 @@ namespace io.github.hatayama.uMCP
         public string CommandName => "getlogs";
         public string Description => "Retrieve logs from Unity Console";
 
+        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
+            new Dictionary<string, ParameterInfo>
+            {
+                ["logType"] = new ParameterInfo("string", "Log type to filter (Error, Warning, Log, All)", McpServerConfig.DEFAULT_LOG_TYPE, new[] { "Error", "Warning", "Log", "All" }),
+                ["maxCount"] = new ParameterInfo("number", "Maximum number of logs to retrieve", McpServerConfig.DEFAULT_MAX_LOG_COUNT),
+                ["searchText"] = new ParameterInfo("string", "Text to search within log messages (retrieve all if empty)", McpServerConfig.DEFAULT_SEARCH_TEXT),
+                ["includeStackTrace"] = new ParameterInfo("boolean", "Whether to display stack trace", McpServerConfig.DEFAULT_INCLUDE_STACK_TRACE)
+            }
+        );
+
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
             string logType = paramsToken?["logType"]?.ToString() ?? McpServerConfig.DEFAULT_LOG_TYPE;

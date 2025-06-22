@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
@@ -12,6 +13,15 @@ namespace io.github.hatayama.uMCP
     {
         public string CommandName => "helloworld";
         public string Description => "Personalized hello world command with name parameter";
+
+        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
+            new Dictionary<string, ParameterInfo>
+            {
+                ["Name"] = new ParameterInfo("string", "Name to greet", "World"),
+                ["Language"] = new ParameterInfo("string", "Language for greeting", "english", new[] { "english", "japanese", "spanish", "french" }),
+                ["IncludeTimestamp"] = new ParameterInfo("boolean", "Whether to include timestamp in response", true)
+            }
+        );
 
         public Task<object> ExecuteAsync(JToken paramsToken)
         {

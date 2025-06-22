@@ -78,7 +78,10 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static IReadOnlyList<McpCommunicationLogEntry> GetAllLogs()
         {
-            return _logs.AsReadOnly();
+            lock (_logs)
+            {
+                return new List<McpCommunicationLogEntry>(_logs).AsReadOnly();
+            }
         }
 
         /// <summary>
@@ -96,7 +99,10 @@ namespace io.github.hatayama.uMCP
 
             PendingRequest pendingRequest = new(method, DateTime.Now, jsonRequest);
 
-            _pendingRequests[id] = pendingRequest;
+            lock (_pendingRequests)
+            {
+                _pendingRequests[id] = pendingRequest;
+            }
 
             // Switch to the main thread to save SessionState and update the UI.
             await MainThreadSwitcher.SwitchToMainThread();
@@ -117,21 +123,31 @@ namespace io.github.hatayama.uMCP
             string id = response["id"]?.ToString() ?? "unknown";
 
             McpLogger.LogDebug($"Looking for request with ID: '{id}' (Type: {id.GetType().Name})");
-            McpLogger.LogDebug($"Pending requests count: {_pendingRequests.Count}");
-            foreach (var kvp in _pendingRequests)
+            
+            lock (_pendingRequests)
             {
-                McpLogger.LogDebug($"- Pending ID: '{kvp.Key}' (Type: {kvp.Key.GetType().Name}), Method: {kvp.Value.CommandName}");
+                McpLogger.LogDebug($"Pending requests count: {_pendingRequests.Count}");
+                foreach (var kvp in _pendingRequests)
+                {
+                    McpLogger.LogDebug($"- Pending ID: '{kvp.Key}' (Type: {kvp.Key.GetType().Name}), Method: {kvp.Value.CommandName}");
+                }
             }
 
-            if (_pendingRequests.TryGetValue(id, out PendingRequest pendingRequest))
+            PendingRequest pendingRequest;
+            bool foundPendingRequest;
+            
+            lock (_pendingRequests)
+            {
+                foundPendingRequest = _pendingRequests.TryGetValue(id, out pendingRequest);
+                if (foundPendingRequest)
+                {
+                    _pendingRequests.Remove(id);
+                }
+            }
+            
+            if (foundPendingRequest)
             {
                 bool isError = response["error"] != null;
-
-                // If there are existing logs, close them all (before adding a new log).
-                foreach (McpCommunicationLogEntry existingLog in _logs)
-                {
-                    existingLog.IsExpanded = false;
-                }
 
                 // Create new logs in a closed state.
                 McpCommunicationLogEntry logEntry = new(
@@ -143,8 +159,16 @@ namespace io.github.hatayama.uMCP
                     false // Start with the toggle closed.
                 );
 
-                _logs.Add(logEntry);
-                _pendingRequests.Remove(id);
+                lock (_logs)
+                {
+                    // If there are existing logs, close them all (before adding a new log).
+                    foreach (McpCommunicationLogEntry existingLog in _logs)
+                    {
+                        existingLog.IsExpanded = false;
+                    }
+                    
+                    _logs.Add(logEntry);
+                }
 
                 McpLogger.LogDebug($"Response logged - Method: {pendingRequest.CommandName}, Total logs: {_logs.Count}");
 
@@ -167,8 +191,15 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void ClearLogs()
         {
-            _logs.Clear();
-            _pendingRequests.Clear();
+            lock (_logs)
+            {
+                _logs.Clear();
+            }
+            
+            lock (_pendingRequests)
+            {
+                _pendingRequests.Clear();
+            }
 
             // Also completely delete from SessionState and execute UI update on the main thread.
             EditorApplication.delayCall += () =>
@@ -215,8 +246,22 @@ namespace io.github.hatayama.uMCP
         {
             try
             {
-                string logsJson = JsonConvert.SerializeObject(_logs);
-                string pendingJson = JsonConvert.SerializeObject(_pendingRequests);
+                // Create snapshots to avoid collection modification during serialization
+                List<McpCommunicationLogEntry> logsSnapshot;
+                Dictionary<string, PendingRequest> pendingSnapshot;
+                
+                lock (_logs)
+                {
+                    logsSnapshot = new List<McpCommunicationLogEntry>(_logs);
+                }
+                
+                lock (_pendingRequests)
+                {
+                    pendingSnapshot = new Dictionary<string, PendingRequest>(_pendingRequests);
+                }
+
+                string logsJson = JsonConvert.SerializeObject(logsSnapshot);
+                string pendingJson = JsonConvert.SerializeObject(pendingSnapshot);
 
                 SessionState.SetString(LOGS_SESSION_KEY, logsJson);
                 SessionState.SetString(PENDING_REQUESTS_SESSION_KEY, pendingJson);
@@ -236,8 +281,16 @@ namespace io.github.hatayama.uMCP
             {
                 SessionState.EraseString(LOGS_SESSION_KEY);
                 SessionState.EraseString(PENDING_REQUESTS_SESSION_KEY);
-                _logs?.Clear();
-                _pendingRequests?.Clear();
+                
+                lock (_logs)
+                {
+                    _logs?.Clear();
+                }
+                
+                lock (_pendingRequests)
+                {
+                    _pendingRequests?.Clear();
+                }
 
                 // SessionState clear complete (no log output).
 

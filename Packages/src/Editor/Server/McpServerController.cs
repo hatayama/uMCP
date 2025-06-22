@@ -1,4 +1,6 @@
 using UnityEditor;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
@@ -36,6 +38,9 @@ namespace io.github.hatayama.uMCP
             
             // Processing after assembly reload.
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+            
+            // Subscribe to command changes for event-based notifications
+            UnityCommandRegistry.OnCommandsChanged += OnCommandsChanged;
             
             // Restore server state on initialization.
             RestoreServerStateIfNeeded();
@@ -239,6 +244,21 @@ namespace io.github.hatayama.uMCP
                 mcpServer.StartServer(port);
                 
                 McpLogger.LogInfo($"Unity MCP Server restored on port {port}");
+                
+                // Send commands changed notification after server restoration
+                // This ensures TypeScript clients can receive the notification
+                // Add multiple delays to allow TypeScript client to reconnect
+                EditorApplication.delayCall += () =>
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            McpLogger.LogInfo("[DEBUG] Sending commands changed notification after server restoration (with extended delay)");
+                            SendCommandsChangedNotification();
+                        };
+                    };
+                };
             }
             catch (System.Exception ex)
             {
@@ -305,5 +325,73 @@ namespace io.github.hatayama.uMCP
                    $"ServerInstance: exists={serverInstanceExists}, running={serverInstanceRunning}, port={serverInstancePort}\n" +
                    $"IsServerRunning={IsServerRunning}, ServerPort={ServerPort}";
         }
+
+        /// <summary>
+        /// Handles command changes for event-based notifications
+        /// </summary>
+        private static void OnCommandsChanged()
+        {
+            McpLogger.LogInfo("[DEBUG] McpServerController.OnCommandsChanged called");
+            
+            if (!IsServerRunning)
+            {
+                McpLogger.LogDebug("Server not running, skipping command change notification");
+                McpLogger.LogInfo("[DEBUG] OnCommandsChanged skipped - server not running");
+                return;
+            }
+            
+            McpLogger.LogInfo("[DEBUG] OnCommandsChanged proceeding - server is running");
+            
+            // Send notification to TypeScript side
+            SendCommandsChangedNotification();
+            
+            McpLogger.LogInfo("[DEBUG] OnCommandsChanged completed");
+        }
+        
+        /// <summary>
+        /// Send commands changed notification to TypeScript side
+        /// </summary>
+        private static void SendCommandsChangedNotification()
+        {
+            McpLogger.LogInfo("[DEBUG] SendCommandsChangedNotification called");
+            
+            try
+            {
+                // Create JSON-RPC notification (not a request - no response expected)
+                var notification = new
+                {
+                    jsonrpc = McpServerConfig.JSONRPC_VERSION,
+                    method = "notifications/tools/list_changed",
+                    @params = new
+                    {
+                        timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        message = "Unity commands have been updated"
+                    }
+                };
+                
+                string notificationJson = JsonConvert.SerializeObject(notification);
+                McpLogger.LogDebug($"Sending commands changed notification: {notificationJson}");
+                McpLogger.LogInfo($"[DEBUG] Notification JSON created: {notificationJson}");
+                
+                // Send notification through the bridge server
+                // Note: This is a notification, not a request, so no response is expected
+                if (mcpServer == null)
+                {
+                    McpLogger.LogInfo("[DEBUG] mcpServer is null, cannot send notification");
+                    return;
+                }
+                
+                McpLogger.LogInfo("[DEBUG] Calling mcpServer.SendNotificationToClients");
+                mcpServer?.SendNotificationToClients(notificationJson);
+                McpLogger.LogInfo("[DEBUG] SendCommandsChangedNotification completed successfully");
+            }
+            catch (System.Exception ex)
+            {
+                McpLogger.LogError($"Failed to send commands changed notification: {ex.Message}");
+                McpLogger.LogError($"[DEBUG] Exception in SendCommandsChangedNotification: {ex}");
+            }
+        }
     }
-} 
+}
+
+// Trigger compile test - timestamp: 2025-06-22 03:30:00 
