@@ -1,3 +1,5 @@
+[日本語](README_ja.md)
+
 [![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 
@@ -9,91 +11,115 @@ This enables you to call the following functions:
 
 ## ✨ Features
 
+### 📋 Common Parameters & Response Format
+
+All Unity MCP commands share the following common elements:
+
+#### Common Parameters
+- `TimeoutSeconds` (number): Timeout for command execution in seconds (default: 300 seconds = 5 minutes)
+
+#### Common Response Properties
+All commands automatically include the following timing information:
+- `StartedAt` (string): Command execution start time (local time)
+- `EndedAt` (string): Command execution end time (local time)  
+- `ExecutionTimeMs` (number): Command execution duration in milliseconds
+
+---
+
 ### 1. unity.compile
-- **Description**: After executing AssetDatabase.Refresh(), compile. Return the compilation results.
+- **Description**: After executing AssetDatabase.Refresh(), compile. Return the compilation results with detailed timing information.
 - **Parameters**: 
-  - `forceRecompile` (boolean): Whether to force recompilation (default: false)
+  - `ForceRecompile` (boolean): Whether to perform forced recompilation (default: false)
 - **Response**: 
-  - `success` (boolean): Whether compilation was successful
-  - `errorCount` (number): Total number of errors
-  - `warningCount` (number): Total number of warnings
-  - `completedAt` (string): Compilation completion time (ISO format)
-  - `errors` (array): Array of compilation errors (if any)
-    - `message` (string): Error message
-    - `file` (string): File path where error occurred
-    - `line` (number): Line number where error occurred
-    - `column` (number): Column number where error occurred
-    - `type` (string): Error type
-  - `warnings` (array): Array of compilation warnings (if any)
-    - `message` (string): Warning message
-    - `file` (string): File path where warning occurred
-    - `line` (number): Line number where warning occurred
-    - `column` (number): Column number where warning occurred
-    - `type` (string): Warning type
+  - `Success` (boolean): Whether compilation was successful
+  - `ErrorCount` (number): Total number of errors
+  - `WarningCount` (number): Total number of warnings
+  - `CompletedAt` (string): Compilation completion time (ISO format)
+  - `Errors` (array): Array of compilation errors (if any)
+    - `Message` (string): Error message
+    - `File` (string): File path where error occurred
+    - `Line` (number): Line number where error occurred
+  - `Warnings` (array): Array of compilation warnings (if any)
+    - `Message` (string): Warning message
+    - `File` (string): File path where warning occurred
+    - `Line` (number): Line number where error occurred
+  - `Message` (string): Optional message for additional information
 
 ### 2. unity.getLogs
-- **Description**: Retrieves log information from Unity console
+- **Description**: Retrieves log information from Unity console with filtering and search capabilities
 - **Parameters**: 
-  - `logType` (string): Log type to filter (Error, Warning, Log, All) (default: "All")
-  - `maxCount` (number): Maximum number of logs to retrieve (default: 100)
-  - `searchText` (string): Text to search within log messages (retrieve all if empty) (default: "")
-  - `includeStackTrace` (boolean): Whether to display stack traces (default: true)
+  - `LogType` (enum): Log type to filter - "Error", "Warning", "Log", "All" (default: "All")
+  - `MaxCount` (number): Maximum number of logs to retrieve (default: 100)
+  - `SearchText` (string): Text to search within log messages (retrieve all if empty) (default: "")
+  - `IncludeStackTrace` (boolean): Whether to display stack traces (default: true)
 - **Response**: 
-  - `logs` (array): Array of log entries
-    - `type` (string): Log type (Error, Warning, Log)
-    - `message` (string): Log message
-    - `stackTrace` (string): Stack trace (if includeStackTrace is true)
-    - `file` (string): File name where log occurred
-    - `line` (number): Line number (currently always 0)
-    - `timestamp` (string): Log timestamp
-  - `totalCount` (number): Total number of retrieved logs
-  - `requestedLogType` (string): Requested log type
-  - `requestedMaxCount` (number): Requested maximum log count
-  - `requestedSearchText` (string): Requested search text
-  - `requestedIncludeStackTrace` (boolean): Requested stack trace display setting
+  - `TotalCount` (number): Total number of logs available
+  - `DisplayedCount` (number): Number of logs displayed in this response
+  - `LogType` (string): Log type filter used
+  - `MaxCount` (number): Maximum count limit used
+  - `SearchText` (string): Search text filter used
+  - `IncludeStackTrace` (boolean): Whether stack trace was included
+  - `Logs` (array): Array of log entries
+    - `Type` (string): Log type (Error, Warning, Log)
+    - `Message` (string): Log message
+    - `StackTrace` (string): Stack trace (if IncludeStackTrace is true)
+    - `File` (string): File name where log occurred
 
 ### 3. unity.runTests
-- **Description**: Executes Unity Test Runner and retrieves test results
+- **Description**: Executes Unity Test Runner and retrieves test results with comprehensive reporting
 - **Parameters**: 
-  - `filterType` (string): Type of test filter (all, fullclassname, namespace, testname, assembly) (default: "all")
-  - `filterValue` (string): Filter value (specify when filterType is other than all) (default: "")
+  - `FilterType` (enum): Type of test filter - "all", "fullclassname", "namespace", "testname", "assembly" (default: "all")
+  - `FilterValue` (string): Filter value (specify when FilterType is other than all) (default: "")
     - `fullclassname`: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)
     - `namespace`: Namespace (e.g.: io.github.hatayama.uMCP)
     - `testname`: Individual test name
     - `assembly`: Assembly name
-  - `saveXml` (boolean): Whether to save test results as XML file (default: false)
+  - `SaveXml` (boolean): Whether to save test results as XML file (default: false)
 - **Response**: 
-  - `success` (boolean): Whether test execution was successful
-  - `message` (string): Execution result message
-  - `testResults` (object): Test result details
-    - `passedCount` (number): Number of successful tests
-    - `failedCount` (number): Number of failed tests
-    - `skippedCount` (number): Number of skipped tests
-    - `totalCount` (number): Total number of executed tests
-    - `duration` (number): Test execution time (seconds)
-    - `failedTests` (array): Details of failed tests
-      - `testName` (string): Test name
-      - `fullName` (string): Full name of test
-      - `message` (string): Error message
-      - `stackTrace` (string): Stack trace
-      - `duration` (number): Test execution time (seconds)
-  - `xmlPath` (string): XML file path (if saveXml is true)
-  - `filterType` (string): Used filter type
-  - `filterValue` (string): Used filter value
-  - `saveXml` (boolean): XML file save setting
-  - `completedAt` (string): Test completion time
+  - `Success` (boolean): Whether test execution was successful
+  - `Message` (string): Test execution message
+  - `CompletedAt` (string): Test execution completion timestamp (ISO format)
+  - `TestCount` (number): Total number of tests executed
+  - `PassedCount` (number): Number of passed tests
+  - `FailedCount` (number): Number of failed tests
+  - `SkippedCount` (number): Number of skipped tests
+  - `XmlPath` (string): Path to XML result file (if SaveXml is true)
  
 ### 4. unity.ping
-- **Description**: Ping test to Unity side (TCP/IP communication verification)
+- **Description**: Ping test to Unity side
 - **Parameters**: 
-  - `message` (string): Message to send to Unity side (default: "Hello from TypeScript MCP Server")
+  - `Message` (string): Message to send to Unity side (default: "Hello from TypeScript MCP Server")
 - **Response**: 
-  - Response message from Unity side (string format)
+  - `Message` (string): Response message from Unity side
 - **Note**:
-  - Current implementation does not determine communication success/failure or measure response time
-  - Only the response string from Unity side is returned
+  - Provides detailed execution timing for performance monitoring
+  - Supports dynamic timeout configuration
+  - Displays formatted response with connection information
 
-[Currently only the above built-in functions are available, but we are considering a feature that allows freely adding commands outside the package in the future](https://github.com/hatayama/uMCP/issues/14)
+### ⚡ Advanced Features
+
+#### Type-Safe Parameter System
+- All commands use strongly-typed parameter schemas with automatic validation
+- Enum parameters provide predefined value options for better user experience
+- Default values are automatically applied for optional parameters
+- Comprehensive parameter descriptions guide proper usage
+
+#### BaseCommandResponse System
+- **Automatic Timing Measurement**: All commands automatically measure and report execution time
+- **Consistent Response Format**: All responses include standardized timing information
+- **Local Time Display**: Timestamps are converted to local time for better readability
+- **Performance Monitoring**: Execution time helps identify performance bottlenecks
+
+#### Dynamic Timeout Configuration
+- **Per-Command Timeout**: Each command supports individual timeout configuration via `TimeoutSeconds` parameter
+- **Intelligent Defaults**: Sensible default timeouts based on command complexity (5s for ping, 5min for tests)
+- **Buffer Management**: TypeScript client adds 10-second buffer to ensure Unity-side timeout triggers first
+- **Timeout Handling**: Graceful timeout responses with detailed error information
+
+#### Real-Time Tool Discovery
+- **Event-Driven Updates**: Unity command changes are automatically detected and propagated to LLM tools
+- **Dynamic Tool Registration**: New custom commands appear in LLM tools without server restart
+- **Domain Reload Recovery**: Automatic reconnection and tool synchronization after Unity compilation
 
 ## Usage
 1. Select Window > uMCP. A dedicated window will open. Press the "Start Server" button.
@@ -122,7 +148,7 @@ If necessary, you can manually edit Cursor's configuration file (`.cursor/mcp.js
 ```json
 {
   "mcpServers": {
-    "unity-mcp-{port}": {
+    "uMcp-{port}": {
       "command": "node",
       "args": [
         "[Unity Package Path]/TypeScriptServer/dist/server.bundle.js"
@@ -184,6 +210,163 @@ Scope(s): io.github.hatayama.umcp
 - Verify that the path in `.cursor/mcp.json` is correct
 - Check that JSON format is correct
 - Check if it's recognized in Cursor's Tools & Integrations > MCP Tools. If "0 tool enable" or red circle is displayed, restart Cursor
+
+## License
+MIT License
+
+[Currently only the above built-in functions are available, but we are considering a feature that allows freely adding commands outside the package in the future](https://github.com/hatayama/uMCP/issues/14)
+
+### 🔧 Custom Command Development
+
+The uMCP system supports **dynamic custom command registration** that allows developers to add their own commands without modifying the core package. There are **two ways** to register custom commands:
+
+#### Method 1: Automatic Registration with [McpTool] Attribute (Recommended)
+
+This is the **easiest and recommended method**. Commands are automatically discovered and registered when Unity compiles.
+
+**Step 1: Create a Schema Class** (defines parameters):
+```csharp
+using System.ComponentModel;
+
+public class MyCustomSchema : BaseCommandSchema
+{
+    [Description("Your parameter description")]
+    public string MyParameter { get; set; } = "default_value";
+    
+    [Description("Select operation type")]
+    public MyOperationType OperationType { get; set; } = MyOperationType.Process;
+}
+
+public enum MyOperationType
+{
+    Process,
+    Validate,
+    Export
+}
+```
+
+**Step 2: Create a Response Class** (defines return data):
+```csharp
+public class MyCustomResponse : BaseCommandResponse
+{
+    public string Result { get; set; }
+    public bool Success { get; set; }
+    
+    public MyCustomResponse(string result, bool success)
+    {
+        Result = result;
+        Success = success;
+    }
+    
+    // Required parameterless constructor
+    public MyCustomResponse() { }
+}
+```
+
+**Step 3: Create the Command Class**:
+```csharp
+[McpTool]  // ← This attribute enables automatic registration!
+public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
+{
+    public override string CommandName => "myCustomCommand";
+    public override string Description => "My custom command description";
+    
+    // Executed on the main thread
+    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
+    {
+        // Type-safe parameter access
+        string param = parameters.MyParameter;
+        MyOperationType operation = parameters.OperationType;
+        
+        // Your custom logic here
+        string result = ProcessCustomLogic(param, operation);
+        bool success = !string.IsNullOrEmpty(result);
+        
+        return Task.FromResult(new MyCustomResponse(result, success));
+    }
+    
+    private string ProcessCustomLogic(string input, MyOperationType operation)
+    {
+        // Implement your custom logic
+        return $"Processed '{input}' with operation '{operation}'";
+    }
+}
+```
+
+---
+
+#### Method 2: Manual Registration with CustomCommandManager
+
+This method gives you **full control** over when commands are registered/unregistered.
+
+**Step 1-2: Create Schema and Response classes** (same as Method 1, but **without** `[McpTool]` attribute)
+
+**Step 3: Create the Command Class** (without `[McpTool]` attribute):
+```csharp
+// No [McpTool] attribute for manual registration
+public class MyManualCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
+{
+    public override string CommandName => "myManualCommand";
+    public override string Description => "Manually registered custom command";
+    
+    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
+    {
+        // Implementation same as Method 1
+        string result = ProcessCustomLogic(parameters.MyParameter, parameters.OperationType);
+        return Task.FromResult(new MyCustomResponse(result, true));
+    }
+}
+```
+
+**Step 4: Manual Registration**:
+```csharp
+using UnityEngine;
+using UnityEditor;
+
+public static class MyCommandRegistration
+{
+    // Register commands via Unity menu
+    [MenuItem("MyProject/Register Custom Commands")]
+    public static void RegisterMyCommands()
+    {
+        CustomCommandManager.RegisterCustomCommand(new MyManualCommand());
+        Debug.Log("Custom commands registered!");
+        
+        // Optional: Manually notify LLM tools about changes
+        CustomCommandManager.NotifyCommandChanges();
+    }
+    
+    // Unregister commands via Unity menu  
+    [MenuItem("MyProject/Unregister Custom Commands")]
+    public static void UnregisterMyCommands()
+    {
+        CustomCommandManager.UnregisterCustomCommand("myManualCommand");
+        Debug.Log("Custom commands unregistered!");
+    }
+    
+    // Alternative: Automatic registration on Unity startup
+    // [InitializeOnLoad]
+    // static MyCommandRegistration()
+    // {
+    //     RegisterMyCommands();
+    // }
+}
+```
+
+#### 🔧 Debugging Custom Commands
+
+```csharp
+// View all registered commands
+[MenuItem("uMCP/Debug/Show Registered Commands")]
+public static void ShowCommands()
+{
+    CommandInfo[] commands = CustomCommandManager.GetRegisteredCustomCommands();
+    foreach (var cmd in commands)
+    {
+        Debug.Log($"Command: {cmd.Name} - {cmd.Description}");
+    }
+}
+```
 
 ## License
 MIT License
