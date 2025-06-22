@@ -6053,7 +6053,7 @@ var DynamicUnityCommandTool = class extends BaseTool {
   }
 };
 
-// src/server-simple.ts
+// src/server.ts
 var SimpleMcpServer = class {
   server;
   unityClient;
