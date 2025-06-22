@@ -152,6 +152,8 @@ namespace io.github.hatayama.uMCP
             // This ensures schema changes (descriptions, parameters) are communicated to Cursor
             if (IsServerRunning)
             {
+                // Use delayCall for timing adjustment after domain reload, not for thread switching
+                // This ensures Unity Editor is in a stable state before sending notifications
                 EditorApplication.delayCall += () =>
                 {
                     McpLogger.LogInfo("Sending command change notification after compilation completion");
@@ -183,6 +185,7 @@ namespace io.github.hatayama.uMCP
                     McpLogger.LogInfo("Server already running. Clearing post-compile flag.");
                     
                     // Send notification for post-compilation changes
+                    // Use delayCall for timing adjustment, ensuring stable state after compilation
                     EditorApplication.delayCall += () =>
                     {
                         McpLogger.LogInfo("Sending command change notification for post-compilation changes (server already running)");
@@ -205,7 +208,8 @@ namespace io.github.hatayama.uMCP
                 {
                     McpLogger.LogInfo("Detected post-compile state. Restoring server immediately...");
                     
-                    // Wait a short while before restarting immediately (to release TCP).
+                    // Wait a short while before restarting immediately (to release TCP port).
+                    // Use delayCall for timing adjustment, not thread switching
                     EditorApplication.delayCall += () =>
                     {
                         TryRestoreServerWithRetry(savedPort, 0);
@@ -221,7 +225,7 @@ namespace io.github.hatayama.uMCP
                     {
                         McpLogger.LogInfo("Auto Start Server is enabled. Restoring server with delay...");
                         
-                        // Single delayCall is sufficient for server restoration
+                        // Use delayCall for startup delay, ensuring Unity Editor is ready
                         EditorApplication.delayCall += () =>
                         {
                             TryRestoreServerWithRetry(savedPort, 0);
@@ -264,7 +268,7 @@ namespace io.github.hatayama.uMCP
                 
                 // Send commands changed notification after server restoration
                 // This ensures TypeScript clients can receive the notification
-                // Single delayCall is sufficient for stable operation
+                // Use delayCall for timing adjustment, ensuring server is fully ready
                 EditorApplication.delayCall += () =>
                 {
                     McpLogger.LogInfo("[DEBUG] Sending commands changed notification after server restoration");
@@ -278,6 +282,7 @@ namespace io.github.hatayama.uMCP
                 // If the maximum number of retries has not been reached, try again.
                 if (retryCount < maxRetries)
                 {
+                    // Use delayCall for retry delay, allowing time for port release
                     EditorApplication.delayCall += () =>
                     {
                         // Do not change the port number; retry with the same port.
