@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/hatayama/uMCP/compare/v0.3.3...v0.4.0) (2025-06-22)
+
+
+### Features
+
+* implement dynamic tool registration with enhanced Unity communication ([#31](https://github.com/hatayama/uMCP/issues/31)) ([1d5954f](https://github.com/hatayama/uMCP/commit/1d5954fede2b4496a77d1b0c1d12e56d4844acad))
+
 ## [0.3.3](https://github.com/hatayama/uMCP/compare/v0.3.2...v0.3.3) (2025-06-21)
 
 
