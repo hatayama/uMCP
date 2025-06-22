@@ -90,6 +90,7 @@ CLAUDE.md
 # Personal
 memo.md
 Packages/src/Docs/**
+Packages/src/logs**
 
 # Node.js / TypeScript
 node_modules/
