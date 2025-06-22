@@ -357,32 +357,45 @@ namespace io.github.hatayama.uMCP
             
             try
             {
-                // Create JSON-RPC notification (not a request - no response expected)
-                var notification = new
+                // Send both notification formats to ensure compatibility
+                var notificationParams = new
+                {
+                    timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    message = "Unity commands have been updated"
+                };
+                
+                // 1. Send MCP standard notification
+                var mcpNotification = new
                 {
                     jsonrpc = McpServerConfig.JSONRPC_VERSION,
                     method = "notifications/tools/list_changed",
-                    @params = new
-                    {
-                        timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        message = "Unity commands have been updated"
-                    }
+                    @params = notificationParams
                 };
                 
-                string notificationJson = JsonConvert.SerializeObject(notification);
-                McpLogger.LogDebug($"Sending commands changed notification: {notificationJson}");
-                McpLogger.LogInfo($"[DEBUG] Notification JSON created: {notificationJson}");
+                // 2. Send custom commandsChanged notification
+                var customNotification = new
+                {
+                    jsonrpc = McpServerConfig.JSONRPC_VERSION,
+                    method = "commandsChanged",
+                    @params = notificationParams
+                };
+                
+                string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
+                string customNotificationJson = JsonConvert.SerializeObject(customNotification);
+                
+                McpLogger.LogInfo($"[DEBUG] MCP Notification JSON: {mcpNotificationJson}");
+                McpLogger.LogInfo($"[DEBUG] Custom Notification JSON: {customNotificationJson}");
                 
                 // Send notification through the bridge server
-                // Note: This is a notification, not a request, so no response is expected
                 if (mcpServer == null)
                 {
                     McpLogger.LogInfo("[DEBUG] mcpServer is null, cannot send notification");
                     return;
                 }
                 
-                McpLogger.LogInfo("[DEBUG] Calling mcpServer.SendNotificationToClients");
-                mcpServer?.SendNotificationToClients(notificationJson);
+                McpLogger.LogInfo("[DEBUG] Sending both notification formats");
+                mcpServer?.SendNotificationToClients(mcpNotificationJson);
+                mcpServer?.SendNotificationToClients(customNotificationJson);
                 McpLogger.LogInfo("[DEBUG] SendCommandsChangedNotification completed successfully");
             }
             catch (System.Exception ex)

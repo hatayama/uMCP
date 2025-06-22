@@ -166,7 +166,7 @@ class SimpleMcpServer {
         });
         
         tools.push({
-          name: 'get-available-commands',
+          name: 'get-unity-commands',
           description: 'Get Unity commands list (dev only)',
           inputSchema: {
             type: 'object',
@@ -221,7 +221,7 @@ class SimpleMcpServer {
               return await this.handlePing(args);
             }
             throw new Error('Development tool not available in production');
-          case 'get-available-commands':
+          case 'get-unity-commands':
             if (this.isDevelopment) {
               return await this.handleGetAvailableCommands();
             }
@@ -370,28 +370,37 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
   private setupUnityEventListener(): void {
     // Listen for commandsChanged notifications from Unity
     this.unityClient.onNotification('commandsChanged', async (params: any) => {
+      // Force console output for debugging
+      console.error('[NOTIFICATION] Received commandsChanged notification from Unity:', JSON.stringify(params));
       mcpInfo('[Simple MCP] Received commandsChanged notification from Unity:', params);
       
       try {
         await this.refreshDynamicTools();
+        console.error('[NOTIFICATION] Dynamic tools updated successfully via Unity event');
         mcpInfo('[Simple MCP] Dynamic tools updated successfully via Unity event');
       } catch (error) {
+        console.error('[NOTIFICATION] Failed to update dynamic tools via Unity event:', error);
         mcpError('[Simple MCP] Failed to update dynamic tools via Unity event:', error);
       }
     });
     
     // Also listen for the alternative notification method
     this.unityClient.onNotification('notifications/tools/list_changed', async (params: any) => {
+      // Force console output for debugging
+      console.error('[NOTIFICATION] Received tools/list_changed notification from Unity:', JSON.stringify(params));
       mcpInfo('[Simple MCP] Received tools/list_changed notification from Unity:', params);
       
       try {
         await this.refreshDynamicTools();
+        console.error('[NOTIFICATION] Dynamic tools updated successfully via Unity notification');
         mcpInfo('[Simple MCP] Dynamic tools updated successfully via Unity notification');
       } catch (error) {
+        console.error('[NOTIFICATION] Failed to update dynamic tools via Unity notification:', error);
         mcpError('[Simple MCP] Failed to update dynamic tools via Unity notification:', error);
       }
     });
     
+    console.error('[NOTIFICATION] Unity event listeners setup completed');
     mcpInfo('[Simple MCP] Unity event listeners setup completed');
   }
 

@@ -1,66 +1,46 @@
+using System;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using UnityEngine;
 using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Hello World custom command
-    /// Basic implementation example of a custom command
+    /// Hello World custom command - Type-safe implementation using Schema and Response
+    /// Basic implementation example of a custom command with strongly typed parameters and response
     /// </summary>
-    public class HelloWorldCommand : IUnityCommand
+    public class HelloWorldCommand : AbstractUnityCommand<HelloWorldSchema, HelloWorldResponse>
     {
-        public string CommandName => "helloworld";
-        public string Description => "Personalized hello world command with name parameter";
+        public override string CommandName => "helloworld";
+        public override string Description => "Personalized hello world command with name parameter";
 
-        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
-            new Dictionary<string, ParameterInfo>
-            {
-                ["Name"] = new ParameterInfo("string", "Name to greet", "World"),
-                ["Language"] = new ParameterInfo("string", "Language for greeting", "english", new[] { "english", "japanese", "spanish", "french" }),
-                ["IncludeTimestamp"] = new ParameterInfo("boolean", "Whether to include timestamp in response", true)
-            }
-        );
+        public override CommandParameterSchema ParameterSchema => 
+            CommandParameterSchemaGenerator.FromDto<HelloWorldSchema>();
 
-        public Task<object> ExecuteAsync(JToken paramsToken)
+        protected override Task<HelloWorldResponse> ExecuteAsync(HelloWorldSchema parameters)
         {
-            // Parse parameters with default values
-            string name = paramsToken?["Name"]?.ToString() ?? "World";
-            string language = paramsToken?["Language"]?.ToString() ?? "english";
-            bool includeTimestamp = paramsToken?["IncludeTimestamp"]?.ToObject<bool>() ?? true;
-            
+            // Type-safe parameter access - no more string parsing!
+            string name = parameters.Name;
+            GreetingLanguage language = parameters.Language;
+            bool includeTimestamp = parameters.IncludeTimestamp;
+
             // Generate greeting based on language
-            string greeting = GenerateGreeting(language, name);
-            
-            Debug.Log($"HelloWorld command executed with name: {name}, language: {language}, includeTimestamp: {includeTimestamp}");
-            
-            // Build response object
-            object response = new
+            string greeting = language switch
             {
-                message = greeting,
-                name = name,
-                language = language,
-                includeTimestamp = includeTimestamp,
-                timestamp = includeTimestamp ? System.DateTime.Now : (System.DateTime?)null,
-                commandName = CommandName
+                GreetingLanguage.japanese => $"こんにちは、{name}さん！",
+                GreetingLanguage.spanish => $"¡Hola, {name}!",
+                GreetingLanguage.french => $"Bonjour, {name}!",
+                _ => $"Hello, {name}!"
             };
-            
+
+            // Create type-safe response
+            HelloWorldResponse response = new HelloWorldResponse(
+                message: greeting,
+                language: language.ToString().ToLower(),
+                timestamp: includeTimestamp ? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") : null
+            );
+
             return Task.FromResult(response);
-        }
-        
-        /// <summary>
-        /// Generate greeting message based on language
-        /// </summary>
-        private string GenerateGreeting(string language, string name)
-        {
-            return language.ToLower() switch
-            {
-                "japanese" => $"こんにちは、{name}さん！これはUnityからのカスタムコマンドです。",
-                "spanish" => $"¡Hola, {name}! Este es un comando personalizado de Unity.",
-                "french" => $"Bonjour, {name}! Ceci est une commande personnalisée d'Unity.",
-                "english" or _ => $"Hello, {name}! This is a custom command from Unity."
-            };
         }
     }
 } 

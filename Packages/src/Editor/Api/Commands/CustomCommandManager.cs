@@ -100,8 +100,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void NotifyToolsChanged()
         {
-            // This will be picked up by the TypeScript server when it polls for command updates
-            McpLogger.LogInfo("Tools list changed - MCP clients will be notified on next command list request");
+            // Trigger the commandsChanged notification to MCP clients
+            UnityCommandRegistry.TriggerCommandsChangedNotification();
+            McpLogger.LogInfo("Tools list changed - MCP clients notified via commandsChanged event");
         }
     }
 } 

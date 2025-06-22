@@ -6137,11 +6137,17 @@ var SimpleMcpServer = class {
           }
         });
         tools.push({
-          name: "get-available-commands",
+          name: "get-unity-commands",
           description: "Get Unity commands list (dev only)",
           inputSchema: {
             type: "object",
-            properties: {},
+            properties: {
+              test_param: {
+                type: "string",
+                description: "Test parameter to verify schema handling",
+                default: "test"
+              }
+            },
             additionalProperties: false
           }
         });
@@ -6165,7 +6171,7 @@ var SimpleMcpServer = class {
               return await this.handlePing(args);
             }
             throw new Error("Development tool not available in production");
-          case "get-available-commands":
+          case "get-unity-commands":
             if (this.isDevelopment) {
               return await this.handleGetAvailableCommands();
             }

@@ -1,0 +1,94 @@
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System;
+
+namespace io.github.hatayama.uMCP
+{
+    /// <summary>
+    /// Abstract base class for type-safe Unity commands using Schema and Response types
+    /// </summary>
+    /// <typeparam name="TSchema">Schema type for command parameters</typeparam>
+    /// <typeparam name="TResponse">Response type for command results</typeparam>
+    public abstract class AbstractUnityCommand<TSchema, TResponse> : IUnityCommand 
+        where TSchema : class, new()
+        where TResponse : class
+    {
+        public abstract string CommandName { get; }
+        public abstract string Description { get; }
+        public abstract CommandParameterSchema ParameterSchema { get; }
+
+        /// <summary>
+        /// Execute command with type-safe Schema parameters
+        /// </summary>
+        /// <param name="parameters">Strongly typed parameters</param>
+        /// <returns>Strongly typed command execution result</returns>
+        protected abstract Task<TResponse> ExecuteAsync(TSchema parameters);
+
+        /// <summary>
+        /// IUnityCommand implementation - converts JToken to Schema and returns object
+        /// </summary>
+        public async Task<object> ExecuteAsync(JToken paramsToken)
+        {
+            try
+            {
+                // Convert JToken to strongly typed Schema
+                TSchema parameters = ConvertToSchema(paramsToken);
+                
+                // Execute with type-safe parameters and get type-safe response
+                TResponse response = await ExecuteAsync(parameters);
+                
+                // Return as object for IUnityCommand interface compatibility
+                return response;
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogError($"Error executing command {CommandName}: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Convert JToken to strongly typed Schema with default value fallback
+        /// </summary>
+        private TSchema ConvertToSchema(JToken paramsToken)
+        {
+            if (paramsToken == null || paramsToken.Type == JTokenType.Null)
+            {
+                // Return default instance if no parameters provided
+                return new TSchema();
+            }
+
+            try
+            {
+                // Try to deserialize from JToken
+                TSchema schema = paramsToken.ToObject<TSchema>();
+                
+                // If deserialization returns null, create default instance
+                if (schema == null)
+                {
+                    schema = new TSchema();
+                }
+
+                // Apply default values for null properties
+                return ApplyDefaultValues(schema);
+            }
+            catch (JsonException ex)
+            {
+                McpLogger.LogWarning($"Failed to deserialize parameters for {CommandName}, using defaults: {ex.Message}");
+                return new TSchema();
+            }
+        }
+
+        /// <summary>
+        /// Apply default values to Schema properties if they are null
+        /// Override this method to provide custom default value logic
+        /// </summary>
+        protected virtual TSchema ApplyDefaultValues(TSchema schema)
+        {
+            // Default implementation - return as is
+            // Subclasses can override to apply specific default values
+            return schema;
+        }
+    }
+} 
