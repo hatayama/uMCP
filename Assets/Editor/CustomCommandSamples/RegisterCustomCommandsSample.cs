@@ -31,7 +31,7 @@ namespace io.github.hatayama.uMCP
             
             // Manual notification is automatically called by RegisterCustomCommand,
             // but we can also call it explicitly if needed
-            // CustomCommandManager.NotifyCommandChanges();
+            CustomCommandManager.NotifyCommandChanges();
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace io.github.hatayama.uMCP
             
             // Manual notification is automatically called by UnregisterCustomCommand,
             // but we can also call it explicitly if needed
-            // CustomCommandManager.NotifyCommandChanges();
+            CustomCommandManager.NotifyCommandChanges();
         }
 
         /// <summary>

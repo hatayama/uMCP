@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { DebugLogger } from './utils/debug-logger.js';
 import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
-import { mcpDebug, mcpInfo, mcpError } from './utils/mcp-debug.js';
+import { mcpDebug, mcpInfo, mcpError, mcpWarn } from './utils/mcp-debug.js';
 
 /**
  * Simple Unity MCP Server for testing notifications

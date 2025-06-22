@@ -274,17 +274,11 @@ namespace io.github.hatayama.uMCP
                 
                 // Send commands changed notification after server restoration
                 // This ensures TypeScript clients can receive the notification
-                // Add multiple delays to allow TypeScript client to reconnect
+                // Single delayCall is sufficient for stable operation
                 EditorApplication.delayCall += () =>
                 {
-                    EditorApplication.delayCall += () =>
-                    {
-                        EditorApplication.delayCall += () =>
-                        {
-                            McpLogger.LogInfo("[DEBUG] Sending commands changed notification after server restoration (with extended delay)");
-                            SendCommandsChangedNotification();
-                        };
-                    };
+                    McpLogger.LogInfo("[DEBUG] Sending commands changed notification after server restoration");
+                    SendCommandsChangedNotification();
                 };
             }
             catch (System.Exception ex)
@@ -425,6 +419,8 @@ namespace io.github.hatayama.uMCP
                 McpLogger.LogDebug("Server not running, skipping command change notification");
             }
         }
+
+
     }
 }
 
