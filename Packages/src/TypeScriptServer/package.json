@@ -10,7 +10,7 @@
     "build:webpack": "webpack --mode production",
     "build:bundle": "esbuild src/server-simple.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
     "dev": "NODE_ENV=development npm run build:bundle && NODE_ENV=development node dist/server.bundle.js",
-    "dev:watch": "NODE_ENV=development esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os --watch",
+    "dev:watch": "NODE_ENV=development esbuild src/server-simple.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os --watch",
     "start": "node dist/server.bundle.js",
     "start:dev": "NODE_ENV=development node dist/server.bundle.js",
     "test": "jest",

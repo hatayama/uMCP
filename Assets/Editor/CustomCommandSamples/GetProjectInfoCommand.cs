@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
-using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {

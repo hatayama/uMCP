@@ -5931,16 +5931,11 @@ var DynamicUnityCommandTool = class extends BaseTool {
   generateInputSchema(parameterSchema) {
     mcpDebug(`[DynamicUnityCommandTool] Generating schema for ${this.commandName}:`, parameterSchema);
     if (!parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0) {
-      mcpDebug(`[DynamicUnityCommandTool] No schema found for ${this.commandName}, using dummy schema`);
+      mcpDebug(`[DynamicUnityCommandTool] No parameters found for ${this.commandName}, using minimal schema`);
       return {
         type: "object",
-        properties: {
-          random_string: {
-            description: "Dummy parameter for no-parameter tools",
-            type: "string"
-          }
-        },
-        required: ["random_string"]
+        properties: {},
+        additionalProperties: false
       };
     }
     const properties = {};
@@ -5995,16 +5990,15 @@ var DynamicUnityCommandTool = class extends BaseTool {
     }
   }
   validateArgs(args) {
-    if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 1 && "random_string" in this.inputSchema.properties) {
-      return { random_string: "dummy" };
+    if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 0) {
+      return {};
     }
     return args || {};
   }
   async execute(args) {
     try {
       const actualArgs = this.validateArgs(args);
-      const unityParams = actualArgs.random_string === "dummy" ? {} : actualArgs;
-      const result = await this.context.unityClient.executeCommand(this.commandName, unityParams);
+      const result = await this.context.unityClient.executeCommand(this.commandName, actualArgs);
       return {
         content: [{
           type: "text",
@@ -6059,31 +6053,49 @@ var SimpleMcpServer = class {
    */
   async initializeDynamicTools() {
     try {
-      mcpInfo("[Simple MCP] Fetching available Unity commands...");
+      mcpInfo("[Simple MCP] Fetching Unity command details with schemas...");
       await this.unityClient.ensureConnected();
-      const response = await this.unityClient.executeCommand("getAvailableCommands", {});
-      this.availableCommands = Array.isArray(response) ? response : [];
-      mcpInfo(`[Simple MCP] Found ${this.availableCommands.length} Unity commands:`, this.availableCommands);
+      const commandDetails = await this.unityClient.executeCommand("getCommandDetails", {});
+      if (!Array.isArray(commandDetails)) {
+        mcpError("[Simple MCP] Invalid command details response:", commandDetails);
+        return;
+      }
+      mcpInfo(`[Simple MCP] Found ${commandDetails.length} Unity commands with schemas`);
       this.dynamicTools.clear();
       const toolContext = { unityClient: this.unityClient };
-      for (const commandName of this.availableCommands) {
+      for (const commandInfo of commandDetails) {
+        const commandName = commandInfo.name;
+        const description = commandInfo.description || `Execute Unity command: ${commandName}`;
+        const parameterSchema = commandInfo.parameterSchema;
         if (commandName === "ping") {
           continue;
         }
         const toolName = commandName;
-        const description = `Execute Unity command: ${commandName}`;
         const dynamicTool = new DynamicUnityCommandTool(
           toolContext,
           commandName,
-          description
+          description,
+          parameterSchema
+          // スキーマ情報を渡す！
         );
         this.dynamicTools.set(toolName, dynamicTool);
-        mcpDebug(`[Simple MCP] Created dynamic tool: ${toolName}`);
+        mcpDebug(`[Simple MCP] Created dynamic tool: ${toolName} with schema:`, parameterSchema);
       }
-      mcpInfo(`[Simple MCP] Initialized ${this.dynamicTools.size} dynamic Unity command tools`);
+      this.availableCommands = commandDetails.map((cmd) => cmd.name);
+      mcpInfo(`[Simple MCP] Initialized ${this.dynamicTools.size} dynamic Unity command tools with schemas`);
     } catch (error) {
       mcpError("[Simple MCP] Failed to initialize dynamic tools:", error);
     }
+  }
+  /**
+   * Refresh dynamic tools by re-fetching from Unity
+   * This method can be called to update the tool list when Unity commands change
+   */
+  async refreshDynamicTools() {
+    mcpInfo("[Simple MCP] Refreshing dynamic tools...");
+    await this.initializeDynamicTools();
+    this.sendToolsChangedNotification();
+    mcpInfo("[Simple MCP] Dynamic tools refreshed and notification sent");
   }
   setupHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -6129,28 +6141,8 @@ var SimpleMcpServer = class {
           description: "Get Unity commands list (dev only)",
           inputSchema: {
             type: "object",
-            properties: {
-              random_string: {
-                type: "string",
-                description: "Dummy parameter for no-parameter tools"
-              }
-            },
-            required: ["random_string"]
-          }
-        });
-      }
-      for (let i = 1; i <= this.toolCount; i++) {
-        tools.push({
-          name: `test-tool-${i}`,
-          description: `Test tool number ${i}`,
-          inputSchema: {
-            type: "object",
-            properties: {
-              message: {
-                type: "string",
-                description: "Test message"
-              }
-            }
+            properties: {},
+            additionalProperties: false
           }
         });
       }
@@ -6179,16 +6171,6 @@ var SimpleMcpServer = class {
             }
             throw new Error("Development tool not available in production");
           default:
-            if (name.startsWith("test-tool-")) {
-              return {
-                content: [
-                  {
-                    type: "text",
-                    text: `Tool ${name} executed successfully with args: ${JSON.stringify(args)}`
-                  }
-                ]
-              };
-            }
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
@@ -6260,13 +6242,17 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
   async handleGetAvailableCommands() {
     try {
       await this.unityClient.ensureConnected();
-      const response = await this.unityClient.executeCommand("getAvailableCommands", {});
+      const commandsResponse = await this.unityClient.executeCommand("getAvailableCommands", {});
+      const detailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
       return {
         content: [
           {
             type: "text",
             text: `Available Unity Commands:
-${JSON.stringify(response, null, 2)}`
+${JSON.stringify(commandsResponse, null, 2)}
+
+Command Details with Schemas:
+${JSON.stringify(detailsResponse, null, 2)}`
           }
         ]
       };
@@ -6289,12 +6275,34 @@ ${JSON.stringify(response, null, 2)}`
   async start() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
+    this.setupUnityEventListener();
     await this.initializeDynamicTools();
     this.sendToolsChangedNotification();
-    setInterval(() => {
-      this.toolCount = this.toolCount === 5 ? 8 : 5;
-      this.sendToolsChangedNotification();
-    }, 5e3);
+    mcpInfo("[Simple MCP] Server started with Unity event-based tool updates");
+  }
+  /**
+   * Setup Unity event listener for automatic tool updates
+   */
+  setupUnityEventListener() {
+    this.unityClient.onNotification("commandsChanged", async (params) => {
+      mcpInfo("[Simple MCP] Received commandsChanged notification from Unity:", params);
+      try {
+        await this.refreshDynamicTools();
+        mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity event");
+      } catch (error) {
+        mcpError("[Simple MCP] Failed to update dynamic tools via Unity event:", error);
+      }
+    });
+    this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
+      mcpInfo("[Simple MCP] Received tools/list_changed notification from Unity:", params);
+      try {
+        await this.refreshDynamicTools();
+        mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity notification");
+      } catch (error) {
+        mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
+      }
+    });
+    mcpInfo("[Simple MCP] Unity event listeners setup completed");
   }
   /**
    * Send tools changed notification

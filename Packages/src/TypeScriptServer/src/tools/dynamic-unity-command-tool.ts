@@ -24,17 +24,12 @@ export class DynamicUnityCommandTool extends BaseTool {
     mcpDebug(`[DynamicUnityCommandTool] Generating schema for ${this.commandName}:`, parameterSchema);
     
     if (!parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0) {
-      // Fallback to dummy schema for commands without parameters
-      mcpDebug(`[DynamicUnityCommandTool] No schema found for ${this.commandName}, using dummy schema`);
+      // For commands without parameters, return minimal schema without dummy parameters
+      mcpDebug(`[DynamicUnityCommandTool] No parameters found for ${this.commandName}, using minimal schema`);
       return {
         type: "object",
-        properties: {
-          random_string: {
-            description: "Dummy parameter for no-parameter tools",
-            type: "string"
-          }
-        },
-        required: ["random_string"]
+        properties: {},
+        additionalProperties: false
       };
     }
 
@@ -106,9 +101,9 @@ export class DynamicUnityCommandTool extends BaseTool {
   }
 
   validateArgs(args: unknown): any {
-    // If no real parameters are defined, use dummy parameter
-    if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 1 && 'random_string' in this.inputSchema.properties) {
-      return { random_string: "dummy" };
+    // If no real parameters are defined, return empty object
+    if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 0) {
+      return {};
     }
     
     return args || {};
@@ -116,11 +111,10 @@ export class DynamicUnityCommandTool extends BaseTool {
 
   async execute(args: unknown): Promise<any> {
     try {
-      // Pass the actual arguments to Unity (not the dummy ones)
+      // Validate and use the provided arguments
       const actualArgs = this.validateArgs(args);
-      const unityParams = actualArgs.random_string === "dummy" ? {} : actualArgs;
       
-      const result = await this.context.unityClient.executeCommand(this.commandName, unityParams);
+      const result = await this.context.unityClient.executeCommand(this.commandName, actualArgs);
       
       return {
         content: [{

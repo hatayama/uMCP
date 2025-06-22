@@ -38,7 +38,6 @@ namespace io.github.hatayama.uMCP
             RegisterCommand(new CompileCommand());
             RegisterCommand(new GetLogsCommand());
             RegisterCommand(new RunTestsCommand());
-            RegisterCommand(new GetVersionCommand());
         }
 
         /// <summary>

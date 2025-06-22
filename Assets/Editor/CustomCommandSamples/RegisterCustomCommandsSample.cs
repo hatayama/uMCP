@@ -23,9 +23,8 @@ namespace io.github.hatayama.uMCP
         {
             CustomCommandManager.RegisterCustomCommand(new HelloWorldCommand());
             CustomCommandManager.RegisterCustomCommand(new GetProjectInfoCommand());
-            CustomCommandManager.RegisterCustomCommand(new ClearConsoleCommand());
-            CustomCommandManager.RegisterCustomCommand(new GetSceneInfoCommand());
             CustomCommandManager.RegisterCustomCommand(new AdvancedCustomCommand());
+            CustomCommandManager.RegisterCustomCommand(new GetVersionCommand());
             
             Debug.Log("Sample custom commands registered successfully!");
             Debug.Log("Available commands: " + string.Join(", ", CustomCommandManager.GetRegisteredCustomCommands().Select(c => c.Name)));
@@ -39,9 +38,8 @@ namespace io.github.hatayama.uMCP
         {
             CustomCommandManager.UnregisterCustomCommand("helloworld");
             CustomCommandManager.UnregisterCustomCommand("getprojectinfo");
-            CustomCommandManager.UnregisterCustomCommand("clearconsole");
-            CustomCommandManager.UnregisterCustomCommand("getsceneinfo");
             CustomCommandManager.UnregisterCustomCommand("advancedcustom");
+            CustomCommandManager.UnregisterCustomCommand("getversion");
             
             Debug.Log("Sample custom commands unregistered successfully!");
         }
