@@ -267,13 +267,37 @@ class SimpleMcpServer {
       const response = await this.unityClient.ping(message);
       const port = process.env.UNITY_TCP_PORT || '7400';
       
+      // Handle the new BaseCommandResponse format with timing info
+      let responseText = '';
+      if (typeof response === 'object' && response !== null) {
+        const respObj = response as any;
+        DebugLogger.debug('[UnityPing] Response object properties:', {
+          Message: respObj.Message,
+          StartedAt: respObj.StartedAt,
+          EndedAt: respObj.EndedAt,
+          ExecutionTimeMs: respObj.ExecutionTimeMs
+        });
+        
+        responseText = `Message: ${respObj.Message || 'No message'}`;
+        
+        // Add timing information if available
+        if (respObj.StartedAt && respObj.EndedAt && respObj.ExecutionTimeMs !== undefined) {
+          responseText += `
+Started: ${respObj.StartedAt}
+Ended: ${respObj.EndedAt}
+Execution Time: ${respObj.ExecutionTimeMs}ms`;
+        }
+      } else {
+        responseText = String(response);
+      }
+      
       return {
         content: [
           {
             type: 'text',
             text: `Unity Ping Success!
 Sent: ${message}
-Response: ${response}
+Response: ${responseText}
 Connection: TCP/IP established on port ${port}`
           }
         ]
