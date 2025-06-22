@@ -1,33 +1,30 @@
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Pingコマンドハンドラー
-    /// 接続確認とメッセージエコーを行う
+    /// Ping command handler - Type-safe implementation using Schema and Response
+    /// Connection test and message echo functionality
     /// </summary>
-    public class PingCommand : IUnityCommand
+    public class PingCommand : AbstractUnityCommand<PingSchema, PingResponse>
     {
-        public string CommandName => "ping";
-        public string Description => "Connection test and message echo";
+        public override string CommandName => "ping";
+        public override string Description => "Connection test and message echo";
 
-        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
-            new Dictionary<string, ParameterInfo>
-            {
-                ["message"] = new ParameterInfo("string", "Message to send to Unity", "Hello from TypeScript MCP Server")
-            }
-        );
 
-        public Task<object> ExecuteAsync(JToken paramsToken)
+
+        protected override Task<PingResponse> ExecuteAsync(PingSchema parameters)
         {
-            string message = paramsToken?["message"]?.ToString() ?? "No message";
+            // Type-safe parameter access - no more string parsing!
+            string message = parameters.Message;
             string response = $"Unity MCP Bridge received: {message}";
             
             McpLogger.LogDebug($"Ping request processed: {message} -> {response}");
             
-            return Task.FromResult<object>(response);
+            // Create type-safe response
+            PingResponse pingResponse = new PingResponse(response);
+            
+            return Task.FromResult(pingResponse);
         }
     }
 } 

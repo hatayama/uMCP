@@ -5820,12 +5820,33 @@ var UnityClient = class {
       params
     };
     mcpDebug(`[UnityClient] Sending request:`, request);
-    const response = await this.sendRequest(request);
+    let timeoutMs = this.getTimeoutForCommand(commandName, params);
+    const response = await this.sendRequest(request, timeoutMs);
     mcpDebug(`[UnityClient] Received response:`, response);
     if (response.error) {
       throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
     }
     return response.result;
+  }
+  /**
+   * Get timeout duration for specific command
+   */
+  getTimeoutForCommand(commandName, params) {
+    switch (commandName) {
+      case "runtests":
+        const timeoutSeconds = params?.TimeoutSeconds || TIMEOUTS.RUN_TESTS / 1e3;
+        const calculatedTimeout = (timeoutSeconds + 10) * 1e3;
+        mcpDebug(`[UnityClient] Timeout calculation for runtests: params.TimeoutSeconds=${params?.TimeoutSeconds}, default=${TIMEOUTS.RUN_TESTS / 1e3}, final=${calculatedTimeout}ms`);
+        return calculatedTimeout;
+      case "compile":
+        return TIMEOUTS.COMPILE;
+      case "getlogs":
+        return TIMEOUTS.GET_LOGS;
+      case "ping":
+        return TIMEOUTS.PING;
+      default:
+        return TIMEOUTS.PING;
+    }
   }
   /**
    * Generate unique request ID
@@ -5839,8 +5860,10 @@ var UnityClient = class {
   async sendRequest(request, timeoutMs) {
     return new Promise((resolve, reject) => {
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
+      mcpDebug(`[UnityClient] Setting timeout for request ${request.id} (${request.method}): ${timeout_duration}ms`);
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(request.id);
+        mcpDebug(`[UnityClient] Request ${request.id} (${request.method}) timed out after ${timeout_duration}ms`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
       this.pendingRequests.set(request.id, {
@@ -6141,13 +6164,7 @@ var SimpleMcpServer = class {
           description: "Get Unity commands list (dev only)",
           inputSchema: {
             type: "object",
-            properties: {
-              test_param: {
-                type: "string",
-                description: "Test parameter to verify schema handling",
-                default: "test"
-              }
-            },
+            properties: {},
             additionalProperties: false
           }
         });
@@ -6291,23 +6308,30 @@ ${JSON.stringify(detailsResponse, null, 2)}`
    */
   setupUnityEventListener() {
     this.unityClient.onNotification("commandsChanged", async (params) => {
+      console.error("[NOTIFICATION] Received commandsChanged notification from Unity:", JSON.stringify(params));
       mcpInfo("[Simple MCP] Received commandsChanged notification from Unity:", params);
       try {
         await this.refreshDynamicTools();
+        console.error("[NOTIFICATION] Dynamic tools updated successfully via Unity event");
         mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity event");
       } catch (error) {
+        console.error("[NOTIFICATION] Failed to update dynamic tools via Unity event:", error);
         mcpError("[Simple MCP] Failed to update dynamic tools via Unity event:", error);
       }
     });
     this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
+      console.error("[NOTIFICATION] Received tools/list_changed notification from Unity:", JSON.stringify(params));
       mcpInfo("[Simple MCP] Received tools/list_changed notification from Unity:", params);
       try {
         await this.refreshDynamicTools();
+        console.error("[NOTIFICATION] Dynamic tools updated successfully via Unity notification");
         mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity notification");
       } catch (error) {
+        console.error("[NOTIFICATION] Failed to update dynamic tools via Unity notification:", error);
         mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
       }
     });
+    console.error("[NOTIFICATION] Unity event listeners setup completed");
     mcpInfo("[Simple MCP] Unity event listeners setup completed");
   }
   /**

@@ -1,56 +1,50 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// GetLogs command handler.
-    /// Retrieves logs from the Unity Console.
+    /// GetLogs command handler - Type-safe implementation using Schema and Response
+    /// Retrieves logs from the Unity Console
     /// </summary>
-    public class GetLogsCommand : IUnityCommand
+    public class GetLogsCommand : AbstractUnityCommand<GetLogsSchema, GetLogsResponse>
     {
-        public string CommandName => "getlogs";
-        public string Description => "Retrieve logs from Unity Console";
+        public override string CommandName => "getlogs";
+        public override string Description => "Retrieve logs from Unity Console";
 
-        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
-            new Dictionary<string, ParameterInfo>
-            {
-                ["logType"] = new ParameterInfo("string", "Log type to filter (Error, Warning, Log, All)", McpServerConfig.DEFAULT_LOG_TYPE, new[] { "Error", "Warning", "Log", "All" }),
-                ["maxCount"] = new ParameterInfo("number", "Maximum number of logs to retrieve", McpServerConfig.DEFAULT_MAX_LOG_COUNT),
-                ["searchText"] = new ParameterInfo("string", "Text to search within log messages (retrieve all if empty)", McpServerConfig.DEFAULT_SEARCH_TEXT),
-                ["includeStackTrace"] = new ParameterInfo("boolean", "Whether to display stack trace", McpServerConfig.DEFAULT_INCLUDE_STACK_TRACE)
-            }
-        );
 
-        public async Task<object> ExecuteAsync(JToken paramsToken)
+
+        protected override async Task<GetLogsResponse> ExecuteAsync(GetLogsSchema parameters)
         {
-            string logType = paramsToken?["logType"]?.ToString() ?? McpServerConfig.DEFAULT_LOG_TYPE;
-            int maxCount = paramsToken?["maxCount"]?.ToObject<int>() ?? McpServerConfig.DEFAULT_MAX_LOG_COUNT;
-            string searchText = paramsToken?["searchText"]?.ToString() ?? McpServerConfig.DEFAULT_SEARCH_TEXT;
-            bool includeStackTrace = paramsToken?["includeStackTrace"]?.ToObject<bool>() ?? McpServerConfig.DEFAULT_INCLUDE_STACK_TRACE;
+            // Type-safe parameter access - no more string parsing!
+            McpLogType logType = parameters.LogType;
+            int maxCount = parameters.MaxCount;
+            string searchText = parameters.SearchText;
+            bool includeStackTrace = parameters.IncludeStackTrace;
             
             // Switch to the main thread using MainThreadSwitcher.
             await MainThreadSwitcher.SwitchToMainThread();
+            
+            // Convert enum to string for LogGetter
+            string logTypeString = logType.ToString();
             
             // Get Unity Console Log using the LogGetter class.
             LogDisplayDto logData;
             if (string.IsNullOrEmpty(searchText))
             {
-                if (logType == McpServerConfig.DEFAULT_LOG_TYPE)
+                if (logType == McpLogType.All)
                 {
                     logData = LogGetter.GetConsoleLog();
                 }
                 else
                 {
-                    logData = LogGetter.GetConsoleLog(logType);
+                    logData = LogGetter.GetConsoleLog(logTypeString);
                 }
             }
             else
             {
-                logData = LogGetter.GetConsoleLog(logType, searchText);
+                logData = LogGetter.GetConsoleLog(logTypeString, searchText);
             }
             
             // Limit logs according to maxCount.
@@ -60,23 +54,23 @@ namespace io.github.hatayama.uMCP
                 Array.Resize(ref limitedEntries, maxCount);
             }
             
-            // Create response object
-            object response = new
-            {
-                totalCount = logData.TotalCount,
-                displayedCount = limitedEntries.Length,
-                logType = logType,
-                maxCount = maxCount,
-                searchText = searchText,
-                includeStackTrace = includeStackTrace,
-                                 logs = limitedEntries.Select(entry => new
-                 {
-                     type = entry.LogType,
-                     message = entry.Message,
-                     stackTrace = includeStackTrace ? entry.StackTrace : null,
-                     file = entry.File
-                 }).ToArray()
-            };
+            // Create type-safe response
+            LogEntry[] logs = limitedEntries.Select(entry => new LogEntry(
+                type: entry.LogType,
+                message: entry.Message,
+                stackTrace: includeStackTrace ? entry.StackTrace : null,
+                file: entry.File
+            )).ToArray();
+            
+            GetLogsResponse response = new GetLogsResponse(
+                totalCount: logData.TotalCount,
+                displayedCount: limitedEntries.Length,
+                logType: logTypeString,
+                maxCount: maxCount,
+                searchText: searchText,
+                includeStackTrace: includeStackTrace,
+                logs: logs
+            );
             
             McpLogger.LogDebug($"GetLogs completed: Retrieved {limitedEntries.Length} logs out of {logData.TotalCount} total");
             

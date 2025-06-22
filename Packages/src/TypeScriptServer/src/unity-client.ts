@@ -285,7 +285,10 @@ export class UnityClient {
 
     mcpDebug(`[UnityClient] Sending request:`, request);
 
-    const response = await this.sendRequest(request);
+    // Determine timeout based on command type and parameters
+    let timeoutMs = this.getTimeoutForCommand(commandName, params);
+    
+    const response = await this.sendRequest(request, timeoutMs);
     
     mcpDebug(`[UnityClient] Received response:`, response);
     
@@ -294,6 +297,29 @@ export class UnityClient {
     }
 
     return response.result;
+  }
+
+  /**
+   * Get timeout duration for specific command
+   */
+  private getTimeoutForCommand(commandName: string, params: any): number {
+    switch (commandName) {
+      case 'runtests':
+        // Use TimeoutSeconds parameter if provided, otherwise use default
+        const timeoutSeconds = params?.TimeoutSeconds || (TIMEOUTS.RUN_TESTS / 1000);
+        // Add 10 seconds buffer to Unity timeout to ensure Unity timeout triggers first
+        const calculatedTimeout = (timeoutSeconds + 10) * 1000;
+        mcpDebug(`[UnityClient] Timeout calculation for runtests: params.TimeoutSeconds=${params?.TimeoutSeconds}, default=${TIMEOUTS.RUN_TESTS / 1000}, final=${calculatedTimeout}ms`);
+        return calculatedTimeout;
+      case 'compile':
+        return TIMEOUTS.COMPILE;
+      case 'getlogs':
+        return TIMEOUTS.GET_LOGS;
+      case 'ping':
+        return TIMEOUTS.PING;
+      default:
+        return TIMEOUTS.PING;
+    }
   }
 
   /**
@@ -310,9 +336,12 @@ export class UnityClient {
     return new Promise((resolve, reject) => {
       // Use provided timeout or default to PING timeout
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
+      
+      mcpDebug(`[UnityClient] Setting timeout for request ${request.id} (${request.method}): ${timeout_duration}ms`);
 
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(request.id);
+        mcpDebug(`[UnityClient] Request ${request.id} (${request.method}) timed out after ${timeout_duration}ms`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
 

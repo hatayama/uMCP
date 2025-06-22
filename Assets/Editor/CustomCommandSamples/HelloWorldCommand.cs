@@ -14,8 +14,7 @@ namespace io.github.hatayama.uMCP
         public override string CommandName => "helloworld";
         public override string Description => "Personalized hello world command with name parameter";
 
-        public override CommandParameterSchema ParameterSchema => 
-            CommandParameterSchemaGenerator.FromDto<HelloWorldSchema>();
+
 
         protected override Task<HelloWorldResponse> ExecuteAsync(HelloWorldSchema parameters)
         {

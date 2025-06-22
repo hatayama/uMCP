@@ -16,7 +16,12 @@ namespace io.github.hatayama.uMCP
     {
         public abstract string CommandName { get; }
         public abstract string Description { get; }
-        public abstract CommandParameterSchema ParameterSchema { get; }
+        
+        /// <summary>
+        /// Automatically generates parameter schema from TSchema type
+        /// </summary>
+        public virtual CommandParameterSchema ParameterSchema => 
+            CommandParameterSchemaGenerator.FromDto<TSchema>();
 
         /// <summary>
         /// Execute command with type-safe Schema parameters

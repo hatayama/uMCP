@@ -1,43 +1,32 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using UnityEditor;
-using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Compileコマンドハンドラー
-    /// Unityプロジェクトのコンパイルを実行する
+    /// Compile command handler - Type-safe implementation using Schema and Response
+    /// Execute Unity project compilation
     /// </summary>
-    public class CompileCommand : IUnityCommand
+    public class CompileCommand : AbstractUnityCommand<CompileSchema, CompileResponse>
     {
         // SessionStateキー定数
         private const string SESSION_KEY_COMPILE_FROM_MCP = "uMCP.CompileFromMCP";
         
-        public string CommandName => "compile";
-        public string Description => "Execute Unity project compilation";
+        public override string CommandName => "compile";
+        public override string Description => "Execute Unity project compilation";
 
-        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
-            new Dictionary<string, ParameterInfo>
-            {
-                ["forceRecompile"] = new ParameterInfo("boolean", "Whether to perform forced recompilation", false)
-            }
-        );
+
 
         /// <summary>
         /// Execute compile command
         /// </summary>
-        /// <param name="paramsToken">Parameters</param>
+        /// <param name="parameters">Type-safe parameters</param>
         /// <returns>Compile result</returns>
-        public async Task<object> ExecuteAsync(JToken paramsToken)
+        protected override async Task<CompileResponse> ExecuteAsync(CompileSchema parameters)
         {
-            // Parse parameters
-            bool forceRecompile = false;
-            if (paramsToken != null && paramsToken.Type == JTokenType.Object)
-            {
-                forceRecompile = paramsToken["forceRecompile"]?.Value<bool>() ?? false;
-            }
+            // Type-safe parameter access - no more string parsing!
+            bool forceRecompile = parameters.ForceRecompile;
 
             await MainThreadSwitcher.SwitchToMainThread();
 
@@ -61,30 +50,31 @@ namespace io.github.hatayama.uMCP
                 using CompileChecker compileChecker = new CompileChecker();
                 CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
 
-                // レスポンス用のオブジェクトを作成
-                return new
-                {
-                    success = result.Success,
-                    errorCount = result.error.Length,
-                    warningCount = result.warning.Length,
-                    completedAt = result.CompletedAt,
-                    errors = result.error.Select(e => new { message = e.message, file = e.file, line = e.line }).ToArray(),
-                    warnings = result.warning.Select(w => new { message = w.message, file = w.file, line = w.line }).ToArray()
-                };
+                // Create type-safe response
+                CompileIssue[] errors = result.error.Select(e => new CompileIssue(e.message, e.file, e.line)).ToArray();
+                CompileIssue[] warnings = result.warning.Select(w => new CompileIssue(w.message, w.file, w.line)).ToArray();
+                
+                return new CompileResponse(
+                    success: result.Success,
+                    errorCount: result.error.Length,
+                    warningCount: result.warning.Length,
+                    completedAt: result.CompletedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    errors: errors,
+                    warnings: warnings
+                );
             }
             catch (System.Exception ex)
             {
                 McpLogger.LogError($"CompileCommand: Compilation failed: {ex.Message}");
-                return new
-                {
-                    success = false,
-                    message = $"Compilation failed: {ex.Message}",
-                    errorCount = 0,
-                    warningCount = 0,
-                    completedAt = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                    errors = new object[0],
-                    warnings = new object[0]
-                };
+                return new CompileResponse(
+                    success: false,
+                    errorCount: 0,
+                    warningCount: 0,
+                    completedAt: System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    errors: System.Array.Empty<CompileIssue>(),
+                    warnings: System.Array.Empty<CompileIssue>(),
+                    message: $"Compilation failed: {ex.Message}"
+                );
             }
             finally
             {

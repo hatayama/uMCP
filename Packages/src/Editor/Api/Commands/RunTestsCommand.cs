@@ -1,40 +1,30 @@
 using System;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using UnityEditor.TestTools.TestRunner.Api;
 using UnityEditor;
-using Newtonsoft.Json;
-using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Test execution command handler
+    /// Test execution command handler - Type-safe implementation using Schema and Response
     /// Executes tests using Unity Test Runner and returns the results
     /// </summary>
-    public class RunTestsCommand : IUnityCommand
+    public class RunTestsCommand : AbstractUnityCommand<RunTestsSchema, RunTestsResponse>
     {
-        public string CommandName => "runtests";
-        public string Description => "Execute Unity tests using Test Runner";
+        public override string CommandName => "runtests";
+        public override string Description => "Execute Unity tests using Test Runner";
 
-        public CommandParameterSchema ParameterSchema => new CommandParameterSchema(
-            new Dictionary<string, ParameterInfo>
-            {
-                ["filterType"] = new ParameterInfo("string", "Type of test filter", "all", new[] { "all", "fullclassname", "namespace", "testname", "assembly" }),
-                ["filterValue"] = new ParameterInfo("string", "Filter value (specify when filterType is not all)\n• fullclassname: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)\n• namespace: Namespace (e.g.: io.github.hatayama.uMCP)\n• testname: Individual test name\n• assembly: Assembly name", ""),
-                ["saveXml"] = new ParameterInfo("boolean", "Whether to save test results as XML file", false)
-            }
-        );
 
-        public async Task<object> ExecuteAsync(JToken paramsToken)
+
+        protected override async Task<RunTestsResponse> ExecuteAsync(RunTestsSchema parameters)
         {
-            // Parse parameters
-            TestExecutionParameters parameters = ParseParameters(paramsToken);
+            // Type-safe parameter access - no more string parsing!
             
-            McpLogger.LogInfo($"Test execution started - Filter: {parameters.FilterType}, Value: {parameters.FilterValue}, Save XML: {parameters.SaveXml}");
+            McpLogger.LogInfo($"Test execution started - Filter: {parameters.FilterType}, Value: {parameters.FilterValue}, Save XML: {parameters.SaveXml}, Timeout: {parameters.TimeoutSeconds}s");
 
             try
             {
+                McpLogger.LogInfo("Creating test execution manager...");
                 // Create test execution manager
                 UnityTestExecutionManager testManager = new UnityTestExecutionManager();
                 
@@ -44,36 +34,53 @@ namespace io.github.hatayama.uMCP
                 // Set up result processing
                 void ProcessResult(ITestResultAdaptor result)
                 {
+                    McpLogger.LogInfo("Test execution completed, processing results...");
                     ProcessTestResult(result, parameters.SaveXml, completionSource);
                 }
                 
+                McpLogger.LogInfo("Starting test execution...");
                 // Execute tests based on filter
                 if (string.IsNullOrEmpty(parameters.FilterValue))
                 {
+                    McpLogger.LogInfo("Running all EditMode tests...");
                     testManager.RunEditModeTests(ProcessResult);
                 }
                 else
                 {
-                    TestExecutionFilter filter = CreateFilter(parameters.FilterType, parameters.FilterValue);
+                    McpLogger.LogInfo($"Running filtered tests: {parameters.FilterType} = {parameters.FilterValue}");
+                    TestExecutionFilter filter = CreateFilter(parameters.FilterType.ToString(), parameters.FilterValue);
                     testManager.RunEditModeTests(filter, ProcessResult);
                 }
                 
-                // Wait for completion
-                TestExecutionResult result = await completionSource.Task;
+                McpLogger.LogInfo("Test execution initiated, waiting for completion...");
                 
-                McpLogger.LogInfo($"Test execution completed: Success={result.Success}, Message={result.Message}");
-                
-                return new
+                // Wait for completion with timeout
+                using (var timeoutCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(parameters.TimeoutSeconds)))
                 {
-                    success = result.Success,
-                    message = result.Message,
-                    completedAt = result.CompletedAt,
-                    testCount = result.TestCount,
-                    passedCount = result.PassedCount,
-                    failedCount = result.FailedCount,
-                    skippedCount = result.SkippedCount,
-                    xmlPath = result.XmlPath
-                };
+                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(parameters.TimeoutSeconds), timeoutCts.Token);
+                    var completedTask = await Task.WhenAny(completionSource.Task, timeoutTask);
+                    
+                    if (completedTask == timeoutTask)
+                    {
+                        McpLogger.LogWarning($"Test execution timed out after {parameters.TimeoutSeconds} seconds");
+                        return CreateTimeoutResponse(parameters.TimeoutSeconds);
+                    }
+                    
+                    TestExecutionResult result = await completionSource.Task;
+                    McpLogger.LogInfo($"Test execution completed: Success={result.Success}, Message={result.Message}");
+                    
+                    // Create type-safe response
+                    return new RunTestsResponse(
+                        success: result.Success,
+                        message: result.Message,
+                        completedAt: result.CompletedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        testCount: result.TestCount,
+                        passedCount: result.PassedCount,
+                        failedCount: result.FailedCount,
+                        skippedCount: result.SkippedCount,
+                        xmlPath: result.XmlPath
+                    );
+                }
             }
             catch (Exception ex)
             {
@@ -82,17 +89,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        /// <summary>
-        /// Parse parameters from JSON token
-        /// </summary>
-        private TestExecutionParameters ParseParameters(JToken paramsToken)
-        {
-            string filterType = paramsToken?["filterType"]?.ToString() ?? "all";
-            string filterValue = paramsToken?["filterValue"]?.ToString() ?? "";
-            bool saveXml = paramsToken?["saveXml"]?.ToObject<bool>() ?? false;
-            
-            return new TestExecutionParameters(filterType, filterValue, saveXml);
-        }
+
 
         /// <summary>
         /// Create test execution filter
@@ -204,6 +201,23 @@ namespace io.github.hatayama.uMCP
                     CountTestsByStatus(child, ref count, targetStatus);
                 }
             }
+        }
+
+        /// <summary>
+        /// Create timeout response
+        /// </summary>
+        private RunTestsResponse CreateTimeoutResponse(int timeoutSeconds)
+        {
+            return new RunTestsResponse(
+                success: false,
+                message: $"Test execution timed out after {timeoutSeconds} seconds",
+                completedAt: DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                testCount: 0,
+                passedCount: 0,
+                failedCount: 0,
+                skippedCount: 0,
+                xmlPath: null
+            );
         }
     }
 
