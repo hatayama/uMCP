@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -6,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
@@ -22,6 +25,9 @@ namespace io.github.hatayama.uMCP
         private CancellationTokenSource cancellationTokenSource;
         private Task serverTask;
         private bool isRunning = false;
+        
+        // Client management for broadcasting notifications
+        private readonly ConcurrentDictionary<string, NetworkStream> connectedClients = new ConcurrentDictionary<string, NetworkStream>();
         
         /// <summary>
         /// Whether the server is running.
@@ -272,6 +278,9 @@ namespace io.github.hatayama.uMCP
                 using (client)
                 using (NetworkStream stream = client.GetStream())
                 {
+                    // Add client to connected clients for notification broadcasting
+                    connectedClients.TryAdd(clientEndpoint, stream);
+                    McpLogger.LogDebug($"Client {clientEndpoint} added to notification list");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
                     
                     while (!cancellationToken.IsCancellationRequested && client.Connected)
@@ -333,10 +342,131 @@ namespace io.github.hatayama.uMCP
             }
             finally
             {
+                // Remove client from connected clients list
+                connectedClients.TryRemove(clientEndpoint, out _);
+                McpLogger.LogDebug($"Client {clientEndpoint} removed from notification list");
+                
                 client.Close();
                 McpLogger.LogClientConnection(clientEndpoint, false);
                 OnClientDisconnected?.Invoke(clientEndpoint);
             }
+        }
+
+        /// <summary>
+        /// Sends a JSON-RPC notification to all connected clients.
+        /// </summary>
+        /// <param name="method">The notification method name</param>
+        /// <param name="parameters">The notification parameters (optional)</param>
+        public async void SendNotificationToClients(string method, object parameters = null)
+        {
+            if (connectedClients.IsEmpty)
+            {
+                McpLogger.LogDebug($"No connected clients to send notification: {method}");
+                return;
+            }
+
+            // Create JSON-RPC notification
+            object notification = new
+            {
+                jsonrpc = "2.0",
+                method = method,
+                @params = parameters
+            };
+
+            string notificationJson = JsonConvert.SerializeObject(notification) + "\n";
+            byte[] notificationData = Encoding.UTF8.GetBytes(notificationJson);
+
+            McpLogger.LogInfo($"Broadcasting notification '{method}' to {connectedClients.Count} clients");
+
+            await SendNotificationData(notificationData);
+        }
+
+        /// <summary>
+        /// Sends a pre-formatted JSON-RPC notification to all connected clients.
+        /// </summary>
+        /// <param name="notificationJson">The complete JSON-RPC notification string</param>
+        public async void SendNotificationToClients(string notificationJson)
+        {
+            McpLogger.LogInfo($"[DEBUG] SendNotificationToClients called with {connectedClients.Count} clients");
+            
+            if (connectedClients.IsEmpty)
+            {
+                McpLogger.LogDebug("No connected clients to send notification");
+                McpLogger.LogInfo("[DEBUG] connectedClients is empty - no clients to notify");
+                return;
+            }
+
+            // Log details of connected clients
+            McpLogger.LogInfo($"[DEBUG] Connected clients details:");
+            foreach (KeyValuePair<string, NetworkStream> client in connectedClients)
+            {
+                bool canWrite = client.Value?.CanWrite ?? false;
+                McpLogger.LogInfo($"[DEBUG] - Client: {client.Key}, CanWrite: {canWrite}");
+            }
+
+            // Ensure the JSON ends with a newline
+            if (!notificationJson.EndsWith("\n"))
+            {
+                notificationJson += "\n";
+            }
+
+            byte[] notificationData = Encoding.UTF8.GetBytes(notificationJson);
+            McpLogger.LogInfo($"Broadcasting pre-formatted notification to {connectedClients.Count} clients");
+            McpLogger.LogInfo($"[DEBUG] Notification data size: {notificationData.Length} bytes");
+
+            await SendNotificationData(notificationData);
+        }
+
+        /// <summary>
+        /// Common method to send notification data to all connected clients
+        /// </summary>
+        private async Task SendNotificationData(byte[] notificationData)
+        {
+            McpLogger.LogInfo($"[DEBUG] SendNotificationData called - sending to {connectedClients.Count} clients");
+            
+            // Send to all connected clients
+            List<string> clientsToRemove = new List<string>();
+            int successCount = 0;
+            int failureCount = 0;
+            
+            foreach (KeyValuePair<string, NetworkStream> client in connectedClients)
+            {
+                try
+                {
+                    if (client.Value.CanWrite)
+                    {
+                        await client.Value.WriteAsync(notificationData, 0, notificationData.Length);
+                        McpLogger.LogDebug($"Notification sent to client: {client.Key}");
+                        McpLogger.LogInfo($"[DEBUG] Successfully sent notification to client: {client.Key}");
+                        successCount++;
+                    }
+                    else
+                    {
+                        McpLogger.LogInfo($"[DEBUG] Client {client.Key} cannot write - marking for removal");
+                        clientsToRemove.Add(client.Key);
+                        failureCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    McpLogger.LogWarning($"Failed to send notification to client {client.Key}: {ex.Message}");
+                    McpLogger.LogInfo($"[DEBUG] Exception sending to client {client.Key}: {ex}");
+                    clientsToRemove.Add(client.Key);
+                    failureCount++;
+                }
+            }
+
+            McpLogger.LogInfo($"[DEBUG] Notification sending completed - Success: {successCount}, Failures: {failureCount}");
+
+            // Remove disconnected clients
+            foreach (string clientKey in clientsToRemove)
+            {
+                connectedClients.TryRemove(clientKey, out _);
+                McpLogger.LogDebug($"Removed disconnected client: {clientKey}");
+                McpLogger.LogInfo($"[DEBUG] Removed disconnected client: {clientKey}");
+            }
+            
+            McpLogger.LogInfo($"[DEBUG] SendNotificationData completed - Remaining clients: {connectedClients.Count}");
         }
 
         /// <summary>

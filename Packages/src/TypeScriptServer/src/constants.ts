@@ -21,6 +21,16 @@ export const JSONRPC = {
   VERSION: '2.0',
 } as const;
 
+// Parameter schema constants (must match Unity side)
+export const PARAMETER_SCHEMA = {
+  TYPE_PROPERTY: 'Type',
+  DESCRIPTION_PROPERTY: 'Description',
+  DEFAULT_VALUE_PROPERTY: 'DefaultValue',
+  ENUM_PROPERTY: 'Enum',
+  PROPERTIES_PROPERTY: 'Properties',
+  REQUIRED_PROPERTY: 'Required',
+} as const;
+
 // Timeout configuration (milliseconds)
 export const TIMEOUTS = {
   PING: 5000,
@@ -53,11 +63,9 @@ export const COMPILE_CONFIG = {
 
 // Tool names
 export const TOOL_NAMES = {
-  PING: 'mcp.ping',
-  UNITY_PING: 'unity-ping',
-  COMPILE: 'unity-compile',
-  GET_LOGS: 'unity-get-logs',
-  RUN_TESTS: 'unity-run-tests',
+  MCP_PING: 'mcp-ping',
+  PING: 'ping',
+  GET_AVAILABLE_COMMANDS: 'get-available-commands',
 } as const;
 
 // Default messages

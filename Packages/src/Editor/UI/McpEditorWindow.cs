@@ -27,6 +27,7 @@ namespace io.github.hatayama.uMCP
         private int customPort = McpServerConfig.DEFAULT_PORT;
         private bool autoStartServer = false;
         private bool showDeveloperTools = false;
+        private bool enableCommunicationLogs = false;
         private bool showCommunicationLogs = false;
         private bool enableMcpLogs = false;
         private Vector2 communicationLogScrollPosition;
@@ -70,6 +71,7 @@ namespace io.github.hatayama.uMCP
             autoStartServer = settings.autoStartServer;
             showDeveloperTools = settings.showDeveloperTools;
             enableMcpLogs = settings.enableMcpLogs;
+            enableCommunicationLogs = settings.enableCommunicationLogs;
             
             // Restore editor selection state
             selectedEditorType = (McpEditorType)SessionState.GetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
@@ -132,7 +134,6 @@ namespace io.github.hatayama.uMCP
             DrawServerStatus();
             DrawServerControls();
             DrawEditorConfigSection();
-            DrawCommunicationLogs();
             DrawDeveloperTools();
             
             EditorGUILayout.EndScrollView();
@@ -227,17 +228,17 @@ namespace io.github.hatayama.uMCP
             // Start/Stop buttons
             EditorGUILayout.BeginHorizontal();
             
-            EditorGUI.BeginDisabledGroup(isRunning);
-            if (GUILayout.Button("Start Server", GUILayout.Height(30)))
-            {
-                StartServer();
-            }
-            EditorGUI.EndDisabledGroup();
-            
             EditorGUI.BeginDisabledGroup(!isRunning);
             if (GUILayout.Button("Stop Server", GUILayout.Height(30)))
             {
                 StopServer();
+            }
+            EditorGUI.EndDisabledGroup();
+            
+            EditorGUI.BeginDisabledGroup(isRunning);
+            if (GUILayout.Button("Start Server", GUILayout.Height(30)))
+            {
+                StartServer();
             }
             EditorGUI.EndDisabledGroup();
             
@@ -323,6 +324,30 @@ namespace io.github.hatayama.uMCP
             Repaint();
         }
 
+
+        
+        /// <summary>
+        /// Notify command changes to TypeScript side
+        /// </summary>
+        private void NotifyCommandChanges()
+        {
+            try
+            {
+                UnityCommandRegistry.TriggerCommandsChangedNotification();
+                EditorUtility.DisplayDialog("Command Notification", 
+                    "Command changes have been notified to Cursor successfully!", 
+                    "OK");
+                McpLogger.LogInfo("Command changes notification sent to Cursor");
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.DisplayDialog("Notification Error", 
+                    $"Failed to notify command changes: {ex.Message}", 
+                    "OK");
+                McpLogger.LogError($"Failed to notify command changes: {ex.Message}");
+            }
+        }
+
         /// <summary>
         /// Draw editor configuration section
         /// </summary>
@@ -376,7 +401,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Draw individual configuration section
+        /// Draw configuration section for the selected editor
         /// </summary>
         private void DrawConfigurationSection(string editorName, McpConfigService configService, bool isServerRunning, int currentServerPort)
         {
@@ -465,13 +490,45 @@ namespace io.github.hatayama.uMCP
                     McpEditorSettings.SetEnableMcpLogs(enableMcpLogs);
                 }
                 
+                // Communication logs toggle
+                EditorGUI.BeginChangeCheck();
+                bool newEnableCommunicationLogs = EditorGUILayout.Toggle("Enable Communication Logs", enableCommunicationLogs);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    enableCommunicationLogs = newEnableCommunicationLogs;
+                    McpEditorSettings.SetEnableCommunicationLogs(enableCommunicationLogs);
+                }
+                
                 EditorGUILayout.Space();
+                
+                // Communication logs section (only when enabled)
+                if (enableCommunicationLogs)
+                {
+                    DrawCommunicationLogs();
+                    EditorGUILayout.Space();
+                }
                 
                 // Debug information display button
                 if (GUILayout.Button("Show Debug Info"))
                 {
                     string debugInfo = McpServerController.GetDetailedServerStatus();
                     Debug.Log($"MCP Server Debug Info:\n{debugInfo}");
+                }
+                
+                EditorGUILayout.Space();
+                
+                // Command notification button
+                bool isServerRunning = McpServerController.IsServerRunning;
+                EditorGUI.BeginDisabledGroup(!isServerRunning);
+                if (GUILayout.Button("Notify Command Changes to LLM Tools", GUILayout.Height(25)))
+                {
+                    NotifyCommandChanges();
+                }
+                EditorGUI.EndDisabledGroup();
+                
+                if (!isServerRunning)
+                {
+                    EditorGUILayout.HelpBox("Server must be running to notify command changes", MessageType.Info);
                 }
                 
                 EditorGUILayout.Space();
@@ -488,10 +545,49 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Rebuild TypeScript server
+        /// </summary>
+        private void RebuildTypeScriptServer()
+        {
+            // Create TypeScriptBuilder when needed
+            TypeScriptBuilder builder = new TypeScriptBuilder();
+            
+            builder.BuildTypeScriptServer((success, output, error) => {
+                if (success)
+                {
+                    // Auto-restart if server is running
+                    if (McpServerController.IsServerRunning)
+                    {
+                        Debug.Log("Restarting server with new build...");
+                        McpServerController.StopServer();
+                        
+                        // Wait a bit before restarting (wait for server to completely stop)
+                        EditorApplication.delayCall += () => {
+                            McpServerController.StartServer(customPort);
+                            Debug.Log("Server restarted with updated TypeScript build!");
+                            Repaint(); // Update UI
+                        };
+                    }
+                    else
+                    {
+                        Debug.Log("Server is not running. Start the server manually to use the updated build.");
+                    }
+                }
+                // Error handling is performed within TypeScriptBuilder
+            });
+        }
+
+        /// <summary>
         /// Draw communication logs section
         /// </summary>
         private void DrawCommunicationLogs()
         {
+            // Early return if communication logs are disabled
+            if (!enableCommunicationLogs)
+            {
+                return;
+            }
+            
             EditorGUILayout.BeginVertical("box");
             
             // Header and clear button
@@ -540,7 +636,6 @@ namespace io.github.hatayama.uMCP
             }
             
             EditorGUILayout.EndVertical();
-            EditorGUILayout.Space();
         }
         
         /// <summary>
@@ -729,39 +824,6 @@ namespace io.github.hatayama.uMCP
                     Event.current.Use();
                 }
             }
-        }
-
-        /// <summary>
-        /// Rebuild TypeScript server
-        /// </summary>
-        private void RebuildTypeScriptServer()
-        {
-            // Create TypeScriptBuilder when needed
-            TypeScriptBuilder builder = new TypeScriptBuilder();
-            
-            builder.BuildTypeScriptServer((success, output, error) => {
-                if (success)
-                {
-                    // Auto-restart if server is running
-                    if (McpServerController.IsServerRunning)
-                    {
-                        Debug.Log("Restarting server with new build...");
-                        McpServerController.StopServer();
-                        
-                        // Wait a bit before restarting (wait for server to completely stop)
-                        EditorApplication.delayCall += () => {
-                            McpServerController.StartServer(customPort);
-                            Debug.Log("Server restarted with updated TypeScript build!");
-                            Repaint(); // Update UI
-                        };
-                    }
-                    else
-                    {
-                        Debug.Log("Server is not running. Start the server manually to use the updated build.");
-                    }
-                }
-                // Error handling is performed within TypeScriptBuilder
-            });
         }
     }
 } 

@@ -15,14 +15,14 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Test for command type.
-        /// - Asserts that the command type is Compile.
+        /// Test for command name.
+        /// - Asserts that the command name is "compile".
         /// </summary>
         [Test]
-        public void CommandType_ShouldReturnCompile()
+        public void CommandName_ShouldReturnCompile()
         {
             // Assert
-            Assert.That(compileCommand.CommandType, Is.EqualTo(CommandType.Compile));
+            Assert.That(compileCommand.CommandName, Is.EqualTo("compile"));
         }
 
         /// <summary>

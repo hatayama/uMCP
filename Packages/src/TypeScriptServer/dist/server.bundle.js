@@ -5473,14 +5473,71 @@ var StdioServerTransport = class {
   }
 };
 
+// src/utils/debug-logger.ts
+var DebugLogger = class {
+  static isDebugEnabled = process.env.MCP_DEBUG === "true" || process.env.NODE_ENV === "development";
+  /**
+   * Log debug message to stderr (safe for MCP)
+   */
+  static debug(message, data) {
+    if (!this.isDebugEnabled) return;
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp}] [DEBUG] ${message}`;
+    if (data !== void 0) {
+      console.error(logMessage, data);
+    } else {
+      console.error(logMessage);
+    }
+  }
+  /**
+   * Log info message to stderr
+   */
+  static info(message, data) {
+    if (!this.isDebugEnabled) return;
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp}] [INFO] ${message}`;
+    if (data !== void 0) {
+      console.error(logMessage, data);
+    } else {
+      console.error(logMessage);
+    }
+  }
+  /**
+   * Log error message to stderr
+   */
+  static error(message, error) {
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp}] [ERROR] ${message}`;
+    if (error !== void 0) {
+      console.error(logMessage, error);
+    } else {
+      console.error(logMessage);
+    }
+  }
+  /**
+   * Log tool execution
+   */
+  static logToolExecution(toolName, args, result) {
+    this.debug(`Tool executed: ${toolName}`, { args, result });
+  }
+  /**
+   * Log notification sending
+   */
+  static logNotification(method, params) {
+    this.debug(`Sending notification: ${method}`, params);
+  }
+  /**
+   * Enable/disable debug logging
+   */
+  static setDebugEnabled(enabled) {
+    this.isDebugEnabled = enabled;
+  }
+};
+
 // src/unity-client.ts
 import * as net from "net";
 
 // src/constants.ts
-var SERVER_CONFIG = {
-  NAME: "unity-mcp-server",
-  VERSION: "0.1.0"
-};
 var UNITY_CONNECTION = {
   DEFAULT_PORT: "7400",
   DEFAULT_HOST: "localhost",
@@ -5489,38 +5546,19 @@ var UNITY_CONNECTION = {
 var JSONRPC = {
   VERSION: "2.0"
 };
+var PARAMETER_SCHEMA = {
+  TYPE_PROPERTY: "Type",
+  DESCRIPTION_PROPERTY: "Description",
+  DEFAULT_VALUE_PROPERTY: "DefaultValue",
+  ENUM_PROPERTY: "Enum",
+  PROPERTIES_PROPERTY: "Properties",
+  REQUIRED_PROPERTY: "Required"
+};
 var TIMEOUTS = {
   PING: 5e3,
   COMPILE: 3e4,
   GET_LOGS: 1e4,
   RUN_TESTS: 6e4
-};
-var LOG_CONFIG = {
-  TYPES: ["Error", "Warning", "Log", "All"],
-  DEFAULT_TYPE: "All",
-  DEFAULT_MAX_COUNT: 100,
-  DEFAULT_SEARCH_TEXT: "",
-  DEFAULT_INCLUDE_STACK_TRACE: true
-};
-var TEST_CONFIG = {
-  FILTER_TYPES: ["all", "fullclassname", "namespace", "testname", "assembly"],
-  DEFAULT_FILTER_TYPE: "all",
-  DEFAULT_FILTER_VALUE: "",
-  DEFAULT_SAVE_XML: false
-};
-var COMPILE_CONFIG = {
-  DEFAULT_FORCE_RECOMPILE: false
-};
-var TOOL_NAMES = {
-  PING: "mcp.ping",
-  UNITY_PING: "unity-ping",
-  COMPILE: "unity-compile",
-  GET_LOGS: "unity-get-logs",
-  RUN_TESTS: "unity-run-tests"
-};
-var DEFAULT_MESSAGES = {
-  PING: "Hello Unity MCP!",
-  UNITY_PING: "Hello from TypeScript MCP Server"
 };
 var ERROR_MESSAGES = {
   NOT_CONNECTED: "Unity MCP Bridge is not connected",
@@ -5529,17 +5567,135 @@ var ERROR_MESSAGES = {
   INVALID_RESPONSE: "Invalid response from Unity"
 };
 
+// src/utils/mcp-debug.ts
+var mcpDebug = (...args) => {
+  if (process.env.MCP_DEBUG) {
+    const message = args.map(
+      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(" ");
+    process.stderr.write(`[MCP-DEBUG] ${message}
+`);
+  }
+};
+var mcpInfo = (...args) => {
+  if (process.env.MCP_DEBUG) {
+    const message = args.map(
+      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(" ");
+    process.stderr.write(`[MCP-INFO] ${message}
+`);
+  }
+};
+var mcpWarn = (...args) => {
+  if (process.env.MCP_DEBUG) {
+    const message = args.map(
+      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(" ");
+    process.stderr.write(`[MCP-WARN] ${message}
+`);
+  }
+};
+var mcpError = (...args) => {
+  if (process.env.MCP_DEBUG) {
+    const message = args.map(
+      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(" ");
+    process.stderr.write(`[MCP-ERROR] ${message}
+`);
+  }
+};
+
 // src/unity-client.ts
 var UnityClient = class {
   socket = null;
   _connected = false;
   port;
   host = UNITY_CONNECTION.DEFAULT_HOST;
+  notificationHandlers = /* @__PURE__ */ new Map();
+  pendingRequests = /* @__PURE__ */ new Map();
+  reconnectHandlers = /* @__PURE__ */ new Set();
   constructor() {
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
   }
   get connected() {
     return this._connected && this.socket !== null && !this.socket.destroyed;
+  }
+  /**
+   * Register notification handler for specific method
+   */
+  onNotification(method, handler) {
+    this.notificationHandlers.set(method, handler);
+    mcpDebug(`[UnityClient] Registered notification handler for method: ${method}`);
+  }
+  /**
+   * Remove notification handler
+   */
+  offNotification(method) {
+    this.notificationHandlers.delete(method);
+  }
+  /**
+   * Register reconnect handler
+   */
+  onReconnect(handler) {
+    this.reconnectHandlers.add(handler);
+  }
+  /**
+   * Remove reconnect handler
+   */
+  offReconnect(handler) {
+    this.reconnectHandlers.delete(handler);
+  }
+  /**
+   * Handle incoming data from Unity
+   */
+  handleIncomingData(data) {
+    try {
+      const lines = data.split("\n").filter((line) => line.trim());
+      for (const line of lines) {
+        const message = JSON.parse(line);
+        if (message.method && !message.hasOwnProperty("id")) {
+          this.handleNotification(message);
+        } else if (message.id) {
+          this.handleResponse(message);
+        }
+      }
+    } catch (error) {
+      mcpError("[UnityClient] Error parsing incoming data:", error);
+    }
+  }
+  /**
+   * Handle notification from Unity
+   */
+  handleNotification(notification) {
+    const { method, params } = notification;
+    mcpDebug(`[UnityClient] Received notification: ${method}`, params);
+    const handler = this.notificationHandlers.get(method);
+    if (handler) {
+      try {
+        handler(params);
+      } catch (error) {
+        mcpError(`[UnityClient] Error in notification handler for ${method}:`, error);
+      }
+    } else {
+      mcpDebug(`[UnityClient] No handler registered for notification: ${method}`);
+    }
+  }
+  /**
+   * Handle response from Unity
+   */
+  handleResponse(response) {
+    const { id } = response;
+    const pending = this.pendingRequests.get(id);
+    if (pending) {
+      this.pendingRequests.delete(id);
+      if (response.error) {
+        pending.reject(new Error(response.error.message || "Unknown error"));
+      } else {
+        pending.resolve(response);
+      }
+    } else {
+      mcpWarn(`[UnityClient] Received response for unknown request ID: ${id}`);
+    }
   }
   /**
    * Actually test Unity's connection status
@@ -5575,6 +5731,13 @@ var UnityClient = class {
       this.socket = new net.Socket();
       this.socket.connect(this.port, this.host, () => {
         this._connected = true;
+        this.reconnectHandlers.forEach((handler) => {
+          try {
+            handler();
+          } catch (error) {
+            mcpError("[UnityClient] Error in reconnect handler:", error);
+          }
+        });
         resolve();
       });
       this.socket.on("error", (error) => {
@@ -5583,6 +5746,9 @@ var UnityClient = class {
       });
       this.socket.on("close", () => {
         this._connected = false;
+      });
+      this.socket.on("data", (data) => {
+        this.handleIncomingData(data.toString());
       });
     });
   }
@@ -5593,146 +5759,134 @@ var UnityClient = class {
     if (!this.connected) {
       throw new Error("Not connected to Unity");
     }
-    return new Promise((resolve, reject) => {
-      const requestId = Date.now();
-      const request = JSON.stringify({
-        jsonrpc: JSONRPC.VERSION,
-        id: requestId,
-        method: "ping",
-        params: {
-          message
-        }
-      });
-      this.socket.write(request + "\n");
-      const timeout = setTimeout(() => {
-        reject(new Error(`Unity ping ${ERROR_MESSAGES.TIMEOUT}`));
-      }, TIMEOUTS.PING);
-      this.socket.once("data", (data) => {
-        clearTimeout(timeout);
-        try {
-          const response = JSON.parse(data.toString());
-          if (response.error) {
-            reject(new Error(`Unity error: ${response.error.message}`));
-          } else {
-            resolve(response.result || "Unity pong");
-          }
-        } catch (error) {
-          reject(new Error("Invalid response from Unity"));
-        }
-      });
-    });
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: "ping",
+      params: {
+        Message: message
+        // Updated to match PingSchema property name
+      }
+    };
+    const response = await this.sendRequest(request);
+    if (response.error) {
+      throw new Error(`Unity error: ${response.error.message}`);
+    }
+    return response.result || { Message: "Unity pong" };
   }
   /**
-   * Compile Unity project
+   * Get available commands from Unity
    */
-  async compileProject(forceRecompile = false) {
-    if (!this.connected) {
-      throw new Error(`${ERROR_MESSAGES.NOT_CONNECTED}. Cannot compile project without Unity connection. Please ensure Unity is running and MCP server is started.`);
+  async getAvailableCommands() {
+    await this.ensureConnected();
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: "getAvailableCommands",
+      params: {}
+    };
+    const response = await this.sendRequest(request);
+    if (response.error) {
+      throw new Error(`Failed to get available commands: ${response.error.message}`);
     }
-    return new Promise((resolve, reject) => {
-      const requestId = Date.now();
-      const request = JSON.stringify({
-        jsonrpc: JSONRPC.VERSION,
-        id: requestId,
-        method: "compile",
-        params: {
-          forceRecompile
-        }
-      });
-      this.socket.write(request + "\n");
-      const timeout = setTimeout(() => {
-        reject(new Error(`Unity compile ${ERROR_MESSAGES.TIMEOUT}`));
-      }, TIMEOUTS.COMPILE);
-      this.socket.once("data", (data) => {
-        clearTimeout(timeout);
-        try {
-          const response = JSON.parse(data.toString());
-          if (response.error) {
-            reject(new Error(`Unity compile error: ${response.error.message}`));
-          } else {
-            resolve(response.result);
-          }
-        } catch (error) {
-          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} compile`));
-        }
-      });
-    });
+    return response.result || [];
   }
   /**
-   * Retrieve Unity console logs
+   * Get command details from Unity
    */
-  async getLogs(logType = LOG_CONFIG.DEFAULT_TYPE, maxCount = LOG_CONFIG.DEFAULT_MAX_COUNT, searchText = LOG_CONFIG.DEFAULT_SEARCH_TEXT, includeStackTrace = LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE) {
-    if (!this.connected) {
-      throw new Error("${ERROR_MESSAGES.NOT_CONNECTED}. Cannot get logs without Unity connection. Please ensure Unity is running and MCP server is started.");
+  async getCommandDetails() {
+    await this.ensureConnected();
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: "getCommandDetails",
+      params: {}
+    };
+    const response = await this.sendRequest(request);
+    if (response.error) {
+      throw new Error(`Failed to get command details: ${response.error.message}`);
     }
-    return new Promise((resolve, reject) => {
-      const requestId = Date.now();
-      const request = JSON.stringify({
-        jsonrpc: JSONRPC.VERSION,
-        id: requestId,
-        method: "getLogs",
-        params: {
-          logType: logType || LOG_CONFIG.DEFAULT_TYPE,
-          maxCount: maxCount || LOG_CONFIG.DEFAULT_MAX_COUNT,
-          searchText: searchText || LOG_CONFIG.DEFAULT_SEARCH_TEXT,
-          includeStackTrace: includeStackTrace !== void 0 ? includeStackTrace : LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE
-        }
-      });
-      this.socket.write(request + "\n");
-      const timeout = setTimeout(() => {
-        reject(new Error(`Unity getLogs ${ERROR_MESSAGES.TIMEOUT}`));
-      }, TIMEOUTS.GET_LOGS);
-      this.socket.once("data", (data) => {
-        clearTimeout(timeout);
-        try {
-          const response = JSON.parse(data.toString());
-          if (response.error) {
-            reject(new Error(`Unity getLogs error: ${response.error.message}`));
-          } else {
-            resolve(response.result);
-          }
-        } catch (error) {
-          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} getLogs`));
-        }
-      });
-    });
+    return response.result || [];
   }
   /**
-   * Execute Unity Test Runner
+   * Execute any Unity command dynamically
    */
-  async runTests(filterType = TEST_CONFIG.DEFAULT_FILTER_TYPE, filterValue = TEST_CONFIG.DEFAULT_FILTER_VALUE, saveXml = TEST_CONFIG.DEFAULT_SAVE_XML) {
-    if (!this.connected) {
-      throw new Error("${ERROR_MESSAGES.NOT_CONNECTED}. Cannot execute tests without Unity connection. Please ensure Unity is running and MCP server is started.");
+  async executeCommand(commandName, params = {}) {
+    await this.ensureConnected();
+    mcpDebug(`[UnityClient] Executing command: "${commandName}" with params:`, params);
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: commandName,
+      params
+    };
+    mcpDebug(`[UnityClient] Sending request:`, request);
+    let timeoutMs = this.getTimeoutForCommand(commandName, params);
+    const response = await this.sendRequest(request, timeoutMs);
+    mcpDebug(`[UnityClient] Received response:`, response);
+    if (response.error) {
+      throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
     }
+    return response.result;
+  }
+  /**
+   * Get timeout duration for specific command
+   * Now supports dynamic TimeoutSeconds parameter for all commands
+   */
+  getTimeoutForCommand(commandName, params) {
+    if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0) {
+      const calculatedTimeout = (params.TimeoutSeconds + 10) * 1e3;
+      mcpDebug(`[UnityClient] Using dynamic timeout for ${commandName}: params.TimeoutSeconds=${params.TimeoutSeconds}s, final=${calculatedTimeout}ms`);
+      return calculatedTimeout;
+    }
+    switch (commandName) {
+      case "runtests":
+        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1e3 + 10) * 1e3;
+        mcpDebug(`[UnityClient] Using default timeout for runtests: ${defaultTimeout}ms`);
+        return defaultTimeout;
+      case "compile":
+        mcpDebug(`[UnityClient] Using default timeout for compile: ${TIMEOUTS.COMPILE}ms`);
+        return TIMEOUTS.COMPILE;
+      case "getlogs":
+        mcpDebug(`[UnityClient] Using default timeout for getlogs: ${TIMEOUTS.GET_LOGS}ms`);
+        return TIMEOUTS.GET_LOGS;
+      case "ping":
+        mcpDebug(`[UnityClient] Using default timeout for ping: ${TIMEOUTS.PING}ms`);
+        return TIMEOUTS.PING;
+      default:
+        mcpDebug(`[UnityClient] Using default timeout for ${commandName}: ${TIMEOUTS.PING}ms`);
+        return TIMEOUTS.PING;
+    }
+  }
+  /**
+   * Generate unique request ID
+   */
+  generateId() {
+    return Date.now();
+  }
+  /**
+   * Send request and wait for response
+   */
+  async sendRequest(request, timeoutMs) {
     return new Promise((resolve, reject) => {
-      const requestId = Date.now();
-      const request = JSON.stringify({
-        jsonrpc: JSONRPC.VERSION,
-        id: requestId,
-        method: "runtests",
-        params: {
-          filterType,
-          filterValue,
-          saveXml
-        }
-      });
-      this.socket.write(request + "\n");
+      const timeout_duration = timeoutMs || TIMEOUTS.PING;
+      mcpDebug(`[UnityClient] Setting timeout for request ${request.id} (${request.method}): ${timeout_duration}ms`);
       const timeout = setTimeout(() => {
-        reject(new Error(`Unity runTests ${ERROR_MESSAGES.TIMEOUT}`));
-      }, TIMEOUTS.RUN_TESTS);
-      this.socket.once("data", (data) => {
-        clearTimeout(timeout);
-        try {
-          const response = JSON.parse(data.toString());
-          if (response.error) {
-            reject(new Error(`Unity runTests error: ${response.error.message}`));
-          } else {
-            resolve(response.result);
-          }
-        } catch (error) {
-          reject(new Error(`${ERROR_MESSAGES.INVALID_RESPONSE} runTests`));
+        this.pendingRequests.delete(request.id);
+        mcpDebug(`[UnityClient] Request ${request.id} (${request.method}) timed out after ${timeout_duration}ms`);
+        reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
+      }, timeout_duration);
+      this.pendingRequests.set(request.id, {
+        resolve: (response) => {
+          clearTimeout(timeout);
+          resolve(response);
+        },
+        reject: (error) => {
+          clearTimeout(timeout);
+          reject(error);
         }
       });
+      this.socket.write(JSON.stringify(request) + "\n");
     });
   }
   /**
@@ -5794,456 +5948,359 @@ var BaseTool = class {
   }
 };
 
-// src/tools/ping-tool.ts
-var PingTool = class extends BaseTool {
-  name = TOOL_NAMES.PING;
-  description = "Ping command for Unity MCP Server connection testing (TypeScript side only)";
-  inputSchema = {
-    type: "object",
-    properties: {
-      message: {
-        type: "string",
-        description: "Test message",
-        default: DEFAULT_MESSAGES.PING
+// src/tools/dynamic-unity-command-tool.ts
+var DynamicUnityCommandTool = class extends BaseTool {
+  name;
+  description;
+  inputSchema;
+  commandName;
+  constructor(context, commandName, description, parameterSchema) {
+    super(context);
+    this.commandName = commandName;
+    this.name = commandName;
+    this.description = description;
+    this.inputSchema = this.generateInputSchema(parameterSchema);
+  }
+  generateInputSchema(parameterSchema) {
+    mcpDebug(`[DynamicUnityCommandTool] Generating schema for ${this.commandName}:`, parameterSchema);
+    if (!parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0) {
+      mcpDebug(`[DynamicUnityCommandTool] No parameters found for ${this.commandName}, using minimal schema`);
+      return {
+        type: "object",
+        properties: {},
+        additionalProperties: false
+      };
+    }
+    const properties = {};
+    const required = [];
+    for (const [propName, propInfo] of Object.entries(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY])) {
+      const info = propInfo;
+      const property = {
+        type: this.convertType(info[PARAMETER_SCHEMA.TYPE_PROPERTY]),
+        description: info[PARAMETER_SCHEMA.DESCRIPTION_PROPERTY] || `Parameter: ${propName}`
+      };
+      if (info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== void 0 && info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== null) {
+        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
       }
-    }
-  };
-  validateArgs(args) {
-    const schema = external_exports.object({
-      message: external_exports.string().default(DEFAULT_MESSAGES.PING)
-    });
-    return schema.parse(args || {});
-  }
-  async execute(args) {
-    return `Unity MCP Server is running! Message: ${args.message}`;
-  }
-};
-
-// src/tools/unity-ping-tool.ts
-var UnityPingTool = class extends BaseTool {
-  name = "unity-ping";
-  description = "Ping test to Unity (TCP/IP communication verification)";
-  inputSchema = {
-    type: "object",
-    properties: {
-      message: {
-        type: "string",
-        description: "Message to send to Unity",
-        default: "Hello from TypeScript MCP Server"
+      if (info[PARAMETER_SCHEMA.ENUM_PROPERTY] && Array.isArray(info[PARAMETER_SCHEMA.ENUM_PROPERTY]) && info[PARAMETER_SCHEMA.ENUM_PROPERTY].length > 0) {
+        property.enum = info[PARAMETER_SCHEMA.ENUM_PROPERTY];
       }
-    }
-  };
-  validateArgs(args) {
-    const schema = external_exports.object({
-      message: external_exports.string().default("Hello from TypeScript MCP Server")
-    });
-    return schema.parse(args || {});
-  }
-  async execute(args) {
-    await this.context.unityClient.ensureConnected();
-    const response = await this.context.unityClient.ping(args.message);
-    const port = process.env.UNITY_TCP_PORT || "7400";
-    return `Unity Ping Success!
-Sent: ${args.message}
-Response: ${response}
-Connection: TCP/IP established on port ${port}`;
-  }
-  formatErrorResponse(error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Unity Ping Failed!
-Error: ${errorMessage}
-
-Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
-        }
-      ]
-    };
-  }
-};
-
-// src/tools/compile-tool.ts
-var CompileTool = class extends BaseTool {
-  name = TOOL_NAMES.COMPILE;
-  description = "After executing AssetDatabase.Refresh(), compile. Return the compilation results.";
-  inputSchema = {
-    type: "object",
-    properties: {
-      forceRecompile: {
-        type: "boolean",
-        description: "Whether to perform forced recompilation",
-        default: COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE
+      if (info[PARAMETER_SCHEMA.TYPE_PROPERTY] === "array" && info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] && Array.isArray(info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY])) {
+        property.items = {
+          type: "string"
+        };
+        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
       }
+      properties[propName] = property;
     }
-  };
+    if (parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY] && Array.isArray(parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY])) {
+      required.push(...parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY]);
+    }
+    const schema = {
+      type: "object",
+      properties,
+      required: required.length > 0 ? required : void 0
+    };
+    mcpDebug(`[DynamicUnityCommandTool] Generated schema for ${this.commandName}:`, schema);
+    return schema;
+  }
+  convertType(unityType) {
+    switch (unityType?.toLowerCase()) {
+      case "string":
+        return "string";
+      case "number":
+      case "int":
+      case "float":
+      case "double":
+        return "number";
+      case "boolean":
+      case "bool":
+        return "boolean";
+      case "array":
+        return "array";
+      default:
+        return "string";
+    }
+  }
   validateArgs(args) {
-    const schema = external_exports.object({
-      forceRecompile: external_exports.boolean().default(COMPILE_CONFIG.DEFAULT_FORCE_RECOMPILE)
-    });
-    return schema.parse(args || {});
-  }
-  async execute(args) {
-    await this.context.unityClient.ensureConnected();
-    return await this.context.unityClient.compileProject(args.forceRecompile);
-  }
-  formatResponse(result) {
-    let responseText = `Unity Compile ${result.forceRecompile ? "(Force Recompile)" : ""} Result:
-Success: ${result.success}
-Errors: ${result.errorCount || 0}
-Warnings: ${result.warningCount || 0}
-Completed: ${result.completedAt}`;
-    if (result.errors && result.errors.length > 0) {
-      responseText += `
-
-Errors:`;
-      result.errors.forEach((error, index) => {
-        responseText += `
-${index + 1}. ${error.file}(${error.line},${error.column}): ${error.message}`;
-      });
+    if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 0) {
+      return {};
     }
-    if (result.warnings && result.warnings.length > 0) {
-      responseText += `
-
-Warnings:`;
-      result.warnings.forEach((warning, index) => {
-        responseText += `
-${index + 1}. ${warning.file}(${warning.line},${warning.column}): ${warning.message}`;
-      });
-    }
-    return {
-      content: [
-        {
-          type: "text",
-          text: responseText
-        }
-      ]
-    };
-  }
-  formatErrorResponse(error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const stack = error instanceof Error ? error.stack : "No stack trace";
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Unity Compile Failed!
-Error: ${errorMessage}
-Stack: ${stack}
-
-Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT}.`
-        }
-      ]
-    };
-  }
-};
-
-// src/tools/logs-tool.ts
-var LogsTool = class extends BaseTool {
-  name = TOOL_NAMES.GET_LOGS;
-  description = "Retrieve log information from Unity console";
-  inputSchema = {
-    type: "object",
-    properties: {
-      logType: {
-        type: "string",
-        description: "Log type to filter (Error, Warning, Log, All)",
-        enum: LOG_CONFIG.TYPES,
-        default: LOG_CONFIG.DEFAULT_TYPE
-      },
-      maxCount: {
-        type: "number",
-        description: "Maximum number of logs to retrieve",
-        default: LOG_CONFIG.DEFAULT_MAX_COUNT
-      },
-      searchText: {
-        type: "string",
-        description: "Text to search within log messages (retrieve all if empty)",
-        default: LOG_CONFIG.DEFAULT_SEARCH_TEXT
-      },
-      includeStackTrace: {
-        type: "boolean",
-        description: "Whether to display stack trace",
-        default: LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE
-      }
-    },
-    required: []
-  };
-  validateArgs(args) {
-    const schema = external_exports.object({
-      logType: external_exports.enum(LOG_CONFIG.TYPES).default(LOG_CONFIG.DEFAULT_TYPE),
-      maxCount: external_exports.number().default(LOG_CONFIG.DEFAULT_MAX_COUNT),
-      searchText: external_exports.string().default(LOG_CONFIG.DEFAULT_SEARCH_TEXT),
-      includeStackTrace: external_exports.boolean().default(LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE)
-    });
-    const validatedArgs = schema.parse(args || {});
-    return validatedArgs;
-  }
-  async execute(args) {
-    await this.context.unityClient.ensureConnected();
-    const result = await this.context.unityClient.getLogs(args.logType, args.maxCount, args.searchText, args.includeStackTrace);
-    return result;
-  }
-  formatResponse(result) {
-    const logType = result.requestedLogType || LOG_CONFIG.DEFAULT_TYPE;
-    const maxCount = result.requestedMaxCount || LOG_CONFIG.DEFAULT_MAX_COUNT;
-    const searchText = result.requestedSearchText || "";
-    const includeStackTrace = result.requestedIncludeStackTrace !== void 0 ? result.requestedIncludeStackTrace : LOG_CONFIG.DEFAULT_INCLUDE_STACK_TRACE;
-    let responseText = `Unity Console Logs (Filter: ${logType}, Max: ${maxCount}${searchText ? `, Search: "${searchText}"` : ""}, StackTrace: ${includeStackTrace ? "ON" : "OFF"}):
-
-`;
-    if (result.logs.length > 0) {
-      responseText += result.logs.map((log) => {
-        let logLine = `[${log.timestamp}] ${log.type}: ${log.message}`;
-        if (log.stackTrace) {
-          logLine += `
-Stack Trace: ${log.stackTrace}`;
-        }
-        return logLine;
-      }).join("\n\n");
-    } else {
-      responseText += "No logs found.";
-    }
-    responseText += `
-
-Total logs: ${result.logs.length} (of ${result.totalCount} total)`;
-    return {
-      content: [
-        {
-          type: "text",
-          text: responseText
-        }
-      ]
-    };
-  }
-  formatErrorResponse(error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const stack = error instanceof Error ? error.stack : "No stack trace";
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Unity Get Logs Failed!
-Error: ${errorMessage}
-Stack: ${stack}
-
-Make sure Unity MCP Bridge is running and accessible on port ${process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT}.`
-        }
-      ]
-    };
-  }
-};
-
-// src/tools/run-tests-tool.ts
-var RunTestsTool = class extends BaseTool {
-  name = TOOL_NAMES.RUN_TESTS;
-  description = "Execute Unity Test Runner and retrieve test results";
-  inputSchema = {
-    type: "object",
-    properties: {
-      filterType: {
-        type: "string",
-        description: "Type of test filter",
-        enum: TEST_CONFIG.FILTER_TYPES,
-        default: TEST_CONFIG.DEFAULT_FILTER_TYPE
-      },
-      filterValue: {
-        type: "string",
-        description: "Filter value (specify when filterType is not all)\n\u2022 fullclassname: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)\n\u2022 namespace: Namespace (e.g.: io.github.hatayama.uMCP)\n\u2022 testname: Individual test name\n\u2022 assembly: Assembly name",
-        default: TEST_CONFIG.DEFAULT_FILTER_VALUE
-      },
-      saveXml: {
-        type: "boolean",
-        description: "Whether to save test results as XML file",
-        default: TEST_CONFIG.DEFAULT_SAVE_XML
-      }
-    }
-  };
-  validateArgs(args) {
-    const schema = external_exports.object({
-      filterType: external_exports.enum(TEST_CONFIG.FILTER_TYPES).default(TEST_CONFIG.DEFAULT_FILTER_TYPE),
-      filterValue: external_exports.string().default(TEST_CONFIG.DEFAULT_FILTER_VALUE),
-      saveXml: external_exports.boolean().default(TEST_CONFIG.DEFAULT_SAVE_XML)
-    });
-    return schema.parse(args || {});
+    return args || {};
   }
   async execute(args) {
     try {
-      await this.context.unityClient.ensureConnected();
-      const response = await this.context.unityClient.runTests(
-        args.filterType,
-        args.filterValue,
-        args.saveXml
-      );
-      let result = response.success ? `\u2705 Test execution completed
-` : `\u26A0\uFE0F Test execution completed (with failures)
-`;
-      result += `Result: ${response.message}
-`;
-      if (response.testResults) {
-        const testResults = response.testResults;
-        result += `
-Detailed Statistics:
-`;
-        result += `  \u2022 Passed: ${testResults.PassedCount} tests
-`;
-        result += `  \u2022 Failed: ${testResults.FailedCount} tests
-`;
-        result += `  \u2022 Skipped: ${testResults.SkippedCount} tests
-`;
-        result += `  \u2022 Total: ${testResults.TotalCount} tests
-`;
-        result += `  \u2022 Execution time: ${testResults.Duration.toFixed(1)} seconds
-`;
-        if (testResults.FailedTests && testResults.FailedTests.length > 0) {
-          result += `
-\u274C Failed Tests:
-`;
-          testResults.FailedTests.forEach((failedTest, index) => {
-            result += `  ${index + 1}. ${failedTest.TestName}
-`;
-            result += `     Full name: ${failedTest.FullName}
-`;
-            if (failedTest.Message) {
-              result += `     Error: ${failedTest.Message}
-`;
-            }
-            if (failedTest.StackTrace) {
-              const stackLines = failedTest.StackTrace.split("\n").slice(0, 3);
-              result += `     Stack trace: ${stackLines.join("\n     ")}
-`;
-            }
-            result += `     Execution time: ${failedTest.Duration.toFixed(3)} seconds
-
-`;
-          });
-        }
-      }
-      if (response.xmlPath) {
-        result += `
-XML file saved: ${response.xmlPath}
-`;
-      }
-      result += `
-\u23F0 Completed at: ${response.completedAt}`;
-      if (!response.success && response.error && !response.testResults) {
-        result += `
-
-\u274C Error Details:
-${response.error}`;
-      }
-      return result;
+      const actualArgs = this.validateArgs(args);
+      const result = await this.context.unityClient.executeCommand(this.commandName, actualArgs);
+      return {
+        content: [{
+          type: "text",
+          text: typeof result === "string" ? result : JSON.stringify(result, null, 2)
+        }]
+      };
     } catch (error) {
-      return `\u274C Test execution error: ${error instanceof Error ? error.message : String(error)}`;
+      return this.formatErrorResponse(error);
     }
   }
-};
-
-// src/tools/tool-registry.ts
-var ToolRegistry = class {
-  tools = /* @__PURE__ */ new Map();
-  constructor(context) {
-    this.registerDefaultTools(context);
-  }
-  /**
-   * Register default tools
-   */
-  registerDefaultTools(context) {
-    const isDevelopment = process.env.NODE_ENV === "development";
-    const enablePingTool = process.env.ENABLE_PING_TOOL === "true";
-    if (isDevelopment || enablePingTool) {
-      this.register(new PingTool(context));
-    }
-    this.register(new UnityPingTool(context));
-    this.register(new CompileTool(context));
-    this.register(new LogsTool(context));
-    this.register(new RunTestsTool(context));
-  }
-  /**
-   * Register a tool
-   */
-  register(tool) {
-    this.tools.set(tool.name, tool);
-  }
-  /**
-   * Get a tool
-   */
-  get(name) {
-    return this.tools.get(name);
-  }
-  /**
-   * Get definitions of all tools
-   */
-  getAllDefinitions() {
-    return Array.from(this.tools.values()).map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema
-    }));
-  }
-  /**
-   * Execute a tool
-   */
-  async execute(name, args) {
-    const tool = this.get(name);
-    if (!tool) {
-      throw new Error(`Unknown tool: ${name}`);
-    }
-    return await tool.handle(args);
-  }
-  /**
-   * Get a list of registered tool names
-   */
-  getToolNames() {
-    return Array.from(this.tools.keys());
+  formatErrorResponse(error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      content: [{
+        type: "text",
+        text: `Failed to execute command '${this.commandName}': ${errorMessage}`
+      }]
+    };
   }
 };
 
 // src/server.ts
-var McpServer = class {
+var SimpleMcpServer = class {
   server;
   unityClient;
-  toolRegistry;
+  toolCount = 3;
+  isDevelopment;
+  dynamicTools = /* @__PURE__ */ new Map();
+  availableCommands = [];
   constructor() {
-    console.log("Starting Unity MCP Server...");
+    this.isDevelopment = true;
+    DebugLogger.info("Simple Unity MCP Server Starting");
+    DebugLogger.info(`Development mode: ${this.isDevelopment}`);
     this.server = new Server(
       {
-        name: SERVER_CONFIG.NAME,
-        version: SERVER_CONFIG.VERSION
+        name: "unity-mcp-server-simple",
+        version: "0.1.0"
       },
       {
         capabilities: {
-          tools: {}
+          tools: {
+            listChanged: true
+          }
         }
       }
     );
     this.unityClient = new UnityClient();
-    const context = {
-      unityClient: this.unityClient
-    };
-    this.toolRegistry = new ToolRegistry(context);
     this.setupHandlers();
+  }
+  /**
+   * Initialize dynamic Unity command tools
+   */
+  async initializeDynamicTools() {
+    try {
+      mcpInfo("[Simple MCP] Fetching Unity command details with schemas...");
+      await this.unityClient.ensureConnected();
+      const commandDetails = await this.unityClient.executeCommand("getCommandDetails", {});
+      if (!Array.isArray(commandDetails)) {
+        mcpError("[Simple MCP] Invalid command details response:", commandDetails);
+        return;
+      }
+      mcpInfo(`[Simple MCP] Found ${commandDetails.length} Unity commands with schemas`);
+      this.dynamicTools.clear();
+      const toolContext = { unityClient: this.unityClient };
+      for (const commandInfo of commandDetails) {
+        const commandName = commandInfo.name;
+        const description = commandInfo.description || `Execute Unity command: ${commandName}`;
+        const parameterSchema = commandInfo.parameterSchema;
+        if (commandName === "ping") {
+          continue;
+        }
+        const toolName = commandName;
+        const dynamicTool = new DynamicUnityCommandTool(
+          toolContext,
+          commandName,
+          description,
+          parameterSchema
+          // スキーマ情報を渡す！
+        );
+        this.dynamicTools.set(toolName, dynamicTool);
+        mcpDebug(`[Simple MCP] Created dynamic tool: ${toolName} with schema:`, parameterSchema);
+      }
+      this.availableCommands = commandDetails.map((cmd) => cmd.name);
+      mcpInfo(`[Simple MCP] Initialized ${this.dynamicTools.size} dynamic Unity command tools with schemas`);
+    } catch (error) {
+      mcpError("[Simple MCP] Failed to initialize dynamic tools:", error);
+    }
+  }
+  /**
+   * Refresh dynamic tools by re-fetching from Unity
+   * This method can be called to update the tool list when Unity commands change
+   */
+  async refreshDynamicTools() {
+    mcpInfo("[Simple MCP] Refreshing dynamic tools...");
+    await this.initializeDynamicTools();
+    this.sendToolsChangedNotification();
+    mcpInfo("[Simple MCP] Dynamic tools refreshed and notification sent");
   }
   setupHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const toolDefinitions = this.toolRegistry.getAllDefinitions();
-      return {
-        tools: toolDefinitions.map((def) => ({
-          name: def.name,
-          description: def.description,
-          inputSchema: def.inputSchema
-        }))
-      };
+      const tools = [];
+      tools.push({
+        name: "ping",
+        description: "Test Unity connection",
+        inputSchema: {
+          type: "object",
+          properties: {
+            message: {
+              type: "string",
+              description: "Message to send to Unity",
+              default: "Hello from TypeScript MCP Server"
+            }
+          }
+        }
+      });
+      for (const [toolName, dynamicTool] of this.dynamicTools) {
+        tools.push({
+          name: toolName,
+          description: dynamicTool.description,
+          inputSchema: dynamicTool.inputSchema
+        });
+      }
+      if (this.isDevelopment) {
+        tools.push({
+          name: "mcp-ping",
+          description: "TypeScript side health check (dev only)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              message: {
+                type: "string",
+                description: "Test message",
+                default: "Hello Unity MCP!"
+              }
+            }
+          }
+        });
+        tools.push({
+          name: "get-unity-commands",
+          description: "Get Unity commands list (dev only)",
+          inputSchema: {
+            type: "object",
+            properties: {},
+            additionalProperties: false
+          }
+        });
+      }
+      DebugLogger.debug(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
+      return { tools };
     });
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      const result = await this.toolRegistry.execute(name, args);
-      return {
-        content: result.content,
-        isError: result.isError || false
-      };
+      DebugLogger.logToolExecution(name, args);
+      try {
+        if (this.dynamicTools.has(name)) {
+          const dynamicTool = this.dynamicTools.get(name);
+          return await dynamicTool.execute(args);
+        }
+        switch (name) {
+          case "ping":
+            return await this.handleUnityPing(args);
+          case "mcp-ping":
+            if (this.isDevelopment) {
+              return await this.handlePing(args);
+            }
+            throw new Error("Development tool not available in production");
+          case "get-unity-commands":
+            if (this.isDevelopment) {
+              return await this.handleGetAvailableCommands();
+            }
+            throw new Error("Development tool not available in production");
+          default:
+            throw new Error(`Unknown tool: ${name}`);
+        }
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error executing ${name}: ${error instanceof Error ? error.message : "Unknown error"}`
+            }
+          ],
+          isError: true
+        };
+      }
     });
+  }
+  /**
+   * Handle Unity ping command
+   */
+  async handleUnityPing(args) {
+    const message = args?.message || "Hello from TypeScript MCP Server";
+    try {
+      await this.unityClient.ensureConnected();
+      const response = await this.unityClient.ping(message);
+      const port = process.env.UNITY_TCP_PORT || "7400";
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Unity Ping Success!
+Sent: ${message}
+Response: ${response}
+Connection: TCP/IP established on port ${port}`
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Unity Ping Failed!
+Error: ${errorMessage}
+
+Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+  /**
+   * Handle TypeScript ping command (dev only)
+   */
+  async handlePing(args) {
+    const message = args?.message || "Hello Unity MCP!";
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Unity MCP Server is running! Message: ${message}`
+        }
+      ]
+    };
+  }
+  /**
+   * Handle get available commands (dev only)
+   */
+  async handleGetAvailableCommands() {
+    try {
+      await this.unityClient.ensureConnected();
+      const commandsResponse = await this.unityClient.executeCommand("getAvailableCommands", {});
+      const detailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Available Unity Commands:
+${JSON.stringify(commandsResponse, null, 2)}
+
+Command Details with Schemas:
+${JSON.stringify(detailsResponse, null, 2)}`
+          }
+        ]
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Failed to get Unity commands: ${errorMessage}`
+          }
+        ],
+        isError: true
+      };
+    }
   }
   /**
    * Start the server
@@ -6251,25 +6308,71 @@ var McpServer = class {
   async start() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error("Unity MCP Server started successfully");
+    this.setupUnityEventListener();
+    await this.initializeDynamicTools();
+    this.sendToolsChangedNotification();
+    mcpInfo("[Simple MCP] Server started with Unity event-based tool updates");
   }
   /**
-   * Cleanup
+   * Setup Unity event listener for automatic tool updates
    */
-  cleanup() {
-    this.unityClient.disconnect();
+  setupUnityEventListener() {
+    this.unityClient.onNotification("commandsChanged", async (params) => {
+      console.error("[NOTIFICATION] Received commandsChanged notification from Unity:", JSON.stringify(params));
+      mcpInfo("[Simple MCP] Received commandsChanged notification from Unity:", params);
+      try {
+        await this.refreshDynamicTools();
+        console.error("[NOTIFICATION] Dynamic tools updated successfully via Unity event");
+        mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity event");
+      } catch (error) {
+        console.error("[NOTIFICATION] Failed to update dynamic tools via Unity event:", error);
+        mcpError("[Simple MCP] Failed to update dynamic tools via Unity event:", error);
+      }
+    });
+    this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
+      console.error("[NOTIFICATION] Received tools/list_changed notification from Unity:", JSON.stringify(params));
+      mcpInfo("[Simple MCP] Received tools/list_changed notification from Unity:", params);
+      try {
+        await this.refreshDynamicTools();
+        console.error("[NOTIFICATION] Dynamic tools updated successfully via Unity notification");
+        mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity notification");
+      } catch (error) {
+        console.error("[NOTIFICATION] Failed to update dynamic tools via Unity notification:", error);
+        mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
+      }
+    });
+    console.error("[NOTIFICATION] Unity event listeners setup completed");
+    mcpInfo("[Simple MCP] Unity event listeners setup completed");
+  }
+  /**
+   * Send tools changed notification
+   */
+  sendToolsChangedNotification() {
+    DebugLogger.logNotification("notifications/tools/list_changed", { toolCount: this.toolCount });
+    try {
+      this.server.notification({
+        method: "notifications/tools/list_changed",
+        params: {}
+      });
+    } catch (error) {
+      DebugLogger.error("Failed to send tools changed notification", error);
+    }
+  }
+  /**
+   * Send test notification
+   */
+  sendTestNotification() {
+    this.toolCount = this.toolCount === 3 ? 5 : 3;
+    try {
+      this.server.notification({
+        method: "notifications/tools/list_changed",
+        params: {}
+      });
+    } catch (error) {
+    }
   }
 };
-var server = new McpServer();
-process.on("SIGINT", () => {
-  server.cleanup();
-  process.exit(0);
-});
-process.on("SIGTERM", () => {
-  server.cleanup();
-  process.exit(0);
-});
+var server = new SimpleMcpServer();
 server.start().catch((error) => {
-  console.error("Failed to start Unity MCP Server:", error);
   process.exit(1);
 });

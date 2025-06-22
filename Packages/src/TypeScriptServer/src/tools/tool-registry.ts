@@ -1,9 +1,8 @@
 import { ToolHandler, ToolContext, ToolDefinition } from '../types/tool-types.js';
 import { PingTool } from './ping-tool.js';
 import { UnityPingTool } from './unity-ping-tool.js';
-import { CompileTool } from './compile-tool.js';
-import { LogsTool } from './logs-tool.js';
-import { RunTestsTool } from './run-tests-tool.js';
+import { GetAvailableCommandsTool } from './get-available-commands-tool.js';
+import { DynamicUnityCommandTool } from './dynamic-unity-command-tool.js';
 
 /**
  * Tool registry
@@ -11,9 +10,72 @@ import { RunTestsTool } from './run-tests-tool.js';
  */
 export class ToolRegistry {
   private tools: Map<string, ToolHandler> = new Map();
+  private toolsChangedCallback?: () => void;
+  private lastKnownCommands: string[] = [];
+  private pollingInterval?: NodeJS.Timeout;
+  private isEventListenerSetup: boolean = false;
 
   constructor(context: ToolContext) {
     this.registerDefaultTools(context);
+    
+    // Setup event-based updates
+    this.setupEventListener(context);
+    
+    // Setup reconnect handler
+    this.setupReconnectHandler(context);
+  }
+
+  /**
+   * Setup event listener for Unity command change notifications
+   */
+  private setupEventListener(context: ToolContext): void {
+    if (this.isEventListenerSetup) {
+      return;
+    }
+    
+    // Listen for commandsChanged notifications from Unity
+    context.unityClient.onNotification('commandsChanged', async (params: any) => {
+      console.log('[Tool Registry] Received commandsChanged notification from Unity:', params);
+      
+      try {
+        await this.reloadDynamicTools(context);
+        console.log('[Tool Registry] Dynamic tools updated successfully via event notification');
+      } catch (error) {
+        console.error('[Tool Registry] Failed to update dynamic tools via event:', error);
+      }
+    });
+    
+    this.isEventListenerSetup = true;
+    console.log('[Tool Registry] Event listener setup completed');
+  }
+
+  /**
+   * Setup reconnect handler for Unity client reconnections
+   */
+  private setupReconnectHandler(context: ToolContext): void {
+    context.unityClient.onReconnect(async () => {
+      console.log('[Tool Registry] Unity client reconnected, reloading dynamic tools...');
+      
+      try {
+        await this.reloadDynamicTools(context);
+        console.log('[Tool Registry] Dynamic tools reloaded successfully after reconnection');
+      } catch (error) {
+        console.error('[Tool Registry] Failed to reload dynamic tools after reconnection:', error);
+      }
+    });
+    
+    console.log('[Tool Registry] Reconnect handler setup completed');
+  }
+
+  /**
+   * Initialize dynamic tools (must be called after constructor)
+   */
+  async initializeDynamicTools(context: ToolContext): Promise<void> {
+    await this.loadDynamicTools(context);
+    
+    // Temporarily disable polling to avoid connection issues
+    // this.startPolling(context);
+    console.log('[Tool Registry] Dynamic tools initialized with event-based updates from Unity');
   }
 
   /**
@@ -29,9 +91,38 @@ export class ToolRegistry {
     }
     
     this.register(new UnityPingTool(context));
-    this.register(new CompileTool(context));
-    this.register(new LogsTool(context));
-    this.register(new RunTestsTool(context));
+    this.register(new GetAvailableCommandsTool(context));
+  }
+
+  /**
+   * Load dynamic tools from Unity commands
+   */
+  private async loadDynamicTools(context: ToolContext): Promise<void> {
+    try {
+      // Wait a bit for Unity to be ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const commands = await context.unityClient.getCommandDetails();
+      
+      // Skip standard commands that are already registered as specific tools
+      const standardCommands = ['ping', 'getavailablecommands'];
+      
+      for (const command of commands) {
+        const commandName = (command as any).name || (command as any).Name;
+        const commandDescription = (command as any).description || (command as any).Description;
+        const parameterSchema = (command as any).parameterSchema || (command as any).ParameterSchema;
+        
+        if (commandName && !standardCommands.includes(commandName.toLowerCase())) {
+          const dynamicTool = new DynamicUnityCommandTool(context, commandName, commandDescription, parameterSchema);
+          this.register(dynamicTool);
+          
+          console.log(`[Tool Registry] Registered dynamic tool: ${commandName} with schema:`, JSON.stringify(parameterSchema, null, 2));
+        }
+      }
+      
+    } catch (error) {
+      console.warn('Failed to load dynamic tools:', error);
+    }
   }
 
   /**
@@ -39,6 +130,7 @@ export class ToolRegistry {
    */
   register(tool: ToolHandler): void {
     this.tools.set(tool.name, tool);
+    this.notifyToolsChanged();
   }
 
   /**
@@ -75,5 +167,97 @@ export class ToolRegistry {
    */
   getToolNames(): string[] {
     return Array.from(this.tools.keys());
+  }
+
+  /**
+   * Reload dynamic tools from Unity
+   */
+  async reloadDynamicTools(context: ToolContext): Promise<void> {
+    // Remove existing dynamic tools (exclude base tools)
+    const baseToolNames = ['mcp-ping', 'ping', 'get-available-commands'];
+    const toolsToRemove = Array.from(this.tools.keys()).filter(name => 
+      !baseToolNames.includes(name));
+    
+    for (const toolName of toolsToRemove) {
+      this.tools.delete(toolName);
+    }
+
+    // Reload dynamic tools
+    await this.loadDynamicTools(context);
+    this.notifyToolsChanged();
+  }
+
+  /**
+   * Set callback for tools changed notification
+   */
+  onToolsChanged(callback: () => void): void {
+    this.toolsChangedCallback = callback;
+  }
+
+  /**
+   * Notify that tools have changed
+   */
+  private notifyToolsChanged(): void {
+    if (this.toolsChangedCallback) {
+      this.toolsChangedCallback();
+    }
+  }
+
+  /**
+   * Stop polling
+   */
+  stopPolling(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = undefined;
+    }
+  }
+
+  /**
+   * Start polling for Unity command changes
+   */
+  private startPolling(context: ToolContext): void {
+    if (this.pollingInterval) {
+      return; // Already polling
+    }
+    
+    const pollInterval = 5000; // Poll every 5 seconds
+    console.log(`[Tool Registry] Starting polling for Unity commands every ${pollInterval}ms`);
+    
+    this.pollingInterval = setInterval(async () => {
+      try {
+        await this.checkForCommandChanges(context);
+      } catch (error) {
+        console.warn('[Tool Registry] Error during polling:', error);
+      }
+    }, pollInterval);
+  }
+
+  /**
+   * Check for command changes via polling
+   */
+  private async checkForCommandChanges(context: ToolContext): Promise<void> {
+    try {
+      const commands = await context.unityClient.getCommandDetails();
+      const currentCommandNames = commands.map((cmd: any) => 
+        (cmd.name || cmd.Name || '').toLowerCase()
+      ).filter((name: string) => name).sort();
+      
+      // Compare with last known commands
+      const lastCommandNames = [...this.lastKnownCommands].sort();
+      const hasChanged = JSON.stringify(currentCommandNames) !== JSON.stringify(lastCommandNames);
+      
+      if (hasChanged) {
+        console.log('[Tool Registry] Command changes detected via polling');
+        console.log('[Tool Registry] Previous commands:', lastCommandNames);
+        console.log('[Tool Registry] Current commands:', currentCommandNames);
+        
+        this.lastKnownCommands = currentCommandNames;
+        await this.reloadDynamicTools(context);
+        console.log('[Tool Registry] Dynamic tools updated successfully via polling');
+      }
+    } catch (error) {
+      console.warn('[Tool Registry] Failed to check for command changes:', error);
+    }
   }
 } 
