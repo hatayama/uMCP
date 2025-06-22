@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -16,11 +17,6 @@ namespace io.github.hatayama.uMCP
         private readonly Dictionary<string, IUnityCommand> commands = new Dictionary<string, IUnityCommand>();
         
         /// <summary>
-        /// Event triggered when commands are changed (added/removed)
-        /// </summary>
-        public static event Action OnCommandsChanged;
-
-        /// <summary>
         /// Default constructor
         /// Auto-registers standard commands
         /// </summary>
@@ -34,10 +30,110 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void RegisterDefaultCommands()
         {
-            RegisterCommand(new PingCommand());
-            RegisterCommand(new CompileCommand());
-            RegisterCommand(new GetLogsCommand());
-            RegisterCommand(new RunTestsCommand());
+            // Register commands with attribute-based discovery
+            RegisterCommandsWithAttributes();
+            
+            // Manual registration for commands without attributes (for backward compatibility)
+            RegisterManualCommands();
+        }
+        
+        /// <summary>
+        /// Register commands using attribute-based discovery
+        /// </summary>
+        private void RegisterCommandsWithAttributes()
+        {
+            try
+            {
+                // Get all assemblies in the current domain
+                Assembly[] assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+                
+                List<Type> commandTypes = new List<Type>();
+                
+                foreach (Assembly assembly in assemblies)
+                {
+                    try
+                    {
+                        // Find all types with McpTool attribute that implement IUnityCommand
+                        Type[] types = assembly.GetTypes()
+                            .Where(type => type.GetCustomAttribute<McpToolAttribute>() != null)
+                            .Where(type => typeof(IUnityCommand).IsAssignableFrom(type))
+                            .Where(type => !type.IsAbstract && !type.IsInterface)
+                            .ToArray();
+                        
+                        commandTypes.AddRange(types);
+                    }
+                    catch (ReflectionTypeLoadException ex)
+                    {
+                        // Skip assemblies that can't be loaded
+                        McpLogger.LogDebug($"Skipped assembly {assembly.FullName} due to type load exception: {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Skip assemblies with other issues
+                        McpLogger.LogDebug($"Skipped assembly {assembly.FullName} due to exception: {ex.Message}");
+                    }
+                }
+                
+                // Register commands
+                foreach (Type type in commandTypes)
+                {
+                    try
+                    {
+                        IUnityCommand command = (IUnityCommand)Activator.CreateInstance(type);
+                        RegisterCommand(command);
+                        McpLogger.LogDebug($"Auto-registered command: {command.CommandName} (Type: {type.Name})");
+                    }
+                    catch (Exception ex)
+                    {
+                        McpLogger.LogError($"Failed to auto-register command {type.Name}: {ex.Message}");
+                    }
+                }
+                
+                McpLogger.LogInfo($"Auto-registered {commandTypes.Count} commands using McpTool attribute");
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogError($"Failed to register commands with attributes: {ex.Message}");
+                // Fall back to manual registration
+                RegisterManualCommands();
+            }
+        }
+        
+        /// <summary>
+        /// Register commands manually (for backward compatibility)
+        /// </summary>
+        private void RegisterManualCommands()
+        {
+            // Only register commands that don't have the McpTool attribute
+            // This prevents double registration
+            
+            if (!IsCommandTypeRegistered<PingCommand>())
+            {
+                RegisterCommand(new PingCommand());
+            }
+            
+            if (!IsCommandTypeRegistered<CompileCommand>())
+            {
+                RegisterCommand(new CompileCommand());
+            }
+            
+            if (!IsCommandTypeRegistered<GetLogsCommand>())
+            {
+                RegisterCommand(new GetLogsCommand());
+            }
+            
+            if (!IsCommandTypeRegistered<RunTestsCommand>())
+            {
+                RegisterCommand(new RunTestsCommand());
+            }
+        }
+        
+        /// <summary>
+        /// Check if a command type is already registered
+        /// </summary>
+        private bool IsCommandTypeRegistered<T>() where T : IUnityCommand
+        {
+            return commands.Values.Any(cmd => cmd.GetType() == typeof(T));
         }
 
         /// <summary>
@@ -56,15 +152,8 @@ namespace io.github.hatayama.uMCP
                 throw new ArgumentException("Command name cannot be null or empty", nameof(command));
             }
 
-            bool isNewCommand = !commands.ContainsKey(command.CommandName);
             commands[command.CommandName] = command;
             McpLogger.LogDebug($"Command registered: {command.CommandName}");
-            
-            // Trigger event notification if this is a new command
-            if (isNewCommand)
-            {
-                NotifyCommandsChanged();
-            }
         }
 
         /// <summary>
@@ -76,7 +165,6 @@ namespace io.github.hatayama.uMCP
             if (commands.Remove(commandName))
             {
                 McpLogger.LogDebug($"Command unregistered: {commandName}");
-                NotifyCommandsChanged();
             }
         }
 
@@ -128,26 +216,15 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// Notify TypeScript side that commands have changed
-        /// </summary>
-        private void NotifyCommandsChanged()
-        {
-            McpLogger.LogDebug("Commands changed, notifying TypeScript side...");
-            McpLogger.LogInfo($"[DEBUG] NotifyCommandsChanged called - OnCommandsChanged subscribers: {OnCommandsChanged?.GetInvocationList()?.Length ?? 0}");
-            OnCommandsChanged?.Invoke();
-            McpLogger.LogInfo("[DEBUG] NotifyCommandsChanged completed - event invoked");
-        }
-        
-        /// <summary>
         /// Manually trigger commands changed notification
-        /// Useful for external triggers like compilation completion
+        /// Used for manual notifications and post-compilation notifications
         /// </summary>
         public static void TriggerCommandsChangedNotification()
         {
             McpLogger.LogDebug("Manually triggering commands changed notification");
-            McpLogger.LogInfo($"[DEBUG] TriggerCommandsChangedNotification called - OnCommandsChanged subscribers: {OnCommandsChanged?.GetInvocationList()?.Length ?? 0}");
-            OnCommandsChanged?.Invoke();
-            McpLogger.LogInfo("[DEBUG] TriggerCommandsChangedNotification completed - event invoked");
+            
+            // Call the public method in McpServerController
+            McpServerController.TriggerCommandChangeNotification();
         }
     }
 

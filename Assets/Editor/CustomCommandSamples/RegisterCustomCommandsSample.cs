@@ -8,7 +8,7 @@ namespace io.github.hatayama.uMCP
     /// Sample implementation of custom commands
     /// Reference example for users to add their own commands
     /// </summary>\
-    [InitializeOnLoad]
+    // [InitializeOnLoad]
     public static class RegisterCustomCommandsSample
     {
         static RegisterCustomCommandsSample()
@@ -28,6 +28,10 @@ namespace io.github.hatayama.uMCP
             
             Debug.Log("Sample custom commands registered successfully!");
             Debug.Log("Available commands: " + string.Join(", ", CustomCommandManager.GetRegisteredCustomCommands().Select(c => c.Name)));
+            
+            // Manual notification is automatically called by RegisterCustomCommand,
+            // but we can also call it explicitly if needed
+            // CustomCommandManager.NotifyCommandChanges();
         }
 
         /// <summary>
@@ -42,6 +46,10 @@ namespace io.github.hatayama.uMCP
             CustomCommandManager.UnregisterCustomCommand("getversion");
             
             Debug.Log("Sample custom commands unregistered successfully!");
+            
+            // Manual notification is automatically called by UnregisterCustomCommand,
+            // but we can also call it explicitly if needed
+            // CustomCommandManager.NotifyCommandChanges();
         }
 
         /// <summary>

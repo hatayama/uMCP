@@ -35,7 +35,9 @@ namespace io.github.hatayama.uMCP
         {
             SharedRegistry.RegisterCommand(command);
             McpLogger.LogInfo($"Custom command registered: {command.CommandName}");
-            NotifyToolsChanged();
+            
+            // Notify command changes for manual registration
+            NotifyCommandChanges();
         }
 
         /// <summary>
@@ -46,7 +48,9 @@ namespace io.github.hatayama.uMCP
         {
             SharedRegistry.UnregisterCommand(commandName);
             McpLogger.LogInfo($"Custom command unregistered: {commandName}");
-            NotifyToolsChanged();
+            
+            // Notify command changes for manual unregistration
+            NotifyCommandChanges();
         }
 
         /// <summary>
@@ -94,15 +98,15 @@ namespace io.github.hatayama.uMCP
         {
             return $"Registry instance: {SharedRegistry.GetHashCode()}, Commands: [{string.Join(", ", SharedRegistry.GetRegisteredCommandNames())}]";
         }
-
+        
         /// <summary>
-        /// Notify MCP clients that tools have changed
+        /// Manually notify command changes to MCP clients
+        /// Public API for users to trigger notifications when needed
         /// </summary>
-        private static void NotifyToolsChanged()
+        public static void NotifyCommandChanges()
         {
-            // Trigger the commandsChanged notification to MCP clients
             UnityCommandRegistry.TriggerCommandsChangedNotification();
-            McpLogger.LogInfo("Tools list changed - MCP clients notified via commandsChanged event");
+            McpLogger.LogInfo("Command changes manually notified to MCP clients");
         }
     }
 } 

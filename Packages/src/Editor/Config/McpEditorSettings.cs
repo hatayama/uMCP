@@ -14,6 +14,7 @@ namespace io.github.hatayama.uMCP
         public bool autoStartServer = false;
         public bool showDeveloperTools = false;
         public bool enableMcpLogs = false;
+        public bool enableCommunicationLogs = false;
         public string lastUsedConfigPath = "";
     }
 
@@ -131,6 +132,24 @@ namespace io.github.hatayama.uMCP
             
             // Synchronize McpLogger settings as well.
             McpLogger.EnableDebugLog = enableMcpLogs;
+        }
+        
+        /// <summary>
+        /// Gets the communication logs enabled flag.
+        /// </summary>
+        public static bool GetEnableCommunicationLogs()
+        {
+            return GetSettings().enableCommunicationLogs;
+        }
+        
+        /// <summary>
+        /// Sets the communication logs enabled flag.
+        /// </summary>
+        public static void SetEnableCommunicationLogs(bool enableCommunicationLogs)
+        {
+            McpEditorSettingsData settings = GetSettings();
+            McpEditorSettingsData newSettings = settings with { enableCommunicationLogs = enableCommunicationLogs };
+            SaveSettings(newSettings);
         }
         
         /// <summary>

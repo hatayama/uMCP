@@ -30,6 +30,8 @@ namespace io.github.hatayama.uMCP
 
         static McpServerController()
         {
+            McpLogger.LogInfo("McpServerController static constructor called");
+            
             // Register cleanup for when Unity exits.
             EditorApplication.quitting += OnEditorQuitting;
             
@@ -38,9 +40,6 @@ namespace io.github.hatayama.uMCP
             
             // Processing after assembly reload.
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
-            
-            // Subscribe to command changes for event-based notifications
-            UnityCommandRegistry.OnCommandsChanged += OnCommandsChanged;
             
             // Restore server state on initialization.
             RestoreServerStateIfNeeded();
@@ -148,6 +147,24 @@ namespace io.github.hatayama.uMCP
             
             // Process pending compile requests.
             ProcessPendingCompileRequests();
+            
+            // Always send command change notification after compilation
+            // This ensures schema changes (descriptions, parameters) are communicated to Cursor
+            if (IsServerRunning)
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        McpLogger.LogInfo("Sending command change notification after compilation completion");
+                        UnityCommandRegistry.TriggerCommandsChangedNotification();
+                    };
+                };
+            }
+            else
+            {
+                McpLogger.LogDebug("Server not running, skipping post-compilation command notification");
+            }
         }
 
         /// <summary>
@@ -167,6 +184,16 @@ namespace io.github.hatayama.uMCP
                 {
                     SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
                     McpLogger.LogInfo("Server already running. Clearing post-compile flag.");
+                    
+                    // Send notification for post-compilation changes
+                    EditorApplication.delayCall += () =>
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            McpLogger.LogInfo("Sending command change notification for post-compilation changes (server already running)");
+                            UnityCommandRegistry.TriggerCommandsChangedNotification();
+                        };
+                    };
                 }
                 return;
             }
@@ -327,28 +354,6 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Handles command changes for event-based notifications
-        /// </summary>
-        private static void OnCommandsChanged()
-        {
-            McpLogger.LogInfo("[DEBUG] McpServerController.OnCommandsChanged called");
-            
-            if (!IsServerRunning)
-            {
-                McpLogger.LogDebug("Server not running, skipping command change notification");
-                McpLogger.LogInfo("[DEBUG] OnCommandsChanged skipped - server not running");
-                return;
-            }
-            
-            McpLogger.LogInfo("[DEBUG] OnCommandsChanged proceeding - server is running");
-            
-            // Send notification to TypeScript side
-            SendCommandsChangedNotification();
-            
-            McpLogger.LogInfo("[DEBUG] OnCommandsChanged completed");
-        }
-        
-        /// <summary>
         /// Send commands changed notification to TypeScript side
         /// </summary>
         private static void SendCommandsChangedNotification()
@@ -402,6 +407,22 @@ namespace io.github.hatayama.uMCP
             {
                 McpLogger.LogError($"Failed to send commands changed notification: {ex.Message}");
                 McpLogger.LogError($"[DEBUG] Exception in SendCommandsChangedNotification: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Manually trigger command change notification
+        /// Public method for external calls (e.g., from UnityCommandRegistry)
+        /// </summary>
+        public static void TriggerCommandChangeNotification()
+        {
+            if (IsServerRunning)
+            {
+                SendCommandsChangedNotification();
+            }
+            else
+            {
+                McpLogger.LogDebug("Server not running, skipping command change notification");
             }
         }
     }

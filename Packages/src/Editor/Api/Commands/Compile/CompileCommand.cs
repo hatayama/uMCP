@@ -6,8 +6,9 @@ namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Compile command handler - Type-safe implementation using Schema and Response
-    /// Execute Unity project compilation
+    /// Handles Unity project compilation with optional force recompile
     /// </summary>
+    [McpTool]
     public class CompileCommand : AbstractUnityCommand<CompileSchema, CompileResponse>
     {
         // SessionStateキー定数
