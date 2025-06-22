@@ -35,6 +35,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
+            DateTime startTime = DateTime.UtcNow;
+            
             try
             {
                 // Convert JToken to strongly typed Schema
@@ -42,6 +44,15 @@ namespace io.github.hatayama.uMCP
                 
                 // Execute with type-safe parameters and get type-safe response
                 TResponse response = await ExecuteAsync(parameters);
+                
+                DateTime endTime = DateTime.UtcNow;
+                
+                // Set timing information if response inherits from BaseCommandResponse
+                if (response is BaseCommandResponse baseResponse)
+                {
+                    baseResponse.SetTimingInfo(startTime, endTime);
+                    McpLogger.LogDebug($"Command {CommandName} executed in {baseResponse.ExecutionTimeMs}ms");
+                }
                 
                 // Return as object for IUnityCommand interface compatibility
                 return response;

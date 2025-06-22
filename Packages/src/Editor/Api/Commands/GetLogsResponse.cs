@@ -27,7 +27,7 @@ namespace io.github.hatayama.uMCP
     /// Response schema for GetLogs command
     /// Provides type-safe response structure
     /// </summary>
-    public class GetLogsResponse
+    public class GetLogsResponse : BaseCommandResponse
     {
         /// <summary>
         /// Total number of logs available

@@ -50,6 +50,8 @@ namespace io.github.hatayama.uMCP
                 using CompileChecker compileChecker = new CompileChecker();
                 CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
 
+                McpLogger.LogInfo($"Compilation completed: Success={result.Success}, Errors={result.ErrorCount}, Warnings={result.WarningCount}");
+                
                 // Create type-safe response
                 CompileIssue[] errors = result.error.Select(e => new CompileIssue(e.message, e.file, e.line)).ToArray();
                 CompileIssue[] warnings = result.warning.Select(w => new CompileIssue(w.message, w.file, w.line)).ToArray();

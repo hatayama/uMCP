@@ -5764,14 +5764,15 @@ var UnityClient = class {
       id: this.generateId(),
       method: "ping",
       params: {
-        message
+        Message: message
+        // Updated to match PingSchema property name
       }
     };
     const response = await this.sendRequest(request);
     if (response.error) {
       throw new Error(`Unity error: ${response.error.message}`);
     }
-    return response.result || "Unity pong";
+    return response.result || { Message: "Unity pong" };
   }
   /**
    * Get available commands from Unity
@@ -5830,21 +5831,30 @@ var UnityClient = class {
   }
   /**
    * Get timeout duration for specific command
+   * Now supports dynamic TimeoutSeconds parameter for all commands
    */
   getTimeoutForCommand(commandName, params) {
+    if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0) {
+      const calculatedTimeout = (params.TimeoutSeconds + 10) * 1e3;
+      mcpDebug(`[UnityClient] Using dynamic timeout for ${commandName}: params.TimeoutSeconds=${params.TimeoutSeconds}s, final=${calculatedTimeout}ms`);
+      return calculatedTimeout;
+    }
     switch (commandName) {
       case "runtests":
-        const timeoutSeconds = params?.TimeoutSeconds || TIMEOUTS.RUN_TESTS / 1e3;
-        const calculatedTimeout = (timeoutSeconds + 10) * 1e3;
-        mcpDebug(`[UnityClient] Timeout calculation for runtests: params.TimeoutSeconds=${params?.TimeoutSeconds}, default=${TIMEOUTS.RUN_TESTS / 1e3}, final=${calculatedTimeout}ms`);
-        return calculatedTimeout;
+        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1e3 + 10) * 1e3;
+        mcpDebug(`[UnityClient] Using default timeout for runtests: ${defaultTimeout}ms`);
+        return defaultTimeout;
       case "compile":
+        mcpDebug(`[UnityClient] Using default timeout for compile: ${TIMEOUTS.COMPILE}ms`);
         return TIMEOUTS.COMPILE;
       case "getlogs":
+        mcpDebug(`[UnityClient] Using default timeout for getlogs: ${TIMEOUTS.GET_LOGS}ms`);
         return TIMEOUTS.GET_LOGS;
       case "ping":
+        mcpDebug(`[UnityClient] Using default timeout for ping: ${TIMEOUTS.PING}ms`);
         return TIMEOUTS.PING;
       default:
+        mcpDebug(`[UnityClient] Using default timeout for ${commandName}: ${TIMEOUTS.PING}ms`);
         return TIMEOUTS.PING;
     }
   }

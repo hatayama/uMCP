@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for RunTests command parameters
     /// Provides type-safe parameter access with default values
     /// </summary>
-    public class RunTestsSchema
+    public class RunTestsSchema : BaseCommandSchema
     {
         /// <summary>
         /// Type of test filter
@@ -41,11 +41,5 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         [Description("Whether to save test results as XML file")]
         public bool SaveXml { get; set; } = false;
-
-        /// <summary>
-        /// Timeout for test execution in seconds (default: 300 seconds = 5 minutes)
-        /// </summary>
-        [Description("Timeout for test execution in seconds (default: 300 seconds = 5 minutes)")]
-        public int TimeoutSeconds { get; set; } = 300;
     }
 } 

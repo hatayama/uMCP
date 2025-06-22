@@ -6,7 +6,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for Compile command parameters
     /// Provides type-safe parameter access with default values
     /// </summary>
-    public class CompileSchema
+    public class CompileSchema : BaseCommandSchema
     {
         /// <summary>
         /// Whether to perform forced recompilation

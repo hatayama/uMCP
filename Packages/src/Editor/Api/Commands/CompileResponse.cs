@@ -25,7 +25,7 @@ namespace io.github.hatayama.uMCP
     /// Response schema for Compile command
     /// Provides type-safe response structure
     /// </summary>
-    public class CompileResponse
+    public class CompileResponse : BaseCommandResponse
     {
         /// <summary>
         /// Whether compilation was successful

@@ -4,7 +4,7 @@ namespace io.github.hatayama.uMCP
     /// Response schema for Ping command
     /// Provides type-safe response structure
     /// </summary>
-    public class PingResponse
+    public class PingResponse : BaseCommandResponse
     {
         /// <summary>
         /// The response message from Unity

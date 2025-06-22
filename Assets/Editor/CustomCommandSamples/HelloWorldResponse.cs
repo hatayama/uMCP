@@ -6,7 +6,7 @@ namespace io.github.hatayama.uMCP
     /// Response schema for HelloWorld command
     /// Provides type-safe response structure
     /// </summary>
-    public class HelloWorldResponse
+    public class HelloWorldResponse : BaseCommandResponse
     {
         /// <summary>
         /// The greeting message

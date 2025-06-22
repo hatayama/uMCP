@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for HelloWorld command parameters
     /// Provides type-safe parameter access with default values
     /// </summary>
-    public class HelloWorldSchema
+    public class HelloWorldSchema : BaseCommandSchema
     {
         /// <summary>
         /// Name to greet

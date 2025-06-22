@@ -6,7 +6,7 @@ namespace io.github.hatayama.uMCP
     /// Response schema for RunTests command
     /// Provides type-safe response structure
     /// </summary>
-    public class RunTestsResponse
+    public class RunTestsResponse : BaseCommandResponse
     {
         /// <summary>
         /// Whether test execution was successful

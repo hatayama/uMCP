@@ -200,7 +200,7 @@ export class UnityClient {
   /**
    * Send ping to Unity
    */
-  async ping(message: string): Promise<string> {
+  async ping(message: string): Promise<any> {
     if (!this.connected) {
       throw new Error('Not connected to Unity');
     }
@@ -210,7 +210,7 @@ export class UnityClient {
       id: this.generateId(),
       method: 'ping',
       params: {
-        message: message
+        Message: message  // Updated to match PingSchema property name
       }
     };
 
@@ -220,7 +220,8 @@ export class UnityClient {
       throw new Error(`Unity error: ${response.error.message}`);
     }
 
-    return response.result || 'Unity pong';
+    // Return the full response object (now includes timing information)
+    return response.result || { Message: 'Unity pong' };
   }
 
   /**
@@ -301,23 +302,34 @@ export class UnityClient {
 
   /**
    * Get timeout duration for specific command
+   * Now supports dynamic TimeoutSeconds parameter for all commands
    */
   private getTimeoutForCommand(commandName: string, params: any): number {
+    // Check if TimeoutSeconds parameter is provided (from BaseCommandSchema)
+    if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === 'number' && params.TimeoutSeconds > 0) {
+      // Add 10 seconds buffer to Unity timeout to ensure Unity timeout triggers first
+      const calculatedTimeout = (params.TimeoutSeconds + 10) * 1000;
+      mcpDebug(`[UnityClient] Using dynamic timeout for ${commandName}: params.TimeoutSeconds=${params.TimeoutSeconds}s, final=${calculatedTimeout}ms`);
+      return calculatedTimeout;
+    }
+
+    // Fallback to command-specific defaults
     switch (commandName) {
       case 'runtests':
-        // Use TimeoutSeconds parameter if provided, otherwise use default
-        const timeoutSeconds = params?.TimeoutSeconds || (TIMEOUTS.RUN_TESTS / 1000);
-        // Add 10 seconds buffer to Unity timeout to ensure Unity timeout triggers first
-        const calculatedTimeout = (timeoutSeconds + 10) * 1000;
-        mcpDebug(`[UnityClient] Timeout calculation for runtests: params.TimeoutSeconds=${params?.TimeoutSeconds}, default=${TIMEOUTS.RUN_TESTS / 1000}, final=${calculatedTimeout}ms`);
-        return calculatedTimeout;
+        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1000 + 10) * 1000;
+        mcpDebug(`[UnityClient] Using default timeout for runtests: ${defaultTimeout}ms`);
+        return defaultTimeout;
       case 'compile':
+        mcpDebug(`[UnityClient] Using default timeout for compile: ${TIMEOUTS.COMPILE}ms`);
         return TIMEOUTS.COMPILE;
       case 'getlogs':
+        mcpDebug(`[UnityClient] Using default timeout for getlogs: ${TIMEOUTS.GET_LOGS}ms`);
         return TIMEOUTS.GET_LOGS;
       case 'ping':
+        mcpDebug(`[UnityClient] Using default timeout for ping: ${TIMEOUTS.PING}ms`);
         return TIMEOUTS.PING;
       default:
+        mcpDebug(`[UnityClient] Using default timeout for ${commandName}: ${TIMEOUTS.PING}ms`);
         return TIMEOUTS.PING;
     }
   }

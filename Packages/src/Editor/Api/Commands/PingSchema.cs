@@ -6,7 +6,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for Ping command parameters
     /// Provides type-safe parameter access with default values
     /// </summary>
-    public class PingSchema
+    public class PingSchema : BaseCommandSchema
     {
         /// <summary>
         /// Message to send to Unity
