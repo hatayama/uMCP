@@ -154,11 +154,8 @@ namespace io.github.hatayama.uMCP
             {
                 EditorApplication.delayCall += () =>
                 {
-                    EditorApplication.delayCall += () =>
-                    {
-                        McpLogger.LogInfo("Sending command change notification after compilation completion");
-                        UnityCommandRegistry.TriggerCommandsChangedNotification();
-                    };
+                    McpLogger.LogInfo("Sending command change notification after compilation completion");
+                    UnityCommandRegistry.TriggerCommandsChangedNotification();
                 };
             }
             else
@@ -188,11 +185,8 @@ namespace io.github.hatayama.uMCP
                     // Send notification for post-compilation changes
                     EditorApplication.delayCall += () =>
                     {
-                        EditorApplication.delayCall += () =>
-                        {
-                            McpLogger.LogInfo("Sending command change notification for post-compilation changes (server already running)");
-                            UnityCommandRegistry.TriggerCommandsChangedNotification();
-                        };
+                        McpLogger.LogInfo("Sending command change notification for post-compilation changes (server already running)");
+                        UnityCommandRegistry.TriggerCommandsChangedNotification();
                     };
                 }
                 return;
@@ -227,14 +221,10 @@ namespace io.github.hatayama.uMCP
                     {
                         McpLogger.LogInfo("Auto Start Server is enabled. Restoring server with delay...");
                         
-                        // If Auto Start Server is on, use the conventional delayed processing.
+                        // Single delayCall is sufficient for server restoration
                         EditorApplication.delayCall += () =>
                         {
-                            // Add an additional delay (for a total wait of about 200-300ms).
-                            EditorApplication.delayCall += () =>
-                            {
-                                TryRestoreServerWithRetry(savedPort, 0);
-                            };
+                            TryRestoreServerWithRetry(savedPort, 0);
                         };
                     }
                     else
