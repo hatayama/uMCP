@@ -1,23 +1,7 @@
 {
-  "release-type": "simple",
+  "release-type": "node",
   "include-v-in-tag": true,
-  "manifest-file": ".release-please-manifest.json",
-  "bootstrap-sha": "5e9456d",
-  "packages": {
-    "Packages/src": {
-      "release-type": "node",
-      "package-name": "io.github.hatayama.umcp"
-    },
-    "Packages/src/TypeScriptServer": {
-      "release-type": "node",
-      "package-name": "umcp-server"
-    }
-  },
   "extra-files": [
-    {
-      "type": "json",
-      "path": "Packages/src/TypeScriptServer/package.json",
-      "jsonpath": "$.version"
-    }
+    "TypeScriptServer/package.json"
   ]
 }
