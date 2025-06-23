@@ -1,6 +1,8 @@
 {
   "release-type": "simple",
   "include-v-in-tag": true,
+  "manifest-file": ".release-please-manifest.json",
+  "bootstrap-sha": "5e9456d",
   "packages": {
     "Packages/src": {
       "release-type": "node",
