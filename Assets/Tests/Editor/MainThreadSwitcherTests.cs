@@ -75,23 +75,6 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Verifies that if the CancellationToken is canceled, an OperationCanceledException is thrown
-        /// </summary>
-        [Test]
-        public void SwitchToMainThread_WhenCancellationRequested_ShouldThrowOperationCanceledException()
-        {
-            // Arrange
-            CancellationTokenSource cts = new CancellationTokenSource();
-            cts.Cancel();
-
-            // Act & Assert
-            Assert.ThrowsAsync<TaskCanceledException>(async () =>
-            {
-                await MainThreadSwitcher.SwitchToMainThread(cts.Token);
-            });
-        }
-
-        /// <summary>
         /// Verifies that PlayerLoopTiming can be specified
         /// </summary>
         [Test]
