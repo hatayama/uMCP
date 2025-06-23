@@ -15,6 +15,7 @@ namespace io.github.hatayama.uMCP
         public bool showDeveloperTools = false;
         public bool enableMcpLogs = false;
         public bool enableCommunicationLogs = false;
+        public bool enableDevelopmentMode = false;
         public string lastUsedConfigPath = "";
     }
 
@@ -149,6 +150,24 @@ namespace io.github.hatayama.uMCP
         {
             McpEditorSettingsData settings = GetSettings();
             McpEditorSettingsData newSettings = settings with { enableCommunicationLogs = enableCommunicationLogs };
+            SaveSettings(newSettings);
+        }
+        
+        /// <summary>
+        /// Gets the development mode enabled flag.
+        /// </summary>
+        public static bool GetEnableDevelopmentMode()
+        {
+            return GetSettings().enableDevelopmentMode;
+        }
+        
+        /// <summary>
+        /// Sets the development mode enabled flag.
+        /// </summary>
+        public static void SetEnableDevelopmentMode(bool enableDevelopmentMode)
+        {
+            McpEditorSettingsData settings = GetSettings();
+            McpEditorSettingsData newSettings = settings with { enableDevelopmentMode = enableDevelopmentMode };
             SaveSettings(newSettings);
         }
         

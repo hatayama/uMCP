@@ -25,8 +25,17 @@ class SimpleMcpServer {
   private availableCommands: string[] = [];
 
   constructor() {
-    // Check if development mode (temporarily forced to true for testing)
-    this.isDevelopment = true; // process.env.NODE_ENV === 'development' || process.env.MCP_DEBUG === 'true';
+    // Environment variable constants
+    const ENV_KEY_UMCP_DEBUG = 'UMCP_DEBUG';
+    const ENV_KEY_UMCP_PRODUCTION = 'UMCP_PRODUCTION';
+    const ENV_KEY_NODE_ENV = 'NODE_ENV';
+    const ENV_VALUE_TRUE = 'true';
+    const ENV_VALUE_DEVELOPMENT = 'development';
+    
+    // Simple environment variable check
+    this.isDevelopment = process.env[ENV_KEY_UMCP_DEBUG] === ENV_VALUE_TRUE || 
+                        (process.env[ENV_KEY_NODE_ENV] === ENV_VALUE_DEVELOPMENT && 
+                         process.env[ENV_KEY_UMCP_PRODUCTION] !== ENV_VALUE_TRUE);
     
     DebugLogger.info('Simple Unity MCP Server Starting');
     DebugLogger.info(`Development mode: ${this.isDevelopment}`);

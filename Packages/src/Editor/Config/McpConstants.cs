@@ -18,6 +18,18 @@ namespace io.github.hatayama.uMCP
         public const string NODE_COMMAND = "node";
         public const string UNITY_TCP_PORT_ENV_KEY = "UNITY_TCP_PORT";
         
+        // Environment variable keys for development mode
+        public const string ENV_KEY_UMCP_DEBUG = "UMCP_DEBUG";
+        public const string ENV_KEY_UMCP_PRODUCTION = "UMCP_PRODUCTION";
+        public const string ENV_KEY_NODE_ENV = "NODE_ENV";
+        
+        // Environment variable values
+        public const string ENV_VALUE_TRUE = "true";
+        public const string ENV_VALUE_DEVELOPMENT = "development";
+        
+        // Editor settings keys (development mode)
+        public const string SETTINGS_KEY_ENABLE_DEVELOPMENT_MODE = "EnableDevelopmentMode";
+        
         // SessionState keys
         public const string SESSION_KEY_SERVER_RUNNING = "uMCP.ServerRunning";
         public const string SESSION_KEY_SERVER_PORT = "uMCP.ServerPort";

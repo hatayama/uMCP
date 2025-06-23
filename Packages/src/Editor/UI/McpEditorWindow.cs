@@ -30,6 +30,7 @@ namespace io.github.hatayama.uMCP
         private bool enableCommunicationLogs = false;
         private bool showCommunicationLogs = false;
         private bool enableMcpLogs = false;
+        private bool enableDevelopmentMode = false;
         private Vector2 communicationLogScrollPosition;
         private float communicationLogHeight = DEFAULT_COMMUNICATION_LOG_HEIGHT; // Height of resizable communication log area
         private bool isResizingCommunicationLog = false; // Whether currently resizing
@@ -72,6 +73,7 @@ namespace io.github.hatayama.uMCP
             showDeveloperTools = settings.showDeveloperTools;
             enableMcpLogs = settings.enableMcpLogs;
             enableCommunicationLogs = settings.enableCommunicationLogs;
+            enableDevelopmentMode = settings.enableDevelopmentMode;
             
             // Restore editor selection state
             selectedEditorType = (McpEditorType)SessionState.GetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
@@ -481,6 +483,46 @@ namespace io.github.hatayama.uMCP
             {
                 EditorGUILayout.Space();
                 
+                // TypeScript Development Mode settings
+                EditorGUILayout.LabelField("TypeScript Server Settings", EditorStyles.boldLabel);
+                
+                EditorGUI.BeginChangeCheck();
+                bool newEnableDevelopmentMode = EditorGUILayout.Toggle("Enable Development Mode", enableDevelopmentMode);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    enableDevelopmentMode = newEnableDevelopmentMode;
+                    McpEditorSettings.SetEnableDevelopmentMode(enableDevelopmentMode);
+                    
+                    // Update mcp.json immediately
+                    UpdateMcpConfigForDevelopmentMode();
+                    
+                    // Prompt for server restart
+                    if (McpServerController.IsServerRunning)
+                    {
+                        bool restart = EditorUtility.DisplayDialog("Restart Required", 
+                            "Development mode setting has been changed. Restart the server to apply changes?", 
+                            "Restart Now", "Restart Later");
+                            
+                        if (restart)
+                        {
+                            McpServerController.StopServer();
+                            EditorApplication.delayCall += () => {
+                                McpServerController.StartServer(customPort);
+                                Repaint();
+                            };
+                        }
+                    }
+                }
+                
+                EditorGUILayout.HelpBox(
+                    enableDevelopmentMode 
+                        ? "Development Mode: Debug tools (mcp-ping, get-unity-commands) will be available in Cursor"
+                        : "Production Mode: Only essential tools will be available in Cursor",
+                    enableDevelopmentMode ? MessageType.Info : MessageType.Warning
+                );
+                
+                EditorGUILayout.Space();
+                
                 // Log control toggle
                 EditorGUI.BeginChangeCheck();
                 bool newEnableMcpLogs = EditorGUILayout.Toggle("Enable MCP Logs", enableMcpLogs);
@@ -823,6 +865,45 @@ namespace io.github.hatayama.uMCP
                     isResizingCommunicationLog = false;
                     Event.current.Use();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Update MCP configuration for development mode
+        /// </summary>
+        private void UpdateMcpConfigForDevelopmentMode()
+        {
+            try
+            {
+                // Get configuration service for selected editor type
+                McpConfigService configService = GetConfigService(selectedEditorType);
+                string editorDisplayName = GetEditorDisplayName(selectedEditorType);
+                
+                // Get current port
+                int portToUse = McpServerController.IsServerRunning ? McpServerController.ServerPort : customPort;
+                
+                // Update only development mode environment variables (preserve other settings)
+                configService.UpdateDevelopmentMode(portToUse, enableDevelopmentMode);
+                
+                McpLogger.LogInfo($"Updated {editorDisplayName} development mode setting: {enableDevelopmentMode}");
+                
+                // Log configuration file path for debugging
+                string configPath = UnityMcpPathResolver.GetConfigPath(selectedEditorType);
+                McpLogger.LogInfo($"Configuration file partially updated: {configPath}");
+                
+                // Show update confirmation
+                string modeText = enableDevelopmentMode ? "Development Mode (debug tools enabled)" : "Production Mode (debug tools disabled)";
+                EditorUtility.DisplayDialog("Configuration Updated", 
+                    $"{editorDisplayName} configuration updated successfully!\n\nMode: {modeText}\n\nRestart Cursor to apply changes.", 
+                    "OK");
+            }
+            catch (System.Exception ex)
+            {
+                string editorDisplayName = GetEditorDisplayName(selectedEditorType);
+                EditorUtility.DisplayDialog("Configuration Error", 
+                    $"Failed to update {editorDisplayName} development mode: {ex.Message}", 
+                    "OK");
+                McpLogger.LogError($"Failed to update {editorDisplayName} development mode: {ex.Message}");
             }
         }
     }
