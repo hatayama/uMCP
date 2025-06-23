@@ -5622,6 +5622,9 @@ var UnityClient = class {
   notificationHandlers = /* @__PURE__ */ new Map();
   pendingRequests = /* @__PURE__ */ new Map();
   reconnectHandlers = /* @__PURE__ */ new Set();
+  // Polling system
+  pollingInterval = null;
+  onReconnectedCallback = null;
   constructor() {
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
   }
@@ -5754,6 +5757,8 @@ var UnityClient = class {
       });
       this.socket.on("close", () => {
         this._connected = false;
+        mcpInfo("[UnityClient] Connection lost, starting polling...");
+        this.startPolling();
       });
       this.socket.on("data", (data) => {
         this.handleIncomingData(data.toString());
@@ -5901,11 +5906,45 @@ var UnityClient = class {
    * Disconnect
    */
   disconnect() {
+    this.stopPolling();
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
     }
     this._connected = false;
+  }
+  /**
+   * Set callback for when connection is restored
+   */
+  setReconnectedCallback(callback) {
+    this.onReconnectedCallback = callback;
+  }
+  /**
+   * Start polling for connection recovery
+   */
+  startPolling() {
+    if (this.pollingInterval) return;
+    mcpInfo("[UnityClient] Starting connection recovery polling (3s interval)");
+    this.pollingInterval = setInterval(async () => {
+      try {
+        await this.connect();
+        mcpInfo("[UnityClient] Connection recovered! Stopping polling");
+        this.stopPolling();
+        if (this.onReconnectedCallback) {
+          this.onReconnectedCallback();
+        }
+      } catch (error) {
+      }
+    }, 3e3);
+  }
+  /**
+   * Stop polling
+   */
+  stopPolling() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
   }
 };
 
@@ -6145,6 +6184,10 @@ var SimpleMcpServer = class {
       }
     );
     this.unityClient = new UnityClient();
+    this.unityClient.setReconnectedCallback(() => {
+      mcpInfo("[Simple MCP] Unity connection recovered via polling, refreshing tools...");
+      this.refreshDynamicTools();
+    });
     this.setupHandlers();
   }
   /**
