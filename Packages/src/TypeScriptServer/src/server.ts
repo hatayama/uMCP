@@ -49,6 +49,13 @@ class SimpleMcpServer {
     );
 
     this.unityClient = new UnityClient();
+    
+    // Setup polling callback for connection recovery
+    this.unityClient.setReconnectedCallback(() => {
+      mcpInfo('[Simple MCP] Unity connection recovered via polling, refreshing tools...');
+      this.refreshDynamicTools();
+    });
+    
     this.setupHandlers();
   }
 

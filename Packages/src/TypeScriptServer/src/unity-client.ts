@@ -20,6 +20,10 @@ export class UnityClient {
   private notificationHandlers: Map<string, (params: any) => void> = new Map();
   private pendingRequests: Map<number, { resolve: (value: any) => void, reject: (reason: any) => void }> = new Map();
   private reconnectHandlers: Set<() => void> = new Set();
+  
+  // Polling system
+  private pollingInterval: NodeJS.Timeout | null = null;
+  private onReconnectedCallback: (() => void) | null = null;
 
   constructor() {
     // Get port number from environment variable UNITY_TCP_PORT, default is 7400
@@ -188,6 +192,8 @@ export class UnityClient {
 
       this.socket.on('close', () => {
         this._connected = false;
+        mcpInfo('[UnityClient] Connection lost, starting polling...');
+        this.startPolling();
       });
 
       // Handle incoming data (both notifications and responses)
@@ -378,10 +384,52 @@ export class UnityClient {
    * Disconnect
    */
   disconnect(): void {
+    this.stopPolling(); // Stop polling when manually disconnecting
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
     }
     this._connected = false;
+  }
+
+  /**
+   * Set callback for when connection is restored
+   */
+  setReconnectedCallback(callback: () => void): void {
+    this.onReconnectedCallback = callback;
+  }
+
+  /**
+   * Start polling for connection recovery
+   */
+  private startPolling(): void {
+    if (this.pollingInterval) return; // Already polling
+    
+    mcpInfo('[UnityClient] Starting connection recovery polling (3s interval)');
+    
+    this.pollingInterval = setInterval(async () => {
+      try {
+        await this.connect();
+        mcpInfo('[UnityClient] Connection recovered! Stopping polling');
+        this.stopPolling();
+        
+        // Notify about reconnection
+        if (this.onReconnectedCallback) {
+          this.onReconnectedCallback();
+        }
+      } catch (error) {
+        // Silent retry - connection still down
+      }
+    }, 3000);
+  }
+
+  /**
+   * Stop polling
+   */
+  private stopPolling(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
   }
 } 
