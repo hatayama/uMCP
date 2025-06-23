@@ -29,13 +29,12 @@ jobs:
       # ── package.json が本当にあるか簡易チェック ─────────
       - name: 🧪 Sanity check
         run: |
-          test -f Packages/src/package.json && echo "✅ package.json OK"
+          test -f Packages/src/package.json && echo "✅ Unity package.json OK"
+          test -f Packages/src/TypeScriptServer/package.json && echo "✅ TypeScript package.json OK"
 
       # ── release‑please 本番 ───────────────────────────
       - name: 🚀 Run release‑please
-        uses: googleapis/release-please-action@v3
+        uses: googleapis/release-please-action@v4
         with:
-          path: Packages/src
-          release-type: node
-          package-name: "io.github.hatayama.unitypocketmcp"
           token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json

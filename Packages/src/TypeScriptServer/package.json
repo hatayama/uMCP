@@ -1,6 +1,6 @@
 {
-  "name": "unity-mcp-server",
-  "version": "0.1.0",
+  "name": "umcp-server",
+  "version": "0.5.0",
   "description": "TypeScript MCP Server for Unity-Cursor integration",
   "main": "dist/server.bundle.js",
   "type": "module",

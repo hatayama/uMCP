@@ -1,5 +1,22 @@
 {
   "release-type": "simple",
   "initial-version": "0.1.0",
-  "include-v-in-tag": true
+  "include-v-in-tag": true,
+  "packages": {
+    "Packages/src": {
+      "release-type": "node",
+      "package-name": "io.github.hatayama.umcp"
+    },
+    "Packages/src/TypeScriptServer": {
+      "release-type": "node",
+      "package-name": "umcp-server"
+    }
+  },
+  "extra-files": [
+    {
+      "type": "json",
+      "path": "Packages/src/TypeScriptServer/package.json",
+      "jsonpath": "$.version"
+    }
+  ]
 }
