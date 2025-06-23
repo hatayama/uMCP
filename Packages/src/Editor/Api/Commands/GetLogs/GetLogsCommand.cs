@@ -40,12 +40,12 @@ namespace io.github.hatayama.uMCP
                 }
                 else
                 {
-                    logData = LogGetter.GetConsoleLog(logTypeString);
+                    logData = LogGetter.GetConsoleLog(logType);
                 }
             }
             else
             {
-                logData = LogGetter.GetConsoleLog(logTypeString, searchText);
+                logData = LogGetter.GetConsoleLog(logType, searchText);
             }
             
             // Limit logs according to maxCount.
@@ -59,8 +59,7 @@ namespace io.github.hatayama.uMCP
             LogEntry[] logs = limitedEntries.Select(entry => new LogEntry(
                 type: entry.LogType,
                 message: entry.Message,
-                stackTrace: includeStackTrace ? entry.StackTrace : null,
-                file: entry.File
+                stackTrace: includeStackTrace ? entry.StackTrace : null
             )).ToArray();
             
             GetLogsResponse response = new GetLogsResponse(

@@ -79,7 +79,8 @@ namespace io.github.hatayama.uMCP
                         passedCount: result.PassedCount,
                         failedCount: result.FailedCount,
                         skippedCount: result.SkippedCount,
-                        xmlPath: result.XmlPath
+                        xmlPath: result.XmlPath,
+                        xmlContent: result.XmlContent
                     );
                 }
             }
@@ -124,6 +125,18 @@ namespace io.github.hatayama.uMCP
                     FailedCount = CountFailedTests(result),
                     SkippedCount = CountSkippedTests(result)
                 };
+
+                // Get XML content
+                try
+                {
+                    testResult.XmlContent = result.ToXml().OuterXml;
+                    McpLogger.LogInfo("Test results XML content generated successfully");
+                }
+                catch (Exception xmlEx)
+                {
+                    McpLogger.LogWarning($"Failed to generate XML content: {xmlEx.Message}");
+                    testResult.XmlContent = null;
+                }
 
                 // Save XML if requested
                 if (saveXml)
@@ -217,7 +230,8 @@ namespace io.github.hatayama.uMCP
                 passedCount: 0,
                 failedCount: 0,
                 skippedCount: 0,
-                xmlPath: null
+                xmlPath: null,
+                xmlContent: null
             );
         }
     }
@@ -252,5 +266,6 @@ namespace io.github.hatayama.uMCP
         public int FailedCount { get; set; }
         public int SkippedCount { get; set; }
         public string XmlPath { get; set; }
+        public string XmlContent { get; set; }
     }
 } 

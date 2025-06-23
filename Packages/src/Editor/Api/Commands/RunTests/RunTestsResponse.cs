@@ -49,10 +49,15 @@ namespace io.github.hatayama.uMCP
         public string XmlPath { get; set; }
 
         /// <summary>
+        /// XML content of test results
+        /// </summary>
+        public string XmlContent { get; set; }
+
+        /// <summary>
         /// Create a new RunTestsResponse
         /// </summary>
         public RunTestsResponse(bool success, string message, string completedAt, int testCount, 
-                               int passedCount, int failedCount, int skippedCount, string xmlPath = null)
+                               int passedCount, int failedCount, int skippedCount, string xmlPath = null, string xmlContent = null)
         {
             Success = success;
             Message = message;
@@ -62,13 +67,7 @@ namespace io.github.hatayama.uMCP
             FailedCount = failedCount;
             SkippedCount = skippedCount;
             XmlPath = xmlPath;
-        }
-
-        /// <summary>
-        /// Parameterless constructor for JSON deserialization
-        /// </summary>
-        public RunTestsResponse()
-        {
+            XmlContent = xmlContent;
         }
     }
 } 

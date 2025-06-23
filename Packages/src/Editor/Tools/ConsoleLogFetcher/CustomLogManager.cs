@@ -25,22 +25,13 @@ namespace io.github.hatayama.uMCP
             Application.logMessageReceived += OnLogMessageReceived;
             
             // Detect Console log clearing.
-            Type consoleWindowUtilityType = typeof(EditorWindow).Assembly.GetType("UnityEditor.ConsoleWindowUtility");
-            if (consoleWindowUtilityType != null)
-            {
-                System.Reflection.EventInfo consoleLogsChangedEvent = consoleWindowUtilityType.GetEvent("consoleLogsChanged");
-                if (consoleLogsChangedEvent != null)
-                {
-                    Delegate handler = Delegate.CreateDelegate(consoleLogsChangedEvent.EventHandlerType, this, nameof(OnConsoleLogsChanged));
-                    consoleLogsChangedEvent.AddEventHandler(null, handler);
-                }
-            }
+            ConsoleUtility.consoleLogsChanged += OnConsoleLogsChanged;
         }
 
-        private void OnLogMessageReceived(string logString, string stackTrace, LogType type)
+        private void OnLogMessageReceived(string condition, string stackTrace, LogType type)
         {
-            string logTypeString = ConvertLogTypeToString(type);
-            LogEntryDto logEntry = new LogEntryDto(logString, logTypeString, stackTrace ?? "", "");
+            McpLogType mcpLogType = ConvertLogTypeToMcpLogType(type);
+            LogEntryDto logEntry = new LogEntryDto(mcpLogType, condition, stackTrace ?? "");
 
             lock (lockObject)
             {
@@ -51,23 +42,21 @@ namespace io.github.hatayama.uMCP
         private void OnConsoleLogsChanged()
         {
             // If the Console is cleared, clear the custom logs as well.
-            ConsoleWindowUtility.GetConsoleLogCounts(out int err, out int warn, out int log);
+            ConsoleUtility.GetConsoleLogCounts(out int err, out int warn, out int log);
             if (err == 0 && warn == 0 && log == 0)
             {
                 ClearLogs();
             }
         }
 
-        private string ConvertLogTypeToString(LogType logType)
+        private McpLogType ConvertLogTypeToMcpLogType(LogType logType)
         {
             return logType switch
             {
-                LogType.Error => "Error",
-                LogType.Assert => "Assert",
-                LogType.Warning => "Warning",
-                LogType.Log => "Log",
-                LogType.Exception => "Exception",
-                _ => "Unknown"
+                LogType.Error => McpLogType.Error,
+                LogType.Warning => McpLogType.Warning,
+                LogType.Log => McpLogType.Log,
+                _ => McpLogType.None
             };
         }
 
@@ -79,7 +68,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        public LogEntryDto[] GetLogEntriesByType(string logType)
+        public LogEntryDto[] GetLogEntriesByType(McpLogType logType)
         {
             lock (lockObject)
             {
@@ -87,7 +76,7 @@ namespace io.github.hatayama.uMCP
                 
                 foreach (LogEntryDto entry in logEntries)
                 {
-                    if (string.Equals(entry.LogType, logType, StringComparison.OrdinalIgnoreCase))
+                    if (entry.LogType == logType)
                     {
                         filteredEntries.Add(entry);
                     }
@@ -120,7 +109,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        public LogEntryDto[] GetLogEntriesByTypeAndMessage(string logType, string searchText)
+        public LogEntryDto[] GetLogEntriesByTypeAndMessage(McpLogType logType, string searchText)
         {
             lock (lockObject)
             {
@@ -128,8 +117,7 @@ namespace io.github.hatayama.uMCP
                 
                 foreach (LogEntryDto entry in logEntries)
                 {
-                    bool typeMatch = string.IsNullOrEmpty(logType) || logType == "All" || 
-                                    string.Equals(entry.LogType, logType, StringComparison.OrdinalIgnoreCase);
+                    bool typeMatch = logType == McpLogType.All || entry.LogType == logType;
                     
                     bool messageMatch = string.IsNullOrEmpty(searchText) || 
                                        entry.Message.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
@@ -163,6 +151,7 @@ namespace io.github.hatayama.uMCP
         public void Dispose()
         {
             Application.logMessageReceived -= OnLogMessageReceived;
+            ConsoleUtility.consoleLogsChanged -= OnConsoleLogsChanged;
             
             lock (lockObject)
             {
