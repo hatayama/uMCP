@@ -66,15 +66,15 @@ namespace io.github.hatayama.uMCP
             Debug.Log("--- Filtering Usage Example ---");
 
             // Get only error logs
-            LogDisplayDto errorLogs = LogGetter.GetConsoleLog("Error");
+            LogDisplayDto errorLogs = LogGetter.GetConsoleLog(McpLogType.Error);
             Debug.Log($"Number of error logs: {errorLogs.TotalCount}");
 
             // Get only warning logs
-            LogDisplayDto warningLogs = LogGetter.GetConsoleLog("Warning");
+            LogDisplayDto warningLogs = LogGetter.GetConsoleLog(McpLogType.Warning);
             Debug.Log($"Number of warning logs: {warningLogs.TotalCount}");
 
             // Get only normal logs
-            LogDisplayDto normalLogs = LogGetter.GetConsoleLog("Log");
+            LogDisplayDto normalLogs = LogGetter.GetConsoleLog(McpLogType.Log);
             Debug.Log($"Number of normal logs: {normalLogs.TotalCount}");
         }
 
