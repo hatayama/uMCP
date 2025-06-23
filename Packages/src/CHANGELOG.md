@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/hatayama/uMCP/compare/v0.4.1...v0.5.0) (2025-06-23)
+
+
+### Features
+
+* add development mode support for TypeScript server and configur… ([#38](https://github.com/hatayama/uMCP/issues/38)) ([ece81f9](https://github.com/hatayama/uMCP/commit/ece81f919d08b632353665f48e2d2784681acf99))
+
 ## [0.4.1](https://github.com/hatayama/uMCP/compare/v0.4.0...v0.4.1) (2025-06-22)
 
 
