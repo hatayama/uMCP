@@ -6062,7 +6062,12 @@ var SimpleMcpServer = class {
   dynamicTools = /* @__PURE__ */ new Map();
   availableCommands = [];
   constructor() {
-    this.isDevelopment = true;
+    const ENV_KEY_UMCP_DEBUG = "UMCP_DEBUG";
+    const ENV_KEY_UMCP_PRODUCTION = "UMCP_PRODUCTION";
+    const ENV_KEY_NODE_ENV = "NODE_ENV";
+    const ENV_VALUE_TRUE = "true";
+    const ENV_VALUE_DEVELOPMENT = "development";
+    this.isDevelopment = process.env[ENV_KEY_UMCP_DEBUG] === ENV_VALUE_TRUE || process.env[ENV_KEY_NODE_ENV] === ENV_VALUE_DEVELOPMENT && process.env[ENV_KEY_UMCP_PRODUCTION] !== ENV_VALUE_TRUE;
     DebugLogger.info("Simple Unity MCP Server Starting");
     DebugLogger.info(`Development mode: ${this.isDevelopment}`);
     this.server = new Server(

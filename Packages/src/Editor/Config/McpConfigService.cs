@@ -110,6 +110,102 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Updates only the environment variables for development mode without changing other settings.
+        /// </summary>
+        /// <param name="port">The port number to use.</param>
+        /// <param name="developmentMode">Whether to enable development mode.</param>
+        public void UpdateDevelopmentMode(int port, bool developmentMode)
+        {
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
+            
+            // Create the settings directory (only if necessary)
+            _repository.CreateConfigDirectory(configPath);
+
+            // Load existing settings (or create new ones if they don't exist)
+            McpConfig config = _repository.Load(configPath);
+
+            // Generate settings key that includes the port number
+            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+
+            // Check if our server configuration exists
+            if (!config.mcpServers.ContainsKey(serverKey))
+            {
+                // If it doesn't exist, create it with full configuration
+                AutoConfigure(port);
+                // Then update the development mode
+                UpdateDevelopmentModeOnly(port, developmentMode);
+                return;
+            }
+
+            // Update only the development mode settings
+            UpdateDevelopmentModeOnly(port, developmentMode);
+        }
+
+        /// <summary>
+        /// Updates only the environment variables for development mode.
+        /// </summary>
+        /// <param name="port">The port number.</param>
+        /// <param name="developmentMode">Whether to enable development mode.</param>
+        private void UpdateDevelopmentModeOnly(int port, bool developmentMode)
+        {
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
+            
+            // Load existing settings
+            McpConfig config = _repository.Load(configPath);
+            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+            
+            if (!config.mcpServers.ContainsKey(serverKey))
+            {
+                McpLogger.LogError($"Server configuration not found: {serverKey}");
+                return;
+            }
+
+            // Get existing configuration
+            McpServerConfigData existingConfig = config.mcpServers[serverKey];
+            
+            // Create new environment variables based on existing ones
+            Dictionary<string, string> updatedEnv = new(existingConfig.env);
+            
+            // Remove old development mode environment variables
+            updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_DEBUG);
+            updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_PRODUCTION);
+            updatedEnv.Remove(McpConstants.ENV_KEY_NODE_ENV);
+            
+            // Add new development mode environment variables
+            if (developmentMode)
+            {
+                updatedEnv[McpConstants.ENV_KEY_UMCP_DEBUG] = McpConstants.ENV_VALUE_TRUE;
+                updatedEnv[McpConstants.ENV_KEY_NODE_ENV] = McpConstants.ENV_VALUE_DEVELOPMENT;
+            }
+            else
+            {
+                updatedEnv[McpConstants.ENV_KEY_UMCP_PRODUCTION] = McpConstants.ENV_VALUE_TRUE;
+            }
+            
+            // Create updated configuration (keeping command and args unchanged)
+            McpServerConfigData updatedConfig = new McpServerConfigData(
+                existingConfig.command,
+                existingConfig.args,
+                updatedEnv
+            );
+            
+            // Update only this server's configuration
+            Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
+            updatedServers[serverKey] = updatedConfig;
+            
+            // Save the updated configuration
+            McpConfig updatedMcpConfig = new(updatedServers);
+            _repository.Save(configPath, updatedMcpConfig);
+            
+            string editorName = GetEditorDisplayName(_editorType);
+            McpLogger.LogInfo($"{editorName} development mode updated: {developmentMode}");
+            McpLogger.LogInfo($"Server key: {serverKey}, Configuration file: {configPath}");
+            
+            // Log environment variables for debugging
+            McpLogger.LogInfo($"Environment variables: {string.Join(", ", updatedEnv.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+        }
+
+        /// <summary>
         /// Gets the display name of the editor.
         /// </summary>
         private string GetEditorDisplayName(McpEditorType editorType)
