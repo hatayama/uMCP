@@ -166,21 +166,17 @@ namespace io.github.hatayama.uMCP
             // Create new environment variables based on existing ones
             Dictionary<string, string> updatedEnv = new(existingConfig.env);
             
-            // Remove old development mode environment variables
+            // Remove old development mode environment variables (cleanup legacy settings)
             updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_DEBUG);
             updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_PRODUCTION);
             updatedEnv.Remove(McpConstants.ENV_KEY_NODE_ENV);
             
-            // Add new development mode environment variables
+            // Add NODE_ENV for development mode (simplified approach)
             if (developmentMode)
             {
-                updatedEnv[McpConstants.ENV_KEY_UMCP_DEBUG] = McpConstants.ENV_VALUE_TRUE;
                 updatedEnv[McpConstants.ENV_KEY_NODE_ENV] = McpConstants.ENV_VALUE_DEVELOPMENT;
             }
-            else
-            {
-                updatedEnv[McpConstants.ENV_KEY_UMCP_PRODUCTION] = McpConstants.ENV_VALUE_TRUE;
-            }
+            // For production mode, simply don't set NODE_ENV (default behavior)
             
             // Create updated configuration (keeping command and args unchanged)
             McpServerConfigData updatedConfig = new McpServerConfigData(

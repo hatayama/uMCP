@@ -495,23 +495,6 @@ namespace io.github.hatayama.uMCP
                     
                     // Update mcp.json immediately
                     UpdateMcpConfigForDevelopmentMode();
-                    
-                    // Prompt for server restart
-                    if (McpServerController.IsServerRunning)
-                    {
-                        bool restart = EditorUtility.DisplayDialog("Restart Required", 
-                            "Development mode setting has been changed. Restart the server to apply changes?", 
-                            "Restart Now", "Restart Later");
-                            
-                        if (restart)
-                        {
-                            McpServerController.StopServer();
-                            EditorApplication.delayCall += () => {
-                                McpServerController.StartServer(customPort);
-                                Repaint();
-                            };
-                        }
-                    }
                 }
                 
                 EditorGUILayout.HelpBox(
@@ -891,11 +874,9 @@ namespace io.github.hatayama.uMCP
                 string configPath = UnityMcpPathResolver.GetConfigPath(selectedEditorType);
                 McpLogger.LogInfo($"Configuration file partially updated: {configPath}");
                 
-                // Show update confirmation
+                // Log update confirmation instead of showing dialog
                 string modeText = enableDevelopmentMode ? "Development Mode (debug tools enabled)" : "Production Mode (debug tools disabled)";
-                EditorUtility.DisplayDialog("Configuration Updated", 
-                    $"{editorDisplayName} configuration updated successfully!\n\nMode: {modeText}\n\nRestart Cursor to apply changes.", 
-                    "OK");
+                McpLogger.LogInfo($"{editorDisplayName} configuration updated successfully! Mode: {modeText}. Restart Cursor to apply changes.");
             }
             catch (System.Exception ex)
             {

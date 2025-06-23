@@ -74,6 +74,12 @@ export const DEFAULT_MESSAGES = {
   UNITY_PING: 'Hello from TypeScript MCP Server',
 } as const;
 
+// Environment configuration
+export const ENVIRONMENT = {
+  NODE_ENV_DEVELOPMENT: 'development',
+  NODE_ENV_PRODUCTION: 'production',
+} as const;
+
 // Error messages
 export const ERROR_MESSAGES = {
   NOT_CONNECTED: 'Unity MCP Bridge is not connected',

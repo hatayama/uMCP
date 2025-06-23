@@ -42,16 +42,12 @@ namespace io.github.hatayama.uMCP
                 { McpConstants.UNITY_TCP_PORT_ENV_KEY, port.ToString() }
             };
             
-            // Add environment variables based on development mode
+            // Add NODE_ENV for development mode (simplified approach)
             if (developmentMode)
             {
-                env[McpConstants.ENV_KEY_UMCP_DEBUG] = McpConstants.ENV_VALUE_TRUE;
                 env[McpConstants.ENV_KEY_NODE_ENV] = McpConstants.ENV_VALUE_DEVELOPMENT;
             }
-            else
-            {
-                env[McpConstants.ENV_KEY_UMCP_PRODUCTION] = McpConstants.ENV_VALUE_TRUE;
-            }
+            // For production mode, simply don't set NODE_ENV (default behavior)
 
             return new McpServerConfigData(
                 command: McpConstants.NODE_COMMAND,
@@ -67,7 +63,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>The server key.</returns>
         public static string CreateUnityMcpServerKey(int port)
         {
-            return $"{McpConstants.PROJECT_NAME.ToLower()}-{port}";
+            return $"{McpConstants.PROJECT_NAME}-{port}";
         }
     }
 } 
