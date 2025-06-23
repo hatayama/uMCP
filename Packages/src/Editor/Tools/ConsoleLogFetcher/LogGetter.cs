@@ -17,6 +17,25 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Converts string log type to McpLogType enum
+        /// </summary>
+        /// <param name="logType">String representation of log type</param>
+        /// <returns>Corresponding McpLogType enum value</returns>
+        private static McpLogType ConvertStringToMcpLogType(string logType)
+        {
+            if (string.IsNullOrEmpty(logType) || logType == "All")
+                return McpLogType.All;
+            
+            return logType switch
+            {
+                "Error" => McpLogType.Error,
+                "Warning" => McpLogType.Warning,
+                "Log" => McpLogType.Log,
+                _ => McpLogType.All
+            };
+        }
+
+        /// <summary>
         /// Retrieves console logs and returns them as a LogDisplayDto.
         /// </summary>
         /// <returns>The retrieved log data.</returns>
@@ -40,11 +59,11 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="logType">The log type to filter by (if null, all types are retrieved).</param>
         /// <returns>The filtered log data.</returns>
-        public static LogDisplayDto GetConsoleLog(string logType)
+        public static LogDisplayDto GetConsoleLog(McpLogType logType)
         {
             LogEntryDto[] filteredEntries;
             
-            if (string.IsNullOrEmpty(logType) || logType == "All")
+            if (logType == McpLogType.All)
             {
                 filteredEntries = LogManager.GetAllLogEntries();
             }
@@ -62,7 +81,7 @@ namespace io.github.hatayama.uMCP
         /// <param name="logType">The log type to filter by (if null or "All", all types are included).</param>
         /// <param name="searchText">The text to search for within messages (if null or empty, no search is performed).</param>
         /// <returns>The filtered log data.</returns>
-        public static LogDisplayDto GetConsoleLog(string logType, string searchText)
+        public static LogDisplayDto GetConsoleLog(McpLogType logType, string searchText)
         {
             LogEntryDto[] filteredEntries = LogManager.GetLogEntriesByTypeAndMessage(logType, searchText);
             return new LogDisplayDto(filteredEntries, filteredEntries.Length);

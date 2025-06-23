@@ -69,7 +69,8 @@ namespace io.github.hatayama.uMCP
             string buttonText = selectedLogType == "All" ? "Get All Logs" : $"Get {selectedLogType} Logs";
             if (GUILayout.Button(buttonText, GUILayout.Height(30)))
             {
-                presenter.GetLogs(selectedLogType);
+                McpLogType mcpLogType = ConvertStringToMcpLogType(selectedLogType);
+                presenter.GetLogs(mcpLogType);
             }
 
             GUILayout.Space(5);
@@ -140,16 +141,16 @@ namespace io.github.hatayama.uMCP
             {
                 switch (entry.LogType)
                 {
-                    case "Log":
+                    case McpLogType.Log:
                         logCount++;
                         break;
-                    case "Warning":
+                    case McpLogType.Warning:
                         warningCount++;
                         break;
-                    case "Error":
+                    case McpLogType.Error:
                         errorCount++;
                         break;
-                    case "Assert":
+                    case McpLogType.None:
                         assertCount++;
                         break;
                 }
@@ -187,15 +188,26 @@ namespace io.github.hatayama.uMCP
             GUILayout.Space(2);
         }
 
-        private GUIStyle GetLogStyle(string logType)
+        private McpLogType ConvertStringToMcpLogType(string logType)
+        {
+            return logType switch
+            {
+                "Error" => McpLogType.Error,
+                "Warning" => McpLogType.Warning,
+                "Log" => McpLogType.Log,
+                "All" => McpLogType.All,
+                _ => McpLogType.All
+            };
+        }
+
+        private GUIStyle GetLogStyle(McpLogType logType)
         {
             switch (logType)
             {
-                case "Error":
-                case "Exception":
-                case "Assert":
+                case McpLogType.Error:
+                case McpLogType.None:
                     return EditorStyles.helpBox;
-                case "Warning":
+                case McpLogType.Warning:
                     return EditorStyles.helpBox;
                 default:
                     return EditorStyles.helpBox;

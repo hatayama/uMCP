@@ -15,11 +15,11 @@ namespace io.github.hatayama.uMCP
             OnLogDataUpdated?.Invoke(displayData);
         }
 
-        public void GetLogs(string logType)
+        public void GetLogs(McpLogType logType)
         {
             LogDisplayDto displayData;
             
-            if (logType == "All")
+            if (logType == McpLogType.All)
             {
                 displayData = LogGetter.GetConsoleLog();
             }

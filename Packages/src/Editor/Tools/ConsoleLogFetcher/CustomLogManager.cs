@@ -30,8 +30,8 @@ namespace io.github.hatayama.uMCP
 
         private void OnLogMessageReceived(string condition, string stackTrace, LogType type)
         {
-            string logTypeString = ConvertLogTypeToString(type);
-            LogEntryDto logEntry = new LogEntryDto(condition, logTypeString, stackTrace ?? "", "");
+            McpLogType mcpLogType = ConvertLogTypeToMcpLogType(type);
+            LogEntryDto logEntry = new LogEntryDto(mcpLogType, condition, stackTrace ?? "");
 
             lock (lockObject)
             {
@@ -49,16 +49,14 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        private string ConvertLogTypeToString(LogType mpcLogType)
+        private McpLogType ConvertLogTypeToMcpLogType(LogType logType)
         {
-            return mpcLogType switch
+            return logType switch
             {
-                LogType.Log => "Log",
-                LogType.Warning => "Warning",
-                LogType.Error => "Error",
-                LogType.Exception => "Exception",
-                LogType.Assert => "Assert",
-                _ => "Unknown"
+                LogType.Error => McpLogType.Error,
+                LogType.Warning => McpLogType.Warning,
+                LogType.Log => McpLogType.Log,
+                _ => McpLogType.None
             };
         }
 
@@ -70,7 +68,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        public LogEntryDto[] GetLogEntriesByType(string logType)
+        public LogEntryDto[] GetLogEntriesByType(McpLogType logType)
         {
             lock (lockObject)
             {
@@ -78,7 +76,7 @@ namespace io.github.hatayama.uMCP
                 
                 foreach (LogEntryDto entry in logEntries)
                 {
-                    if (string.Equals(entry.LogType, logType, StringComparison.OrdinalIgnoreCase))
+                    if (entry.LogType == logType)
                     {
                         filteredEntries.Add(entry);
                     }
@@ -111,7 +109,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        public LogEntryDto[] GetLogEntriesByTypeAndMessage(string logType, string searchText)
+        public LogEntryDto[] GetLogEntriesByTypeAndMessage(McpLogType logType, string searchText)
         {
             lock (lockObject)
             {
@@ -119,8 +117,7 @@ namespace io.github.hatayama.uMCP
                 
                 foreach (LogEntryDto entry in logEntries)
                 {
-                    bool typeMatch = string.IsNullOrEmpty(logType) || logType == "All" || 
-                                    string.Equals(entry.LogType, logType, StringComparison.OrdinalIgnoreCase);
+                    bool typeMatch = logType == McpLogType.All || entry.LogType == logType;
                     
                     bool messageMatch = string.IsNullOrEmpty(searchText) || 
                                        entry.Message.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;

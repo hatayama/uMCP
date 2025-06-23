@@ -3,16 +3,14 @@ namespace io.github.hatayama.uMCP
     public record LogEntryDto
     {
         public readonly string Message;
-        public readonly string LogType;
+        public readonly McpLogType LogType;
         public readonly string StackTrace;
-        public readonly string File;
 
-        public LogEntryDto(string message, string logType, string stackTrace, string file)
+        public LogEntryDto(McpLogType logType, string message, string stackTrace)
         {
             Message = message;
             LogType = logType;
             StackTrace = stackTrace;
-            File = file;
         }
     }
 

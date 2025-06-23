@@ -1,4 +1,7 @@
 using UnityEngine;
+#if UNITY_6000_0_OR_NEWER
+using UnityEditor;
+#endif
 
 namespace io.github.hatayama.uMCP
 {
@@ -16,17 +19,17 @@ namespace io.github.hatayama.uMCP
             add
             {
 #if UNITY_6000_0_OR_NEWER
-                UnityEditor.ConsoleWindowUtility.consoleLogsChanged += value;
-#else
                 ConsoleWindowUtility.consoleLogsChanged += value;
+#else
+                GenelicConsoleWindowUtility.consoleLogsChanged += value;
 #endif
             }
             remove
             {
 #if UNITY_6000_0_OR_NEWER
-                UnityEditor.ConsoleWindowUtility.consoleLogsChanged -= value;
-#else
                 ConsoleWindowUtility.consoleLogsChanged -= value;
+#else
+                GenelicConsoleWindowUtility.consoleLogsChanged -= value;
 #endif
             }
         }
@@ -40,9 +43,9 @@ namespace io.github.hatayama.uMCP
         public static void GetConsoleLogCounts(out int errorCount, out int warningCount, out int logCount)
         {
 #if UNITY_6000_0_OR_NEWER
-            UnityEditor.ConsoleWindowUtility.GetConsoleLogCounts(out errorCount, out warningCount, out logCount);
-#else
             ConsoleWindowUtility.GetConsoleLogCounts(out errorCount, out warningCount, out logCount);
+#else
+            GenelicConsoleWindowUtility.GetConsoleLogCounts(out errorCount, out warningCount, out logCount);
 #endif
         }
 

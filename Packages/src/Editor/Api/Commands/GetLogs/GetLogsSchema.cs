@@ -7,10 +7,11 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public enum McpLogType
     {
-        Error,
-        Warning,
-        Log,
-        All
+        None = -1,
+        Log = 0,
+        Warning = 1,
+        Error = 2,
+        All = 3,
     }
 
     /// <summary>

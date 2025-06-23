@@ -103,13 +103,13 @@ namespace io.github.hatayama.uMCP
             {
                 switch (entry.LogType)
                 {
-                    case "Error":
+                    case McpLogType.Error:
                         errorCount++;
                         break;
-                    case "Warning":
+                    case McpLogType.Warning:
                         warningCount++;
                         break;
-                    case "Log":
+                    case McpLogType.Log:
                         logCount++;
                         break;
                 }

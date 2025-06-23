@@ -7,20 +7,16 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class LogEntry
     {
-        public string Type { get; set; }
+        public McpLogType Type { get; set; }
         public string Message { get; set; }
         public string StackTrace { get; set; }
-        public string File { get; set; }
 
-        public LogEntry(string type, string message, string stackTrace, string file)
+        public LogEntry(McpLogType type, string message, string stackTrace)
         {
             Type = type;
             Message = message;
             StackTrace = stackTrace;
-            File = file;
         }
-
-        public LogEntry() { }
     }
 
     /// <summary>
@@ -77,14 +73,6 @@ namespace io.github.hatayama.uMCP
             SearchText = searchText;
             IncludeStackTrace = includeStackTrace;
             Logs = logs ?? Array.Empty<LogEntry>();
-        }
-
-        /// <summary>
-        /// Parameterless constructor for JSON deserialization
-        /// </summary>
-        public GetLogsResponse()
-        {
-            Logs = Array.Empty<LogEntry>();
         }
     }
 } 
