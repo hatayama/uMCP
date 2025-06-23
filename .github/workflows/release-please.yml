@@ -3,7 +3,13 @@ name: release-please
 on:
   push:
     branches:
-      - main        # ← デフォブランチに合わせて
+      - main        # Default branch
+  # Enable manual execution via "Run workflow" button in browser
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Target branch name (uses current ref if not specified)'
+        required: false
 
 permissions:
   contents: write
@@ -17,24 +23,28 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0      # タグ取得に必須
+          fetch-depth: 0      # Required for tag fetching
 
-      # ── デバッグ：リポ構造を出力 ─────────────────────────
+      # ── Debug: Show repository structure ─────────────────────────
       - name: 🕵️ Show file tree
         run: |
           echo "PWD: $(pwd)"
           echo "===== ls -R ====="
           ls -R
 
-      # ── package.json が本当にあるか簡易チェック ─────────
+      # ── Sanity check for package.json files ─────────
       - name: 🧪 Sanity check
         run: |
           test -f Packages/src/package.json && echo "✅ Unity package.json OK"
           test -f Packages/src/TypeScriptServer/package.json && echo "✅ TypeScript package.json OK"
 
-      # ── release‑please 本番 ───────────────────────────
+      # ── Execute release-please ───────────────────────────
       - name: 🚀 Run release‑please
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v3
         with:
+          path: Packages/src
+          release-type: node
+          package-name: "io.github.hatayama.umcp"
           token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: release-please-config.json
+          extra-files: |
+            TypeScriptServer/package.json
