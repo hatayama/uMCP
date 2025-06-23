@@ -13,6 +13,7 @@ import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
 import { mcpDebug, mcpInfo, mcpError, mcpWarn } from './utils/mcp-debug.js';
 import { ENVIRONMENT, DEFAULT_MESSAGES } from './constants.js';
+import packageJson from '../package.json' assert { type: 'json' };
 
 /**
  * Simple Unity MCP Server for testing notifications
@@ -35,8 +36,8 @@ class SimpleMcpServer {
     
     this.server = new Server(
       {
-        name: 'unity-mcp-server-simple',
-        version: '0.1.0',
+        name: 'umcp-server',
+        version: packageJson.version,
       },
       {
         capabilities: {

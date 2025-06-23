@@ -6061,6 +6061,63 @@ var DynamicUnityCommandTool = class extends BaseTool {
   }
 };
 
+// package.json
+var package_default = {
+  name: "umcp-server",
+  version: "0.5.0",
+  description: "TypeScript MCP Server for Unity-Cursor integration",
+  main: "dist/server.bundle.js",
+  type: "module",
+  scripts: {
+    build: "npm run build:bundle",
+    "build:tsc": "tsc",
+    "build:webpack": "webpack --mode production",
+    "build:bundle": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
+    "build:production": "UMCP_PRODUCTION=true NODE_ENV=production esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
+    dev: "NODE_ENV=development npm run build:bundle && NODE_ENV=development node dist/server.bundle.js",
+    "dev:watch": "NODE_ENV=development esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os --watch",
+    start: "node dist/server.bundle.js",
+    "start:production": "UMCP_PRODUCTION=true node dist/server.bundle.js",
+    "start:dev": "NODE_ENV=development node dist/server.bundle.js",
+    test: "jest",
+    "test:mcp": "tsx src/test-runner.ts",
+    "test:integration": "tsx src/integration-test.ts",
+    "test:watch": "jest --watch",
+    validate: "npm run test:integration && echo '\u2705 Integration tests passed - safe to deploy'",
+    deploy: "npm run validate && npm run build",
+    "debug:compile": "node debug/compile-check.js",
+    "debug:logs": "node debug/logs-fetch.js",
+    "debug:connection": "node debug/connection-check.js",
+    "debug:all-logs": "node debug/all-logs-fetch.js",
+    prepublishOnly: "npm run build",
+    postinstall: "npm run build"
+  },
+  keywords: [
+    "mcp",
+    "unity",
+    "cursor",
+    "typescript"
+  ],
+  author: "hatayama",
+  license: "MIT",
+  dependencies: {
+    "@modelcontextprotocol/sdk": "1.12.2",
+    zod: "3.25.64"
+  },
+  devDependencies: {
+    "@types/jest": "^29.5.14",
+    "@types/node": "20.19.0",
+    esbuild: "^0.24.0",
+    jest: "^30.0.0",
+    "ts-jest": "^29.4.0",
+    "ts-loader": "9.5.2",
+    tsx: "4.20.3",
+    typescript: "5.8.3",
+    webpack: "5.99.9",
+    "webpack-cli": "5.1.4"
+  }
+};
+
 // src/server.ts
 var SimpleMcpServer = class {
   server;
@@ -6076,8 +6133,8 @@ var SimpleMcpServer = class {
     DebugLogger.info(`Development mode: ${this.isDevelopment}`);
     this.server = new Server(
       {
-        name: "unity-mcp-server-simple",
-        version: "0.1.0"
+        name: "umcp-server",
+        version: package_default.version
       },
       {
         capabilities: {
