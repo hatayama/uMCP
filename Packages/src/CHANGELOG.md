@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/hatayama/uMCP/compare/v0.5.1...v0.6.0) (2025-06-23)
+
+
+### Features
+
+* Automatic reconnection after domain reload ([#51](https://github.com/hatayama/uMCP/issues/51)) ([09dfd48](https://github.com/hatayama/uMCP/commit/09dfd48ddaecc9b83bcb1a9edf5df83d36eb2b64))
+
 ## [0.5.1](https://github.com/hatayama/uMCP/compare/v0.5.0...v0.5.1) (2025-06-23)
 
 
