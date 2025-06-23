@@ -23,7 +23,6 @@ namespace io.github.hatayama.uMCP
         {
             CustomCommandManager.RegisterCustomCommand(new HelloWorldCommand());
             CustomCommandManager.RegisterCustomCommand(new GetProjectInfoCommand());
-            CustomCommandManager.RegisterCustomCommand(new AdvancedCustomCommand());
             CustomCommandManager.RegisterCustomCommand(new GetVersionCommand());
             
             Debug.Log("Sample custom commands registered successfully!");
