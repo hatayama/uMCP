@@ -5560,6 +5560,14 @@ var TIMEOUTS = {
   GET_LOGS: 1e4,
   RUN_TESTS: 6e4
 };
+var DEFAULT_MESSAGES = {
+  PING: "Hello Unity MCP!",
+  UNITY_PING: "Hello from TypeScript MCP Server"
+};
+var ENVIRONMENT = {
+  NODE_ENV_DEVELOPMENT: "development",
+  NODE_ENV_PRODUCTION: "production"
+};
 var ERROR_MESSAGES = {
   NOT_CONNECTED: "Unity MCP Bridge is not connected",
   CONNECTION_FAILED: "Unity connection failed",
@@ -6062,13 +6070,9 @@ var SimpleMcpServer = class {
   dynamicTools = /* @__PURE__ */ new Map();
   availableCommands = [];
   constructor() {
-    const ENV_KEY_UMCP_DEBUG = "UMCP_DEBUG";
-    const ENV_KEY_UMCP_PRODUCTION = "UMCP_PRODUCTION";
-    const ENV_KEY_NODE_ENV = "NODE_ENV";
-    const ENV_VALUE_TRUE = "true";
-    const ENV_VALUE_DEVELOPMENT = "development";
-    this.isDevelopment = process.env[ENV_KEY_UMCP_DEBUG] === ENV_VALUE_TRUE || process.env[ENV_KEY_NODE_ENV] === ENV_VALUE_DEVELOPMENT && process.env[ENV_KEY_UMCP_PRODUCTION] !== ENV_VALUE_TRUE;
+    this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     DebugLogger.info("Simple Unity MCP Server Starting");
+    DebugLogger.info(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
     DebugLogger.info(`Development mode: ${this.isDevelopment}`);
     this.server = new Server(
       {
@@ -6093,7 +6097,9 @@ var SimpleMcpServer = class {
     try {
       mcpInfo("[Simple MCP] Fetching Unity command details with schemas...");
       await this.unityClient.ensureConnected();
+      mcpInfo("[Simple MCP] Unity connection established successfully");
       const commandDetails = await this.unityClient.executeCommand("getCommandDetails", {});
+      mcpInfo("[Simple MCP] Raw command details response:", commandDetails);
       if (!Array.isArray(commandDetails)) {
         mcpError("[Simple MCP] Invalid command details response:", commandDetails);
         return;
@@ -6147,7 +6153,7 @@ var SimpleMcpServer = class {
             message: {
               type: "string",
               description: "Message to send to Unity",
-              default: "Hello from TypeScript MCP Server"
+              default: DEFAULT_MESSAGES.UNITY_PING
             }
           }
         }
@@ -6169,7 +6175,7 @@ var SimpleMcpServer = class {
               message: {
                 type: "string",
                 description: "Test message",
-                default: "Hello Unity MCP!"
+                default: DEFAULT_MESSAGES.PING
               }
             }
           }
@@ -6185,6 +6191,7 @@ var SimpleMcpServer = class {
         });
       }
       DebugLogger.debug(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
+      mcpInfo(`[Simple MCP] Providing ${tools.length} tools to MCP client:`, tools.map((t) => t.name));
       return { tools };
     });
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -6228,7 +6235,7 @@ var SimpleMcpServer = class {
    * Handle Unity ping command
    */
   async handleUnityPing(args) {
-    const message = args?.message || "Hello from TypeScript MCP Server";
+    const message = args?.message || DEFAULT_MESSAGES.UNITY_PING;
     try {
       await this.unityClient.ensureConnected();
       const response = await this.unityClient.ping(message);
@@ -6283,7 +6290,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
    * Handle TypeScript ping command (dev only)
    */
   async handlePing(args) {
-    const message = args?.message || "Hello Unity MCP!";
+    const message = args?.message || DEFAULT_MESSAGES.PING;
     return {
       content: [
         {

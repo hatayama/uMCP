@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
-import { TOOL_NAMES } from '../constants.js';
+import { TOOL_NAMES, DEFAULT_MESSAGES } from '../constants.js';
 import { DebugLogger } from '../utils/debug-logger.js';
 
 /**
@@ -16,14 +16,14 @@ export class UnityPingTool extends BaseTool {
       message: {
         type: 'string',
         description: 'Message to send to Unity',
-        default: 'Hello from TypeScript MCP Server'
+        default: DEFAULT_MESSAGES.UNITY_PING
       }
     }
   };
 
   protected validateArgs(args: unknown) {
     const schema = z.object({
-      message: z.string().default('Hello from TypeScript MCP Server')
+      message: z.string().default(DEFAULT_MESSAGES.UNITY_PING)
     });
     return schema.parse(args || {});
   }
