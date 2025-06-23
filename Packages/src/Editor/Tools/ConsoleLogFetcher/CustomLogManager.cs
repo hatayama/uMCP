@@ -25,22 +25,13 @@ namespace io.github.hatayama.uMCP
             Application.logMessageReceived += OnLogMessageReceived;
             
             // Detect Console log clearing.
-            Type consoleWindowUtilityType = typeof(EditorWindow).Assembly.GetType("UnityEditor.ConsoleWindowUtility");
-            if (consoleWindowUtilityType != null)
-            {
-                System.Reflection.EventInfo consoleLogsChangedEvent = consoleWindowUtilityType.GetEvent("consoleLogsChanged");
-                if (consoleLogsChangedEvent != null)
-                {
-                    Delegate handler = Delegate.CreateDelegate(consoleLogsChangedEvent.EventHandlerType, this, nameof(OnConsoleLogsChanged));
-                    consoleLogsChangedEvent.AddEventHandler(null, handler);
-                }
-            }
+            ConsoleUtility.consoleLogsChanged += OnConsoleLogsChanged;
         }
 
-        private void OnLogMessageReceived(string logString, string stackTrace, LogType type)
+        private void OnLogMessageReceived(string condition, string stackTrace, LogType type)
         {
             string logTypeString = ConvertLogTypeToString(type);
-            LogEntryDto logEntry = new LogEntryDto(logString, logTypeString, stackTrace ?? "", "");
+            LogEntryDto logEntry = new LogEntryDto(condition, logTypeString, stackTrace ?? "", "");
 
             lock (lockObject)
             {
@@ -51,22 +42,22 @@ namespace io.github.hatayama.uMCP
         private void OnConsoleLogsChanged()
         {
             // If the Console is cleared, clear the custom logs as well.
-            ConsoleWindowUtility.GetConsoleLogCounts(out int err, out int warn, out int log);
+            ConsoleUtility.GetConsoleLogCounts(out int err, out int warn, out int log);
             if (err == 0 && warn == 0 && log == 0)
             {
                 ClearLogs();
             }
         }
 
-        private string ConvertLogTypeToString(LogType logType)
+        private string ConvertLogTypeToString(LogType mpcLogType)
         {
-            return logType switch
+            return mpcLogType switch
             {
-                LogType.Error => "Error",
-                LogType.Assert => "Assert",
-                LogType.Warning => "Warning",
                 LogType.Log => "Log",
+                LogType.Warning => "Warning",
+                LogType.Error => "Error",
                 LogType.Exception => "Exception",
+                LogType.Assert => "Assert",
                 _ => "Unknown"
             };
         }
@@ -163,6 +154,7 @@ namespace io.github.hatayama.uMCP
         public void Dispose()
         {
             Application.logMessageReceived -= OnLogMessageReceived;
+            ConsoleUtility.consoleLogsChanged -= OnConsoleLogsChanged;
             
             lock (lockObject)
             {
