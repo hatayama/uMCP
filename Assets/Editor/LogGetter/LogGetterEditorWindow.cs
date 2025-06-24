@@ -156,9 +156,9 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            // 統計表示
+            // Statistics display
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Label($"Console統計:", EditorStyles.miniLabel, GUILayout.Width(80));
+            GUILayout.Label($"Console Stats:", EditorStyles.miniLabel, GUILayout.Width(80));
             GUILayout.Label($"Log: {logCount}", EditorStyles.miniLabel, GUILayout.Width(60));
             GUILayout.Label($"Warning: {warningCount}", EditorStyles.miniLabel, GUILayout.Width(80));
             GUILayout.Label($"Error: {errorCount}", EditorStyles.miniLabel, GUILayout.Width(70));

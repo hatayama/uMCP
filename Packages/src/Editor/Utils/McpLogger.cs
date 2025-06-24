@@ -3,19 +3,19 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Unity MCP Server関連のログを統一的に管理するクラス
+    /// Class for unified management of Unity MCP Server related logs
     /// </summary>
     public static class McpLogger
     {
         private const string LOG_PREFIX = "[Unity MCP]";
         
         /// <summary>
-        /// デバッグログを出力するかどうか
+        /// Whether to output debug logs
         /// </summary>
         public static bool EnableDebugLog { get; set; } = false;
         
         /// <summary>
-        /// 情報ログを出力する
+        /// Output information log
         /// </summary>
         public static void LogInfo(string message)
         {
@@ -26,7 +26,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// 警告ログを出力する
+        /// Output warning log
         /// </summary>
         public static void LogWarning(string message)
         {
@@ -37,7 +37,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// エラーログを出力する
+        /// Output error log
         /// </summary>
         public static void LogError(string message)
         {
@@ -48,7 +48,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// デバッグログを出力する（EnableDebugLogがtrueの場合のみ）
+        /// Output debug log (only when EnableDebugLog is true)
         /// </summary>
         public static void LogDebug(string message)
         {
@@ -59,7 +59,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// JSON-RPC通信ログを出力する
+        /// Output JSON-RPC communication log
         /// </summary>
         public static void LogJsonRpc(string direction, string content)
         {
@@ -70,7 +70,7 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// クライアント接続ログを出力する
+        /// Output client connection log
         /// </summary>
         public static void LogClientConnection(string clientEndpoint, bool connected)
         {
