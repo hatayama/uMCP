@@ -22,6 +22,7 @@ namespace io.github.hatayama.uMCP
         public const string ENV_KEY_UMCP_DEBUG = "UMCP_DEBUG";
         public const string ENV_KEY_UMCP_PRODUCTION = "UMCP_PRODUCTION";
         public const string ENV_KEY_NODE_ENV = "NODE_ENV";
+        public const string ENV_KEY_MCP_DEBUG = "MCP_DEBUG";
         
         // Environment variable values
         public const string ENV_VALUE_TRUE = "true";

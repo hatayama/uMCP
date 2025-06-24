@@ -437,7 +437,7 @@ namespace io.github.hatayama.uMCP
                 string configPath = UnityMcpPathResolver.GetConfigPath(selectedEditorType);
                 if (GUILayout.Button("Open Configuration File"))
                 {
-                    EditorUtility.RevealInFinder(configPath);
+                    Application.OpenURL("file://" + configPath);
                 }
             }
             else
@@ -452,6 +452,8 @@ namespace io.github.hatayama.uMCP
             {
                 int portToUse = isServerRunning ? currentServerPort : customPort;
                 configService.AutoConfigure(portToUse);
+                // Also update development settings to reflect current UI state
+                configService.UpdateDevelopmentSettings(portToUse, enableDevelopmentMode, enableMcpLogs);
                 Repaint();
             }
             
@@ -489,7 +491,7 @@ namespace io.github.hatayama.uMCP
                     McpEditorSettings.SetEnableDevelopmentMode(enableDevelopmentMode);
                     
                     // Update mcp.json immediately
-                    UpdateMcpConfigForDevelopmentMode();
+                    UpdateMcpConfigForDevelopmentSettings();
                 }
                 
                 EditorGUILayout.HelpBox(
@@ -508,6 +510,9 @@ namespace io.github.hatayama.uMCP
                 {
                     enableMcpLogs = newEnableMcpLogs;
                     McpEditorSettings.SetEnableMcpLogs(enableMcpLogs);
+                    
+                    // Update mcp.json immediately
+                    UpdateMcpConfigForDevelopmentSettings();
                 }
                 
                 // Communication logs toggle
@@ -847,9 +852,9 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Update MCP configuration for development mode
+        /// Update MCP configuration for development mode and MCP logs
         /// </summary>
-        private void UpdateMcpConfigForDevelopmentMode()
+        private void UpdateMcpConfigForDevelopmentSettings()
         {
             try
             {
@@ -860,10 +865,10 @@ namespace io.github.hatayama.uMCP
                 // Get current port
                 int portToUse = McpServerController.IsServerRunning ? McpServerController.ServerPort : customPort;
                 
-                // Update only development mode environment variables (preserve other settings)
-                configService.UpdateDevelopmentMode(portToUse, enableDevelopmentMode);
+                // Update development mode and MCP logs environment variables (preserve other settings)
+                configService.UpdateDevelopmentSettings(portToUse, enableDevelopmentMode, enableMcpLogs);
                 
-                McpLogger.LogInfo($"Updated {editorDisplayName} development mode setting: {enableDevelopmentMode}");
+                McpLogger.LogInfo($"Updated {editorDisplayName} settings - Development mode: {enableDevelopmentMode}, MCP logs: {enableMcpLogs}");
                 
                 // Log configuration file path for debugging
                 string configPath = UnityMcpPathResolver.GetConfigPath(selectedEditorType);
@@ -871,15 +876,16 @@ namespace io.github.hatayama.uMCP
                 
                 // Log update confirmation instead of showing dialog
                 string modeText = enableDevelopmentMode ? "Development Mode (debug tools enabled)" : "Production Mode (debug tools disabled)";
-                McpLogger.LogInfo($"{editorDisplayName} configuration updated successfully! Mode: {modeText}. Restart Cursor to apply changes.");
+                string logsText = enableMcpLogs ? "MCP logs enabled" : "MCP logs disabled";
+                McpLogger.LogInfo($"{editorDisplayName} configuration updated successfully! Mode: {modeText}, {logsText}. Restart Claude Code to apply changes.");
             }
             catch (System.Exception ex)
             {
                 string editorDisplayName = GetEditorDisplayName(selectedEditorType);
                 EditorUtility.DisplayDialog("Configuration Error", 
-                    $"Failed to update {editorDisplayName} development mode: {ex.Message}", 
+                    $"Failed to update {editorDisplayName} development settings: {ex.Message}", 
                     "OK");
-                McpLogger.LogError($"Failed to update {editorDisplayName} development mode: {ex.Message}");
+                McpLogger.LogError($"Failed to update {editorDisplayName} development settings: {ex.Message}");
             }
         }
     }

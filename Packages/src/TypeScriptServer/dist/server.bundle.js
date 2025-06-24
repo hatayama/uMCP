@@ -5481,8 +5481,8 @@ var DebugLogger = class {
    */
   static debug(message, data) {
     if (!this.isDebugEnabled) return;
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp}] [DEBUG] ${message}`;
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp2}] [DEBUG] ${message}`;
     if (data !== void 0) {
       console.error(logMessage, data);
     } else {
@@ -5494,8 +5494,8 @@ var DebugLogger = class {
    */
   static info(message, data) {
     if (!this.isDebugEnabled) return;
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp}] [INFO] ${message}`;
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp2}] [INFO] ${message}`;
     if (data !== void 0) {
       console.error(logMessage, data);
     } else {
@@ -5506,8 +5506,8 @@ var DebugLogger = class {
    * Log error message to stderr
    */
   static error(message, error) {
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp}] [ERROR] ${message}`;
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp2}] [ERROR] ${message}`;
     if (error !== void 0) {
       console.error(logMessage, error);
     } else {
@@ -5583,20 +5583,22 @@ var POLLING = {
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-var logDir = path.join(os.homedir(), "tmp");
-var logFile = path.join(logDir, "mcp-debug.log");
-try {
-  fs.mkdirSync(logDir, { recursive: true });
-} catch (error) {
-}
+var logDir = path.join(os.homedir(), ".claude", "umcp-logs");
+var timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").split("T");
+var dateStr = timestamp[0];
+var timeStr = timestamp[1].split(".")[0];
+var logFile = path.join(logDir, `mcp-debug-${dateStr}_${timeStr}.log`);
+var directoryCreated = false;
 var writeToFile = (message) => {
   try {
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    fs.appendFileSync(logFile, `${timestamp} ${message}
+    if (!directoryCreated) {
+      fs.mkdirSync(logDir, { recursive: true });
+      directoryCreated = true;
+    }
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+    fs.appendFileSync(logFile, `${timestamp2} ${message}
 `);
   } catch (error) {
-    process.stderr.write(`[FILE-WRITE-ERROR] ${message}
-`);
   }
 };
 var mcpDebug = (...args) => {
@@ -5604,8 +5606,6 @@ var mcpDebug = (...args) => {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(" ");
-    process.stderr.write(`[MCP-DEBUG] ${message}
-`);
     writeToFile(`[MCP-DEBUG] ${message}`);
   }
 };
@@ -5614,8 +5614,6 @@ var mcpInfo = (...args) => {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(" ");
-    process.stderr.write(`[MCP-INFO] ${message}
-`);
     writeToFile(`[MCP-INFO] ${message}`);
   }
 };
@@ -5624,8 +5622,6 @@ var mcpWarn = (...args) => {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(" ");
-    process.stderr.write(`[MCP-WARN] ${message}
-`);
     writeToFile(`[MCP-WARN] ${message}`);
   }
 };
@@ -5634,8 +5630,6 @@ var mcpError = (...args) => {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(" ");
-    process.stderr.write(`[MCP-ERROR] ${message}
-`);
     writeToFile(`[MCP-ERROR] ${message}`);
   }
 };
