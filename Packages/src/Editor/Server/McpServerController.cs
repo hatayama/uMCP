@@ -1,5 +1,6 @@
 using UnityEditor;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
@@ -152,13 +153,7 @@ namespace io.github.hatayama.uMCP
             // This ensures schema changes (descriptions, parameters) are communicated to Cursor
             if (IsServerRunning)
             {
-                // Use delayCall for timing adjustment after domain reload, not for thread switching
-                // This ensures Unity Editor is in a stable state before sending notifications
-                EditorApplication.delayCall += () =>
-                {
-                    McpLogger.LogInfo("Sending command change notification after compilation completion");
-                    UnityCommandRegistry.TriggerCommandsChangedNotification();
-                };
+                SendCommandNotificationAfterCompilation();
             }
             else
             {
@@ -185,12 +180,7 @@ namespace io.github.hatayama.uMCP
                     McpLogger.LogInfo("Server already running. Clearing post-compile flag.");
                     
                     // Send notification for post-compilation changes
-                    // Use delayCall for timing adjustment, ensuring stable state after compilation
-                    EditorApplication.delayCall += () =>
-                    {
-                        McpLogger.LogInfo("Sending command change notification for post-compilation changes (server already running)");
-                        UnityCommandRegistry.TriggerCommandsChangedNotification();
-                    };
+                    SendCommandNotificationForPostCompile();
                 }
                 return;
             }
@@ -209,11 +199,7 @@ namespace io.github.hatayama.uMCP
                     McpLogger.LogInfo("Detected post-compile state. Restoring server immediately...");
                     
                     // Wait a short while before restarting immediately (to release TCP port).
-                    // Use delayCall for timing adjustment, not thread switching
-                    EditorApplication.delayCall += () =>
-                    {
-                        TryRestoreServerWithRetry(savedPort, 0);
-                    };
+                    RestoreServerAfterCompile(savedPort);
                 }
                 else
                 {
@@ -225,11 +211,8 @@ namespace io.github.hatayama.uMCP
                     {
                         McpLogger.LogInfo("Auto Start Server is enabled. Restoring server with delay...");
                         
-                        // Use delayCall for startup delay, ensuring Unity Editor is ready
-                        EditorApplication.delayCall += () =>
-                        {
-                            TryRestoreServerWithRetry(savedPort, 0);
-                        };
+                        // Wait for Unity Editor to be ready before auto-starting
+                        RestoreServerOnStartup(savedPort);
                     }
                     else
                     {
@@ -268,12 +251,7 @@ namespace io.github.hatayama.uMCP
                 
                 // Send commands changed notification after server restoration
                 // This ensures TypeScript clients can receive the notification
-                // Use delayCall for timing adjustment, ensuring server is fully ready
-                EditorApplication.delayCall += () =>
-                {
-                    McpLogger.LogInfo("[DEBUG] Sending commands changed notification after server restoration");
-                    SendCommandsChangedNotification();
-                };
+                SendNotificationAfterRestore();
             }
             catch (System.Exception ex)
             {
@@ -282,12 +260,8 @@ namespace io.github.hatayama.uMCP
                 // If the maximum number of retries has not been reached, try again.
                 if (retryCount < maxRetries)
                 {
-                    // Use delayCall for retry delay, allowing time for port release
-                    EditorApplication.delayCall += () =>
-                    {
-                        // Do not change the port number; retry with the same port.
-                        TryRestoreServerWithRetry(port, retryCount + 1);
-                    };
+                    // Wait for port release before retry
+                    RetryServerRestore(port, retryCount);
                 }
                 else
                 {
@@ -413,6 +387,77 @@ namespace io.github.hatayama.uMCP
             {
                 McpLogger.LogDebug("Server not running, skipping command change notification");
             }
+        }
+        
+        /// <summary>
+        /// Send command notification after compilation with frame delay
+        /// </summary>
+        private static async void SendCommandNotificationAfterCompilation()
+        {
+            // Use frame delay for timing adjustment after domain reload
+            // This ensures Unity Editor is in a stable state before sending notifications
+            await EditorDelay.DelayFrame(1);
+            
+            McpLogger.LogInfo("Sending command change notification after compilation completion");
+            UnityCommandRegistry.TriggerCommandsChangedNotification();
+        }
+        
+        /// <summary>
+        /// Send command notification for post-compilation changes
+        /// </summary>
+        private static async void SendCommandNotificationForPostCompile()
+        {
+            // Frame delay for timing adjustment, ensuring stable state after compilation
+            await EditorDelay.DelayFrame(1);
+            
+            McpLogger.LogInfo("Sending command change notification for post-compilation changes (server already running)");
+            UnityCommandRegistry.TriggerCommandsChangedNotification();
+        }
+        
+        /// <summary>
+        /// Restore server after compilation with frame delay
+        /// </summary>
+        private static async void RestoreServerAfterCompile(int port)
+        {
+            // Wait a short while for timing adjustment (TCP port release)
+            await EditorDelay.DelayFrame(1);
+            
+            TryRestoreServerWithRetry(port, 0);
+        }
+        
+        /// <summary>
+        /// Restore server on startup with frame delay
+        /// </summary>
+        private static async void RestoreServerOnStartup(int port)
+        {
+            // Wait for Unity Editor to be ready before auto-starting
+            await EditorDelay.DelayFrame(1);
+            
+            TryRestoreServerWithRetry(port, 0);
+        }
+        
+        /// <summary>
+        /// Send notification after server restore with frame delay
+        /// </summary>
+        private static async void SendNotificationAfterRestore()
+        {
+            // Frame delay for timing adjustment, ensuring server is fully ready
+            await EditorDelay.DelayFrame(1);
+            
+            McpLogger.LogInfo("[DEBUG] Sending commands changed notification after server restoration");
+            SendCommandsChangedNotification();
+        }
+        
+        /// <summary>
+        /// Retry server restore with frame delay
+        /// </summary>
+        private static async void RetryServerRestore(int port, int retryCount)
+        {
+            // Wait longer for port release before retry
+            await EditorDelay.DelayFrame(5);
+            
+            // Do not change the port number; retry with the same port
+            TryRestoreServerWithRetry(port, retryCount + 1);
         }
 
 
