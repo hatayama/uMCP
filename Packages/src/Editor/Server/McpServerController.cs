@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEditor;
 using Newtonsoft.Json;
 
@@ -159,7 +160,7 @@ namespace io.github.hatayama.uMCP
             // This ensures schema changes (descriptions, parameters) are communicated to Cursor
             if (IsServerRunning)
             {
-                SendCommandNotificationAfterCompilation();
+                _ = SendCommandNotificationAfterCompilation();
             }
             else
             {
@@ -186,7 +187,7 @@ namespace io.github.hatayama.uMCP
                     McpLogger.LogInfo("Server already running. Clearing post-compile flag.");
                     
                     // Send notification for post-compilation changes
-                    SendCommandNotificationForPostCompile();
+                    _ = SendCommandNotificationForPostCompile();
                 }
                 return;
             }
@@ -205,7 +206,7 @@ namespace io.github.hatayama.uMCP
                     McpLogger.LogInfo("Detected post-compile state. Restoring server immediately...");
                     
                     // Wait a short while before restarting immediately (to release TCP port).
-                    RestoreServerAfterCompile(savedPort);
+                    _ = RestoreServerAfterCompile(savedPort);
                 }
                 else
                 {
@@ -218,7 +219,7 @@ namespace io.github.hatayama.uMCP
                         McpLogger.LogInfo("Auto Start Server is enabled. Restoring server with delay...");
                         
                         // Wait for Unity Editor to be ready before auto-starting
-                        RestoreServerOnStartup(savedPort);
+                        _ = RestoreServerOnStartup(savedPort);
                     }
                     else
                     {
@@ -257,7 +258,7 @@ namespace io.github.hatayama.uMCP
                 
                 // Send commands changed notification after server restoration
                 // This ensures TypeScript clients can receive the notification
-                SendNotificationAfterRestore();
+                _ = SendNotificationAfterRestore();
             }
             catch (System.Exception ex)
             {
@@ -267,7 +268,7 @@ namespace io.github.hatayama.uMCP
                 if (retryCount < maxRetries)
                 {
                     // Wait for port release before retry
-                    RetryServerRestore(port, retryCount);
+                    _ = RetryServerRestore(port, retryCount);
                 }
                 else
                 {
@@ -325,12 +326,18 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Send commands changed notification to TypeScript side
         /// </summary>
-        private static void SendCommandsChangedNotification()
+        private static async Task SendCommandsChangedNotification()
         {
-            McpLogger.LogInfo("[DEBUG] SendCommandsChangedNotification called");
+            McpLogger.LogInfo("SendCommandsChangedNotification called");
             
             try
             {
+                if (mcpServer == null)
+                {
+                    McpLogger.LogInfo("mcpServer is null, cannot send notification");
+                    return;
+                }
+                
                 // Send both notification formats to ensure compatibility
                 var notificationParams = new
                 {
@@ -338,7 +345,7 @@ namespace io.github.hatayama.uMCP
                     message = "Unity commands have been updated"
                 };
                 
-                // 1. Send MCP standard notification
+                // Send MCP standard notification first
                 var mcpNotification = new
                 {
                     jsonrpc = McpServerConfig.JSONRPC_VERSION,
@@ -346,7 +353,15 @@ namespace io.github.hatayama.uMCP
                     @params = notificationParams
                 };
                 
-                // 2. Send custom commandsChanged notification
+                string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
+                McpLogger.LogInfo($"Sending MCP notification: {mcpNotificationJson}");
+                
+                _ = mcpServer.SendNotificationToClients(mcpNotificationJson);
+                
+                // Add small delay to prevent connection reset issues
+                await EditorDelay.DelayFrame(1);
+                
+                // Send custom commandsChanged notification
                 var customNotification = new
                 {
                     jsonrpc = McpServerConfig.JSONRPC_VERSION,
@@ -354,28 +369,17 @@ namespace io.github.hatayama.uMCP
                     @params = notificationParams
                 };
                 
-                string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
                 string customNotificationJson = JsonConvert.SerializeObject(customNotification);
+                McpLogger.LogInfo($"Sending custom notification: {customNotificationJson}");
                 
-                McpLogger.LogInfo($"[DEBUG] MCP Notification JSON: {mcpNotificationJson}");
-                McpLogger.LogInfo($"[DEBUG] Custom Notification JSON: {customNotificationJson}");
+                _ = mcpServer.SendNotificationToClients(customNotificationJson);
                 
-                // Send notification through the bridge server
-                if (mcpServer == null)
-                {
-                    McpLogger.LogInfo("[DEBUG] mcpServer is null, cannot send notification");
-                    return;
-                }
-                
-                McpLogger.LogInfo("[DEBUG] Sending both notification formats");
-                mcpServer?.SendNotificationToClients(mcpNotificationJson);
-                mcpServer?.SendNotificationToClients(customNotificationJson);
-                McpLogger.LogInfo("[DEBUG] SendCommandsChangedNotification completed successfully");
+                McpLogger.LogInfo("SendCommandsChangedNotification completed successfully");
             }
             catch (System.Exception ex)
             {
                 McpLogger.LogError($"Failed to send commands changed notification: {ex.Message}");
-                McpLogger.LogError($"[DEBUG] Exception in SendCommandsChangedNotification: {ex}");
+                McpLogger.LogError($"Exception details: {ex}");
             }
         }
 
@@ -387,7 +391,7 @@ namespace io.github.hatayama.uMCP
         {
             if (IsServerRunning)
             {
-                SendCommandsChangedNotification();
+                _ = SendCommandsChangedNotification();
             }
             else
             {
@@ -398,7 +402,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Send command notification after compilation with frame delay
         /// </summary>
-        private static async void SendCommandNotificationAfterCompilation()
+        private static async Task SendCommandNotificationAfterCompilation()
         {
             // Use frame delay for timing adjustment after domain reload
             // This ensures Unity Editor is in a stable state before sending notifications
@@ -411,7 +415,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Send command notification for post-compilation changes
         /// </summary>
-        private static async void SendCommandNotificationForPostCompile()
+        private static async Task SendCommandNotificationForPostCompile()
         {
             // Frame delay for timing adjustment, ensuring stable state after compilation
             await EditorDelay.DelayFrame(1);
@@ -423,7 +427,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Restore server after compilation with frame delay
         /// </summary>
-        private static async void RestoreServerAfterCompile(int port)
+        private static async Task RestoreServerAfterCompile(int port)
         {
             // Wait a short while for timing adjustment (TCP port release)
             await EditorDelay.DelayFrame(1);
@@ -434,7 +438,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Restore server on startup with frame delay
         /// </summary>
-        private static async void RestoreServerOnStartup(int port)
+        private static async Task RestoreServerOnStartup(int port)
         {
             // Wait for Unity Editor to be ready before auto-starting
             await EditorDelay.DelayFrame(1);
@@ -445,19 +449,19 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Send notification after server restore with frame delay
         /// </summary>
-        private static async void SendNotificationAfterRestore()
+        private static async Task SendNotificationAfterRestore()
         {
             // Frame delay for timing adjustment, ensuring server is fully ready
             await EditorDelay.DelayFrame(1);
             
             McpLogger.LogInfo("[DEBUG] Sending commands changed notification after server restoration");
-            SendCommandsChangedNotification();
+            _ = SendCommandsChangedNotification();
         }
         
         /// <summary>
         /// Retry server restore with frame delay
         /// </summary>
-        private static async void RetryServerRestore(int port, int retryCount)
+        private static async Task RetryServerRestore(int port, int retryCount)
         {
             // Wait longer for port release before retry
             await EditorDelay.DelayFrame(5);

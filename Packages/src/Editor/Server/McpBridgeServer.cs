@@ -282,6 +282,7 @@ namespace io.github.hatayama.uMCP
                     connectedClients.TryAdd(clientEndpoint, stream);
                     McpLogger.LogDebug($"Client {clientEndpoint} added to notification list");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
+                    string incompleteJson = string.Empty; // Buffer for incomplete JSON
                     
                     while (!cancellationToken.IsCancellationRequested && client.Connected)
                     {
@@ -303,18 +304,26 @@ namespace io.github.hatayama.uMCP
                              McpLogger.LogInfo($"<<<< Received COMPILE request from {clientEndpoint}");
                         }
 
-                        // Split by newline characters to process multiple requests.
-                        string[] requests = receivedData.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        // Combine with any incomplete JSON from previous buffer
+                        string dataToProcess = incompleteJson + receivedData;
+                        incompleteJson = string.Empty;
 
-                        foreach (string requestJson in requests)
+                        // Extract complete JSON messages
+                        string[] completeJsonMessages = ExtractCompleteJsonMessages(dataToProcess, out incompleteJson);
+
+                        foreach (string requestJson in completeJsonMessages)
                         {
                             if (string.IsNullOrWhiteSpace(requestJson)) continue;
                             
                             // JSON-RPC processing and response sending.
                             string responseJson = await JsonRpcProcessor.ProcessRequest(requestJson);
                             
-                            byte[] responseData = Encoding.UTF8.GetBytes(responseJson + "\n");
-                            await stream.WriteAsync(responseData, 0, responseData.Length, cancellationToken);
+                            // Only send response if it's not null (notifications return null)
+                            if (!string.IsNullOrEmpty(responseJson))
+                            {
+                                byte[] responseData = Encoding.UTF8.GetBytes(responseJson + "\n");
+                                await stream.WriteAsync(responseData, 0, responseData.Length, cancellationToken);
+                            }
                         }
                     }
                 }
@@ -333,7 +342,15 @@ namespace io.github.hatayama.uMCP
             }
             catch (IOException ex)
             {
-                McpLogger.LogWarning($"I/O error with client {clientEndpoint}: {ex.Message}");
+                // I/O errors are usually normal disconnections - log as info level
+                if (ex.Message.Contains("Connection reset by peer") || ex.Message.Contains("socket has been shut down"))
+                {
+                    McpLogger.LogInfo($"Client {clientEndpoint} disconnected normally");
+                }
+                else
+                {
+                    McpLogger.LogWarning($"I/O error with client {clientEndpoint}: {ex.Message}");
+                }
             }
             catch (Exception ex)
             {
@@ -357,7 +374,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="method">The notification method name</param>
         /// <param name="parameters">The notification parameters (optional)</param>
-        public async void SendNotificationToClients(string method, object parameters = null)
+        public async Task SendNotificationToClients(string method, object parameters = null)
         {
             if (connectedClients.IsEmpty)
             {
@@ -385,23 +402,23 @@ namespace io.github.hatayama.uMCP
         /// Sends a pre-formatted JSON-RPC notification to all connected clients.
         /// </summary>
         /// <param name="notificationJson">The complete JSON-RPC notification string</param>
-        public async void SendNotificationToClients(string notificationJson)
+        public async Task SendNotificationToClients(string notificationJson)
         {
-            McpLogger.LogInfo($"[DEBUG] SendNotificationToClients called with {connectedClients.Count} clients");
+            McpLogger.LogDebug($"SendNotificationToClients called with {connectedClients.Count} clients");
             
             if (connectedClients.IsEmpty)
             {
                 McpLogger.LogDebug("No connected clients to send notification");
-                McpLogger.LogInfo("[DEBUG] connectedClients is empty - no clients to notify");
+                McpLogger.LogDebug("connectedClients is empty - no clients to notify");
                 return;
             }
 
             // Log details of connected clients
-            McpLogger.LogInfo($"[DEBUG] Connected clients details:");
+            McpLogger.LogDebug($"Connected clients details:");
             foreach (KeyValuePair<string, NetworkStream> client in connectedClients)
             {
                 bool canWrite = client.Value?.CanWrite ?? false;
-                McpLogger.LogInfo($"[DEBUG] - Client: {client.Key}, CanWrite: {canWrite}");
+                McpLogger.LogDebug($"- Client: {client.Key}, CanWrite: {canWrite}");
             }
 
             // Ensure the JSON ends with a newline
@@ -412,61 +429,120 @@ namespace io.github.hatayama.uMCP
 
             byte[] notificationData = Encoding.UTF8.GetBytes(notificationJson);
             McpLogger.LogInfo($"Broadcasting pre-formatted notification to {connectedClients.Count} clients");
-            McpLogger.LogInfo($"[DEBUG] Notification data size: {notificationData.Length} bytes");
+            McpLogger.LogDebug($"Notification data size: {notificationData.Length} bytes");
 
             await SendNotificationData(notificationData);
         }
 
         /// <summary>
-        /// Common method to send notification data to all connected clients
+        /// Send notification data to all connected clients
         /// </summary>
         private async Task SendNotificationData(byte[] notificationData)
         {
-            McpLogger.LogInfo($"[DEBUG] SendNotificationData called - sending to {connectedClients.Count} clients");
-            
-            // Send to all connected clients
             List<string> clientsToRemove = new List<string>();
-            int successCount = 0;
-            int failureCount = 0;
             
             foreach (KeyValuePair<string, NetworkStream> client in connectedClients)
             {
                 try
                 {
-                    if (client.Value.CanWrite)
+                    if (client.Value?.CanWrite == true)
                     {
                         await client.Value.WriteAsync(notificationData, 0, notificationData.Length);
-                        McpLogger.LogDebug($"Notification sent to client: {client.Key}");
-                        McpLogger.LogInfo($"[DEBUG] Successfully sent notification to client: {client.Key}");
-                        successCount++;
                     }
                     else
                     {
-                        McpLogger.LogInfo($"[DEBUG] Client {client.Key} cannot write - marking for removal");
                         clientsToRemove.Add(client.Key);
-                        failureCount++;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    McpLogger.LogWarning($"Failed to send notification to client {client.Key}: {ex.Message}");
-                    McpLogger.LogInfo($"[DEBUG] Exception sending to client {client.Key}: {ex}");
+                    // Any error means client should be removed
                     clientsToRemove.Add(client.Key);
-                    failureCount++;
                 }
             }
-
-            McpLogger.LogInfo($"[DEBUG] Notification sending completed - Success: {successCount}, Failures: {failureCount}");
-
+            
             // Remove disconnected clients
             foreach (string clientKey in clientsToRemove)
             {
                 connectedClients.TryRemove(clientKey, out _);
-                McpLogger.LogDebug($"Removed disconnected client: {clientKey}");
-                McpLogger.LogInfo($"[DEBUG] Removed disconnected client: {clientKey}");
+            }
+        }
+
+        /// <summary>
+        /// Extract complete JSON messages from received data using JsonTextReader
+        /// Handles both objects and arrays, with proper Unicode and escape sequence support
+        /// </summary>
+        private string[] ExtractCompleteJsonMessages(string data, out string remainingIncomplete)
+        {
+            List<string> completeMessages = new List<string>();
+            remainingIncomplete = string.Empty;
+            
+            if (string.IsNullOrEmpty(data))
+            {
+                return completeMessages.ToArray();
             }
             
-            McpLogger.LogInfo($"[DEBUG] SendNotificationData completed - Remaining clients: {connectedClients.Count}");
+            // Split by lines first, then process each potential JSON
+            string[] lines = data.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            StringBuilder accumulatedJson = new StringBuilder();
+            
+            foreach (string line in lines)
+            {
+                string trimmedLine = line.Trim();
+                if (string.IsNullOrEmpty(trimmedLine))
+                    continue;
+                
+                accumulatedJson.AppendLine(trimmedLine);
+                string jsonCandidate = accumulatedJson.ToString().Trim();
+                
+                // Try to parse as complete JSON using Newtonsoft
+                if (IsCompleteJson(jsonCandidate))
+                {
+                    completeMessages.Add(jsonCandidate);
+                    accumulatedJson.Clear();
+                }
+            }
+            
+            // Any remaining accumulated data is incomplete
+            if (accumulatedJson.Length > 0)
+            {
+                remainingIncomplete = accumulatedJson.ToString().Trim();
+            }
+            
+            return completeMessages.ToArray();
+        }
+        
+        /// <summary>
+        /// Check if a string contains a complete, valid JSON structure
+        /// </summary>
+        private bool IsCompleteJson(string jsonString)
+        {
+            if (string.IsNullOrWhiteSpace(jsonString))
+                return false;
+                
+            try
+            {
+                using (var stringReader = new StringReader(jsonString))
+                using (var jsonReader = new JsonTextReader(stringReader))
+                {
+                    // Try to parse the entire string
+                    while (jsonReader.Read())
+                    {
+                        // JsonTextReader will throw if JSON is malformed or incomplete
+                    }
+                    return true;
+                }
+            }
+            catch (JsonReaderException)
+            {
+                // Incomplete or malformed JSON
+                return false;
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogWarning($"Unexpected error validating JSON: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
