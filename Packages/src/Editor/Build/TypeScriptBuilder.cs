@@ -185,7 +185,8 @@ namespace io.github.hatayama.uMCP
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Failed to run which command: {ex.Message}");
+                Debug.LogWarning($"Failed to run which command for npm detection: {ex.Message}");
+                // This is expected to fail on some systems, so we continue with fallback detection
             }
             
             // If not found with which, try common paths
@@ -337,6 +338,11 @@ namespace io.github.hatayama.uMCP
                 string errorMsg = $"Failed to run command: {command} {arguments}: {ex.Message}";
                 Debug.LogError(errorMsg);
                 Debug.LogError("Make sure npm is installed and available in PATH");
+                
+                // This is a critical failure for TypeScript server building
+                throw new System.InvalidOperationException(
+                    $"TypeScript build command failed: {command} {arguments}. " +
+                    "Ensure Node.js and npm are properly installed and accessible from Unity Editor.", ex);
             }
         }
     }

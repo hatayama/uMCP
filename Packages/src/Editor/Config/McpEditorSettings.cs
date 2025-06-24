@@ -26,9 +26,9 @@ namespace io.github.hatayama.uMCP
     public static class McpEditorSettings
     {
         private static string SettingsFilePath => Path.Combine(McpConstants.USER_SETTINGS_FOLDER, McpConstants.SETTINGS_FILE_NAME);
-        
+
         private static McpEditorSettingsData _cachedSettings;
-        
+
         /// <summary>
         /// Gets the settings data.
         /// </summary>
@@ -38,28 +38,22 @@ namespace io.github.hatayama.uMCP
             {
                 LoadSettings();
             }
+
             return _cachedSettings;
         }
-        
+
         /// <summary>
         /// Saves the settings data.
         /// </summary>
         public static void SaveSettings(McpEditorSettingsData settings)
         {
-            try
-            {
-                string json = JsonUtility.ToJson(settings, true);
-                File.WriteAllText(SettingsFilePath, json);
-                _cachedSettings = settings;
-                
-                McpLogger.LogInfo($"MCP Editor settings saved to: {SettingsFilePath}");
-            }
-            catch (Exception ex)
-            {
-                McpLogger.LogError($"Failed to save MCP Editor settings: {ex.Message}");
-            }
+            string json = JsonUtility.ToJson(settings, true);
+            File.WriteAllText(SettingsFilePath, json);
+            _cachedSettings = settings;
+
+            McpLogger.LogInfo($"MCP Editor settings saved to: {SettingsFilePath}");
         }
-        
+
         /// <summary>
         /// Gets the custom port number.
         /// </summary>
@@ -67,7 +61,7 @@ namespace io.github.hatayama.uMCP
         {
             return GetSettings().customPort;
         }
-        
+
         /// <summary>
         /// Saves the custom port number.
         /// </summary>
@@ -77,7 +71,7 @@ namespace io.github.hatayama.uMCP
             McpEditorSettingsData updatedSettings = settings with { customPort = port };
             SaveSettings(updatedSettings);
         }
-        
+
         /// <summary>
         /// Gets the auto-start setting.
         /// </summary>
@@ -85,7 +79,7 @@ namespace io.github.hatayama.uMCP
         {
             return GetSettings().autoStartServer;
         }
-        
+
         /// <summary>
         /// Saves the auto-start setting.
         /// </summary>
@@ -95,7 +89,7 @@ namespace io.github.hatayama.uMCP
             McpEditorSettingsData updatedSettings = settings with { autoStartServer = autoStart };
             SaveSettings(updatedSettings);
         }
-        
+
         /// <summary>
         /// Gets the Developer Tools display setting.
         /// </summary>
@@ -103,7 +97,7 @@ namespace io.github.hatayama.uMCP
         {
             return GetSettings().showDeveloperTools;
         }
-        
+
         /// <summary>
         /// Saves the Developer Tools display setting.
         /// </summary>
@@ -113,7 +107,7 @@ namespace io.github.hatayama.uMCP
             McpEditorSettingsData updatedSettings = settings with { showDeveloperTools = show };
             SaveSettings(updatedSettings);
         }
-        
+
         /// <summary>
         /// Gets the MCP log enabled flag.
         /// </summary>
@@ -121,7 +115,7 @@ namespace io.github.hatayama.uMCP
         {
             return GetSettings().enableMcpLogs;
         }
-        
+
         /// <summary>
         /// Sets the MCP log enabled flag.
         /// </summary>
@@ -130,11 +124,11 @@ namespace io.github.hatayama.uMCP
             McpEditorSettingsData settings = GetSettings();
             McpEditorSettingsData newSettings = settings with { enableMcpLogs = enableMcpLogs };
             SaveSettings(newSettings);
-            
+
             // Synchronize McpLogger settings as well.
             McpLogger.EnableDebugLog = enableMcpLogs;
         }
-        
+
         /// <summary>
         /// Gets the communication logs enabled flag.
         /// </summary>
@@ -142,7 +136,7 @@ namespace io.github.hatayama.uMCP
         {
             return GetSettings().enableCommunicationLogs;
         }
-        
+
         /// <summary>
         /// Sets the communication logs enabled flag.
         /// </summary>
@@ -152,7 +146,7 @@ namespace io.github.hatayama.uMCP
             McpEditorSettingsData newSettings = settings with { enableCommunicationLogs = enableCommunicationLogs };
             SaveSettings(newSettings);
         }
-        
+
         /// <summary>
         /// Gets the development mode enabled flag.
         /// </summary>
@@ -160,7 +154,7 @@ namespace io.github.hatayama.uMCP
         {
             return GetSettings().enableDevelopmentMode;
         }
-        
+
         /// <summary>
         /// Sets the development mode enabled flag.
         /// </summary>
@@ -170,7 +164,7 @@ namespace io.github.hatayama.uMCP
             McpEditorSettingsData newSettings = settings with { enableDevelopmentMode = enableDevelopmentMode };
             SaveSettings(newSettings);
         }
-        
+
         /// <summary>
         /// Loads the settings file.
         /// </summary>
@@ -195,16 +189,10 @@ namespace io.github.hatayama.uMCP
             catch (Exception ex)
             {
                 McpLogger.LogError($"Failed to load MCP Editor settings: {ex.Message}");
-                _cachedSettings = new McpEditorSettingsData();
+                // Don't suppress this exception - corrupted settings should be reported
+                throw new InvalidOperationException(
+                    $"Failed to load MCP Editor settings from: {SettingsFilePath}. Settings file may be corrupted.", ex);
             }
         }
-        
-        /// <summary>
-        /// Gets the path to the settings file.
-        /// </summary>
-        public static string GetSettingsFilePath()
-        {
-            return Path.GetFullPath(SettingsFilePath);
-        }
     }
-} 
+}

@@ -18,18 +18,11 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void LogTestResultAsXml(ITestResultAdaptor testResult)
         {
-            try
-            {
-                string xmlContent = GenerateNUnitXml(testResult);
-                McpLogger.LogInfo("Test Result XML:");
-                McpLogger.LogInfo(xmlContent);
-            }
-            catch (Exception ex)
-            {
-                McpLogger.LogError($"XML generation error: {ex.Message}");
-            }
+            string xmlContent = GenerateNUnitXml(testResult);
+            McpLogger.LogInfo("Test Result XML:");
+            McpLogger.LogInfo(xmlContent);
         }
-        
+
         /// <summary>
         /// Saves the test result as an XML file.
         /// </summary>
@@ -37,48 +30,39 @@ namespace io.github.hatayama.uMCP
         {
             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             string fileName = $"{timestamp}.xml";
-            
+
             // Save to TestResults folder at project root (same level as Assets)
             string projectRoot = Directory.GetParent(Application.dataPath).FullName;
             string testResultsDir = Path.Combine(projectRoot, "TestResults");
-            
+
             // Create directory if it doesn't exist
             if (!Directory.Exists(testResultsDir))
             {
                 Directory.CreateDirectory(testResultsDir);
             }
-            
+
             string filePath = Path.Combine(testResultsDir, fileName);
-            
-            try
-            {
-                string xmlContent = GenerateNUnitXml(testResult);
-                File.WriteAllText(filePath, xmlContent, Encoding.UTF8);
-                
-                // Refresh Assets folder.
-                AssetDatabase.Refresh();
-                
-                McpLogger.LogInfo($"Test result XML saved: TestResults/{fileName}");
-                return filePath;
-            }
-            catch (Exception ex)
-            {
-                McpLogger.LogError($"XML file save error: {ex.Message}");
-                return null;
-            }
+            string xmlContent = GenerateNUnitXml(testResult);
+            File.WriteAllText(filePath, xmlContent, Encoding.UTF8);
+
+            // Refresh Assets folder.
+            AssetDatabase.Refresh();
+
+            McpLogger.LogInfo($"Test result XML saved: TestResults/{fileName}");
+            return filePath;
         }
-        
+
         /// <summary>
         /// Generates NUnit format XML.
         /// </summary>
         private static string GenerateNUnitXml(ITestResultAdaptor testResult)
         {
             XmlDocument doc = new XmlDocument();
-            
+
             // Add XML declaration.
             XmlDeclaration declaration = doc.CreateXmlDeclaration("1.0", "UTF-8", null);
             doc.AppendChild(declaration);
-            
+
             // Create root element.
             XmlElement testRun = doc.CreateElement("test-run");
             testRun.SetAttribute("id", "2");
@@ -92,11 +76,11 @@ namespace io.github.hatayama.uMCP
             testRun.SetAttribute("end-time", testResult.EndTime.ToString("yyyy-MM-dd HH:mm:ss"));
             testRun.SetAttribute("duration", testResult.Duration.ToString("F3"));
             doc.AppendChild(testRun);
-            
+
             // Add test suite.
             XmlElement testSuite = CreateTestSuiteElement(doc, testResult);
             testRun.AppendChild(testSuite);
-            
+
             // Return formatted XML.
             using (StringWriter stringWriter = new StringWriter())
             {
@@ -107,16 +91,16 @@ namespace io.github.hatayama.uMCP
                     NewLineChars = "\n",
                     NewLineHandling = NewLineHandling.Replace
                 };
-                
+
                 using (XmlWriter xmlWriter = XmlWriter.Create(stringWriter, settings))
                 {
                     doc.Save(xmlWriter);
                 }
-                
+
                 return stringWriter.ToString();
             }
         }
-        
+
         /// <summary>
         /// Creates a test suite element (recursive).
         /// </summary>
@@ -136,7 +120,7 @@ namespace io.github.hatayama.uMCP
                 suite.SetAttribute("passed", CountPassed(result).ToString());
                 suite.SetAttribute("failed", CountFailed(result).ToString());
                 suite.SetAttribute("skipped", CountSkipped(result).ToString());
-                
+
                 // Add child elements.
                 if (result.Children != null)
                 {
@@ -146,7 +130,7 @@ namespace io.github.hatayama.uMCP
                         suite.AppendChild(childElement);
                     }
                 }
-                
+
                 return suite;
             }
             else
@@ -159,33 +143,33 @@ namespace io.github.hatayama.uMCP
                 testCase.SetAttribute("start-time", result.StartTime.ToString("yyyy-MM-dd HH:mm:ss"));
                 testCase.SetAttribute("end-time", result.EndTime.ToString("yyyy-MM-dd HH:mm:ss"));
                 testCase.SetAttribute("duration", result.Duration.ToString("F3"));
-                
+
                 // If failed, add message and stack trace.
                 if (result.TestStatus == TestStatus.Failed)
                 {
                     XmlElement failure = doc.CreateElement("failure");
-                    
+
                     if (!string.IsNullOrEmpty(result.Message))
                     {
                         XmlElement message = doc.CreateElement("message");
                         message.InnerText = result.Message;
                         failure.AppendChild(message);
                     }
-                    
+
                     if (!string.IsNullOrEmpty(result.StackTrace))
                     {
                         XmlElement stackTrace = doc.CreateElement("stack-trace");
                         stackTrace.InnerText = result.StackTrace;
                         failure.AppendChild(stackTrace);
                     }
-                    
+
                     testCase.AppendChild(failure);
                 }
-                
+
                 return testCase;
             }
         }
-        
+
         /// <summary>
         /// Gets the overall result.
         /// </summary>
@@ -197,7 +181,7 @@ namespace io.github.hatayama.uMCP
                 return "Skipped";
             return "Passed";
         }
-        
+
         /// <summary>
         /// Counts the number of test cases.
         /// </summary>
@@ -205,7 +189,7 @@ namespace io.github.hatayama.uMCP
         {
             if (!result.Test.IsSuite)
                 return 1;
-            
+
             int count = 0;
             if (result.Children != null)
             {
@@ -214,9 +198,10 @@ namespace io.github.hatayama.uMCP
                     count += CountTestCases(child);
                 }
             }
+
             return count;
         }
-        
+
         /// <summary>
         /// Counts the number of passed tests.
         /// </summary>
@@ -224,7 +209,7 @@ namespace io.github.hatayama.uMCP
         {
             if (!result.Test.IsSuite)
                 return result.TestStatus == TestStatus.Passed ? 1 : 0;
-            
+
             int count = 0;
             if (result.Children != null)
             {
@@ -233,9 +218,10 @@ namespace io.github.hatayama.uMCP
                     count += CountPassed(child);
                 }
             }
+
             return count;
         }
-        
+
         /// <summary>
         /// Counts the number of failed tests.
         /// </summary>
@@ -243,7 +229,7 @@ namespace io.github.hatayama.uMCP
         {
             if (!result.Test.IsSuite)
                 return result.TestStatus == TestStatus.Failed ? 1 : 0;
-            
+
             int count = 0;
             if (result.Children != null)
             {
@@ -252,9 +238,10 @@ namespace io.github.hatayama.uMCP
                     count += CountFailed(child);
                 }
             }
+
             return count;
         }
-        
+
         /// <summary>
         /// Counts the number of skipped tests.
         /// </summary>
@@ -262,7 +249,7 @@ namespace io.github.hatayama.uMCP
         {
             if (!result.Test.IsSuite)
                 return result.TestStatus == TestStatus.Skipped ? 1 : 0;
-            
+
             int count = 0;
             if (result.Children != null)
             {
@@ -271,7 +258,8 @@ namespace io.github.hatayama.uMCP
                     count += CountSkipped(child);
                 }
             }
+
             return count;
         }
     }
-} 
+}

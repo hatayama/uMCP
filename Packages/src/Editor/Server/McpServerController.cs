@@ -1,6 +1,4 @@
 using UnityEditor;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
@@ -11,6 +9,7 @@ namespace io.github.hatayama.uMCP
     [InitializeOnLoad]
     public static class McpServerController
     {
+        private static readonly int[] CommonSystemPorts = { 80, 443, 21, 22, 23, 25, 53, 110, 143, 993, 995, 3389 };
         
         private static McpBridgeServer mcpServer;
         
@@ -51,6 +50,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void StartServer(int port = McpServerConfig.DEFAULT_PORT)
         {
+            // Validate server configuration before starting
+            ValidateServerConfiguration(port);
+            
             // Always stop the existing server (to release the port).
             if (mcpServer != null)
             {
@@ -126,7 +128,11 @@ namespace io.github.hatayama.uMCP
                 }
                 catch (System.Exception ex)
                 {
-                    McpLogger.LogError($"Error during server shutdown before assembly reload: {ex.Message}");
+                    McpLogger.LogError($"Critical error during server shutdown before assembly reload: {ex.Message}");
+                    // Don't suppress this exception - server shutdown failure could leave ports locked
+                    // and cause startup issues after domain reload
+                    throw new System.InvalidOperationException(
+                        $"Failed to properly shutdown MCP server before assembly reload. This may cause port conflicts on restart.", ex);
                 }
             }
         }
@@ -460,8 +466,41 @@ namespace io.github.hatayama.uMCP
             TryRestoreServerWithRetry(port, retryCount + 1);
         }
 
+        /// <summary>
+        /// Validates server configuration before starting
+        /// Implements fail-fast behavior for invalid configurations
+        /// </summary>
+        private static void ValidateServerConfiguration(int port)
+        {
+            // Validate port number using shared validator
+            if (!McpPortValidator.ValidatePort(port, "for MCP server"))
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(port), 
+                    $"Port number must be between 1 and 65535. Received: {port}");
+            }
 
+            // Check for commonly used ports that might conflict (server-specific strict validation)
+            if (System.Array.IndexOf(CommonSystemPorts, port) != -1)
+            {
+                throw new System.InvalidOperationException(
+                    $"Port {port} is a commonly used system port and should not be used for MCP server. Please choose a different port (e.g., 7400-7500).");
+            }
+
+            // Validate Unity Editor state
+            if (EditorApplication.isCompiling)
+            {
+                throw new System.InvalidOperationException(
+                    "Cannot start MCP server while Unity is compiling. Please wait for compilation to complete.");
+            }
+
+            // Check if port is already in use
+            if (McpBridgeServer.IsPortInUse(port))
+            {
+                throw new System.InvalidOperationException(
+                    $"Port {port} is already in use. Please choose a different port or stop the service using this port.");
+            }
+
+            McpLogger.LogDebug($"Server configuration validation passed for port {port}");
+        }
     }
 }
-
-// Trigger compile test - timestamp: 2025-06-22 03:30:00 

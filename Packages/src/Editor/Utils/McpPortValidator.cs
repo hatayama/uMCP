@@ -1,0 +1,43 @@
+namespace io.github.hatayama.uMCP
+{
+    /// <summary>
+    /// Port validation utility for MCP configuration
+    /// </summary>
+    public static class McpPortValidator
+    {
+        private const int MinPort = 1;
+        private const int MaxPort = 65535;
+        private const int ReservedPortThreshold = 1024;
+        private static readonly int[] CommonPorts = { 80, 443, 21, 22, 23, 25, 53, 110, 143, 993, 995, 3389 };
+
+        /// <summary>
+        /// Validates port number and logs warnings for potential issues
+        /// </summary>
+        /// <param name="port">Port number to validate</param>
+        /// <param name="context">Additional context for logging (optional)</param>
+        /// <returns>True if port is valid, false if port is outside valid range</returns>
+        public static bool ValidatePort(int port, string context = "")
+        {
+            if (port <= 0 || port > MaxPort)
+            {
+                return false;
+            }
+
+            string contextSuffix = string.IsNullOrEmpty(context) ? "" : $" {context}";
+
+            if (port < ReservedPortThreshold)
+            {
+                McpLogger.LogError($"Port {port} is in the reserved range ({MinPort}-{ReservedPortThreshold - 1}){contextSuffix}. Please use a port above {ReservedPortThreshold}.");
+                return false;
+            }
+            
+            if (System.Array.IndexOf(CommonPorts, port) != -1)
+            {
+                McpLogger.LogError($"Port {port} is a commonly used system port{contextSuffix}. Please choose a different port (e.g., 7400-7500).");
+                return false;
+            }
+
+            return true;
+        }
+    }
+}

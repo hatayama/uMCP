@@ -31,16 +31,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void Initialize()
         {
-            try
-            {
-                logRetriever = new ConsoleLogRetriever();
-                EditorApplication.update += CheckForLogChanges;
-                Debug.Log("ConsoleWindowUtility initialized successfully");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"Failed to initialize ConsoleWindowUtility: {ex.Message}");
-            }
+            logRetriever = new ConsoleLogRetriever();
+            EditorApplication.update += CheckForLogChanges;
+            Debug.Log("ConsoleWindowUtility initialized successfully");
         }
 
         /// <summary>
@@ -73,7 +66,14 @@ namespace io.github.hatayama.uMCP
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Error checking for log changes: {ex.Message}");
+                Debug.LogError($"Log monitoring failed: {ex.Message}");
+                // Mark as failed and stop monitoring to prevent repeated errors
+                logRetriever = null;
+                EditorApplication.update -= CheckForLogChanges;
+                
+                // This is a critical failure - log monitoring is now broken
+                throw new System.InvalidOperationException(
+                    "Console log monitoring has failed and been disabled. Log retrieval functionality is compromised.", ex);
             }
         }
 
@@ -137,7 +137,10 @@ namespace io.github.hatayama.uMCP
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Error getting console log counts: {ex.Message}");
+                Debug.LogError($"Console log count retrieval failed: {ex.Message}");
+                // Don't suppress this exception - caller needs to know count retrieval failed
+                throw new System.InvalidOperationException(
+                    "Failed to retrieve console log counts. Console monitoring may be compromised.", ex);
             }
         }
 
@@ -172,7 +175,10 @@ namespace io.github.hatayama.uMCP
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Error clearing console: {ex.Message}");
+                Debug.LogError($"Console clear operation failed: {ex.Message}");
+                // Don't suppress this exception - caller needs to know clear failed
+                throw new System.InvalidOperationException(
+                    "Failed to clear Unity console. Console operations may be compromised.", ex);
             }
         }
 
@@ -191,8 +197,10 @@ namespace io.github.hatayama.uMCP
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Error getting all logs: {ex.Message}");
-                return new System.Collections.Generic.List<LogEntryDto>();
+                Debug.LogError($"Failed to retrieve console logs: {ex.Message}");
+                // Don't suppress this exception - caller needs to know retrieval failed
+                throw new System.InvalidOperationException(
+                    "Console log retrieval failed. Log data is not available.", ex);
             }
         }
 
@@ -210,8 +218,10 @@ namespace io.github.hatayama.uMCP
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Error getting current mask: {ex.Message}");
-                return 0;
+                Debug.LogError($"Console mask retrieval failed: {ex.Message}");
+                // Don't suppress this exception - caller needs to know mask retrieval failed
+                throw new System.InvalidOperationException(
+                    "Failed to get console mask state. Console operations may be compromised.", ex);
             }
         }
 
@@ -229,7 +239,10 @@ namespace io.github.hatayama.uMCP
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Error setting mask: {ex.Message}");
+                Debug.LogError($"Console mask setting failed: {ex.Message}");
+                // Don't suppress this exception - caller needs to know mask setting failed
+                throw new System.InvalidOperationException(
+                    $"Failed to set console mask to {mask}. Console operations may be compromised.", ex);
             }
         }
 

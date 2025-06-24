@@ -27,24 +27,23 @@ namespace io.github.hatayama.uMCP
         
         /// <summary>
         /// Output warning log
+        /// Always outputs warnings regardless of EnableDebugLog setting
         /// </summary>
         public static void LogWarning(string message)
         {
-            if (EnableDebugLog)
-            {
-                Debug.LogWarning($"{LOG_PREFIX} {message}");
-            }
+            // Warnings should also always be logged as they indicate potential issues
+            Debug.LogWarning($"{LOG_PREFIX} {message}");
         }
         
         /// <summary>
         /// Output error log
+        /// Always outputs errors regardless of EnableDebugLog setting
         /// </summary>
         public static void LogError(string message)
         {
-            if (EnableDebugLog)
-            {
-                Debug.LogError($"{LOG_PREFIX} {message}");
-            }
+            // Errors should ALWAYS be logged regardless of debug settings
+            // This is critical for troubleshooting and fail-fast behavior
+            Debug.LogError($"{LOG_PREFIX} {message}");
         }
         
         /// <summary>

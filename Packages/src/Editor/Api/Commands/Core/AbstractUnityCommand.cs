@@ -10,17 +10,17 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     /// <typeparam name="TSchema">Schema type for command parameters</typeparam>
     /// <typeparam name="TResponse">Response type for command results</typeparam>
-    public abstract class AbstractUnityCommand<TSchema, TResponse> : IUnityCommand 
+    public abstract class AbstractUnityCommand<TSchema, TResponse> : IUnityCommand
         where TSchema : class, new()
         where TResponse : class
     {
         public abstract string CommandName { get; }
         public abstract string Description { get; }
-        
+
         /// <summary>
         /// Automatically generates parameter schema from TSchema type
         /// </summary>
-        public virtual CommandParameterSchema ParameterSchema => 
+        public virtual CommandParameterSchema ParameterSchema =>
             CommandParameterSchemaGenerator.FromDto<TSchema>();
 
         /// <summary>
@@ -36,24 +36,24 @@ namespace io.github.hatayama.uMCP
         public async Task<object> ExecuteAsync(JToken paramsToken)
         {
             DateTime startTime = DateTime.UtcNow;
-            
+
             try
             {
                 // Convert JToken to strongly typed Schema
                 TSchema parameters = ConvertToSchema(paramsToken);
-                
+
                 // Execute with type-safe parameters and get type-safe response
                 TResponse response = await ExecuteAsync(parameters);
-                
+
                 DateTime endTime = DateTime.UtcNow;
-                
+
                 // Set timing information if response inherits from BaseCommandResponse
                 if (response is BaseCommandResponse baseResponse)
                 {
                     baseResponse.SetTimingInfo(startTime, endTime);
                     McpLogger.LogDebug($"Command {CommandName} executed in {baseResponse.ExecutionTimeMs}ms");
                 }
-                
+
                 // Return as object for IUnityCommand interface compatibility
                 return response;
             }
@@ -74,26 +74,18 @@ namespace io.github.hatayama.uMCP
                 // Return default instance if no parameters provided
                 return new TSchema();
             }
+            
+            // Try to deserialize from JToken
+            TSchema schema = paramsToken.ToObject<TSchema>();
 
-            try
+            // If deserialization returns null, create default instance
+            if (schema == null)
             {
-                // Try to deserialize from JToken
-                TSchema schema = paramsToken.ToObject<TSchema>();
-                
-                // If deserialization returns null, create default instance
-                if (schema == null)
-                {
-                    schema = new TSchema();
-                }
+                schema = new TSchema();
+            }
 
-                // Apply default values for null properties
-                return ApplyDefaultValues(schema);
-            }
-            catch (JsonException ex)
-            {
-                McpLogger.LogWarning($"Failed to deserialize parameters for {CommandName}, using defaults: {ex.Message}");
-                return new TSchema();
-            }
+            // Apply default values for null properties
+            return ApplyDefaultValues(schema);
         }
 
         /// <summary>
@@ -107,4 +99,4 @@ namespace io.github.hatayama.uMCP
             return schema;
         }
     }
-} 
+}
