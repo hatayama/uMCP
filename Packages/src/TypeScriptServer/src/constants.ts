@@ -87,3 +87,22 @@ export const ERROR_MESSAGES = {
   TIMEOUT: 'timeout',
   INVALID_RESPONSE: 'Invalid response from Unity',
 } as const;
+
+// Polling configuration
+export const POLLING = {
+  INTERVAL_MS: 3000,
+  BUFFER_SECONDS: 10,
+} as const;
+
+// Test timeouts (milliseconds)
+export const TEST_TIMEOUTS = {
+  INTEGRATION_TEST_MS: 2000,
+  TOOLS_LIST_TEST_MS: 3000,
+  JEST_DEFAULT_MS: 10000,
+} as const;
+
+// Log messages
+export const LOG_MESSAGES = {
+  SERVER_LOG_START_PREFIX: '=== Unity MCP Server Log Started at',
+  CONNECTION_RECOVERY_POLLING: 'Starting connection recovery polling',
+} as const;

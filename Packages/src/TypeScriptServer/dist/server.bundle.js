@@ -5574,6 +5574,10 @@ var ERROR_MESSAGES = {
   TIMEOUT: "timeout",
   INVALID_RESPONSE: "Invalid response from Unity"
 };
+var POLLING = {
+  INTERVAL_MS: 3e3,
+  BUFFER_SECONDS: 10
+};
 
 // src/utils/mcp-debug.ts
 var mcpDebug = (...args) => {
@@ -5714,22 +5718,23 @@ var UnityClient = class {
    */
   async testConnection() {
     if (!this._connected || this.socket === null || this.socket.destroyed) {
+      mcpWarn("[UnityClient] Connection test failed: socket not connected or destroyed");
       return false;
     }
-    try {
-      await this.ping(UNITY_CONNECTION.CONNECTION_TEST_MESSAGE);
-      return true;
-    } catch {
-      this._connected = false;
-      return false;
-    }
+    await this.ping(UNITY_CONNECTION.CONNECTION_TEST_MESSAGE);
+    return true;
   }
   /**
    * Connect to Unity (reconnect if necessary)
    */
   async ensureConnected() {
-    if (await this.testConnection()) {
-      return;
+    try {
+      if (await this.testConnection()) {
+        return;
+      }
+    } catch (error) {
+      mcpWarn("[UnityClient] Connection test failed during ensureConnected:", error);
+      this._connected = false;
     }
     this.disconnect();
     await this.connect();
@@ -5848,13 +5853,13 @@ var UnityClient = class {
    */
   getTimeoutForCommand(commandName, params) {
     if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0) {
-      const calculatedTimeout = (params.TimeoutSeconds + 10) * 1e3;
+      const calculatedTimeout = (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1e3;
       mcpDebug(`[UnityClient] Using dynamic timeout for ${commandName}: params.TimeoutSeconds=${params.TimeoutSeconds}s, final=${calculatedTimeout}ms`);
       return calculatedTimeout;
     }
     switch (commandName) {
       case "runtests":
-        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1e3 + 10) * 1e3;
+        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1e3 + POLLING.BUFFER_SECONDS) * 1e3;
         mcpDebug(`[UnityClient] Using default timeout for runtests: ${defaultTimeout}ms`);
         return defaultTimeout;
       case "compile":
@@ -5924,7 +5929,7 @@ var UnityClient = class {
    */
   startPolling() {
     if (this.pollingInterval) return;
-    mcpInfo("[UnityClient] Starting connection recovery polling (3s interval)");
+    mcpInfo(`[UnityClient] Starting connection recovery polling (${POLLING.INTERVAL_MS}ms interval)`);
     this.pollingInterval = setInterval(async () => {
       try {
         await this.connect();
@@ -5934,8 +5939,9 @@ var UnityClient = class {
           this.onReconnectedCallback();
         }
       } catch (error) {
+        mcpDebug(`[UnityClient] Polling retry failed (connection still down):`, error);
       }
-    }, 3e3);
+    }, POLLING.INTERVAL_MS);
   }
   /**
    * Stop polling
@@ -6161,10 +6167,8 @@ var package_default = {
 var SimpleMcpServer = class {
   server;
   unityClient;
-  toolCount = 3;
   isDevelopment;
   dynamicTools = /* @__PURE__ */ new Map();
-  availableCommands = [];
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     DebugLogger.info("Simple Unity MCP Server Starting");
@@ -6225,7 +6229,6 @@ var SimpleMcpServer = class {
         this.dynamicTools.set(toolName, dynamicTool);
         mcpDebug(`[Simple MCP] Created dynamic tool: ${toolName} with schema:`, parameterSchema);
       }
-      this.availableCommands = commandDetails.map((cmd) => cmd.name);
       mcpInfo(`[Simple MCP] Initialized ${this.dynamicTools.size} dynamic Unity command tools with schemas`);
     } catch (error) {
       mcpError("[Simple MCP] Failed to initialize dynamic tools:", error);
@@ -6339,7 +6342,7 @@ var SimpleMcpServer = class {
     try {
       await this.unityClient.ensureConnected();
       const response = await this.unityClient.ping(message);
-      const port = process.env.UNITY_TCP_PORT || "7400";
+      const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
       let responseText = "";
       if (typeof response === "object" && response !== null) {
         const respObj = response;
@@ -6449,37 +6452,30 @@ ${JSON.stringify(detailsResponse, null, 2)}`
    */
   setupUnityEventListener() {
     this.unityClient.onNotification("commandsChanged", async (params) => {
-      console.error("[NOTIFICATION] Received commandsChanged notification from Unity:", JSON.stringify(params));
       mcpInfo("[Simple MCP] Received commandsChanged notification from Unity:", params);
       try {
         await this.refreshDynamicTools();
-        console.error("[NOTIFICATION] Dynamic tools updated successfully via Unity event");
         mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity event");
       } catch (error) {
-        console.error("[NOTIFICATION] Failed to update dynamic tools via Unity event:", error);
         mcpError("[Simple MCP] Failed to update dynamic tools via Unity event:", error);
       }
     });
     this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
-      console.error("[NOTIFICATION] Received tools/list_changed notification from Unity:", JSON.stringify(params));
       mcpInfo("[Simple MCP] Received tools/list_changed notification from Unity:", params);
       try {
         await this.refreshDynamicTools();
-        console.error("[NOTIFICATION] Dynamic tools updated successfully via Unity notification");
         mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity notification");
       } catch (error) {
-        console.error("[NOTIFICATION] Failed to update dynamic tools via Unity notification:", error);
         mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
       }
     });
-    console.error("[NOTIFICATION] Unity event listeners setup completed");
     mcpInfo("[Simple MCP] Unity event listeners setup completed");
   }
   /**
    * Send tools changed notification
    */
   sendToolsChangedNotification() {
-    DebugLogger.logNotification("notifications/tools/list_changed", { toolCount: this.toolCount });
+    DebugLogger.logNotification("notifications/tools/list_changed", { dynamicToolsCount: this.dynamicTools.size });
     try {
       this.server.notification({
         method: "notifications/tools/list_changed",
@@ -6489,21 +6485,13 @@ ${JSON.stringify(detailsResponse, null, 2)}`
       DebugLogger.error("Failed to send tools changed notification", error);
     }
   }
-  /**
-   * Send test notification
-   */
-  sendTestNotification() {
-    this.toolCount = this.toolCount === 3 ? 5 : 3;
-    try {
-      this.server.notification({
-        method: "notifications/tools/list_changed",
-        params: {}
-      });
-    } catch (error) {
-    }
-  }
 };
 var server = new SimpleMcpServer();
 server.start().catch((error) => {
+  mcpError("[FATAL] Server startup failed:", error);
+  console.error("[FATAL] Unity MCP Server startup failed:");
+  console.error("Error details:", error instanceof Error ? error.message : String(error));
+  console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace available");
+  console.error("Make sure Unity is running and the MCP bridge is properly configured.");
   process.exit(1);
 });

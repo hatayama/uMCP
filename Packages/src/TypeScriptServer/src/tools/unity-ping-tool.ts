@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
-import { TOOL_NAMES, DEFAULT_MESSAGES } from '../constants.js';
+import { TOOL_NAMES, DEFAULT_MESSAGES, UNITY_CONNECTION } from '../constants.js';
 import { DebugLogger } from '../utils/debug-logger.js';
 
 /**
@@ -33,7 +33,7 @@ export class UnityPingTool extends BaseTool {
     await this.context.unityClient.ensureConnected();
 
     const response = await this.context.unityClient.ping(args.message);
-    const port = process.env.UNITY_TCP_PORT || '7400';
+    const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
     
     // Debug: Output response object details
     DebugLogger.debug('[UnityPingTool] Raw response:', response);

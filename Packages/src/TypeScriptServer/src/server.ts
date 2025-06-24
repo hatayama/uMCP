@@ -12,8 +12,9 @@ import { DebugLogger } from './utils/debug-logger.js';
 import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
 import { mcpDebug, mcpInfo, mcpError, mcpWarn } from './utils/mcp-debug.js';
-import { ENVIRONMENT, DEFAULT_MESSAGES } from './constants.js';
+import { ENVIRONMENT, DEFAULT_MESSAGES, UNITY_CONNECTION } from './constants.js';
 import packageJson from '../package.json' assert { type: 'json' };
+import { ToolResponse } from './types/tool-types.js';
 
 /**
  * Simple Unity MCP Server for testing notifications
@@ -21,10 +22,8 @@ import packageJson from '../package.json' assert { type: 'json' };
 class SimpleMcpServer {
   private server: Server;
   private unityClient: UnityClient;
-  private toolCount: number = 3;
-  private isDevelopment: boolean;
-  private dynamicTools: Map<string, DynamicUnityCommandTool> = new Map();
-  private availableCommands: string[] = [];
+  private readonly isDevelopment: boolean;
+  private readonly dynamicTools: Map<string, DynamicUnityCommandTool> = new Map();
 
   constructor() {
     // Simple environment variable check
@@ -106,8 +105,7 @@ class SimpleMcpServer {
         mcpDebug(`[Simple MCP] Created dynamic tool: ${toolName} with schema:`, parameterSchema);
       }
       
-      // Extract command names for backward compatibility
-      this.availableCommands = commandDetails.map(cmd => cmd.name);
+      // Command details processed successfully
       
       mcpInfo(`[Simple MCP] Initialized ${this.dynamicTools.size} dynamic Unity command tools with schemas`);
       
@@ -228,10 +226,10 @@ class SimpleMcpServer {
         
         switch (name) {
           case 'ping':
-            return await this.handleUnityPing(args);
+            return await this.handleUnityPing(args as { message?: string });
           case 'mcp-ping':
             if (this.isDevelopment) {
-              return await this.handlePing(args);
+              return await this.handlePing(args as { message?: string });
             }
             throw new Error('Development tool not available in production');
           case 'get-unity-commands':
@@ -272,13 +270,13 @@ class SimpleMcpServer {
   /**
    * Handle Unity ping command
    */
-  private async handleUnityPing(args: any): Promise<any> {
+  private async handleUnityPing(args: { message?: string }): Promise<ToolResponse> {
     const message = args?.message || DEFAULT_MESSAGES.UNITY_PING;
     
     try {
       await this.unityClient.ensureConnected();
       const response = await this.unityClient.ping(message);
-      const port = process.env.UNITY_TCP_PORT || '7400';
+      const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
       
       // Handle the new BaseCommandResponse format with timing info
       let responseText = '';
@@ -335,7 +333,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
   /**
    * Handle TypeScript ping command (dev only)
    */
-  private async handlePing(args: any): Promise<any> {
+  private async handlePing(args: { message?: string }): Promise<ToolResponse> {
     const message = args?.message || DEFAULT_MESSAGES.PING;
     return {
       content: [
@@ -350,7 +348,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
   /**
    * Handle get available commands (dev only)
    */
-  private async handleGetAvailableCommands(): Promise<any> {
+  private async handleGetAvailableCommands(): Promise<ToolResponse> {
     try {
       await this.unityClient.ensureConnected();
       
@@ -406,38 +404,29 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
    */
   private setupUnityEventListener(): void {
     // Listen for commandsChanged notifications from Unity
-    this.unityClient.onNotification('commandsChanged', async (params: any) => {
-      // Force console output for debugging
-      console.error('[NOTIFICATION] Received commandsChanged notification from Unity:', JSON.stringify(params));
+    this.unityClient.onNotification('commandsChanged', async (params: unknown) => {
       mcpInfo('[Simple MCP] Received commandsChanged notification from Unity:', params);
       
       try {
         await this.refreshDynamicTools();
-        console.error('[NOTIFICATION] Dynamic tools updated successfully via Unity event');
         mcpInfo('[Simple MCP] Dynamic tools updated successfully via Unity event');
       } catch (error) {
-        console.error('[NOTIFICATION] Failed to update dynamic tools via Unity event:', error);
         mcpError('[Simple MCP] Failed to update dynamic tools via Unity event:', error);
       }
     });
     
     // Also listen for the alternative notification method
-    this.unityClient.onNotification('notifications/tools/list_changed', async (params: any) => {
-      // Force console output for debugging
-      console.error('[NOTIFICATION] Received tools/list_changed notification from Unity:', JSON.stringify(params));
+    this.unityClient.onNotification('notifications/tools/list_changed', async (params: unknown) => {
       mcpInfo('[Simple MCP] Received tools/list_changed notification from Unity:', params);
       
       try {
         await this.refreshDynamicTools();
-        console.error('[NOTIFICATION] Dynamic tools updated successfully via Unity notification');
         mcpInfo('[Simple MCP] Dynamic tools updated successfully via Unity notification');
       } catch (error) {
-        console.error('[NOTIFICATION] Failed to update dynamic tools via Unity notification:', error);
         mcpError('[Simple MCP] Failed to update dynamic tools via Unity notification:', error);
       }
     });
     
-    console.error('[NOTIFICATION] Unity event listeners setup completed');
     mcpInfo('[Simple MCP] Unity event listeners setup completed');
   }
 
@@ -445,7 +434,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
    * Send tools changed notification
    */
   private sendToolsChangedNotification(): void {
-    DebugLogger.logNotification("notifications/tools/list_changed", { toolCount: this.toolCount });
+    DebugLogger.logNotification("notifications/tools/list_changed", { dynamicToolsCount: this.dynamicTools.size });
     
     try {
       this.server.notification({
@@ -457,27 +446,16 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     }
   }
 
-  /**
-   * Send test notification
-   */
-  private sendTestNotification(): void {
-    // Toggle tool count between 3 and 5 (reduced for stability)
-    this.toolCount = this.toolCount === 3 ? 5 : 3;
-    
-    try {
-      this.server.notification({
-        method: "notifications/tools/list_changed",
-        params: {}
-      });
-    } catch (error) {
-      // Silent error handling for MCP
-    }
-  }
 }
 
 // Start server
 const server = new SimpleMcpServer();
 
 server.start().catch((error) => {
+  mcpError('[FATAL] Server startup failed:', error);
+  console.error('[FATAL] Unity MCP Server startup failed:');
+  console.error('Error details:', error instanceof Error ? error.message : String(error));
+  console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
+  console.error('Make sure Unity is running and the MCP bridge is properly configured.');
   process.exit(1);
 }); 
