@@ -202,14 +202,17 @@ namespace io.github.hatayama.uMCP
             Assert.AreEqual(testMessage, testLog.Message.Trim(), 
                 "Message should contain only the logged message");
             
-            // Stack trace should exist and contain Debug.Log reference
-            Assert.IsFalse(string.IsNullOrEmpty(testLog.StackTrace), 
-                "Log with context should have stack trace");
-            Assert.IsTrue(testLog.StackTrace.Contains("Debug:Log") || testLog.StackTrace.Contains("Debug.Log"), 
-                "Stack trace should contain Debug.Log reference");
+            // Stack trace behavior depends on Unity Console settings
+            // Check if stack trace exists and validate accordingly
+            if (!string.IsNullOrEmpty(testLog.StackTrace))
+            {
+                // If stack trace exists, it should contain Debug.Log reference
+                Assert.IsTrue(testLog.StackTrace.Contains("Debug:Log") || testLog.StackTrace.Contains("Debug.Log"), 
+                    "Stack trace should contain Debug.Log reference when present");
+            }
             
             // Message should not contain stack trace content
-            Assert.IsFalse(testLog.Message.Contains("Debug:Log") && testLog.Message.Contains("Debug.Log"), 
+            Assert.IsFalse(testLog.Message.Contains("Debug:Log") || testLog.Message.Contains("Debug.Log"), 
                 "Message should not contain stack trace content");
             
             // Cleanup

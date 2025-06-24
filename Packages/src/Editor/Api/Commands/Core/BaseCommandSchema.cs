@@ -9,9 +9,9 @@ namespace io.github.hatayama.uMCP
     public abstract class BaseCommandSchema
     {
         /// <summary>
-        /// Timeout for command execution in seconds (default: 300 seconds = 5 minutes)
+        /// Timeout for command execution in seconds (default: 15 seconds)
         /// </summary>
-        [Description("Timeout for command execution in seconds (default: 300 seconds = 5 minutes)")]
-        public int TimeoutSeconds { get; set; } = 300;
+        [Description("Timeout for command execution in seconds (default: 15 seconds)")]
+        public virtual int TimeoutSeconds { get; set; } = 15;
     }
 } 

@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
+using System.Collections;
+using UnityEngine.TestTools;
 
 namespace io.github.hatayama.uMCP
 {
@@ -32,28 +34,38 @@ namespace io.github.hatayama.uMCP
         /// - The result object contains the required properties.
         /// - The total number of logs can be retrieved.
         /// </summary>
-        [Test]
-        public async Task ExecuteAsync_WithDefaultParams_ShouldReturnAllLogs()
+        [UnityTest]
+        public IEnumerator ExecuteAsync_WithDefaultParams_ShouldReturnAllLogs()
         {
             // Arrange
-            JToken paramsToken = new JObject();
+            GetLogsSchema schema = new GetLogsSchema();
+            GetLogsResponse result = null;
+            bool completed = false;
 
             // Act
-            object result = await getLogsCommand.ExecuteAsync(paramsToken);
+            Task.Run(async () => {
+                try {
+                    // Convert schema to JToken for public ExecuteAsync method
+                    JToken paramsToken = JToken.FromObject(schema);
+                    object response = await getLogsCommand.ExecuteAsync(paramsToken);
+                    result = response as GetLogsResponse;
+                    completed = true;
+                } catch (System.Exception ex) {
+                    UnityEngine.Debug.LogError($"Test failed: {ex.Message}");
+                    completed = true;
+                }
+            });
+
+            // Wait for completion
+            yield return new UnityEngine.WaitUntil(() => completed);
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            
-            // Convert result to JToken for verification.
-            JToken resultToken = JToken.FromObject(result);
-            Assert.That(resultToken["logs"], Is.Not.Null, "logs property should exist");
-            Assert.That(resultToken["totalCount"], Is.Not.Null, "totalCount property should exist");
-            Assert.That(resultToken["logType"]?.ToString(), Is.EqualTo("All"), "logType should be 'All'");
-            Assert.That(resultToken["maxCount"]?.ToObject<int>(), Is.EqualTo(100), "maxCount should be 100");
-            
-            // Type check for the logs array.
-            JArray logsArray = resultToken["logs"] as JArray;
-            Assert.That(logsArray, Is.Not.Null, "logs should be an array");
+            Assert.That(result.Logs, Is.Not.Null, "logs property should exist");
+            Assert.That(result.TotalCount, Is.GreaterThanOrEqualTo(0), "totalCount should be non-negative");
+            Assert.That(result.LogType, Is.EqualTo("All"), "logType should be 'All'");
+            Assert.That(result.MaxCount, Is.EqualTo(100), "maxCount should be 100");
+            Assert.That(result.Logs, Is.Not.Null, "logs should be an array");
         }
 
         /// <summary>
@@ -63,32 +75,42 @@ namespace io.github.hatayama.uMCP
         /// - The result object contains the required properties.
         /// - The total number of logs can be retrieved.
         /// </summary>
-        [Test]
-        public async Task ExecuteAsync_WithCustomParams_ShouldReturnFilteredLogs()
+        [UnityTest]
+        public IEnumerator ExecuteAsync_WithCustomParams_ShouldReturnFilteredLogs()
         {
             // Arrange
-            JToken paramsToken = new JObject
+            GetLogsSchema schema = new GetLogsSchema
             {
-                ["logType"] = "Error",
-                ["maxCount"] = 50
+                LogType = McpLogType.Error,
+                MaxCount = 50
             };
+            GetLogsResponse result = null;
+            bool completed = false;
 
             // Act
-            object result = await getLogsCommand.ExecuteAsync(paramsToken);
+            Task.Run(async () => {
+                try {
+                    // Convert schema to JToken for public ExecuteAsync method
+                    JToken paramsToken = JToken.FromObject(schema);
+                    object response = await getLogsCommand.ExecuteAsync(paramsToken);
+                    result = response as GetLogsResponse;
+                    completed = true;
+                } catch (System.Exception ex) {
+                    UnityEngine.Debug.LogError($"Test failed: {ex.Message}");
+                    completed = true;
+                }
+            });
+
+            // Wait for completion
+            yield return new UnityEngine.WaitUntil(() => completed);
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            
-            // Convert result to JToken for verification.
-            JToken resultToken = JToken.FromObject(result);
-            Assert.That(resultToken["logs"], Is.Not.Null, "logs property should exist");
-            Assert.That(resultToken["totalCount"], Is.Not.Null, "totalCount property should exist");
-            Assert.That(resultToken["logType"]?.ToString(), Is.EqualTo("Error"), "logType should be 'Error'");
-            Assert.That(resultToken["maxCount"]?.ToObject<int>(), Is.EqualTo(50), "maxCount should be 50");
-            
-            // Type check for the logs array.
-            JArray logsArray = resultToken["logs"] as JArray;
-            Assert.That(logsArray, Is.Not.Null, "logs should be an array");
+            Assert.That(result.Logs, Is.Not.Null, "logs property should exist");
+            Assert.That(result.TotalCount, Is.GreaterThanOrEqualTo(0), "totalCount should be non-negative");
+            Assert.That(result.LogType, Is.EqualTo("Error"), "logType should be 'Error'");
+            Assert.That(result.MaxCount, Is.EqualTo(50), "maxCount should be 50");
+            Assert.That(result.Logs, Is.Not.Null, "logs should be an array");
         }
     }
 } 

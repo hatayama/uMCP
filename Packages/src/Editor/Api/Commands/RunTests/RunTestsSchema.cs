@@ -8,10 +8,7 @@ namespace io.github.hatayama.uMCP
     public enum TestFilterType
     {
         all,
-        fullclassname,
-        @namespace,
-        testname,
-        assembly
+        fullclassname
     }
 
     /// <summary>
@@ -39,7 +36,13 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Whether to save test results as XML file
         /// </summary>
-        [Description("Whether to save test results as XML file")]
+        [Description("Whether to save test results as XML file. Test results are saved to external files to avoid massive token consumption when returning results directly. Please read the file if you need detailed test results.")]
         public bool SaveXml { get; set; } = false;
+
+        /// <summary>
+        /// Timeout for test execution in seconds (default: 60 seconds for longer test runs)
+        /// </summary>
+        [Description("Timeout for test execution in seconds (default: 60 seconds for longer test runs)")]
+        public override int TimeoutSeconds { get; set; } = 60;
     }
 } 

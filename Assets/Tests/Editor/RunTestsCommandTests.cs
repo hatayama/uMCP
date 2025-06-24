@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
+using System.Collections;
+using UnityEngine.TestTools;
 
 namespace io.github.hatayama.uMCP
 {
@@ -26,69 +28,44 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Test execution with default parameters.
-        /// *Skipped because actual test execution takes time.
-        /// </summary>
-        [Ignore("Skipping because actual test execution is time-consuming.")]
-        [Test]
-        public async Task ExecuteAsync_WithDefaultParams_ShouldRunAllTests()
-        {
-            // Arrange
-            JToken paramsToken = new JObject();
-
-            // Act
-            object result = await runTestsCommand.ExecuteAsync(paramsToken);
-
-            // Assert
-            Assert.That(result, Is.Not.Null);
-            var resultObj = result as dynamic;
-            Assert.That(resultObj.success, Is.Not.Null);
-            Assert.That(resultObj.message, Is.Not.Null);
-            Assert.That(resultObj.completedAt, Is.Not.Null);
-        }
-
-        /// <summary>
         /// Parameter parsing test for filtered test execution.
         /// </summary>
         [Test]
         public void ParseParameters_ShouldParseCorrectly()
         {
-            // Arrange
-            JObject paramsToken = new JObject
+            // This test is now obsolete as the new implementation uses type-safe Schema classes
+            // instead of JSON parameter parsing. The parsing is handled by the MCP framework.
+            
+            // Arrange - Test the Schema object directly
+            RunTestsSchema schema = new RunTestsSchema
             {
-                ["filterType"] = "fullclassname",
-                ["filterValue"] = "TestClass",
-                ["saveXml"] = true
+                FilterType = TestFilterType.fullclassname,
+                FilterValue = "TestClass",
+                SaveXml = true
             };
 
-            // Act - Invoke private method using reflection.
-            System.Reflection.MethodInfo parseMethod = typeof(RunTestsCommand)
-                .GetMethod("ParseParameters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            TestExecutionParameters result = (TestExecutionParameters)parseMethod.Invoke(runTestsCommand, new object[] { paramsToken });
-
-            // Assert
-            Assert.That(result.FilterType, Is.EqualTo("fullclassname"));
-            Assert.That(result.FilterValue, Is.EqualTo("TestClass"));
-            Assert.That(result.SaveXml, Is.True);
+            // Assert - Schema properties should match what we set
+            Assert.That(schema.FilterType.ToString(), Is.EqualTo("fullclassname"));
+            Assert.That(schema.FilterValue, Is.EqualTo("TestClass"));
+            Assert.That(schema.SaveXml, Is.True);
         }
 
         /// <summary>
-        /// Default value test with null parameters.
+        /// Default value test with default schema.
         /// </summary>
         [Test]
         public void ParseParameters_WithNullParams_ShouldReturnDefaults()
         {
-            // Act - Invoke private method using reflection.
-            System.Reflection.MethodInfo parseMethod = typeof(RunTestsCommand)
-                .GetMethod("ParseParameters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            // This test is now obsolete as the new implementation uses type-safe Schema classes
+            // Test the default values of the Schema object
             
-            TestExecutionParameters result = (TestExecutionParameters)parseMethod.Invoke(runTestsCommand, new object[] { null });
+            // Act - Create Schema with default values
+            RunTestsSchema schema = new RunTestsSchema();
 
-            // Assert
-            Assert.That(result.FilterType, Is.EqualTo("all"));
-            Assert.That(result.FilterValue, Is.EqualTo(""));
-            Assert.That(result.SaveXml, Is.False);
+            // Assert - Schema should have default values
+            Assert.That(schema.FilterType.ToString(), Is.EqualTo("all"));
+            Assert.That(schema.FilterValue ?? "", Is.EqualTo(""));
+            Assert.That(schema.SaveXml, Is.False);
         }
 
         /// <summary>

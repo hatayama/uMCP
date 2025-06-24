@@ -36,8 +36,19 @@ namespace io.github.hatayama.uMCP
         public static string SaveTestResultAsXml(ITestResultAdaptor testResult)
         {
             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string fileName = $"TestResults_{timestamp}.xml";
-            string filePath = Path.Combine(Application.dataPath, fileName);
+            string fileName = $"{timestamp}.xml";
+            
+            // Save to TestResults folder at project root (same level as Assets)
+            string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            string testResultsDir = Path.Combine(projectRoot, "TestResults");
+            
+            // Create directory if it doesn't exist
+            if (!Directory.Exists(testResultsDir))
+            {
+                Directory.CreateDirectory(testResultsDir);
+            }
+            
+            string filePath = Path.Combine(testResultsDir, fileName);
             
             try
             {
@@ -47,7 +58,7 @@ namespace io.github.hatayama.uMCP
                 // Refresh Assets folder.
                 AssetDatabase.Refresh();
                 
-                McpLogger.LogInfo($"Test result XML saved: {fileName}");
+                McpLogger.LogInfo($"Test result XML saved: TestResults/{fileName}");
                 return filePath;
             }
             catch (Exception ex)
