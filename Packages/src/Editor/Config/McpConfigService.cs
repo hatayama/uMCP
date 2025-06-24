@@ -48,6 +48,9 @@ namespace io.github.hatayama.uMCP
         /// <param name="port">The port number to use.</param>
         public void AutoConfigure(int port)
         {
+            // Validate configuration parameters before proceeding
+            ValidateConfigurationParameters(port);
+            
             string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
             
             // Create the settings directory (only if necessary).
@@ -212,6 +215,28 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.ClaudeCode => "Claude Code",
                 _ => editorType.ToString()
             };
+        }
+
+        /// <summary>
+        /// Validates configuration parameters for fail-fast behavior
+        /// </summary>
+        private void ValidateConfigurationParameters(int port)
+        {
+            // Validate port number using shared validator
+            if (!McpPortValidator.ValidatePort(port, $"for {_editorType} configuration"))
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(port), 
+                    $"Invalid port number for {_editorType} configuration: {port}. Port must be between 1 and 65535.");
+            }
+
+            // Validate editor type
+            if (!System.Enum.IsDefined(typeof(McpEditorType), _editorType))
+            {
+                throw new System.InvalidOperationException(
+                    $"Cannot configure settings for invalid editor type: {_editorType}");
+            }
+
+            McpLogger.LogDebug($"Configuration parameters validated for {_editorType}: port={port}");
         }
     }
 } 
