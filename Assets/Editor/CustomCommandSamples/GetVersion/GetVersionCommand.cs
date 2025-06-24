@@ -6,9 +6,9 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// GetVersionコマンドハンドラー
-    /// Unityのバージョン情報を取得する
-    /// 新しいコマンドの追加例として作成
+    /// GetVersion command handler
+    /// Get Unity version information
+    /// Created as an example of adding new commands
     /// </summary>
     public class GetVersionCommand : IUnityCommand
     {

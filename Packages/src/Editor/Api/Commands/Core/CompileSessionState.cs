@@ -5,8 +5,8 @@ using Newtonsoft.Json;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// 強制再コンパイル時のSessionState管理クラス
-    /// アセンブリリロードが発生してもリクエスト情報を保持する
+    /// SessionState management class for forced recompilation
+    /// Preserves request information even when assembly reload occurs
     /// </summary>
     public static class CompileSessionState
     {
@@ -14,7 +14,7 @@ namespace io.github.hatayama.uMCP
         private const string PENDING_REQUESTS_KEY = "uMCP.PendingCompileRequests";
 
         /// <summary>
-        /// 強制再コンパイルリクエスト情報
+        /// Forced recompilation request information
         /// </summary>
         [Serializable]
         public class CompileRequestInfo
@@ -36,18 +36,18 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 強制再コンパイルリクエストを保存
+        /// Save forced recompilation request
         /// </summary>
         public static void SaveCompileRequest(string requestId, bool forceRecompile, string clientEndpoint = "unknown")
         {
-            if (!forceRecompile) return; // 通常のコンパイルは保存しない
+            if (!forceRecompile) return; // Don't save normal compilation
 
             CompileRequestInfo requestInfo = new CompileRequestInfo(requestId, forceRecompile, clientEndpoint);
             string json = JsonConvert.SerializeObject(requestInfo);
             
             SessionState.SetString(SESSION_KEY_PREFIX + requestId, json);
             
-            // 保留中のリクエストリストに追加
+            // Add to pending request list
             string[] pendingRequests = GetPendingRequestIds();
             string[] newPendingRequests = new string[pendingRequests.Length + 1];
             Array.Copy(pendingRequests, newPendingRequests, pendingRequests.Length);
@@ -59,7 +59,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 保留中のリクエストIDを取得
+        /// Get pending request IDs
         /// </summary>
         public static string[] GetPendingRequestIds()
         {
@@ -75,7 +75,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 保存されたリクエスト情報を取得
+        /// Get saved request information
         /// </summary>
         public static CompileRequestInfo GetCompileRequest(string requestId)
         {
@@ -93,7 +93,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// リクエストを完了としてマーク
+        /// Mark request as completed
         /// </summary>
         public static void MarkRequestCompleted(string requestId)
         {
@@ -104,14 +104,14 @@ namespace io.github.hatayama.uMCP
             string json = JsonConvert.SerializeObject(requestInfo);
             SessionState.SetString(SESSION_KEY_PREFIX + requestId, json);
 
-            // 保留中のリクエストリストから削除
+            // Remove from pending request list
             RemoveFromPendingRequests(requestId);
             
             McpLogger.LogDebug($"Marked compile request as completed: {requestId}");
         }
 
         /// <summary>
-        /// 保留中のリクエストリストから削除
+        /// Remove from pending request list
         /// </summary>
         private static void RemoveFromPendingRequests(string requestId)
         {
@@ -127,7 +127,7 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            // 配列のサイズを調整
+            // Adjust array size
             if (newIndex < newPendingRequests.Length)
             {
                 string[] trimmedArray = new string[newIndex];
@@ -139,7 +139,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 強制再コンパイルを開始する
+        /// Start forced recompilation
         /// </summary>
         public static void StartForceRecompile()
         {
@@ -150,7 +150,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// SessionStateをクリア
+        /// Clear SessionState
         /// </summary>
         public static void ClearAll()
         {

@@ -99,7 +99,7 @@ class SimpleMcpServer {
           toolContext,
           commandName,
           description,
-          parameterSchema  // スキーマ情報を渡す！
+          parameterSchema  // Pass schema information
         );
         
         this.dynamicTools.set(toolName, dynamicTool);

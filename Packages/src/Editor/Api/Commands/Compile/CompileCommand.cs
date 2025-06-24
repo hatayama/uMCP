@@ -11,7 +11,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class CompileCommand : AbstractUnityCommand<CompileSchema, CompileResponse>
     {
-        // SessionStateキー定数
+        // SessionState key constants
         private const string SESSION_KEY_COMPILE_FROM_MCP = "uMCP.CompileFromMCP";
         
         public override string CommandName => "compile";
@@ -38,7 +38,7 @@ namespace io.github.hatayama.uMCP
             {
                 McpLogger.LogDebug($"Compile request received: forceRecompile={forceRecompile}");
 
-                // MCP経由のコンパイルであることを示すフラグを設定
+                // Set flag indicating compilation via MCP
                 SessionState.SetBool(SESSION_KEY_COMPILE_FROM_MCP, true);
                 McpLogger.LogInfo($"CompileCommand: Set {SESSION_KEY_COMPILE_FROM_MCP} = true");
                 
@@ -47,7 +47,7 @@ namespace io.github.hatayama.uMCP
                 UnityCommandRegistry.TriggerCommandsChangedNotification();
                 McpLogger.LogDebug("CompileCommand: Sent commands changed notification before compilation");
                 
-                // CompileCheckerを使用してコンパイル実行
+                // Execute compilation using CompileChecker
                 using CompileChecker compileChecker = new CompileChecker();
                 CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
 

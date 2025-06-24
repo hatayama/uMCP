@@ -1,12 +1,12 @@
 /**
  * MCP Safe Debug Logger
- * stdout を汚さずに stderr にログ出力する開発用ログ関数
+ * Development logging functions that output to stderr without polluting stdout
  */
 
 /**
- * MCP開発用デバッグログ
- * MCP_DEBUG環境変数が設定されている時のみ stderr にログ出力
- * stdout は JSON-RPC メッセージ専用なので絶対に汚してはいけない
+ * MCP development debug log
+ * Only outputs to stderr when MCP_DEBUG environment variable is set
+ * stdout is dedicated to JSON-RPC messages and must never be polluted
  */
 export const mcpDebug = (...args: any[]): void => {
   if (process.env.MCP_DEBUG) {
@@ -18,7 +18,7 @@ export const mcpDebug = (...args: any[]): void => {
 };
 
 /**
- * MCP開発用情報ログ
+ * MCP development information log
  */
 export const mcpInfo = (...args: any[]): void => {
   if (process.env.MCP_DEBUG) {
@@ -30,7 +30,7 @@ export const mcpInfo = (...args: any[]): void => {
 };
 
 /**
- * MCP開発用警告ログ
+ * MCP development warning log
  */
 export const mcpWarn = (...args: any[]): void => {
   if (process.env.MCP_DEBUG) {
@@ -42,7 +42,7 @@ export const mcpWarn = (...args: any[]): void => {
 };
 
 /**
- * MCP開発用エラーログ
+ * MCP development error log
  */
 export const mcpError = (...args: any[]): void => {
   if (process.env.MCP_DEBUG) {

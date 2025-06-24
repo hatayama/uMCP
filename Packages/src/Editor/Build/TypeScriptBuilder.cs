@@ -6,44 +6,44 @@ using SystemDiagnostics = System.Diagnostics;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// TypeScriptサーバーのビルド処理を担当するクラス
+    /// Class responsible for TypeScript server build processing
     /// </summary>
     public class TypeScriptBuilder
     {
-        // ディレクトリ名定数
+        // Directory name constants
         private const string TYPESCRIPT_SERVER_DIR = "TypeScriptServer";
         
-        // npmコマンド定数
+        // npm command constants
         private const string NPM_COMMAND_CI = "ci";
         private const string NPM_COMMAND_BUILD_BUNDLE = "run build:bundle";
         private const string NPM_COMMAND_INSTALL = "install";
         
-        // 一般的なNode.jsパス
+        // Common Node.js paths
         private static readonly string[] COMMON_NODE_PATHS = {
             "/usr/local/bin",
             "/opt/homebrew/bin",
             "/usr/bin"
         };
         
-        // npmの可能なパス
+        // Possible npm paths
         private static readonly string[] POSSIBLE_NPM_PATHS = {
-            "/usr/local/bin/npm", // Homebrewでインストールした場合
-            "/opt/homebrew/bin/npm", // Apple Silicon Macでのbrew
-            "/usr/bin/npm" // システムインストール
+            "/usr/local/bin/npm", // When installed via Homebrew
+            "/opt/homebrew/bin/npm", // Homebrew on Apple Silicon Mac
+            "/usr/bin/npm" // System installation
         };
         
         /// <summary>
-        /// ビルド完了時のコールバック
+        /// Callback for build completion
         /// </summary>
-        /// <param name="success">ビルドが成功したかどうか</param>
-        /// <param name="output">ビルド出力</param>
-        /// <param name="error">エラー出力</param>
+        /// <param name="success">Whether the build was successful</param>
+        /// <param name="output">Build output</param>
+        /// <param name="error">Error output</param>
         public delegate void BuildCompleteCallback(bool success, string output, string error);
 
         /// <summary>
-        /// TypeScriptサーバーをビルドする
+        /// Build the TypeScript server
         /// </summary>
-        /// <param name="onComplete">ビルド完了時のコールバック</param>
+        /// <param name="onComplete">Callback for build completion</param>
         public void BuildTypeScriptServer(BuildCompleteCallback onComplete = null)
         {
             string packageBasePath = UnityMcpPathResolver.GetPackageBasePath();
@@ -62,7 +62,7 @@ namespace io.github.hatayama.uMCP
                 return;
             }
             
-            // npmのパスを取得
+            // Get npm path
             string npmPath = GetNpmPath();
             if (string.IsNullOrEmpty(npmPath))
             {
@@ -74,10 +74,10 @@ namespace io.github.hatayama.uMCP
             Debug.Log($"Building TypeScript server in: {typeScriptDir}");
             Debug.Log($"Using npm at: {npmPath}");
             
-            // npm ciを実行（package-lock.jsonから厳密にインストール）
+            // Run npm ci (strict installation from package-lock.json)
             RunCommand(npmPath, NPM_COMMAND_CI, typeScriptDir);
             
-            // esbuildでバンドルビルドを実行
+            // Run bundle build with esbuild
             RunCommand(npmPath, NPM_COMMAND_BUILD_BUNDLE, typeScriptDir);
             
             Debug.Log("TypeScript server build completed.");
@@ -85,11 +85,11 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// npm installを実行する
+        /// Execute npm install
         /// </summary>
-        /// <param name="npmPath">npmのパス</param>
-        /// <param name="workingDirectory">作業ディレクトリ</param>
-        /// <returns>成功したかどうか</returns>
+        /// <param name="npmPath">Path to npm</param>
+        /// <param name="workingDirectory">Working directory</param>
+        /// <returns>Whether it was successful</returns>
         private bool RunNpmInstall(string npmPath, string workingDirectory)
         {
             Debug.Log("Running npm install...");
@@ -105,7 +105,7 @@ namespace io.github.hatayama.uMCP
                 CreateNoWindow = true
             };
             
-            // 環境変数のPATHを設定
+            // Set PATH environment variable
             SetupEnvironmentPath(startInfo, npmPath);
             
             try
@@ -149,13 +149,13 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// npmのパスを取得する（macOS対応）
+        /// Get npm path (macOS compatible)
         /// </summary>
         private string GetNpmPath()
         {
             Debug.Log("Searching for npm command...");
             
-            // まずwhichコマンドでnpmを探す
+            // First, search for npm using which command
             try
             {
                 SystemDiagnostics.ProcessStartInfo whichInfo = new SystemDiagnostics.ProcessStartInfo
@@ -188,7 +188,7 @@ namespace io.github.hatayama.uMCP
                 Debug.LogError($"Failed to run which command: {ex.Message}");
             }
             
-            // whichで見つからない場合は、一般的なパスを試す
+            // If not found with which, try common paths
             List<string> possiblePaths = new List<string>(POSSIBLE_NPM_PATHS);
             possiblePaths.Add(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".nvm/versions/node/*/bin/npm")); // nvm
             
@@ -196,7 +196,7 @@ namespace io.github.hatayama.uMCP
             {
                 if (path.Contains("*"))
                 {
-                    // nvmパスの場合は展開して検索
+                    // For nvm paths, expand and search
                     string nvmBasePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".nvm/versions/node");
                     if (Directory.Exists(nvmBasePath))
                     {
@@ -214,7 +214,7 @@ namespace io.github.hatayama.uMCP
                 else
                 {
                     Debug.Log($"Checking npm path: {path}");
-                    // 直接パスをチェック
+                    // Check path directly
                     if (File.Exists(path))
                     {
                         Debug.Log($"Found npm at: {path}");
@@ -228,26 +228,26 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 環境変数のPATHを設定する（nodeコマンドが見つかるように）
+        /// Set PATH environment variable (so node command can be found)
         /// </summary>
         private void SetupEnvironmentPath(SystemDiagnostics.ProcessStartInfo startInfo, string npmPath)
         {
-            // npmのディレクトリからnodeのパスを推測
+            // Infer node path from npm directory
             string npmDir = Path.GetDirectoryName(npmPath);
             
-            // 現在のPATH環境変数を取得
+            // Get current PATH environment variable
             string currentPath = System.Environment.GetEnvironmentVariable("PATH") ?? "";
             
-            // 追加すべきパスのリスト
+            // List of paths to add
             List<string> additionalPaths = new List<string>();
             
-            // npmと同じディレクトリを追加
+            // Add same directory as npm
             if (!string.IsNullOrEmpty(npmDir))
             {
                 additionalPaths.Add(npmDir);
             }
             
-            // 一般的なNode.jsのパスを追加
+            // Add common Node.js paths
             
             foreach (string path in COMMON_NODE_PATHS)
             {
@@ -257,7 +257,7 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            // nvmのパスも追加
+            // Also add nvm paths
             string nvmBasePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".nvm/versions/node");
             if (Directory.Exists(nvmBasePath))
             {
@@ -272,10 +272,10 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            // 新しいPATHを構築
+            // Build new PATH
             string newPath = string.Join(":", additionalPaths) + ":" + currentPath;
             
-            // 環境変数を設定
+            // Set environment variables
             startInfo.EnvironmentVariables["PATH"] = newPath;
             
             Debug.Log($"Updated PATH for npm process: {newPath}");
@@ -296,7 +296,7 @@ namespace io.github.hatayama.uMCP
                 CreateNoWindow = true
             };
             
-            // 環境変数のPATHを設定
+            // Set PATH environment variable
             SetupEnvironmentPath(startInfo, GetNpmPath());
             
             try
