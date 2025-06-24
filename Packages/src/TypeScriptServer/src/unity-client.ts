@@ -5,7 +5,8 @@ import {
   TIMEOUTS, 
   LOG_CONFIG, 
   TEST_CONFIG, 
-  ERROR_MESSAGES 
+  ERROR_MESSAGES,
+  POLLING 
 } from './constants.js';
 import { mcpDebug, mcpInfo, mcpWarn, mcpError } from './utils/mcp-debug.js';
 
@@ -313,8 +314,8 @@ export class UnityClient {
   private getTimeoutForCommand(commandName: string, params: any): number {
     // Check if TimeoutSeconds parameter is provided (from BaseCommandSchema)
     if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === 'number' && params.TimeoutSeconds > 0) {
-      // Add 10 seconds buffer to Unity timeout to ensure Unity timeout triggers first
-      const calculatedTimeout = (params.TimeoutSeconds + 10) * 1000;
+      // Add buffer to Unity timeout to ensure Unity timeout triggers first
+      const calculatedTimeout = (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1000;
       mcpDebug(`[UnityClient] Using dynamic timeout for ${commandName}: params.TimeoutSeconds=${params.TimeoutSeconds}s, final=${calculatedTimeout}ms`);
       return calculatedTimeout;
     }
@@ -322,7 +323,7 @@ export class UnityClient {
     // Fallback to command-specific defaults
     switch (commandName) {
       case 'runtests':
-        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1000 + 10) * 1000;
+        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1000 + POLLING.BUFFER_SECONDS) * 1000;
         mcpDebug(`[UnityClient] Using default timeout for runtests: ${defaultTimeout}ms`);
         return defaultTimeout;
       case 'compile':
@@ -405,7 +406,7 @@ export class UnityClient {
   private startPolling(): void {
     if (this.pollingInterval) return; // Already polling
     
-    mcpInfo('[UnityClient] Starting connection recovery polling (3s interval)');
+    mcpInfo(`[UnityClient] Starting connection recovery polling (${POLLING.INTERVAL_MS}ms interval)`);
     
     this.pollingInterval = setInterval(async () => {
       try {
@@ -420,7 +421,7 @@ export class UnityClient {
       } catch (error) {
         // Silent retry - connection still down
       }
-    }, 3000);
+    }, POLLING.INTERVAL_MS);
   }
 
   /**

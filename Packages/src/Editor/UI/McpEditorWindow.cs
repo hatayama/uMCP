@@ -16,12 +16,7 @@ namespace io.github.hatayama.uMCP
         // Constants for SessionState
 
         
-        // UI constants
-        private const float MIN_WINDOW_WIDTH = 400f;
-        private const float MIN_WINDOW_HEIGHT = 200f;
-        private const float DEFAULT_COMMUNICATION_LOG_HEIGHT = 300f;
-        private const float MIN_COMMUNICATION_LOG_HEIGHT = 100f;
-        private const float MAX_COMMUNICATION_LOG_HEIGHT = 800f;
+        // UI constants - moved to McpUIConstants class
         
         // UI state
         private int customPort = McpServerConfig.DEFAULT_PORT;
@@ -32,7 +27,7 @@ namespace io.github.hatayama.uMCP
         private bool enableMcpLogs = false;
         private bool enableDevelopmentMode = false;
         private Vector2 communicationLogScrollPosition;
-        private float communicationLogHeight = DEFAULT_COMMUNICATION_LOG_HEIGHT; // Height of resizable communication log area
+        private float communicationLogHeight = McpUIConstants.DEFAULT_COMMUNICATION_LOG_HEIGHT; // Height of resizable communication log area
         private bool isResizingCommunicationLog = false; // Whether currently resizing
         
         // UI state for editor selection
@@ -54,7 +49,7 @@ namespace io.github.hatayama.uMCP
         public static void ShowWindow()
         {
             McpEditorWindow window = GetWindow<McpEditorWindow>(McpConstants.PROJECT_NAME);
-            window.minSize = new Vector2(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT);
+            window.minSize = new Vector2(McpUIConstants.MIN_WINDOW_WIDTH, McpUIConstants.MIN_WINDOW_HEIGHT);
             window.Show();
         }
 
@@ -82,7 +77,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.EnableDebugLog = enableMcpLogs;
             
             // Restore communication log area height (from SessionState)
-            communicationLogHeight = SessionState.GetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, DEFAULT_COMMUNICATION_LOG_HEIGHT);
+            communicationLogHeight = SessionState.GetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, McpUIConstants.DEFAULT_COMMUNICATION_LOG_HEIGHT);
             
             // Subscribe to log update events
             McpCommunicationLogger.OnLogUpdated += Repaint;
@@ -179,8 +174,8 @@ namespace io.github.hatayama.uMCP
             
             // Display Server Status, Status, and Port all horizontally
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Server Status:", EditorStyles.boldLabel, GUILayout.Width(85));
-            EditorGUILayout.LabelField($"{status}", statusStyle, GUILayout.Width(80));
+            EditorGUILayout.LabelField("Server Status:", EditorStyles.boldLabel, GUILayout.Width(McpUIConstants.LABEL_WIDTH_SERVER_STATUS));
+            EditorGUILayout.LabelField($"{status}", statusStyle, GUILayout.Width(McpUIConstants.LABEL_WIDTH_STATUS));
             EditorGUILayout.LabelField($"Port: {port}");
             EditorGUILayout.EndHorizontal();
             
@@ -231,14 +226,14 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.BeginHorizontal();
             
             EditorGUI.BeginDisabledGroup(!isRunning);
-            if (GUILayout.Button("Stop Server", GUILayout.Height(30)))
+            if (GUILayout.Button("Stop Server", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
             {
                 StopServer();
             }
             EditorGUI.EndDisabledGroup();
             
             EditorGUI.BeginDisabledGroup(isRunning);
-            if (GUILayout.Button("Start Server", GUILayout.Height(30)))
+            if (GUILayout.Button("Start Server", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
             {
                 StartServer();
             }
@@ -545,7 +540,7 @@ namespace io.github.hatayama.uMCP
                 // Command notification button
                 bool isServerRunning = McpServerController.IsServerRunning;
                 EditorGUI.BeginDisabledGroup(!isServerRunning);
-                if (GUILayout.Button("Notify Command Changes to LLM Tools", GUILayout.Height(25)))
+                if (GUILayout.Button("Notify Command Changes to LLM Tools", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_MEDIUM)))
                 {
                     NotifyCommandChanges();
                 }
@@ -559,7 +554,7 @@ namespace io.github.hatayama.uMCP
                 EditorGUILayout.Space();
                 
                 // TypeScript build button
-                if (GUILayout.Button("Rebuild TypeScript Server", GUILayout.Height(30)))
+                if (GUILayout.Button("Rebuild TypeScript Server", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
                 {
                     RebuildTypeScriptServer();
                 }
@@ -621,7 +616,7 @@ namespace io.github.hatayama.uMCP
             
             if (showCommunicationLogs)
             {
-                if (GUILayout.Button("Clear", GUILayout.Width(60)))
+                if (GUILayout.Button("Clear", GUILayout.Width(McpUIConstants.BUTTON_WIDTH_CLEAR)))
                 {
                     McpCommunicationLogger.ClearLogs();
                 }
@@ -742,7 +737,7 @@ namespace io.github.hatayama.uMCP
             string[] lines = jsonContent.Split('\n');
             int lineCount = lines.Length;
             float lineHeight = EditorGUIUtility.singleLineHeight;
-            float contentHeight = Mathf.Max(80f, Mathf.Min(lineCount * lineHeight + 20f, 200f)); // Minimum 80px, maximum 200px
+            float contentHeight = Mathf.Max(McpUIConstants.JSON_CONTENT_MIN_HEIGHT, Mathf.Min(lineCount * lineHeight + 20f, McpUIConstants.JSON_CONTENT_MAX_HEIGHT)); // Minimum 80px, maximum 200px
             
             // Display with regular SelectableLabel (scrolling handled by outer communication log)
             EditorGUILayout.SelectableLabel(jsonContent, textAreaStyle, GUILayout.Height(contentHeight));
@@ -761,11 +756,11 @@ namespace io.github.hatayama.uMCP
             int lineCount = lines.Length;
             float lineHeight = EditorGUIUtility.singleLineHeight;
             
-            // Create scrollable area with fixed height (150px)
-            float fixedHeight = 150f;
+            // Create scrollable area with fixed height
+            float fixedHeight = McpUIConstants.JSON_SCROLL_FIXED_HEIGHT;
             
             // Calculate actual content height (ensure sufficient margin)
-            float contentHeight = lineCount * lineHeight + 50f; // Top/bottom padding + generous margin
+            float contentHeight = lineCount * lineHeight + McpUIConstants.JSON_CONTENT_PADDING; // Top/bottom padding + generous margin
             
             // Get scroll position (initialize if not exists)
             if (!scrollPositions.ContainsKey(scrollKey))
@@ -790,8 +785,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void DrawCommunicationLogResizeHandle()
         {
-            // Get resize handle area (increase height to 8px for better visibility)
-            Rect handleRect = GUILayoutUtility.GetRect(0, 8, GUILayout.ExpandWidth(true));
+            // Get resize handle area (increase height for better visibility)
+            Rect handleRect = GUILayoutUtility.GetRect(0, McpUIConstants.RESIZE_HANDLE_HEIGHT, GUILayout.ExpandWidth(true));
             
             // Change mouse cursor to resize cursor
             EditorGUIUtility.AddCursorRect(handleRect, MouseCursor.ResizeVertical);
@@ -802,18 +797,18 @@ namespace io.github.hatayama.uMCP
                 Color originalColor = GUI.color;
                 
                 // Make background slightly darker
-                GUI.color = new Color(0.3f, 0.3f, 0.3f, 0.3f);
+                GUI.color = new Color(McpUIConstants.RESIZE_HANDLE_BACKGROUND_ALPHA, McpUIConstants.RESIZE_HANDLE_BACKGROUND_ALPHA, McpUIConstants.RESIZE_HANDLE_BACKGROUND_ALPHA, McpUIConstants.RESIZE_HANDLE_BACKGROUND_ALPHA);
                 GUI.DrawTexture(handleRect, EditorGUIUtility.whiteTexture);
                 
                 // Draw three dots in center to look like a handle
-                GUI.color = new Color(0.6f, 0.6f, 0.6f, 0.8f);
+                GUI.color = new Color(McpUIConstants.RESIZE_HANDLE_DOT_BRIGHTNESS, McpUIConstants.RESIZE_HANDLE_DOT_BRIGHTNESS, McpUIConstants.RESIZE_HANDLE_DOT_BRIGHTNESS, McpUIConstants.RESIZE_HANDLE_DOT_ALPHA);
                 float centerX = handleRect.x + handleRect.width * 0.5f;
                 float centerY = handleRect.y + handleRect.height * 0.5f;
                 
                 // Draw three dots
                 for (int i = -1; i <= 1; i++)
                 {
-                    Rect dotRect = new Rect(centerX + i * 4 - 1, centerY - 1, 2, 2);
+                    Rect dotRect = new Rect(centerX + i * McpUIConstants.DOT_SPACING - 1, centerY - 1, McpUIConstants.DOT_SIZE, McpUIConstants.DOT_SIZE);
                     GUI.DrawTexture(dotRect, EditorGUIUtility.whiteTexture);
                 }
                 
@@ -835,7 +830,7 @@ namespace io.github.hatayama.uMCP
                     communicationLogHeight += Event.current.delta.y;
                     
                     // Limit minimum and maximum height
-                    communicationLogHeight = Mathf.Clamp(communicationLogHeight, MIN_COMMUNICATION_LOG_HEIGHT, MAX_COMMUNICATION_LOG_HEIGHT);
+                    communicationLogHeight = Mathf.Clamp(communicationLogHeight, McpUIConstants.MIN_COMMUNICATION_LOG_HEIGHT, McpUIConstants.MAX_COMMUNICATION_LOG_HEIGHT);
                     
                     // Save to SessionState
                     SessionState.SetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, communicationLogHeight);

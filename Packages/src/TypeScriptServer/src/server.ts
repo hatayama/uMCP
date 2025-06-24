@@ -12,7 +12,7 @@ import { DebugLogger } from './utils/debug-logger.js';
 import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
 import { mcpDebug, mcpInfo, mcpError, mcpWarn } from './utils/mcp-debug.js';
-import { ENVIRONMENT, DEFAULT_MESSAGES } from './constants.js';
+import { ENVIRONMENT, DEFAULT_MESSAGES, UNITY_CONNECTION } from './constants.js';
 import packageJson from '../package.json' assert { type: 'json' };
 
 /**
@@ -278,7 +278,7 @@ class SimpleMcpServer {
     try {
       await this.unityClient.ensureConnected();
       const response = await this.unityClient.ping(message);
-      const port = process.env.UNITY_TCP_PORT || '7400';
+      const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
       
       // Handle the new BaseCommandResponse format with timing info
       let responseText = '';

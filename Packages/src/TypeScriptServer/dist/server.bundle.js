@@ -5574,6 +5574,10 @@ var ERROR_MESSAGES = {
   TIMEOUT: "timeout",
   INVALID_RESPONSE: "Invalid response from Unity"
 };
+var POLLING = {
+  INTERVAL_MS: 3e3,
+  BUFFER_SECONDS: 10
+};
 
 // src/utils/mcp-debug.ts
 var mcpDebug = (...args) => {
@@ -5848,13 +5852,13 @@ var UnityClient = class {
    */
   getTimeoutForCommand(commandName, params) {
     if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0) {
-      const calculatedTimeout = (params.TimeoutSeconds + 10) * 1e3;
+      const calculatedTimeout = (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1e3;
       mcpDebug(`[UnityClient] Using dynamic timeout for ${commandName}: params.TimeoutSeconds=${params.TimeoutSeconds}s, final=${calculatedTimeout}ms`);
       return calculatedTimeout;
     }
     switch (commandName) {
       case "runtests":
-        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1e3 + 10) * 1e3;
+        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1e3 + POLLING.BUFFER_SECONDS) * 1e3;
         mcpDebug(`[UnityClient] Using default timeout for runtests: ${defaultTimeout}ms`);
         return defaultTimeout;
       case "compile":
@@ -5924,7 +5928,7 @@ var UnityClient = class {
    */
   startPolling() {
     if (this.pollingInterval) return;
-    mcpInfo("[UnityClient] Starting connection recovery polling (3s interval)");
+    mcpInfo(`[UnityClient] Starting connection recovery polling (${POLLING.INTERVAL_MS}ms interval)`);
     this.pollingInterval = setInterval(async () => {
       try {
         await this.connect();
@@ -5935,7 +5939,7 @@ var UnityClient = class {
         }
       } catch (error) {
       }
-    }, 3e3);
+    }, POLLING.INTERVAL_MS);
   }
   /**
    * Stop polling
@@ -6339,7 +6343,7 @@ var SimpleMcpServer = class {
     try {
       await this.unityClient.ensureConnected();
       const response = await this.unityClient.ping(message);
-      const port = process.env.UNITY_TCP_PORT || "7400";
+      const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
       let responseText = "";
       if (typeof response === "object" && response !== null) {
         const respObj = response;
