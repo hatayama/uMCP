@@ -384,17 +384,17 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
    * Start the server
    */
   async start(): Promise<void> {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    
-    // Setup Unity event notification listener BEFORE initializing tools
+    // Setup Unity event notification listener BEFORE connecting
     this.setupUnityEventListener();
     
-    // Initialize dynamic Unity command tools
+    // Initialize dynamic Unity command tools BEFORE connecting to MCP transport
+    mcpInfo('[Simple MCP] Initializing dynamic tools before connecting...');
     await this.initializeDynamicTools();
     
-    // Send initial notification to update tool list
-    this.sendToolsChangedNotification();
+    // Now connect to MCP transport - at this point all tools should be ready
+    const transport = new StdioServerTransport();
+    mcpInfo('[Simple MCP] Connecting to MCP transport with all tools ready...');
+    await this.server.connect(transport);
     
     mcpInfo('[Simple MCP] Server started with Unity event-based tool updates');
   }
@@ -434,15 +434,16 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
    * Send tools changed notification
    */
   private sendToolsChangedNotification(): void {
-    DebugLogger.logNotification("notifications/tools/list_changed", { dynamicToolsCount: this.dynamicTools.size });
+    mcpInfo(`[Simple MCP] Sending tools changed notification, dynamic tools count: ${this.dynamicTools.size}`);
     
     try {
       this.server.notification({
         method: "notifications/tools/list_changed",
         params: {}
       });
+      mcpInfo('[Simple MCP] Tools changed notification sent successfully');
     } catch (error) {
-      DebugLogger.error('Failed to send tools changed notification', error);
+      mcpError('[Simple MCP] Failed to send tools changed notification:', error);
     }
   }
 

@@ -480,8 +480,8 @@ function getErrorMap() {
 
 // node_modules/zod/dist/esm/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path, errorMaps, issueData } = params;
-  const fullPath = [...path, ...issueData.path || []];
+  const { data, path: path2, errorMaps, issueData } = params;
+  const fullPath = [...path2, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -597,11 +597,11 @@ var errorUtil;
 
 // node_modules/zod/dist/esm/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path, key) {
+  constructor(parent, value, path2, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path;
+    this._path = path2;
     this._key = key;
   }
   get path() {
@@ -5580,6 +5580,25 @@ var POLLING = {
 };
 
 // src/utils/mcp-debug.ts
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+var logDir = path.join(os.homedir(), "tmp");
+var logFile = path.join(logDir, "mcp-debug.log");
+try {
+  fs.mkdirSync(logDir, { recursive: true });
+} catch (error) {
+}
+var writeToFile = (message) => {
+  try {
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+    fs.appendFileSync(logFile, `${timestamp} ${message}
+`);
+  } catch (error) {
+    process.stderr.write(`[FILE-WRITE-ERROR] ${message}
+`);
+  }
+};
 var mcpDebug = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
@@ -5587,6 +5606,7 @@ var mcpDebug = (...args) => {
     ).join(" ");
     process.stderr.write(`[MCP-DEBUG] ${message}
 `);
+    writeToFile(`[MCP-DEBUG] ${message}`);
   }
 };
 var mcpInfo = (...args) => {
@@ -5596,6 +5616,7 @@ var mcpInfo = (...args) => {
     ).join(" ");
     process.stderr.write(`[MCP-INFO] ${message}
 `);
+    writeToFile(`[MCP-INFO] ${message}`);
   }
 };
 var mcpWarn = (...args) => {
@@ -5605,6 +5626,7 @@ var mcpWarn = (...args) => {
     ).join(" ");
     process.stderr.write(`[MCP-WARN] ${message}
 `);
+    writeToFile(`[MCP-WARN] ${message}`);
   }
 };
 var mcpError = (...args) => {
@@ -5614,6 +5636,7 @@ var mcpError = (...args) => {
     ).join(" ");
     process.stderr.write(`[MCP-ERROR] ${message}
 `);
+    writeToFile(`[MCP-ERROR] ${message}`);
   }
 };
 
@@ -6440,11 +6463,12 @@ ${JSON.stringify(detailsResponse, null, 2)}`
    * Start the server
    */
   async start() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
     this.setupUnityEventListener();
+    mcpInfo("[Simple MCP] Initializing dynamic tools before connecting...");
     await this.initializeDynamicTools();
-    this.sendToolsChangedNotification();
+    const transport = new StdioServerTransport();
+    mcpInfo("[Simple MCP] Connecting to MCP transport with all tools ready...");
+    await this.server.connect(transport);
     mcpInfo("[Simple MCP] Server started with Unity event-based tool updates");
   }
   /**
@@ -6475,14 +6499,15 @@ ${JSON.stringify(detailsResponse, null, 2)}`
    * Send tools changed notification
    */
   sendToolsChangedNotification() {
-    DebugLogger.logNotification("notifications/tools/list_changed", { dynamicToolsCount: this.dynamicTools.size });
+    mcpInfo(`[Simple MCP] Sending tools changed notification, dynamic tools count: ${this.dynamicTools.size}`);
     try {
       this.server.notification({
         method: "notifications/tools/list_changed",
         params: {}
       });
+      mcpInfo("[Simple MCP] Tools changed notification sent successfully");
     } catch (error) {
-      DebugLogger.error("Failed to send tools changed notification", error);
+      mcpError("[Simple MCP] Failed to send tools changed notification:", error);
     }
   }
 };
