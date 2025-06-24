@@ -75,6 +75,8 @@ Model Context Protocolを使用してUnity EditorをLLMツールに接続しま�
     - `testname`: 個別テスト名
     - `assembly`: アセンブリ名
   - `SaveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）
+    - XMLファイルは `TestResults/` フォルダに保存されます（プロジェクトルート）
+    - **推奨**: `.gitignore` に `TestResults/` を追加してバージョン管理から除外してください
 - **レスポンス**: 
   - `Success` (boolean): テスト実行が成功したかどうか
   - `Message` (string): テスト実行メッセージ

@@ -48,16 +48,12 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public string XmlPath { get; set; }
 
-        /// <summary>
-        /// XML content of test results
-        /// </summary>
-        public string XmlContent { get; set; }
 
         /// <summary>
         /// Create a new RunTestsResponse
         /// </summary>
         public RunTestsResponse(bool success, string message, string completedAt, int testCount, 
-                               int passedCount, int failedCount, int skippedCount, string xmlPath = null, string xmlContent = null)
+                               int passedCount, int failedCount, int skippedCount, string xmlPath = null)
         {
             Success = success;
             Message = message;
@@ -67,7 +63,6 @@ namespace io.github.hatayama.uMCP
             FailedCount = failedCount;
             SkippedCount = skippedCount;
             XmlPath = xmlPath;
-            XmlContent = xmlContent;
         }
     }
 } 

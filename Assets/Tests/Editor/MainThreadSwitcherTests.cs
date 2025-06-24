@@ -22,17 +22,29 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Verifies that when called from the main thread, it executes immediately
         /// </summary>
-        [Test]
-        public async Task SwitchToMainThread_WhenCalledFromMainThread_ShouldExecuteImmediately()
+        [UnityTest]
+        public IEnumerator SwitchToMainThread_WhenCalledFromMainThread_ShouldExecuteImmediately()
         {
             // Arrange
             bool executedImmediately = false;
             int executionThreadId = -1;
+            bool completed = false;
 
             // Act
-            await MainThreadSwitcher.SwitchToMainThread();
-            executedImmediately = true;
-            executionThreadId = Thread.CurrentThread.ManagedThreadId;
+            Task.Run(async () => {
+                try {
+                    await MainThreadSwitcher.SwitchToMainThread();
+                    executedImmediately = true;
+                    executionThreadId = Thread.CurrentThread.ManagedThreadId;
+                    completed = true;
+                } catch (System.Exception ex) {
+                    UnityEngine.Debug.LogError($"Test failed: {ex.Message}");
+                    completed = true;
+                }
+            });
+
+            // Wait for completion
+            yield return new UnityEngine.WaitUntil(() => completed);
 
             // Assert
             Assert.That(executedImmediately, Is.True, "Should execute immediately when called from main thread");
@@ -77,16 +89,28 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Verifies that PlayerLoopTiming can be specified
         /// </summary>
-        [Test]
-        public async Task SwitchToMainThread_WithPlayerLoopTiming_ShouldAcceptTiming()
+        [UnityTest]
+        public IEnumerator SwitchToMainThread_WithPlayerLoopTiming_ShouldAcceptTiming()
         {
             // Arrange
             PlayerLoopTiming timing = PlayerLoopTiming.FixedUpdate;
             bool executed = false;
+            bool completed = false;
 
             // Act
-            await MainThreadSwitcher.SwitchToMainThread(timing);
-            executed = true;
+            Task.Run(async () => {
+                try {
+                    await MainThreadSwitcher.SwitchToMainThread(timing);
+                    executed = true;
+                    completed = true;
+                } catch (System.Exception ex) {
+                    UnityEngine.Debug.LogError($"Test failed: {ex.Message}");
+                    completed = true;
+                }
+            });
+
+            // Wait for completion
+            yield return new UnityEngine.WaitUntil(() => completed);
 
             // Assert
             Assert.That(executed, Is.True, "Should execute with specified timing");
