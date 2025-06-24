@@ -18,8 +18,8 @@ export class UnityClient {
   private _connected: boolean = false;
   private readonly port: number;
   private readonly host: string = UNITY_CONNECTION.DEFAULT_HOST;
-  private notificationHandlers: Map<string, (params: any) => void> = new Map();
-  private pendingRequests: Map<number, { resolve: (value: any) => void, reject: (reason: any) => void }> = new Map();
+  private notificationHandlers: Map<string, (params: unknown) => void> = new Map();
+  private pendingRequests: Map<number, { resolve: (value: unknown) => void, reject: (reason: unknown) => void }> = new Map();
   private reconnectHandlers: Set<() => void> = new Set();
   
   // Polling system
@@ -38,7 +38,7 @@ export class UnityClient {
   /**
    * Register notification handler for specific method
    */
-  onNotification(method: string, handler: (params: any) => void): void {
+  onNotification(method: string, handler: (params: unknown) => void): void {
     this.notificationHandlers.set(method, handler);
     mcpDebug(`[UnityClient] Registered notification handler for method: ${method}`);
   }
@@ -93,7 +93,7 @@ export class UnityClient {
   /**
    * Handle notification from Unity
    */
-  private handleNotification(notification: any): void {
+  private handleNotification(notification: { method: string; params: unknown }): void {
     const { method, params } = notification;
     
     mcpDebug(`[UnityClient] Received notification: ${method}`, params);
@@ -113,7 +113,7 @@ export class UnityClient {
   /**
    * Handle response from Unity
    */
-  private handleResponse(response: any): void {
+  private handleResponse(response: { id: number; error?: { message: string }; result?: unknown }): void {
     const { id } = response;
     const pending = this.pendingRequests.get(id);
     
@@ -136,27 +136,27 @@ export class UnityClient {
    */
   async testConnection(): Promise<boolean> {
     if (!this._connected || this.socket === null || this.socket.destroyed) {
+      mcpWarn('[UnityClient] Connection test failed: socket not connected or destroyed');
       return false;
     }
 
-    try {
-      // Send a simple ping to test if actual communication is possible
-      await this.ping(UNITY_CONNECTION.CONNECTION_TEST_MESSAGE);
-      return true;
-    } catch {
-      // Set connection to disconnected state if communication fails
-      this._connected = false;
-      return false;
-    }
+    // Send a simple ping to test if actual communication is possible
+    await this.ping(UNITY_CONNECTION.CONNECTION_TEST_MESSAGE);
+    return true;
   }
 
   /**
    * Connect to Unity (reconnect if necessary)
    */
   async ensureConnected(): Promise<void> {
-    // Return as is if already connected and actual communication is possible
-    if (await this.testConnection()) {
-      return;
+    // Test if already connected and actual communication is possible
+    try {
+      if (await this.testConnection()) {
+        return;
+      }
+    } catch (error) {
+      mcpWarn('[UnityClient] Connection test failed during ensureConnected:', error);
+      this._connected = false;
     }
 
     // Reconnect if connection is lost
@@ -207,7 +207,7 @@ export class UnityClient {
   /**
    * Send ping to Unity
    */
-  async ping(message: string): Promise<any> {
+  async ping(message: string): Promise<unknown> {
     if (!this.connected) {
       throw new Error('Not connected to Unity');
     }
@@ -278,7 +278,7 @@ export class UnityClient {
   /**
    * Execute any Unity command dynamically
    */
-  async executeCommand(commandName: string, params: any = {}): Promise<any> {
+  async executeCommand(commandName: string, params: Record<string, unknown> = {}): Promise<unknown> {
     await this.ensureConnected();
     
     // Add detailed logging for debugging
@@ -311,7 +311,7 @@ export class UnityClient {
    * Get timeout duration for specific command
    * Now supports dynamic TimeoutSeconds parameter for all commands
    */
-  private getTimeoutForCommand(commandName: string, params: any): number {
+  private getTimeoutForCommand(commandName: string, params: Record<string, unknown>): number {
     // Check if TimeoutSeconds parameter is provided (from BaseCommandSchema)
     if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === 'number' && params.TimeoutSeconds > 0) {
       // Add buffer to Unity timeout to ensure Unity timeout triggers first
@@ -351,7 +351,7 @@ export class UnityClient {
   /**
    * Send request and wait for response
    */
-  private async sendRequest(request: any, timeoutMs?: number): Promise<any> {
+  private async sendRequest(request: { id: number; method: string; [key: string]: unknown }, timeoutMs?: number): Promise<{ id: number; error?: { message: string }; result?: unknown }> {
     return new Promise((resolve, reject) => {
       // Use provided timeout or default to PING timeout
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
@@ -419,7 +419,7 @@ export class UnityClient {
           this.onReconnectedCallback();
         }
       } catch (error) {
-        // Silent retry - connection still down
+        mcpDebug(`[UnityClient] Polling retry failed (connection still down):`, error);
       }
     }, POLLING.INTERVAL_MS);
   }
