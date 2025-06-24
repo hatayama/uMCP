@@ -6220,7 +6220,7 @@ var SimpleMcpServer = class {
           commandName,
           description,
           parameterSchema
-          // スキーマ情報を渡す！
+          // Pass schema information
         );
         this.dynamicTools.set(toolName, dynamicTool);
         mcpDebug(`[Simple MCP] Created dynamic tool: ${toolName} with schema:`, parameterSchema);
