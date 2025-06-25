@@ -6221,10 +6221,11 @@ var SimpleMcpServer = class {
       mcpInfo("[Simple MCP] Fetching Unity command details with schemas...");
       await this.unityClient.ensureConnected();
       mcpInfo("[Simple MCP] Unity connection established successfully");
-      const commandDetails = await this.unityClient.executeCommand("getCommandDetails", {});
-      mcpInfo("[Simple MCP] Raw command details response:", commandDetails);
+      const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
+      mcpInfo("[Simple MCP] Raw command details response:", commandDetailsResponse);
+      const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
-        mcpError("[Simple MCP] Invalid command details response:", commandDetails);
+        mcpError("[Simple MCP] Invalid command details response:", commandDetailsResponse);
         return;
       }
       mcpInfo(`[Simple MCP] Found ${commandDetails.length} Unity commands with schemas`);
@@ -6429,16 +6430,18 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     try {
       await this.unityClient.ensureConnected();
       const commandsResponse = await this.unityClient.executeCommand("getAvailableCommands", {});
+      const commands = commandsResponse?.Commands || commandsResponse;
       const detailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
+      const details = detailsResponse?.Commands || detailsResponse;
       return {
         content: [
           {
             type: "text",
             text: `Available Unity Commands:
-${JSON.stringify(commandsResponse, null, 2)}
+${JSON.stringify(commands, null, 2)}
 
 Command Details with Schemas:
-${JSON.stringify(detailsResponse, null, 2)}`
+${JSON.stringify(details, null, 2)}`
           }
         ]
       };
