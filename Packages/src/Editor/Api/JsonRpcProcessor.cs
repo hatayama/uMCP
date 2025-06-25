@@ -79,7 +79,9 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Create JSON-RPC success response
         /// </summary>
-        private static string CreateSuccessResponse(object id, object result)
+        /// <param name="id">Request ID - must be same type as received (string/number/null per JSON-RPC spec)</param>
+        /// <param name="result">Command execution result</param>
+        private static string CreateSuccessResponse(object id, BaseCommandResponse result)
         {
             JObject response = new JObject
             {
@@ -93,6 +95,8 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Create JSON-RPC error response
         /// </summary>
+        /// <param name="id">Request ID - must be same type as received (string/number/null per JSON-RPC spec)</param>
+        /// <param name="ex">Exception to convert to error response</param>
         private static string CreateErrorResponse(object id, Exception ex)
         {
             JObject errorResponse = new JObject
@@ -127,6 +131,11 @@ namespace io.github.hatayama.uMCP
     {
         public string Method { get; set; }
         public JToken Params { get; set; }
+        /// <summary>
+        /// JSON-RPC 2.0 spec allows id to be string, number, or null.
+        /// We use object type to preserve the original type sent by client.
+        /// The response must return the same id type as received.
+        /// </summary>
         public object Id { get; set; }
         public bool IsNotification { get; set; }
     }
@@ -137,8 +146,12 @@ namespace io.github.hatayama.uMCP
     internal class JsonRpcResponse
     {
         public string JsonRpc { get; set; } = McpServerConfig.JSONRPC_VERSION;
+        /// <summary>
+        /// JSON-RPC 2.0 spec requires id type to match the request.
+        /// Must be string, number, or null - same as received.
+        /// </summary>
         public object Id { get; set; }
-        public object Result { get; set; }
+        public BaseCommandResponse Result { get; set; }
         public JsonRpcError Error { get; set; }
         
         public bool IsSuccess => Error == null;
