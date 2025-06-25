@@ -270,9 +270,6 @@ export class UnityClient {
    * Execute any Unity command dynamically
    */
   async executeCommand(commandName: string, params: Record<string, unknown> = {}): Promise<unknown> {
-    await this.ensureConnected();
-    
-    
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
@@ -383,19 +380,28 @@ export class UnityClient {
    * Start polling for connection recovery
    */
   private startPolling(): void {
-    if (this.pollingInterval) return; // Already polling
+    if (this.pollingInterval) {
+      mcpError('[TRACE] startPolling skipped: Already polling');
+      return; // Already polling
+    }
     
+    const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
+    mcpError(`[TRACE] startPolling started at ${timestamp}`);
     
     this.pollingInterval = setInterval(async () => {
       try {
+        mcpError('[TRACE] Polling attempt: trying to connect');
         await this.connect();
+        mcpError('[TRACE] Polling success: connection established, stopping polling');
         this.stopPolling();
         
         // Notify about reconnection
         if (this.onReconnectedCallback) {
+          mcpError('[TRACE] Polling: calling onReconnectedCallback');
           this.onReconnectedCallback();
         }
       } catch (error) {
+        mcpError(`[TRACE] Polling failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }, POLLING.INTERVAL_MS);
   }
@@ -405,8 +411,11 @@ export class UnityClient {
    */
   private stopPolling(): void {
     if (this.pollingInterval) {
+      mcpError('[TRACE] stopPolling: stopping polling interval');
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
+    } else {
+      mcpError('[TRACE] stopPolling: no polling interval to stop');
     }
   }
 } 

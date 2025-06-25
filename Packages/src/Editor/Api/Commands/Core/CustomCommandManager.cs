@@ -36,6 +36,7 @@ namespace io.github.hatayama.uMCP
             SharedRegistry.RegisterCommand(command);
             
             // Notify command changes for manual registration
+            McpLogger.LogDebug("[TRACE] RegisterCustomCommand: About to call NotifyCommandChanges (CUSTOM_COMMAND_REGISTER)");
             NotifyCommandChanges();
         }
 
@@ -48,6 +49,7 @@ namespace io.github.hatayama.uMCP
             SharedRegistry.UnregisterCommand(commandName);
             
             // Notify command changes for manual unregistration
+            McpLogger.LogDebug("[TRACE] UnregisterCustomCommand: About to call NotifyCommandChanges (CUSTOM_COMMAND_UNREGISTER)");
             NotifyCommandChanges();
         }
 
@@ -103,6 +105,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void NotifyCommandChanges()
         {
+            McpLogger.LogDebug($"[TRACE] CustomCommandManager.NotifyCommandChanges called at {System.DateTime.Now:HH:mm:ss.fff}");
             UnityCommandRegistry.TriggerCommandsChangedNotification();
         }
     }

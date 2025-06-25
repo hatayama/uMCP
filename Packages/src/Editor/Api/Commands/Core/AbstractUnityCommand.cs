@@ -51,7 +51,6 @@ namespace io.github.hatayama.uMCP
                 if (response is BaseCommandResponse baseResponse)
                 {
                     baseResponse.SetTimingInfo(startTime, endTime);
-                    McpLogger.LogDebug($"Command {CommandName} executed in {baseResponse.ExecutionTimeMs}ms");
                 }
 
                 // Return as BaseCommandResponse for IUnityCommand interface compatibility

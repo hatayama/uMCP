@@ -5772,7 +5772,6 @@ var UnityClient = class {
    * Execute any Unity command dynamically
    */
   async executeCommand(commandName, params = {}) {
-    await this.ensureConnected();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
@@ -5859,15 +5858,24 @@ var UnityClient = class {
    * Start polling for connection recovery
    */
   startPolling() {
-    if (this.pollingInterval) return;
+    if (this.pollingInterval) {
+      mcpError("[TRACE] startPolling skipped: Already polling");
+      return;
+    }
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
+    mcpError(`[TRACE] startPolling started at ${timestamp2}`);
     this.pollingInterval = setInterval(async () => {
       try {
+        mcpError("[TRACE] Polling attempt: trying to connect");
         await this.connect();
+        mcpError("[TRACE] Polling success: connection established, stopping polling");
         this.stopPolling();
         if (this.onReconnectedCallback) {
+          mcpError("[TRACE] Polling: calling onReconnectedCallback");
           this.onReconnectedCallback();
         }
       } catch (error) {
+        mcpError(`[TRACE] Polling failed: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     }, POLLING.INTERVAL_MS);
   }
@@ -5876,8 +5884,11 @@ var UnityClient = class {
    */
   stopPolling() {
     if (this.pollingInterval) {
+      mcpError("[TRACE] stopPolling: stopping polling interval");
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
+    } else {
+      mcpError("[TRACE] stopPolling: no polling interval to stop");
     }
   }
 };
@@ -6095,6 +6106,7 @@ var SimpleMcpServer = class {
   isDevelopment;
   dynamicTools = /* @__PURE__ */ new Map();
   isShuttingDown = false;
+  isRefreshing = false;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     mcpInfo("Simple Unity MCP Server Starting");
@@ -6115,7 +6127,7 @@ var SimpleMcpServer = class {
     );
     this.unityClient = new UnityClient();
     this.unityClient.setReconnectedCallback(() => {
-      this.refreshDynamicTools();
+      this.refreshDynamicToolsSafe();
     });
     this.setupHandlers();
     this.setupSignalHandlers();
@@ -6162,6 +6174,28 @@ var SimpleMcpServer = class {
   async refreshDynamicTools() {
     await this.initializeDynamicTools();
     this.sendToolsChangedNotification();
+  }
+  /**
+   * Safe version of refreshDynamicTools that prevents duplicate execution
+   */
+  async refreshDynamicToolsSafe() {
+    const stack = new Error().stack;
+    const callerLine = stack?.split("\n")[2]?.trim() || "Unknown caller";
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
+    mcpDebug(`[TRACE] refreshDynamicToolsSafe called at ${timestamp2}`);
+    mcpDebug(`[TRACE] Caller: ${callerLine}`);
+    if (this.isRefreshing) {
+      mcpDebug("[TRACE] refreshDynamicToolsSafe skipped: already in progress");
+      return;
+    }
+    this.isRefreshing = true;
+    try {
+      mcpDebug("[TRACE] refreshDynamicToolsSafe: Starting getCommandDetails execution");
+      await this.refreshDynamicTools();
+      mcpDebug("[TRACE] refreshDynamicToolsSafe: getCommandDetails execution completed");
+    } finally {
+      this.isRefreshing = false;
+    }
   }
   setupHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -6258,7 +6292,6 @@ var SimpleMcpServer = class {
   async handleUnityPing(args) {
     const message = args?.message || DEFAULT_MESSAGES.UNITY_PING;
     try {
-      await this.unityClient.ensureConnected();
       const response = await this.unityClient.ping(message);
       const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
       let responseText = "";
@@ -6363,16 +6396,12 @@ ${JSON.stringify(details, null, 2)}`
    * Setup Unity event listener for automatic tool updates
    */
   setupUnityEventListener() {
-    this.unityClient.onNotification("commandsChanged", async (params) => {
-      try {
-        await this.refreshDynamicTools();
-      } catch (error) {
-        mcpError("[Simple MCP] Failed to update dynamic tools via Unity event:", error);
-      }
-    });
     this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
+      const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
+      mcpDebug(`[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`);
+      mcpDebug(`[TRACE] Notification params: ${JSON.stringify(params)}`);
       try {
-        await this.refreshDynamicTools();
+        await this.refreshDynamicToolsSafe();
       } catch (error) {
         mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
       }

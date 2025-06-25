@@ -39,6 +39,6 @@ namespace io.github.hatayama.uMCP
         public const float RESIZE_HANDLE_DOT_BRIGHTNESS = 0.6f;
         
         // Communication log settings
-        public const int MAX_COMMUNICATION_LOG_ENTRIES = 10;
+        public const int MAX_COMMUNICATION_LOG_ENTRIES = 20;
     }
 }
