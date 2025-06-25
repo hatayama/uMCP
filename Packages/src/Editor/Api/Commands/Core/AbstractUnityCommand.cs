@@ -31,9 +31,9 @@ namespace io.github.hatayama.uMCP
         protected abstract Task<TResponse> ExecuteAsync(TSchema parameters);
 
         /// <summary>
-        /// IUnityCommand implementation - converts JToken to Schema and returns object
+        /// IUnityCommand implementation - converts JToken to Schema and returns BaseCommandResponse
         /// </summary>
-        public async Task<object> ExecuteAsync(JToken paramsToken)
+        public async Task<BaseCommandResponse> ExecuteAsync(JToken paramsToken)
         {
             DateTime startTime = DateTime.UtcNow;
 
@@ -54,7 +54,7 @@ namespace io.github.hatayama.uMCP
                     McpLogger.LogDebug($"Command {CommandName} executed in {baseResponse.ExecutionTimeMs}ms");
                 }
 
-                // Return as object for IUnityCommand interface compatibility
+                // Return as BaseCommandResponse for IUnityCommand interface compatibility
                 return response;
             }
             catch (Exception ex)

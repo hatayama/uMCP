@@ -175,7 +175,7 @@ namespace io.github.hatayama.uMCP
         /// <param name="paramsToken">Parameters</param>
         /// <returns>Execution result</returns>
         /// <exception cref="ArgumentException">When command is unknown</exception>
-        public async Task<object> ExecuteCommandAsync(string commandName, JToken paramsToken)
+        public async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
             if (!commands.TryGetValue(commandName, out IUnityCommand command))
             {

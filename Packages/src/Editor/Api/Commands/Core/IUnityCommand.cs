@@ -45,7 +45,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="paramsToken">JSON token for parameters</param>
         /// <returns>Execution result</returns>
-        Task<object> ExecuteAsync(JToken paramsToken);
+        Task<BaseCommandResponse> ExecuteAsync(JToken paramsToken);
     }
     
     /// <summary>

@@ -17,26 +17,26 @@ namespace io.github.hatayama.uMCP
 
         public CommandParameterSchema ParameterSchema => new CommandParameterSchema();
 
-        public Task<object> ExecuteAsync(JToken paramsToken)
+        public Task<BaseCommandResponse> ExecuteAsync(JToken paramsToken)
         {
             McpLogger.LogDebug("GetVersion request received");
             
-            object response = new
+            GetVersionResponse response = new GetVersionResponse
             {
-                unityVersion = Application.unityVersion,
-                platform = Application.platform.ToString(),
-                dataPath = Application.dataPath,
-                persistentDataPath = Application.persistentDataPath,
-                temporaryCachePath = Application.temporaryCachePath,
-                isEditor = Application.isEditor,
-                productName = Application.productName,
-                companyName = Application.companyName,
-                version = Application.version
+                UnityVersion = Application.unityVersion,
+                Platform = Application.platform.ToString(),
+                DataPath = Application.dataPath,
+                PersistentDataPath = Application.persistentDataPath,
+                TemporaryCachePath = Application.temporaryCachePath,
+                IsEditor = Application.isEditor,
+                ProductName = Application.productName,
+                CompanyName = Application.companyName,
+                Version = Application.version
             };
             
             McpLogger.LogDebug($"GetVersion completed: Unity {Application.unityVersion}");
             
-            return Task.FromResult(response);
+            return Task.FromResult<BaseCommandResponse>(response);
         }
     }
 } 
