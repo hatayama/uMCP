@@ -502,7 +502,7 @@ namespace io.github.hatayama.uMCP
                 // Incomplete or malformed JSON
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Unexpected error validating JSON
                 return false;

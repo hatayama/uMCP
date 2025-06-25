@@ -15,7 +15,7 @@ namespace io.github.hatayama.uMCP
     public class UnityCommandRegistry
     {
         private readonly Dictionary<string, IUnityCommand> commands = new Dictionary<string, IUnityCommand>();
-        
+
         /// <summary>
         /// Default constructor
         /// Auto-registers standard commands
@@ -32,11 +32,11 @@ namespace io.github.hatayama.uMCP
         {
             // Register commands with attribute-based discovery
             RegisterCommandsWithAttributes();
-            
+
             // Manual registration for commands without attributes (for backward compatibility)
             RegisterManualCommands();
         }
-        
+
         /// <summary>
         /// Register commands using attribute-based discovery
         /// </summary>
@@ -46,55 +46,37 @@ namespace io.github.hatayama.uMCP
             {
                 // Get all assemblies in the current domain
                 Assembly[] assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-                
+
                 List<Type> commandTypes = new List<Type>();
-                
+
                 foreach (Assembly assembly in assemblies)
                 {
-                    try
-                    {
-                        // Find all types with McpTool attribute that implement IUnityCommand
-                        Type[] types = assembly.GetTypes()
-                            .Where(type => type.GetCustomAttribute<McpToolAttribute>() != null)
-                            .Where(type => typeof(IUnityCommand).IsAssignableFrom(type))
-                            .Where(type => !type.IsAbstract && !type.IsInterface)
-                            .ToArray();
-                        
-                        commandTypes.AddRange(types);
-                    }
-                    catch (ReflectionTypeLoadException ex)
-                    {
-                        // Skip assemblies that can't be loaded
-                    }
-                    catch (Exception ex)
-                    {
-                        // Skip assemblies with other issues
-                    }
+                    // Find all types with McpTool attribute that implement IUnityCommand
+                    Type[] types = assembly.GetTypes()
+                        .Where(type => type.GetCustomAttribute<McpToolAttribute>() != null)
+                        .Where(type => typeof(IUnityCommand).IsAssignableFrom(type))
+                        .Where(type => !type.IsAbstract && !type.IsInterface)
+                        .ToArray();
+
+                    commandTypes.AddRange(types);
                 }
-                
+
                 // Register commands
                 foreach (Type type in commandTypes)
                 {
-                    try
-                    {
-                        IUnityCommand command = (IUnityCommand)Activator.CreateInstance(type);
-                        RegisterCommand(command);
-                    }
-                    catch (Exception ex)
-                    {
-                        McpLogger.LogError($"Failed to auto-register command {type.Name}: {ex.Message}");
-                    }
+                    IUnityCommand command = (IUnityCommand)Activator.CreateInstance(type);
+                    RegisterCommand(command);
                 }
-                
             }
             catch (Exception ex)
             {
                 McpLogger.LogError($"Failed to register commands with attributes: {ex.Message}");
                 // Fall back to manual registration
                 RegisterManualCommands();
+                throw;
             }
         }
-        
+
         /// <summary>
         /// Register commands manually (for backward compatibility)
         /// </summary>
@@ -102,28 +84,28 @@ namespace io.github.hatayama.uMCP
         {
             // Only register commands that don't have the McpTool attribute
             // This prevents double registration
-            
+
             if (!IsCommandTypeRegistered<PingCommand>())
             {
                 RegisterCommand(new PingCommand());
             }
-            
+
             if (!IsCommandTypeRegistered<CompileCommand>())
             {
                 RegisterCommand(new CompileCommand());
             }
-            
+
             if (!IsCommandTypeRegistered<GetLogsCommand>())
             {
                 RegisterCommand(new GetLogsCommand());
             }
-            
+
             if (!IsCommandTypeRegistered<RunTestsCommand>())
             {
                 RegisterCommand(new RunTestsCommand());
             }
         }
-        
+
         /// <summary>
         /// Check if a command type is already registered
         /// </summary>
@@ -205,7 +187,7 @@ namespace io.github.hatayama.uMCP
         {
             return commands.ContainsKey(commandName);
         }
-        
+
         /// <summary>
         /// Manually trigger commands changed notification
         /// Used for manual notifications and post-compilation notifications
@@ -222,14 +204,11 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class CommandInfo
     {
-        [JsonProperty("name")]
-        public string Name { get; }
-        
-        [JsonProperty("description")]
-        public string Description { get; }
-        
-        [JsonProperty("parameterSchema")]
-        public CommandParameterSchema ParameterSchema { get; }
+        [JsonProperty("name")] public string Name { get; }
+
+        [JsonProperty("description")] public string Description { get; }
+
+        [JsonProperty("parameterSchema")] public CommandParameterSchema ParameterSchema { get; }
 
         public CommandInfo(string name, string description, CommandParameterSchema parameterSchema)
         {
@@ -238,4 +217,4 @@ namespace io.github.hatayama.uMCP
             ParameterSchema = parameterSchema;
         }
     }
-} 
+}
