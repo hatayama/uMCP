@@ -74,7 +74,7 @@ class SimpleMcpServer {
       mcpInfo('[Simple MCP] Raw command details response:', commandDetailsResponse);
       
       // Handle new GetCommandDetailsResponse structure
-      const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
+      const commandDetails = (commandDetailsResponse as any)?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
         mcpError('[Simple MCP] Invalid command details response:', commandDetailsResponse);
         return;
@@ -358,11 +358,11 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
       
       // Get command names
       const commandsResponse = await this.unityClient.executeCommand('getAvailableCommands', {});
-      const commands = commandsResponse?.Commands || commandsResponse;
+      const commands = (commandsResponse as any)?.Commands || commandsResponse;
       
       // Get command details with schemas
       const detailsResponse = await this.unityClient.executeCommand('getCommandDetails', {});
-      const details = detailsResponse?.Commands || detailsResponse;
+      const details = (detailsResponse as any)?.Commands || detailsResponse;
       
       return {
         content: [

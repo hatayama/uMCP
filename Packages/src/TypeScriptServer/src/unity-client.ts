@@ -250,7 +250,7 @@ export class UnityClient {
       throw new Error(`Failed to get available commands: ${response.error.message}`);
     }
 
-    return response.result || [];
+    return (response.result as string[]) || [];
   }
 
   /**
@@ -272,7 +272,7 @@ export class UnityClient {
       throw new Error(`Failed to get command details: ${response.error.message}`);
     }
 
-    return response.result || [];
+    return (response.result as Array<{name: string, description: string, parameterSchema?: any}>) || [];
   }
 
   /**
@@ -368,7 +368,7 @@ export class UnityClient {
       this.pendingRequests.set(request.id, {
         resolve: (response) => {
           clearTimeout(timeout);
-          resolve(response);
+          resolve(response as { id: number; error?: { message: string }; result?: unknown });
         },
         reject: (error) => {
           clearTimeout(timeout);
