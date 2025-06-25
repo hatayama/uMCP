@@ -19,7 +19,7 @@
     "test:mcp": "tsx src/test-runner.ts",
     "test:integration": "tsx src/integration-test.ts",
     "test:watch": "jest --watch",
-    "validate": "npm run test:integration && echo '✅ Integration tests passed - safe to deploy'",
+    "validate": "npm run test:integration && echo 'Integration tests passed - safe to deploy'",
     "deploy": "npm run validate && npm run build",
     "debug:compile": "node debug/compile-check.js",
     "debug:logs": "node debug/logs-fetch.js",

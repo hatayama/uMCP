@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { McpConnectionValidator } from './tools/__tests__/mcp-connection.test.js';
+import { McpConnectionValidator } from '../src/tools/__tests__/mcp-connection.test.js';
 
 /**
  * TDD Integration Test Suite
@@ -15,14 +15,14 @@ class IntegrationTestSuite {
      */
     private runTest(testName: string, testFn: () => void): void {
         try {
-            console.log(`🧪 ${testName}...`);
+            console.log(`${testName}...`);
             testFn();
             this.testResults.push({ name: testName, passed: true });
-            console.log(`✅ ${testName} PASSED`);
+            console.log(`${testName} PASSED`);
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : String(error);
             this.testResults.push({ name: testName, passed: false, error: errorMsg });
-            console.error(`❌ ${testName} FAILED: ${errorMsg}`);
+            console.error(`${testName} FAILED: ${errorMsg}`);
             throw error; // Fail fast
         }
     }
@@ -107,7 +107,7 @@ class IntegrationTestSuite {
         }
         
         // Second toggle: 8 -> 5
-        toolCount = toolCount === 5 ? 8 : 5;
+        toolCount = toolCount === 8 ? 5 : 8;
         if (toolCount !== 5) {
             throw new Error(`Expected tool count 5, got ${toolCount}`);
         }
@@ -117,9 +117,9 @@ class IntegrationTestSuite {
      * Run all integration tests
      */
     async runAllTests(): Promise<void> {
-        console.log('🚀 Starting TDD Integration Test Suite');
-        console.log('📋 Contract-based testing with fail-fast approach');
-        console.log('⚡ 5-second notification interval validation');
+        console.log('Starting TDD Integration Test Suite');
+        console.log('Contract-based testing with fail-fast approach');
+        console.log('5-second notification interval validation');
         console.log('=' .repeat(60));
 
         try {
@@ -131,22 +131,22 @@ class IntegrationTestSuite {
 
             // Success summary
             console.log('=' .repeat(60));
-            console.log('🎉 ALL INTEGRATION TESTS PASSED');
-            console.log('✅ MCP Server ready for Cursor deployment');
-            console.log('⚡ 5-second notification interval confirmed');
-            console.log('🛡️  Contract-based validation successful');
+            console.log('ALL INTEGRATION TESTS PASSED');
+            console.log('MCP Server ready for Cursor deployment');
+            console.log('5-second notification interval confirmed');
+            console.log('Contract-based validation successful');
             
             process.exit(0);
         } catch (error) {
             // Failure summary
             console.log('=' .repeat(60));
-            console.error('💥 INTEGRATION TESTS FAILED');
-            console.error('🚨 Fail-fast triggered - deployment blocked');
+            console.error('INTEGRATION TESTS FAILED');
+            console.error('Fail-fast triggered - deployment blocked');
             
             // Show test results
-            console.log('\n📊 Test Results:');
+            console.log('\nTest Results:');
             for (const result of this.testResults) {
-                const status = result.passed ? '✅' : '❌';
+                const status = result.passed ? 'PASSED' : 'FAILED';
                 console.log(`${status} ${result.name}`);
                 if (result.error) {
                     console.log(`   Error: ${result.error}`);

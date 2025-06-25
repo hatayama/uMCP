@@ -503,7 +503,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
       mcpError('[Simple MCP] Error during cleanup:', error);
     }
 
-    mcpInfo('[Simple MCP] Goodbye! 👋');
+    mcpInfo('[Simple MCP] Goodbye!');
     process.exit(0);
   }
 
