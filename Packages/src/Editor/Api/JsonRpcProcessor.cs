@@ -51,8 +51,7 @@ namespace io.github.hatayama.uMCP
             {
                 Method = request["method"]?.ToString(),
                 Params = request["params"],
-                Id = request["id"]?.ToObject<object>(),
-                IsNotification = request["id"] == null
+                Id = request["id"]?.ToObject<object>()
             };
         }
 
@@ -79,12 +78,14 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Create JSON-RPC success response
         /// </summary>
-        private static string CreateSuccessResponse(object id, object result)
+        /// <param name="id">Request ID - must be same type as received (string/number/null per JSON-RPC spec)</param>
+        /// <param name="result">Command execution result</param>
+        private static string CreateSuccessResponse(object id, BaseCommandResponse result)
         {
             JObject response = new JObject
             {
                 ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                ["id"] = JToken.FromObject(id),
+                ["id"] = id != null ? JToken.FromObject(id) : null,
                 ["result"] = JToken.FromObject(result)
             };
             return response.ToString(Formatting.None);
@@ -93,6 +94,8 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Create JSON-RPC error response
         /// </summary>
+        /// <param name="id">Request ID - must be same type as received (string/number/null per JSON-RPC spec)</param>
+        /// <param name="ex">Exception to convert to error response</param>
         private static string CreateErrorResponse(object id, Exception ex)
         {
             JObject errorResponse = new JObject
@@ -115,42 +118,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static async Task<BaseCommandResponse> ExecuteMethod(string method, JToken paramsToken)
         {
-            // Use new command-based structure
             return await UnityApiHandler.ExecuteCommandAsync(method, paramsToken);
         }
-    }
-
-    /// <summary>
-    /// Represents a parsed JSON-RPC request
-    /// </summary>
-    internal class JsonRpcRequest
-    {
-        public string Method { get; set; }
-        public JToken Params { get; set; }
-        public object Id { get; set; }
-        public bool IsNotification { get; set; }
-    }
-
-    /// <summary>
-    /// Represents a JSON-RPC response
-    /// </summary>
-    internal class JsonRpcResponse
-    {
-        public string JsonRpc { get; set; } = McpServerConfig.JSONRPC_VERSION;
-        public object Id { get; set; }
-        public object Result { get; set; }
-        public JsonRpcError Error { get; set; }
-        
-        public bool IsSuccess => Error == null;
-    }
-
-    /// <summary>
-    /// Represents a JSON-RPC error
-    /// </summary>
-    internal class JsonRpcError
-    {
-        public int Code { get; set; }
-        public string Message { get; set; }
-        public object Data { get; set; }
     }
 } 

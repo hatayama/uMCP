@@ -49,12 +49,12 @@ namespace io.github.hatayama.uMCP
     }
     
     /// <summary>
-    /// Parameter schema definition for commands
+    /// Parameter schema definition for commands (immutable)
     /// </summary>
     public class CommandParameterSchema
     {
-        public Dictionary<string, ParameterInfo> Properties { get; }
-        public string[] Required { get; }
+        public readonly Dictionary<string, ParameterInfo> Properties;
+        public readonly string[] Required;
         
         public CommandParameterSchema(Dictionary<string, ParameterInfo> properties = null, string[] required = null)
         {
@@ -64,14 +64,14 @@ namespace io.github.hatayama.uMCP
     }
     
     /// <summary>
-    /// Individual parameter information
+    /// Individual parameter information (immutable)
     /// </summary>
     public class ParameterInfo
     {
-        public string Type { get; }
-        public string Description { get; }
-        public object DefaultValue { get; }
-        public string[] Enum { get; }
+        public readonly string Type;
+        public readonly string Description;
+        public readonly object DefaultValue;
+        public readonly string[] Enum;
         
         public ParameterInfo(string type, string description, object defaultValue = null, string[] enumValues = null)
         {
