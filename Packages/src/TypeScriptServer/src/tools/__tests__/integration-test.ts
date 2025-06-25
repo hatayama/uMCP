@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { McpConnectionValidator } from '../src/tools/__tests__/mcp-connection.test.js';
+import { McpConnectionValidator } from './mcp-connection.test.js';
 
 /**
  * TDD Integration Test Suite
