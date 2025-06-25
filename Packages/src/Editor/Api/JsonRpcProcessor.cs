@@ -15,8 +15,6 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static async Task<string> ProcessRequest(string jsonRequest)
         {
-            McpLogger.LogJsonRpc("RECEIVED", jsonRequest);
-            
             try
             {
                 JsonRpcRequest request = ParseRequest(jsonRequest);
@@ -60,7 +58,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void ProcessNotification(JsonRpcRequest request)
         {
-            McpLogger.LogInfo($"Received notification: {request.Method}");
+            // Process notification silently
         }
 
         /// <summary>

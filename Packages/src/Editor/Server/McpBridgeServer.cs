@@ -114,7 +114,6 @@ namespace io.github.hatayama.uMCP
         {
             if (isRunning)
             {
-                McpLogger.LogWarning("MCP Server is already running");
                 return;
             }
 
@@ -156,7 +155,6 @@ namespace io.github.hatayama.uMCP
         {
             if (!isRunning)
             {
-                McpLogger.LogWarning("MCP Server is not running");
                 return;
             }
 
@@ -217,7 +215,6 @@ namespace io.github.hatayama.uMCP
                     if (client != null)
                     {
                         string clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? McpServerConfig.UNKNOWN_CLIENT_ENDPOINT;
-                        McpLogger.LogClientConnection(clientEndpoint, true);
                         OnClientConnected?.Invoke(clientEndpoint);
                         
                         // Execute client handling in a separate task (fire-and-forget).
@@ -232,11 +229,7 @@ namespace io.github.hatayama.uMCP
                 catch (ThreadAbortException ex)
                 {
                     // Treat as normal behavior if a domain reload is in progress.
-                    if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
-                    {
-                        McpLogger.LogInfo("Server thread aborted during domain reload (normal behavior)");
-                    }
-                    else
+                    if (!SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
                     {
                         McpLogger.LogError($"Unexpected thread abort in server loop: {ex.Message}");
                         OnError?.Invoke($"Unexpected thread abort: {ex.Message}");
@@ -267,11 +260,7 @@ namespace io.github.hatayama.uMCP
             catch (ThreadAbortException ex)
             {
                 // Treat as normal behavior if a domain reload is in progress.
-                if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
-                {
-                    McpLogger.LogDebug($"AcceptTcpClientAsync aborted during domain reload (expected): {ex.Message}");
-                }
-                else
+                if (!SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
                 {
                     McpLogger.LogError($"Unexpected thread abort in AcceptTcpClient: {ex.Message}");
                 }
@@ -297,7 +286,6 @@ namespace io.github.hatayama.uMCP
                 {
                     // Add client to connected clients for notification broadcasting
                     connectedClients.TryAdd(clientEndpoint, stream);
-                    McpLogger.LogDebug($"Client {clientEndpoint} added to notification list");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
                     string incompleteJson = string.Empty; // Buffer for incomplete JSON
                     
@@ -312,14 +300,7 @@ namespace io.github.hatayama.uMCP
                         
                         string receivedData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                         
-                        // Debug: Check received data in detail.
-                        McpLogger.LogDebug($"Received raw from {clientEndpoint}: \"{receivedData.Replace("\n", "\\n")}\"");
 
-                        // Special logging for compile requests.
-                        if (receivedData.Contains("\"method\":\"compile\""))
-                        {
-                             McpLogger.LogInfo($"<<<< Received COMPILE request from {clientEndpoint}");
-                        }
 
                         // Combine with any incomplete JSON from previous buffer
                         string dataToProcess = incompleteJson + receivedData;
@@ -348,23 +329,12 @@ namespace io.github.hatayama.uMCP
             catch (ThreadAbortException)
             {
                 // Treat as normal behavior if a domain reload is in progress.
-                if (SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
-                {
-                    McpLogger.LogInfo("Client handling thread aborted during domain reload.");
-                }
-                else
-                {
-                    McpLogger.LogWarning($"Client handling thread for {clientEndpoint} was aborted.");
-                }
+                // No need to log thread aborts during domain reload
             }
             catch (IOException ex)
             {
-                // I/O errors are usually normal disconnections - log as info level
-                if (ex.Message.Contains("Connection reset by peer") || ex.Message.Contains("socket has been shut down"))
-                {
-                    McpLogger.LogInfo($"Client {clientEndpoint} disconnected normally");
-                }
-                else
+                // I/O errors are usually normal disconnections - only log warnings for unexpected errors
+                if (!ex.Message.Contains("Connection reset by peer") && !ex.Message.Contains("socket has been shut down"))
                 {
                     McpLogger.LogWarning($"I/O error with client {clientEndpoint}: {ex.Message}");
                 }
@@ -378,10 +348,8 @@ namespace io.github.hatayama.uMCP
             {
                 // Remove client from connected clients list
                 connectedClients.TryRemove(clientEndpoint, out _);
-                McpLogger.LogDebug($"Client {clientEndpoint} removed from notification list");
                 
                 client.Close();
-                McpLogger.LogClientConnection(clientEndpoint, false);
                 OnClientDisconnected?.Invoke(clientEndpoint);
             }
         }
@@ -395,7 +363,6 @@ namespace io.github.hatayama.uMCP
         {
             if (connectedClients.IsEmpty)
             {
-                McpLogger.LogDebug($"No connected clients to send notification: {method}");
                 return;
             }
 
@@ -405,7 +372,6 @@ namespace io.github.hatayama.uMCP
             string notificationJson = JsonConvert.SerializeObject(notification) + "\n";
             byte[] notificationData = Encoding.UTF8.GetBytes(notificationJson);
 
-            McpLogger.LogInfo($"Broadcasting notification '{method}' to {connectedClients.Count} clients");
 
             await SendNotificationData(notificationData);
         }
@@ -416,21 +382,9 @@ namespace io.github.hatayama.uMCP
         /// <param name="notificationJson">The complete JSON-RPC notification string</param>
         public async Task SendNotificationToClients(string notificationJson)
         {
-            McpLogger.LogDebug($"SendNotificationToClients called with {connectedClients.Count} clients");
-            
             if (connectedClients.IsEmpty)
             {
-                McpLogger.LogDebug("No connected clients to send notification");
-                McpLogger.LogDebug("connectedClients is empty - no clients to notify");
                 return;
-            }
-
-            // Log details of connected clients
-            McpLogger.LogDebug($"Connected clients details:");
-            foreach (KeyValuePair<string, NetworkStream> client in connectedClients)
-            {
-                bool canWrite = client.Value?.CanWrite ?? false;
-                McpLogger.LogDebug($"- Client: {client.Key}, CanWrite: {canWrite}");
             }
 
             // Ensure the JSON ends with a newline
@@ -440,8 +394,6 @@ namespace io.github.hatayama.uMCP
             }
 
             byte[] notificationData = Encoding.UTF8.GetBytes(notificationJson);
-            McpLogger.LogInfo($"Broadcasting pre-formatted notification to {connectedClients.Count} clients");
-            McpLogger.LogDebug($"Notification data size: {notificationData.Length} bytes");
 
             await SendNotificationData(notificationData);
         }
@@ -552,7 +504,7 @@ namespace io.github.hatayama.uMCP
             }
             catch (Exception ex)
             {
-                McpLogger.LogWarning($"Unexpected error validating JSON: {ex.Message}");
+                // Unexpected error validating JSON
                 return false;
             }
         }

@@ -20,7 +20,6 @@ namespace io.github.hatayama.uMCP
             string message = parameters.Message;
             string response = $"Unity MCP Bridge received: {message}";
             
-            McpLogger.LogDebug($"Ping request processed: {message} -> {response}");
             
             // Create type-safe response
             PingResponse pingResponse = new PingResponse(response);

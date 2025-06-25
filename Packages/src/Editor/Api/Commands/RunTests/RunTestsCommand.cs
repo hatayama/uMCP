@@ -21,11 +21,11 @@ namespace io.github.hatayama.uMCP
         {
             // Type-safe parameter access - no more string parsing!
             
-            McpLogger.LogInfo($"Test execution started - Filter: {parameters.FilterType}, Value: {parameters.FilterValue}, Save XML: {parameters.SaveXml}, Timeout: {parameters.TimeoutSeconds}s");
+            // Test execution started
 
             try
             {
-                McpLogger.LogInfo("Creating test execution manager...");
+                // Creating test execution manager
                 // Create test execution manager
                 UnityTestExecutionManager testManager = new UnityTestExecutionManager();
                 
@@ -35,25 +35,25 @@ namespace io.github.hatayama.uMCP
                 // Set up result processing
                 void ProcessResult(ITestResultAdaptor result)
                 {
-                    McpLogger.LogInfo("Test execution completed, processing results...");
+                    // Test execution completed, processing results
                     ProcessTestResult(result, parameters.SaveXml, completionSource);
                 }
                 
-                McpLogger.LogInfo("Starting test execution...");
+                // Starting test execution
                 // Execute tests based on filter
                 if (string.IsNullOrEmpty(parameters.FilterValue))
                 {
-                    McpLogger.LogInfo("Running all EditMode tests...");
+                    // Running all EditMode tests
                     testManager.RunEditModeTests(ProcessResult);
                 }
                 else
                 {
-                    McpLogger.LogInfo($"Running filtered tests: {parameters.FilterType} = {parameters.FilterValue}");
+                    // Running filtered tests
                     TestExecutionFilter filter = CreateFilter(parameters.FilterType.ToString(), parameters.FilterValue);
                     testManager.RunEditModeTests(filter, ProcessResult);
                 }
                 
-                McpLogger.LogInfo("Test execution initiated, waiting for completion...");
+                // Test execution initiated, waiting for completion
                 
                 // Wait for completion with timeout
                 using (var timeoutCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(parameters.TimeoutSeconds)))
@@ -68,7 +68,7 @@ namespace io.github.hatayama.uMCP
                     }
                     
                     TestExecutionResult result = await completionSource.Task;
-                    McpLogger.LogInfo($"Test execution completed: Success={result.Success}, Message={result.Message}");
+                    // Test execution completed
                     
                     // Create type-safe response
                     return new RunTestsResponse(
@@ -130,7 +130,7 @@ namespace io.github.hatayama.uMCP
                 {
                     string xmlPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
                     testResult.XmlPath = xmlPath;
-                    McpLogger.LogInfo($"Test results saved to XML: {xmlPath}");
+                    // Test results saved to XML
                 }
 
                 completionSource.SetResult(testResult);

@@ -92,7 +92,7 @@ namespace io.github.hatayama.uMCP
                 if (isAfterCompile)
                 {
                     SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
-                    McpLogger.LogInfo("McpEditorWindow detected post-compile state. Starting server immediately...");
+                    // McpEditorWindow detected post-compile state. Starting server immediately
                     
                     // Use saved port number
                     int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, customPort);
@@ -117,7 +117,7 @@ namespace io.github.hatayama.uMCP
             
             // Leave server management completely to McpServerController
             // Server does not stop when window is closed (treated as global resource)
-            McpLogger.LogInfo($"McpEditorWindow.OnDisable: Window closing, server will keep running if active");
+            // Window closing, server will keep running if active
         }
 
         private void OnGUI()
@@ -278,7 +278,7 @@ namespace io.github.hatayama.uMCP
             // Check if our own server is already running on the same port
             if (McpServerController.IsServerRunning && McpServerController.ServerPort == customPort)
             {
-                McpLogger.LogInfo($"MCP Server is already running on port {customPort}");
+                // MCP Server is already running
                 return true; // Already running, treat as success
             }
 
@@ -334,7 +334,7 @@ namespace io.github.hatayama.uMCP
                 EditorUtility.DisplayDialog("Command Notification", 
                     "Command changes have been notified to Cursor successfully!", 
                     "OK");
-                McpLogger.LogInfo("Command changes notification sent to Cursor");
+                // Command changes notification sent
             }
             catch (Exception ex)
             {
@@ -868,16 +868,16 @@ namespace io.github.hatayama.uMCP
                 // Update development mode and MCP logs environment variables (preserve other settings)
                 configService.UpdateDevelopmentSettings(portToUse, enableDevelopmentMode, enableMcpLogs);
                 
-                McpLogger.LogInfo($"Updated {editorDisplayName} settings - Development mode: {enableDevelopmentMode}, MCP logs: {enableMcpLogs}");
+                // Updated editor settings
                 
                 // Log configuration file path for debugging
                 string configPath = UnityMcpPathResolver.GetConfigPath(selectedEditorType);
-                McpLogger.LogInfo($"Configuration file partially updated: {configPath}");
+                // Configuration file partially updated
                 
                 // Log update confirmation instead of showing dialog
                 string modeText = enableDevelopmentMode ? "Development Mode (debug tools enabled)" : "Production Mode (debug tools disabled)";
                 string logsText = enableMcpLogs ? "MCP logs enabled" : "MCP logs disabled";
-                McpLogger.LogInfo($"{editorDisplayName} configuration updated successfully! Mode: {modeText}, {logsText}. Restart Claude Code to apply changes.");
+                // Configuration updated successfully
             }
             catch (System.Exception ex)
             {

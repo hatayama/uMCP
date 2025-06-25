@@ -51,7 +51,7 @@ namespace io.github.hatayama.uMCP
             File.WriteAllText(SettingsFilePath, json);
             _cachedSettings = settings;
 
-            McpLogger.LogInfo($"MCP Editor settings saved to: {SettingsFilePath}");
+            // MCP Editor settings saved
         }
 
         /// <summary>
@@ -176,14 +176,14 @@ namespace io.github.hatayama.uMCP
                 {
                     string json = File.ReadAllText(SettingsFilePath);
                     _cachedSettings = JsonUtility.FromJson<McpEditorSettingsData>(json);
-                    McpLogger.LogInfo($"MCP Editor settings loaded from: {SettingsFilePath}");
+                    // MCP Editor settings loaded
                 }
                 else
                 {
                     // Create default settings.
                     _cachedSettings = new McpEditorSettingsData();
                     SaveSettings(_cachedSettings);
-                    McpLogger.LogInfo("Created default MCP Editor settings");
+                    // Created default MCP Editor settings
                 }
             }
             catch (Exception ex)

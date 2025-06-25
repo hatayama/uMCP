@@ -65,12 +65,10 @@ namespace io.github.hatayama.uMCP
                     catch (ReflectionTypeLoadException ex)
                     {
                         // Skip assemblies that can't be loaded
-                        McpLogger.LogDebug($"Skipped assembly {assembly.FullName} due to type load exception: {ex.Message}");
                     }
                     catch (Exception ex)
                     {
                         // Skip assemblies with other issues
-                        McpLogger.LogDebug($"Skipped assembly {assembly.FullName} due to exception: {ex.Message}");
                     }
                 }
                 
@@ -81,7 +79,6 @@ namespace io.github.hatayama.uMCP
                     {
                         IUnityCommand command = (IUnityCommand)Activator.CreateInstance(type);
                         RegisterCommand(command);
-                        McpLogger.LogDebug($"Auto-registered command: {command.CommandName} (Type: {type.Name})");
                     }
                     catch (Exception ex)
                     {
@@ -89,7 +86,6 @@ namespace io.github.hatayama.uMCP
                     }
                 }
                 
-                McpLogger.LogInfo($"Auto-registered {commandTypes.Count} commands using McpTool attribute");
             }
             catch (Exception ex)
             {
@@ -153,7 +149,6 @@ namespace io.github.hatayama.uMCP
             }
 
             commands[command.CommandName] = command;
-            McpLogger.LogDebug($"Command registered: {command.CommandName}");
         }
 
         /// <summary>
@@ -162,10 +157,7 @@ namespace io.github.hatayama.uMCP
         /// <param name="commandName">Name of command to unregister</param>
         public void UnregisterCommand(string commandName)
         {
-            if (commands.Remove(commandName))
-            {
-                McpLogger.LogDebug($"Command unregistered: {commandName}");
-            }
+            commands.Remove(commandName);
         }
 
         /// <summary>
@@ -182,7 +174,6 @@ namespace io.github.hatayama.uMCP
                 throw new ArgumentException($"Unknown command: {commandName}");
             }
 
-            McpLogger.LogDebug($"Executing command: {commandName}");
             await MainThreadSwitcher.SwitchToMainThread();
             return await command.ExecuteAsync(paramsToken);
         }
@@ -221,8 +212,6 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void TriggerCommandsChangedNotification()
         {
-            McpLogger.LogDebug("Manually triggering commands changed notification");
-            
             // Call the public method in McpServerController
             McpServerController.TriggerCommandChangeNotification();
         }

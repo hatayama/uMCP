@@ -55,7 +55,6 @@ namespace io.github.hatayama.uMCP
             
             SessionState.SetString(PENDING_REQUESTS_KEY, JsonConvert.SerializeObject(newPendingRequests));
             
-            McpLogger.LogDebug($"Saved compile request to SessionState: {requestId}");
         }
 
         /// <summary>
@@ -107,7 +106,6 @@ namespace io.github.hatayama.uMCP
             // Remove from pending request list
             RemoveFromPendingRequests(requestId);
             
-            McpLogger.LogDebug($"Marked compile request as completed: {requestId}");
         }
 
         /// <summary>
@@ -143,7 +141,6 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void StartForceRecompile()
         {
-            McpLogger.LogDebug("Starting force recompile via CompilationPipeline");
             UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation(
                 UnityEditor.Compilation.RequestScriptCompilationOptions.CleanBuildCache
             );
@@ -161,7 +158,6 @@ namespace io.github.hatayama.uMCP
             }
             SessionState.EraseString(PENDING_REQUESTS_KEY);
             
-            McpLogger.LogDebug("Cleared all compile session state");
         }
     }
 } 

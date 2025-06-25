@@ -36,22 +36,16 @@ namespace io.github.hatayama.uMCP
 
             try
             {
-                McpLogger.LogDebug($"Compile request received: forceRecompile={forceRecompile}");
-
                 // Set flag indicating compilation via MCP
                 SessionState.SetBool(SESSION_KEY_COMPILE_FROM_MCP, true);
-                McpLogger.LogInfo($"CompileCommand: Set {SESSION_KEY_COMPILE_FROM_MCP} = true");
                 
                 // Trigger command change notification BEFORE compilation starts
                 // This ensures notification is sent while client is still connected
                 UnityCommandRegistry.TriggerCommandsChangedNotification();
-                McpLogger.LogDebug("CompileCommand: Sent commands changed notification before compilation");
                 
                 // Execute compilation using CompileChecker
                 using CompileChecker compileChecker = new CompileChecker();
                 CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
-
-                McpLogger.LogInfo($"Compilation completed: Success={result.Success}, Errors={result.ErrorCount}, Warnings={result.WarningCount}");
                 
                 // Create type-safe response
                 CompileIssue[] errors = result.error.Select(e => new CompileIssue(e.message, e.file, e.line)).ToArray();
@@ -68,7 +62,7 @@ namespace io.github.hatayama.uMCP
             }
             catch (System.Exception ex)
             {
-                McpLogger.LogError($"CompileCommand: Compilation failed: {ex.Message}");
+                McpLogger.LogError($"Compilation failed: {ex.Message}");
                 return new CompileResponse(
                     success: false,
                     errorCount: 0,

@@ -41,7 +41,6 @@ namespace io.github.hatayama.uMCP
         {
             EditorApplication.update += UpdateDelayTasks;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            McpLogger.LogDebug("EditorDelayManager initialized with update callback and PlayMode event handler");
         }
         
         /// <summary>
@@ -77,7 +76,6 @@ namespace io.github.hatayama.uMCP
                 delayTasks.Add(new DelayTask(continuation, frames, cancellationToken));
             }
             
-            McpLogger.LogDebug($"EditorDelayManager: Registered delay task for {frames} frames");
         }
         
         /// <summary>
@@ -100,7 +98,6 @@ namespace io.github.hatayama.uMCP
                     if (task.CancellationToken.IsCancellationRequested)
                     {
                         delayTasks.RemoveAt(i);
-                        McpLogger.LogDebug("EditorDelayManager: Task cancelled, throwing OperationCanceledException");
                         
                         try
                         {
@@ -109,7 +106,6 @@ namespace io.github.hatayama.uMCP
                         }
                         catch (Exception ex)
                         {
-                            McpLogger.LogDebug($"EditorDelayManager: Cancellation handled: {ex.GetType().Name}");
                         }
                         continue;
                     }
@@ -125,7 +121,6 @@ namespace io.github.hatayama.uMCP
                         try
                         {
                             task.Continuation.Invoke();
-                            McpLogger.LogDebug("EditorDelayManager: Task completed successfully");
                         }
                         catch (Exception ex)
                         {
@@ -172,7 +167,6 @@ namespace io.github.hatayama.uMCP
             if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.ExitingPlayMode)
             {
                 ResetFrameCount();
-                McpLogger.LogDebug($"EditorDelayManager: Frame count reset on PlayMode change: {state}");
             }
         }
         
@@ -185,7 +179,6 @@ namespace io.github.hatayama.uMCP
             {
                 int previousCount = currentFrameCount;
                 currentFrameCount = 0;
-                McpLogger.LogDebug($"EditorDelayManager: Frame count reset from {previousCount} to 0");
             }
         }
         
@@ -198,7 +191,6 @@ namespace io.github.hatayama.uMCP
             {
                 int clearedCount = delayTasks.Count;
                 delayTasks.Clear();
-                McpLogger.LogDebug($"EditorDelayManager: Cleared {clearedCount} pending tasks");
             }
         }
     }

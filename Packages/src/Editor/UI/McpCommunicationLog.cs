@@ -90,13 +90,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static async Task LogRequest(string jsonRequest)
         {
-            McpLogger.LogDebug($"LogRequest called: {jsonRequest}");
-
             JObject request = JObject.Parse(jsonRequest);
             string method = request["method"]?.ToString() ?? "unknown";
             string id = NormalizeId(request["id"]);
-
-            McpLogger.LogDebug($"Storing request with ID: '{id}', Method: {method}");
 
             PendingRequest pendingRequest = new(method, DateTime.Now, jsonRequest);
 
@@ -111,8 +107,6 @@ namespace io.github.hatayama.uMCP
             
             SaveToSessionState();
             OnLogUpdated?.Invoke();
-
-            McpLogger.LogDebug($"Request logged - Method: {method}, ID: {id}");
         }
 
         /// <summary>
@@ -120,21 +114,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static async Task RecordLogResponse(string jsonResponse)
         {
-            McpLogger.LogDebug($"LogResponse called: {jsonResponse}");
-
             JObject response = JObject.Parse(jsonResponse);
             string id = NormalizeId(response["id"]);
-
-            McpLogger.LogDebug($"Looking for request with ID: '{id}'");
-            
-            lock (_pendingRequests)
-            {
-                McpLogger.LogDebug($"Pending requests count: {_pendingRequests.Count}");
-                foreach (var kvp in _pendingRequests)
-                {
-                    McpLogger.LogDebug($"- Pending ID: '{kvp.Key}', Method: {kvp.Value.CommandName}");
-                }
-            }
 
             PendingRequest pendingRequest;
             bool foundPendingRequest;
@@ -173,8 +154,6 @@ namespace io.github.hatayama.uMCP
                     
                     _logs.Add(logEntry);
                 }
-
-                McpLogger.LogDebug($"Response logged - Method: {pendingRequest.CommandName}, Total logs: {_logs.Count}");
 
                 // Switch to main thread for SessionState operations
                 await MainThreadSwitcher.SwitchToMainThread();
