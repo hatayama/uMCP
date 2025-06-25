@@ -72,8 +72,6 @@ namespace io.github.hatayama.uMCP
                 logs: logs
             );
             
-            McpLogger.LogDebug($"GetLogs completed: Retrieved {limitedEntries.Length} logs out of {logData.TotalCount} total");
-            
             return response;
         }
     }

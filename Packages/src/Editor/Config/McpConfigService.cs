@@ -59,8 +59,6 @@ namespace io.github.hatayama.uMCP
             // Load existing settings (or create new ones if they don't exist).
             McpConfig config = _repository.Load(configPath);
 
-            // Log for checking existing settings.
-            McpLogger.LogInfo($"Loaded existing MCP servers: {string.Join(", ", config.mcpServers.Keys)}");
 
             // Generate a settings key that includes the port number.
             string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
@@ -82,19 +80,14 @@ namespace io.github.hatayama.uMCP
                 if (needsUpdate)
                 {
                     McpLogger.LogInfo($"Configuration changed for {serverKey}, updating...");
-                    McpLogger.LogInfo($"Old command: {existingConfig.command}");
-                    McpLogger.LogInfo($"New command: {newConfig.command}");
-                    McpLogger.LogInfo($"Old args: [{string.Join(", ", existingConfig.args)}]");
-                    McpLogger.LogInfo($"New args: [{string.Join(", ", newConfig.args)}]");
                 }
                 else
                 {
-                    McpLogger.LogInfo($"Configuration unchanged for {serverKey}, skipping update");
+                    // Configuration unchanged, skipping update
                 }
             }
             else
             {
-                McpLogger.LogInfo($"New configuration for {serverKey}");
             }
 
             if (needsUpdate)
@@ -107,8 +100,6 @@ namespace io.github.hatayama.uMCP
 
                 string editorName = GetEditorDisplayName(_editorType);
                 McpLogger.LogInfo($"{editorName} configuration updated: {configPath}");
-                McpLogger.LogInfo($"Server key: {serverKey}, Port: {port}");
-                McpLogger.LogInfo($"Final MCP servers: {string.Join(", ", updatedConfig.mcpServers.Keys)}");
             }
         }
 

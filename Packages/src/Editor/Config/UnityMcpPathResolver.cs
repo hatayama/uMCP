@@ -106,7 +106,7 @@ namespace io.github.hatayama.uMCP
             string localServerPath = Path.Combine(localPath, "TypeScriptServer", "dist", "server.bundle.js");
             if (File.Exists(localServerPath))
             {
-                McpLogger.LogInfo($"Using local package path: {localPath}");
+                // Using local package path
                 return localPath;
             }
             
@@ -122,7 +122,7 @@ namespace io.github.hatayama.uMCP
                     string serverPath = Path.Combine(packageDir, "TypeScriptServer", "dist", "server.bundle.js");
                     if (File.Exists(serverPath))
                     {
-                        McpLogger.LogInfo($"Using Package Manager package path: {packageDir}");
+                        // Using Package Manager package path
                         return packageDir;
                     }
                 }

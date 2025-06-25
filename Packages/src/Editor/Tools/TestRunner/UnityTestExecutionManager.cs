@@ -141,7 +141,7 @@ namespace io.github.hatayama.uMCP
             
             CountResults(result, ref passedCount, ref failedCount, ref skippedCount);
             
-            McpLogger.LogInfo($"Test complete - Success:{passedCount} Failure:{failedCount} Skipped:{skippedCount} ({result.Duration:F1}s)");
+            // Test complete
         }
         
         /// <summary>

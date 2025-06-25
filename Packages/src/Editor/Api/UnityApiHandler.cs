@@ -61,7 +61,6 @@ namespace io.github.hatayama.uMCP
             UnityCommandRegistry registry = CustomCommandManager.GetRegistry();
             string[] commandNames = registry.GetRegisteredCommandNames();
             
-            McpLogger.LogDebug($"GetAvailableCommands: Returning {commandNames.Length} commands");
             GetAvailableCommandsResponse response = new GetAvailableCommandsResponse
             {
                 Commands = commandNames
@@ -77,7 +76,6 @@ namespace io.github.hatayama.uMCP
             UnityCommandRegistry registry = CustomCommandManager.GetRegistry();
             CommandInfo[] commands = registry.GetRegisteredCommands();
             
-            McpLogger.LogDebug($"GetCommandDetails: Returning {commands.Length} command details");
             GetCommandDetailsResponse response = new GetCommandDetailsResponse
             {
                 Commands = commands

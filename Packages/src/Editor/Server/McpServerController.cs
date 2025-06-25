@@ -31,7 +31,6 @@ namespace io.github.hatayama.uMCP
 
         static McpServerController()
         {
-            McpLogger.LogInfo("McpServerController static constructor called");
             
             // Register cleanup for when Unity exits.
             EditorApplication.quitting += OnEditorQuitting;
@@ -97,11 +96,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void OnBeforeAssemblyReload()
         {
-            McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: IsServerRunning={mcpServer?.IsRunning}");
             
             // Set the domain reload start flag.
             SessionState.SetBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS, true);
-            McpLogger.LogInfo("Domain reload in progress flag set to true");
             
             // If the server is running, save its state and stop it.
             if (mcpServer?.IsRunning == true)
@@ -112,8 +109,6 @@ namespace io.github.hatayama.uMCP
                 SessionState.SetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, true);
                 SessionState.SetInt(McpConstants.SESSION_KEY_SERVER_PORT, portToSave);
                 SessionState.SetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, true); // Set the post-compilation flag.
-                
-                McpLogger.LogInfo($"McpServerController.OnBeforeAssemblyReload: Saved server state - port={portToSave}");
                 
                 // Force-save the communication log as well.
                 McpCommunicationLogger.SaveToSessionState();
@@ -143,12 +138,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void OnAfterAssemblyReload()
         {
-            // Clear the compile-via-MCP flag (just in case).
-            SessionState.EraseBool(McpConstants.SESSION_KEY_COMPILE_FROM_MCP);
-            
             // Clear the domain reload completion flag.
             SessionState.EraseBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS);
-            McpLogger.LogInfo("Domain reload in progress flag cleared");
             
             // Restore server state.
             RestoreServerStateIfNeeded();
@@ -161,10 +152,6 @@ namespace io.github.hatayama.uMCP
             if (IsServerRunning)
             {
                 _ = SendCommandNotificationAfterCompilation();
-            }
-            else
-            {
-                McpLogger.LogDebug("Server not running, skipping post-compilation command notification");
             }
         }
 
@@ -184,7 +171,6 @@ namespace io.github.hatayama.uMCP
                 if (isAfterCompile)
                 {
                     SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
-                    McpLogger.LogInfo("Server already running. Clearing post-compile flag.");
                     
                     // Send notification for post-compilation changes
                     _ = SendCommandNotificationForPostCompile();
@@ -203,8 +189,6 @@ namespace io.github.hatayama.uMCP
                 // If it's after a compilation, restart immediately (regardless of the Auto Start Server setting).
                 if (isAfterCompile)
                 {
-                    McpLogger.LogInfo("Detected post-compile state. Restoring server immediately...");
-                    
                     // Wait a short while before restarting immediately (to release TCP port).
                     _ = RestoreServerAfterCompile(savedPort);
                 }
@@ -216,16 +200,12 @@ namespace io.github.hatayama.uMCP
                     
                     if (autoStartEnabled)
                     {
-                        McpLogger.LogInfo("Auto Start Server is enabled. Restoring server with delay...");
-                        
                         // Wait for Unity Editor to be ready before auto-starting
                         _ = RestoreServerOnStartup(savedPort);
                     }
                     else
                     {
                         // If Auto Start Server is off, do not start the server.
-                        McpLogger.LogInfo("Auto Start Server is disabled. Server will not be restored automatically.");
-                        
                         // Clear SessionState (wait for the server to be started manually).
                         SessionState.EraseBool(McpConstants.SESSION_KEY_SERVER_RUNNING);
                         SessionState.EraseInt(McpConstants.SESSION_KEY_SERVER_PORT);
@@ -328,13 +308,10 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static async Task SendCommandsChangedNotification()
         {
-            McpLogger.LogInfo("SendCommandsChangedNotification called");
-            
             try
             {
                 if (mcpServer == null)
                 {
-                    McpLogger.LogInfo("mcpServer is null, cannot send notification");
                     return;
                 }
                 
@@ -354,8 +331,6 @@ namespace io.github.hatayama.uMCP
                 };
                 
                 string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
-                McpLogger.LogInfo($"Sending MCP notification: {mcpNotificationJson}");
-                
                 _ = mcpServer.SendNotificationToClients(mcpNotificationJson);
                 
                 // Add small delay to prevent connection reset issues
@@ -370,16 +345,11 @@ namespace io.github.hatayama.uMCP
                 };
                 
                 string customNotificationJson = JsonConvert.SerializeObject(customNotification);
-                McpLogger.LogInfo($"Sending custom notification: {customNotificationJson}");
-                
                 _ = mcpServer.SendNotificationToClients(customNotificationJson);
-                
-                McpLogger.LogInfo("SendCommandsChangedNotification completed successfully");
             }
             catch (System.Exception ex)
             {
                 McpLogger.LogError($"Failed to send commands changed notification: {ex.Message}");
-                McpLogger.LogError($"Exception details: {ex}");
             }
         }
 
@@ -393,10 +363,6 @@ namespace io.github.hatayama.uMCP
             {
                 _ = SendCommandsChangedNotification();
             }
-            else
-            {
-                McpLogger.LogDebug("Server not running, skipping command change notification");
-            }
         }
         
         /// <summary>
@@ -408,7 +374,6 @@ namespace io.github.hatayama.uMCP
             // This ensures Unity Editor is in a stable state before sending notifications
             await EditorDelay.DelayFrame(1);
             
-            McpLogger.LogInfo("Sending command change notification after compilation completion");
             UnityCommandRegistry.TriggerCommandsChangedNotification();
         }
         
@@ -420,7 +385,6 @@ namespace io.github.hatayama.uMCP
             // Frame delay for timing adjustment, ensuring stable state after compilation
             await EditorDelay.DelayFrame(1);
             
-            McpLogger.LogInfo("Sending command change notification for post-compilation changes (server already running)");
             UnityCommandRegistry.TriggerCommandsChangedNotification();
         }
         
@@ -454,7 +418,6 @@ namespace io.github.hatayama.uMCP
             // Frame delay for timing adjustment, ensuring server is fully ready
             await EditorDelay.DelayFrame(1);
             
-            McpLogger.LogInfo("[DEBUG] Sending commands changed notification after server restoration");
             _ = SendCommandsChangedNotification();
         }
         
@@ -504,7 +467,7 @@ namespace io.github.hatayama.uMCP
                     $"Port {port} is already in use. Please choose a different port or stop the service using this port.");
             }
 
-            McpLogger.LogDebug($"Server configuration validation passed for port {port}");
+            // Server configuration validation passed
         }
     }
 }

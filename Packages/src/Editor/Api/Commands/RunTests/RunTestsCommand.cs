@@ -16,80 +16,66 @@ namespace io.github.hatayama.uMCP
         public override string Description => "Execute Unity tests using Test Runner";
 
 
-
         protected override async Task<RunTestsResponse> ExecuteAsync(RunTestsSchema parameters)
         {
-            // Type-safe parameter access - no more string parsing!
-            
-            McpLogger.LogInfo($"Test execution started - Filter: {parameters.FilterType}, Value: {parameters.FilterValue}, Save XML: {parameters.SaveXml}, Timeout: {parameters.TimeoutSeconds}s");
+            // Creating test execution manager
+            // Create test execution manager
+            UnityTestExecutionManager testManager = new UnityTestExecutionManager();
 
-            try
+            // Create completion source for async operation
+            TaskCompletionSource<TestExecutionResult> completionSource = new TaskCompletionSource<TestExecutionResult>();
+
+            // Set up result processing
+            void ProcessResult(ITestResultAdaptor result)
             {
-                McpLogger.LogInfo("Creating test execution manager...");
-                // Create test execution manager
-                UnityTestExecutionManager testManager = new UnityTestExecutionManager();
-                
-                // Create completion source for async operation
-                TaskCompletionSource<TestExecutionResult> completionSource = new TaskCompletionSource<TestExecutionResult>();
-                
-                // Set up result processing
-                void ProcessResult(ITestResultAdaptor result)
-                {
-                    McpLogger.LogInfo("Test execution completed, processing results...");
-                    ProcessTestResult(result, parameters.SaveXml, completionSource);
-                }
-                
-                McpLogger.LogInfo("Starting test execution...");
-                // Execute tests based on filter
-                if (string.IsNullOrEmpty(parameters.FilterValue))
-                {
-                    McpLogger.LogInfo("Running all EditMode tests...");
-                    testManager.RunEditModeTests(ProcessResult);
-                }
-                else
-                {
-                    McpLogger.LogInfo($"Running filtered tests: {parameters.FilterType} = {parameters.FilterValue}");
-                    TestExecutionFilter filter = CreateFilter(parameters.FilterType.ToString(), parameters.FilterValue);
-                    testManager.RunEditModeTests(filter, ProcessResult);
-                }
-                
-                McpLogger.LogInfo("Test execution initiated, waiting for completion...");
-                
-                // Wait for completion with timeout
-                using (var timeoutCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(parameters.TimeoutSeconds)))
-                {
-                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(parameters.TimeoutSeconds), timeoutCts.Token);
-                    var completedTask = await Task.WhenAny(completionSource.Task, timeoutTask);
-                    
-                    if (completedTask == timeoutTask)
-                    {
-                        McpLogger.LogWarning($"Test execution timed out after {parameters.TimeoutSeconds} seconds");
-                        return CreateTimeoutResponse(parameters.TimeoutSeconds);
-                    }
-                    
-                    TestExecutionResult result = await completionSource.Task;
-                    McpLogger.LogInfo($"Test execution completed: Success={result.Success}, Message={result.Message}");
-                    
-                    // Create type-safe response
-                    return new RunTestsResponse(
-                        success: result.Success,
-                        message: result.Message,
-                        completedAt: result.CompletedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        testCount: result.TestCount,
-                        passedCount: result.PassedCount,
-                        failedCount: result.FailedCount,
-                        skippedCount: result.SkippedCount,
-                        xmlPath: result.XmlPath
-                    );
-                }
+                // Test execution completed, processing results
+                ProcessTestResult(result, parameters.SaveXml, completionSource);
             }
-            catch (Exception ex)
+
+            // Starting test execution
+            // Execute tests based on filter
+            if (string.IsNullOrEmpty(parameters.FilterValue))
             {
-                McpLogger.LogError($"Test execution failed: {ex.Message}");
-                throw;
+                // Running all EditMode tests
+                testManager.RunEditModeTests(ProcessResult);
+            }
+            else
+            {
+                // Running filtered tests
+                TestExecutionFilter filter = CreateFilter(parameters.FilterType.ToString(), parameters.FilterValue);
+                testManager.RunEditModeTests(filter, ProcessResult);
+            }
+
+            // Test execution initiated, waiting for completion
+
+            // Wait for completion with timeout
+            using (var timeoutCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(parameters.TimeoutSeconds)))
+            {
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(parameters.TimeoutSeconds), timeoutCts.Token);
+                var completedTask = await Task.WhenAny(completionSource.Task, timeoutTask);
+
+                if (completedTask == timeoutTask)
+                {
+                    McpLogger.LogWarning($"Test execution timed out after {parameters.TimeoutSeconds} seconds");
+                    return CreateTimeoutResponse(parameters.TimeoutSeconds);
+                }
+
+                TestExecutionResult result = await completionSource.Task;
+                // Test execution completed
+
+                // Create type-safe response
+                return new RunTestsResponse(
+                    success: result.Success,
+                    message: result.Message,
+                    completedAt: result.CompletedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    testCount: result.TestCount,
+                    passedCount: result.PassedCount,
+                    failedCount: result.FailedCount,
+                    skippedCount: result.SkippedCount,
+                    xmlPath: result.XmlPath
+                );
             }
         }
-
 
 
         /// <summary>
@@ -100,9 +86,9 @@ namespace io.github.hatayama.uMCP
             return filterType.ToLower() switch
             {
                 "fullclassname" => TestExecutionFilter.ByClassName(filterValue), // Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)
-                "namespace" => TestExecutionFilter.ByNamespace(filterValue),      // Namespace (e.g.: io.github.hatayama.uMCP)
-                "testname" => TestExecutionFilter.ByTestName(filterValue),        // Individual test name
-                "assembly" => TestExecutionFilter.ByAssemblyName(filterValue),    // Assembly name
+                "namespace" => TestExecutionFilter.ByNamespace(filterValue), // Namespace (e.g.: io.github.hatayama.uMCP)
+                "testname" => TestExecutionFilter.ByTestName(filterValue), // Individual test name
+                "assembly" => TestExecutionFilter.ByAssemblyName(filterValue), // Assembly name
                 _ => throw new ArgumentException($"Unsupported filter type: {filterType}")
             };
         }
@@ -130,7 +116,7 @@ namespace io.github.hatayama.uMCP
                 {
                     string xmlPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
                     testResult.XmlPath = xmlPath;
-                    McpLogger.LogInfo($"Test results saved to XML: {xmlPath}");
+                    // Test results saved to XML
                 }
 
                 completionSource.SetResult(testResult);
@@ -192,6 +178,7 @@ namespace io.github.hatayama.uMCP
                 {
                     count++;
                 }
+
                 return;
             }
 
@@ -253,4 +240,4 @@ namespace io.github.hatayama.uMCP
         public int SkippedCount { get; set; }
         public string XmlPath { get; set; }
     }
-} 
+}

@@ -19,8 +19,7 @@ namespace io.github.hatayama.uMCP
         public static void LogTestResultAsXml(ITestResultAdaptor testResult)
         {
             string xmlContent = GenerateNUnitXml(testResult);
-            McpLogger.LogInfo("Test Result XML:");
-            McpLogger.LogInfo(xmlContent);
+            // Test Result XML generated
         }
 
         /// <summary>
@@ -48,7 +47,7 @@ namespace io.github.hatayama.uMCP
             // Refresh Assets folder.
             AssetDatabase.Refresh();
 
-            McpLogger.LogInfo($"Test result XML saved: TestResults/{fileName}");
+            // Test result XML saved
             return filePath;
         }
 

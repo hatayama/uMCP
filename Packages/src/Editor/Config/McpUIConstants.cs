@@ -37,5 +37,8 @@ namespace io.github.hatayama.uMCP
         public const float RESIZE_HANDLE_BACKGROUND_ALPHA = 0.3f;
         public const float RESIZE_HANDLE_DOT_ALPHA = 0.8f;
         public const float RESIZE_HANDLE_DOT_BRIGHTNESS = 0.6f;
+        
+        // Communication log settings
+        public const int MAX_COMMUNICATION_LOG_ENTRIES = 10;
     }
 }

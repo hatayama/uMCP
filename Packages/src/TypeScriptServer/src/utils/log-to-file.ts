@@ -1,6 +1,29 @@
 /**
- * MCP Safe Debug Logger
- * Development logging functions that output to file only when MCP_DEBUG is set
+ * File-based Logger for MCP Server
+ * 
+ * Why file output?
+ * MCP (Model Context Protocol) servers communicate with clients via JSON-RPC over stdout/stdin.
+ * This means we CANNOT use console.log() or any stdout output for debugging, as it would
+ * corrupt the JSON-RPC communication channel and cause the MCP connection to fail.
+ * 
+ * Even stderr (console.error) can be problematic in some environments, so file-based
+ * logging is the safest approach for debugging MCP servers.
+ * 
+ * Where are logs written?
+ * Logs are written to: ~/.claude/umcp-logs/mcp-debug-YYYY-MM-DD_HH-MM-SS.log
+ * - Each server session creates a new timestamped log file
+ * - Directory is created automatically on first log write
+ * - Logs are only written when MCP_DEBUG environment variable is set
+ * 
+ * Usage:
+ * Set MCP_DEBUG=true when starting the server to enable logging
+ * Example: MCP_DEBUG=true npm start
+ * 
+ * Log functions:
+ * - mcpDebug(): Debug-level messages
+ * - mcpInfo(): Information messages
+ * - mcpWarn(): Warning messages
+ * - mcpError(): Error messages (only one that logs regardless of MCP_DEBUG)
  */
 import * as fs from 'fs';
 import * as path from 'path';

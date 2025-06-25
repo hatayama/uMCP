@@ -34,7 +34,6 @@ namespace io.github.hatayama.uMCP
         public static void RegisterCustomCommand(IUnityCommand command)
         {
             SharedRegistry.RegisterCommand(command);
-            McpLogger.LogInfo($"Custom command registered: {command.CommandName}");
             
             // Notify command changes for manual registration
             NotifyCommandChanges();
@@ -47,7 +46,6 @@ namespace io.github.hatayama.uMCP
         public static void UnregisterCustomCommand(string commandName)
         {
             SharedRegistry.UnregisterCommand(commandName);
-            McpLogger.LogInfo($"Custom command unregistered: {commandName}");
             
             // Notify command changes for manual unregistration
             NotifyCommandChanges();
@@ -106,7 +104,6 @@ namespace io.github.hatayama.uMCP
         public static void NotifyCommandChanges()
         {
             UnityCommandRegistry.TriggerCommandsChangedNotification();
-            McpLogger.LogInfo("Command changes manually notified to MCP clients");
         }
     }
 } 
