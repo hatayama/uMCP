@@ -3,13 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine;
-using UnityEditor;
 using UnityEngine.TestTools;
 using NUnit.Framework;
-using io.github.hatayama.uMCP;
 
-namespace Tests
+namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Unit tests for EditorDelay system
@@ -372,6 +369,263 @@ namespace Tests
             
             // Assert - Reset to zero
             Assert.AreEqual(0, EditorDelayManager.CurrentFrameCount, "Frame count should be reset to 0");
+        }
+        
+        /// <summary>
+        /// Main thread vs background thread delay test
+        /// Verify that EditorDelay works consistently across different threads
+        /// </summary>
+        [UnityTest]
+        public IEnumerator DelayFrame_MainThreadVsBackgroundThread_ExecutesSameWay()
+        {
+            // Arrange
+            int startFrame = EditorDelayManager.CurrentFrameCount;
+            bool mainThreadExecuted = false;
+            bool backgroundThreadExecuted = false;
+            int mainThreadExecutionFrame = -1;
+            int backgroundThreadExecutionFrame = -1;
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            int mainThreadRegistrationThreadId = -1;
+            int backgroundThreadRegistrationThreadId = -1;
+            int mainThreadExecutionThreadId = -1;
+            int backgroundThreadExecutionThreadId = -1;
+            const int delayFrames = 2;
+            
+            // Act - Start tasks from both main thread and background thread
+            var mainThreadTask = MainThreadDelayTask();
+            var backgroundThreadTask = Task.Run(BackgroundThreadDelayTask);
+            
+            async Task MainThreadDelayTask()
+            {
+                mainThreadRegistrationThreadId = Thread.CurrentThread.ManagedThreadId;
+                await EditorDelay.DelayFrame(delayFrames);
+                mainThreadExecuted = true;
+                mainThreadExecutionFrame = EditorDelayManager.CurrentFrameCount;
+                mainThreadExecutionThreadId = Thread.CurrentThread.ManagedThreadId;
+            }
+            
+            async Task BackgroundThreadDelayTask()
+            {
+                backgroundThreadRegistrationThreadId = Thread.CurrentThread.ManagedThreadId;
+                await EditorDelay.DelayFrame(delayFrames);
+                backgroundThreadExecuted = true;
+                backgroundThreadExecutionFrame = EditorDelayManager.CurrentFrameCount;
+                backgroundThreadExecutionThreadId = Thread.CurrentThread.ManagedThreadId;
+            }
+            
+            // Wait for specified frames
+            for (int i = 0; i < delayFrames; i++)
+            {
+                Assert.IsFalse(mainThreadExecuted, $"Main thread task should not be executed at frame {i + 1}");
+                Assert.IsFalse(backgroundThreadExecuted, $"Background thread task should not be executed at frame {i + 1}");
+                yield return null;
+            }
+            
+            // Assert - Both tasks should execute at the same frame
+            Assert.IsTrue(mainThreadExecuted, "Main thread task should be executed");
+            Assert.IsTrue(backgroundThreadExecuted, "Background thread task should be executed");
+            Assert.AreEqual(startFrame + delayFrames, mainThreadExecutionFrame, "Main thread task should execute at correct frame");
+            Assert.AreEqual(startFrame + delayFrames, backgroundThreadExecutionFrame, "Background thread task should execute at correct frame");
+            Assert.AreEqual(mainThreadExecutionFrame, backgroundThreadExecutionFrame, "Both tasks should execute at the same frame");
+            
+            // Verify thread behavior - registration thread should be different, but execution should be on main thread
+            Assert.AreEqual(mainThreadId, mainThreadRegistrationThreadId, "Main thread task should be registered on main thread");
+            Assert.AreNotEqual(mainThreadId, backgroundThreadRegistrationThreadId, "Background thread task should be registered on different thread");
+            
+            // Note: Execution threads might vary depending on EditorDelayManager implementation
+            // The important thing is that both tasks execute at the same frame regardless of registration thread
+        }
+        
+        /// <summary>
+        /// 　Thread safety test for concurrent registration from multiple threads
+        /// </summary>
+        [UnityTest]
+        public IEnumerator DelayFrame_ConcurrentThreadRegistration_HandlesThreadSafely()
+        {
+            // Arrange
+            const int tasksPerThread = 5;
+            const int threadCount = 3;
+            const int totalTasks = tasksPerThread * threadCount;
+            int completedTasks = 0;
+            List<int> executionFrames = new List<int>();
+            List<int> registrationThreadIds = new List<int>();
+            List<int> executionThreadIds = new List<int>();
+            object executionLock = new object();
+            
+            // Use ManualResetEventSlim to synchronize thread startup
+            ManualResetEventSlim startSignal = new ManualResetEventSlim(false);
+            int threadsReady = 0;
+            
+            // Act - Start multiple threads that register delay tasks
+            List<Task> threadTasks = new List<Task>();
+            for (int threadId = 0; threadId < threadCount; threadId++)
+            {
+                int capturedThreadId = threadId;
+                threadTasks.Add(Task.Run(() => RegisterTasksFromThread(capturedThreadId)));
+            }
+            
+            void RegisterTasksFromThread(int threadId)
+            {
+                int currentThreadId = Thread.CurrentThread.ManagedThreadId;
+                
+                // Signal that this thread is ready
+                Interlocked.Increment(ref threadsReady);
+                
+                // Wait for all threads to be ready
+                startSignal.Wait();
+                
+                // Register tasks synchronously
+                List<Task> delayTasks = new List<Task>();
+                for (int i = 0; i < tasksPerThread; i++)
+                {
+                    int taskId = i;
+                    Task delayTask = DelayedTaskFromThread(threadId, taskId, currentThreadId);
+                    delayTasks.Add(delayTask);
+                }
+                
+                // Wait for all tasks in this thread to complete
+                Task.WaitAll(delayTasks.ToArray());
+                
+                async Task DelayedTaskFromThread(int tId, int tTaskId, int regThreadId)
+                {
+                    await EditorDelay.DelayFrame(2);
+                    
+                    lock (executionLock)
+                    {
+                        completedTasks++;
+                        executionFrames.Add(EditorDelayManager.CurrentFrameCount);
+                        registrationThreadIds.Add(regThreadId);
+                        executionThreadIds.Add(Thread.CurrentThread.ManagedThreadId);
+                        executionLog.Add($"Thread{tId}-Task{tTaskId}");
+                    }
+                }
+            }
+            
+            // Wait for all threads to be ready
+            while (threadsReady < threadCount)
+            {
+                yield return null;
+            }
+            
+            // Signal all threads to start registering tasks
+            startSignal.Set();
+            
+            // Wait for task registration to complete
+            yield return null;
+            yield return null;
+            
+            // Assert - All tasks should be registered
+            Assert.AreEqual(totalTasks, EditorDelayManager.PendingTaskCount, $"All {totalTasks} tasks should be registered and pending");
+            
+            // Wait for execution (2 frames)
+            yield return null;
+            yield return null;
+            
+            // Assert - All tasks completed successfully
+            Assert.AreEqual(totalTasks, completedTasks, $"All {totalTasks} tasks should be completed");
+            Assert.AreEqual(0, EditorDelayManager.PendingTaskCount, "No tasks should be pending after completion");
+            Assert.AreEqual(totalTasks, executionLog.Count, "All tasks should be logged");
+            
+            // Verify all tasks executed at the same frame
+            if (executionFrames.Count > 0)
+            {
+                int expectedFrame = executionFrames[0];
+                foreach (int frame in executionFrames)
+                {
+                    Assert.AreEqual(expectedFrame, frame, "All tasks should execute at the same frame regardless of registration thread");
+                }
+            }
+            
+            // Verify that tasks were actually registered from different threads
+            HashSet<int> uniqueRegistrationThreads = new HashSet<int>(registrationThreadIds);
+            Assert.Greater(uniqueRegistrationThreads.Count, 1, "Tasks should be registered from multiple different threads");
+            Assert.AreEqual(threadCount, uniqueRegistrationThreads.Count, $"Tasks should be registered from exactly {threadCount} different threads");
+            
+            // Cleanup
+            startSignal.Dispose();
+        }
+        
+        /// <summary>
+        /// Cross-thread cancellation test
+        /// Verify cancellation works correctly when initiated from different threads
+        /// </summary>
+        [UnityTest]
+        public IEnumerator DelayFrame_CrossThreadCancellation_CancelsCorrectly()
+        {
+            // Arrange
+            CancellationTokenSource cts = new CancellationTokenSource();
+            bool mainThreadTaskExecuted = false;
+            bool backgroundThreadTaskExecuted = false;
+            bool mainThreadTaskStarted = false;
+            bool backgroundThreadTaskStarted = false;
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            int mainThreadRegistrationThreadId = -1;
+            int backgroundThreadRegistrationThreadId = -1;
+            int cancellationThreadId = -1;
+            
+            // Act - Start tasks from different threads with shared cancellation token
+            var mainThreadTask = MainThreadCancellableTask();
+            var backgroundThreadTask = Task.Run(BackgroundThreadCancellableTask);
+            
+            async Task MainThreadCancellableTask()
+            {
+                mainThreadTaskStarted = true;
+                mainThreadRegistrationThreadId = Thread.CurrentThread.ManagedThreadId;
+                try
+                {
+                    await EditorDelay.DelayFrame(5, cts.Token);
+                    mainThreadTaskExecuted = true;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected cancellation
+                }
+            }
+            
+            async Task BackgroundThreadCancellableTask()
+            {
+                backgroundThreadTaskStarted = true;
+                backgroundThreadRegistrationThreadId = Thread.CurrentThread.ManagedThreadId;
+                try
+                {
+                    await EditorDelay.DelayFrame(5, cts.Token);
+                    backgroundThreadTaskExecuted = true;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected cancellation
+                }
+            }
+            
+            // Wait for tasks to start
+            yield return null;
+            Assert.IsTrue(mainThreadTaskStarted, "Main thread task should have started");
+            Assert.IsTrue(backgroundThreadTaskStarted, "Background thread task should have started");
+            
+            // Verify thread IDs for task registration
+            Assert.AreEqual(mainThreadId, mainThreadRegistrationThreadId, "Main thread task should be registered on main thread");
+            Assert.AreNotEqual(mainThreadId, backgroundThreadRegistrationThreadId, "Background thread task should be registered on different thread");
+            
+            // Wait and then cancel from a different thread
+            yield return null; // 2 frames
+            yield return null; // 3 frames
+            
+            // Cancel from background thread
+            Task.Run(() => {
+                cancellationThreadId = Thread.CurrentThread.ManagedThreadId;
+                cts.Cancel();
+            });
+            
+            // Wait for cancellation to take effect
+            yield return null; // 4 frames
+            yield return null; // 5 frames
+            
+            // Assert - Both tasks should be cancelled
+            Assert.IsFalse(mainThreadTaskExecuted, "Main thread task should not execute when cancelled");
+            Assert.IsFalse(backgroundThreadTaskExecuted, "Background thread task should not execute when cancelled");
+            
+            // Verify cancellation was initiated from a different thread
+            Assert.AreNotEqual(mainThreadId, cancellationThreadId, "Cancellation should be initiated from background thread");
         }
     }
 }
