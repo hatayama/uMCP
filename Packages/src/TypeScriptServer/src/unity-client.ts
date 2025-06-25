@@ -8,7 +8,7 @@ import {
   ERROR_MESSAGES,
   POLLING 
 } from './constants.js';
-import { mcpDebug, mcpInfo, mcpWarn, mcpError } from './utils/mcp-debug.js';
+import { mcpError } from './utils/log-to-file.js';
 
 /**
  * TCP/IP client for communication with Unity
@@ -40,7 +40,6 @@ export class UnityClient {
    */
   onNotification(method: string, handler: (params: unknown) => void): void {
     this.notificationHandlers.set(method, handler);
-    mcpDebug(`[UnityClient] Registered notification handler for method: ${method}`);
   }
 
   /**
@@ -48,7 +47,6 @@ export class UnityClient {
    */
   offNotification(method: string): void {
     this.notificationHandlers.delete(method);
-    // console.log(`[UnityClient] Removed notification handler for method: ${method}`);
   }
 
   /**
@@ -56,7 +54,6 @@ export class UnityClient {
    */
   onReconnect(handler: () => void): void {
     this.reconnectHandlers.add(handler);
-    // console.log(`[UnityClient] Registered reconnect handler`);
   }
 
   /**
@@ -64,7 +61,6 @@ export class UnityClient {
    */
   offReconnect(handler: () => void): void {
     this.reconnectHandlers.delete(handler);
-    // console.log(`[UnityClient] Removed reconnect handler`);
   }
 
   /**
@@ -96,7 +92,6 @@ export class UnityClient {
   private handleNotification(notification: { method: string; params: unknown }): void {
     const { method, params } = notification;
     
-    mcpDebug(`[UnityClient] Received notification: ${method}`, params);
     
     const handler = this.notificationHandlers.get(method);
     if (handler) {
@@ -106,7 +101,6 @@ export class UnityClient {
         mcpError(`[UnityClient] Error in notification handler for ${method}:`, error);
       }
     } else {
-      mcpDebug(`[UnityClient] No handler registered for notification: ${method}`);
     }
   }
 
@@ -136,7 +130,6 @@ export class UnityClient {
    */
   async testConnection(): Promise<boolean> {
     if (!this._connected || this.socket === null || this.socket.destroyed) {
-      mcpWarn('[UnityClient] Connection test failed: socket not connected or destroyed');
       return false;
     }
 
@@ -155,7 +148,6 @@ export class UnityClient {
         return;
       }
     } catch (error) {
-      mcpWarn('[UnityClient] Connection test failed during ensureConnected:', error);
       this._connected = false;
     }
 
@@ -193,7 +185,6 @@ export class UnityClient {
 
       this.socket.on('close', () => {
         this._connected = false;
-        mcpInfo('[UnityClient] Connection lost, starting polling...');
         this.startPolling();
       });
 
@@ -281,8 +272,6 @@ export class UnityClient {
   async executeCommand(commandName: string, params: Record<string, unknown> = {}): Promise<unknown> {
     await this.ensureConnected();
     
-    // Add detailed logging for debugging
-    mcpDebug(`[UnityClient] Executing command: "${commandName}" with params:`, params);
     
     const request = {
       jsonrpc: JSONRPC.VERSION,
@@ -291,14 +280,12 @@ export class UnityClient {
       params: params
     };
 
-    mcpDebug(`[UnityClient] Sending request:`, request);
 
     // Determine timeout based on command type and parameters
     let timeoutMs = this.getTimeoutForCommand(commandName, params);
     
     const response = await this.sendRequest(request, timeoutMs);
     
-    mcpDebug(`[UnityClient] Received response:`, response);
     
     if (response.error) {
       throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
@@ -316,7 +303,6 @@ export class UnityClient {
     if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === 'number' && params.TimeoutSeconds > 0) {
       // Add buffer to Unity timeout to ensure Unity timeout triggers first
       const calculatedTimeout = (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1000;
-      mcpDebug(`[UnityClient] Using dynamic timeout for ${commandName}: params.TimeoutSeconds=${params.TimeoutSeconds}s, final=${calculatedTimeout}ms`);
       return calculatedTimeout;
     }
 
@@ -324,19 +310,14 @@ export class UnityClient {
     switch (commandName) {
       case 'runtests':
         const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1000 + POLLING.BUFFER_SECONDS) * 1000;
-        mcpDebug(`[UnityClient] Using default timeout for runtests: ${defaultTimeout}ms`);
         return defaultTimeout;
       case 'compile':
-        mcpDebug(`[UnityClient] Using default timeout for compile: ${TIMEOUTS.COMPILE}ms`);
         return TIMEOUTS.COMPILE;
       case 'getlogs':
-        mcpDebug(`[UnityClient] Using default timeout for getlogs: ${TIMEOUTS.GET_LOGS}ms`);
         return TIMEOUTS.GET_LOGS;
       case 'ping':
-        mcpDebug(`[UnityClient] Using default timeout for ping: ${TIMEOUTS.PING}ms`);
         return TIMEOUTS.PING;
       default:
-        mcpDebug(`[UnityClient] Using default timeout for ${commandName}: ${TIMEOUTS.PING}ms`);
         return TIMEOUTS.PING;
     }
   }
@@ -356,11 +337,9 @@ export class UnityClient {
       // Use provided timeout or default to PING timeout
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
       
-      mcpDebug(`[UnityClient] Setting timeout for request ${request.id} (${request.method}): ${timeout_duration}ms`);
 
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(request.id);
-        mcpDebug(`[UnityClient] Request ${request.id} (${request.method}) timed out after ${timeout_duration}ms`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
 
@@ -406,12 +385,10 @@ export class UnityClient {
   private startPolling(): void {
     if (this.pollingInterval) return; // Already polling
     
-    mcpInfo(`[UnityClient] Starting connection recovery polling (${POLLING.INTERVAL_MS}ms interval)`);
     
     this.pollingInterval = setInterval(async () => {
       try {
         await this.connect();
-        mcpInfo('[UnityClient] Connection recovered! Stopping polling');
         this.stopPolling();
         
         // Notify about reconnection
@@ -419,7 +396,6 @@ export class UnityClient {
           this.onReconnectedCallback();
         }
       } catch (error) {
-        mcpDebug(`[UnityClient] Polling retry failed (connection still down):`, error);
       }
     }, POLLING.INTERVAL_MS);
   }

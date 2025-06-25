@@ -1,8 +1,36 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { mcpInfo, mcpWarn, mcpError, mcpDebug } from './mcp-debug.js';
+import { mcpInfo, mcpWarn, mcpError, mcpDebug } from './log-to-file.js';
 
 /**
- * Notification tester for debugging tools/list_changed
+ * Development/Debug utility for testing MCP notification system
+ * 
+ * Purpose:
+ * This class is used to test if MCP clients (like Cursor, Claude Desktop, etc.) properly
+ * receive and handle the "notifications/tools/list_changed" notification. This notification
+ * tells the client that the available tools have changed and they should refresh their tool list.
+ * 
+ * When to use:
+ * - Testing if your MCP client properly receives notifications
+ * - Debugging tool list refresh issues in IDEs
+ * - Verifying that dynamic tool registration works correctly
+ * - Troubleshooting when tools don't appear in the client after Unity command changes
+ * 
+ * How it works:
+ * 1. Simulates tool count changes by toggling between 5 and 8 tools
+ * 2. Sends "notifications/tools/list_changed" at regular intervals (default: 10 seconds)
+ * 3. Logs all notification attempts for debugging
+ * 
+ * Usage example:
+ * ```typescript
+ * // In your server initialization:
+ * const tester = new NotificationTester(server);
+ * tester.startPeriodicTest(5000); // Send notification every 5 seconds
+ * 
+ * // To stop:
+ * tester.stopPeriodicTest();
+ * ```
+ * 
+ * Note: This is NOT used in production. It's purely for development/debugging purposes.
  */
 export class NotificationTester {
   private server: Server;

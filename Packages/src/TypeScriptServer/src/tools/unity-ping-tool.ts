@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { BaseTool } from './base-tool.js';
 import { ToolResponse } from '../types/tool-types.js';
 import { TOOL_NAMES, DEFAULT_MESSAGES, UNITY_CONNECTION } from '../constants.js';
-import { DebugLogger } from '../utils/debug-logger.js';
+import { mcpDebug } from '../utils/log-to-file.js';
 
 /**
  * Unity ping tool for full MCP system communication testing
@@ -36,15 +36,15 @@ export class UnityPingTool extends BaseTool {
     const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
     
     // Debug: Output response object details
-    DebugLogger.debug('[UnityPingTool] Raw response:', response);
-    DebugLogger.debug('[UnityPingTool] Response type:', typeof response);
-    DebugLogger.debug('[UnityPingTool] Response keys:', response ? Object.keys(response) : 'null');
+    mcpDebug('[UnityPingTool] Raw response:', response);
+    mcpDebug('[UnityPingTool] Response type:', typeof response);
+    mcpDebug('[UnityPingTool] Response keys:', response ? Object.keys(response) : 'null');
     
     // Handle the new BaseCommandResponse format with timing info
     let responseText = '';
     if (typeof response === 'object' && response !== null) {
       const respObj = response as any;
-      DebugLogger.debug('[UnityPingTool] Response object properties:', {
+      mcpDebug('[UnityPingTool] Response object properties:', {
         Message: respObj.Message,
         StartedAt: respObj.StartedAt,
         EndedAt: respObj.EndedAt,

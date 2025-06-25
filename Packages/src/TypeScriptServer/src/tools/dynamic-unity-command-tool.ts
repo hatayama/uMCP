@@ -1,7 +1,6 @@
 import { BaseTool } from './base-tool.js';
 import { ToolContext } from '../types/tool-types.js';
 import { PARAMETER_SCHEMA } from '../constants.js';
-import { mcpDebug } from '../utils/mcp-debug.js';
 
 /**
  * Dynamically generated tool for Unity commands
@@ -21,11 +20,9 @@ export class DynamicUnityCommandTool extends BaseTool {
   }
 
   private generateInputSchema(parameterSchema?: any): any {
-    mcpDebug(`[DynamicUnityCommandTool] Generating schema for ${this.commandName}:`, parameterSchema);
     
     if (!parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0) {
       // For commands without parameters, return minimal schema without dummy parameters
-      mcpDebug(`[DynamicUnityCommandTool] No parameters found for ${this.commandName}, using minimal schema`);
       return {
         type: "object",
         properties: {},
@@ -77,7 +74,6 @@ export class DynamicUnityCommandTool extends BaseTool {
       required: required.length > 0 ? required : undefined
     };
     
-    mcpDebug(`[DynamicUnityCommandTool] Generated schema for ${this.commandName}:`, schema);
     return schema;
   }
 

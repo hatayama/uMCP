@@ -5473,67 +5473,6 @@ var StdioServerTransport = class {
   }
 };
 
-// src/utils/debug-logger.ts
-var DebugLogger = class {
-  static isDebugEnabled = process.env.MCP_DEBUG === "true" || process.env.NODE_ENV === "development";
-  /**
-   * Log debug message to stderr (safe for MCP)
-   */
-  static debug(message, data) {
-    if (!this.isDebugEnabled) return;
-    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp2}] [DEBUG] ${message}`;
-    if (data !== void 0) {
-      console.error(logMessage, data);
-    } else {
-      console.error(logMessage);
-    }
-  }
-  /**
-   * Log info message to stderr
-   */
-  static info(message, data) {
-    if (!this.isDebugEnabled) return;
-    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp2}] [INFO] ${message}`;
-    if (data !== void 0) {
-      console.error(logMessage, data);
-    } else {
-      console.error(logMessage);
-    }
-  }
-  /**
-   * Log error message to stderr
-   */
-  static error(message, error) {
-    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp2}] [ERROR] ${message}`;
-    if (error !== void 0) {
-      console.error(logMessage, error);
-    } else {
-      console.error(logMessage);
-    }
-  }
-  /**
-   * Log tool execution
-   */
-  static logToolExecution(toolName, args, result) {
-    this.debug(`Tool executed: ${toolName}`, { args, result });
-  }
-  /**
-   * Log notification sending
-   */
-  static logNotification(method, params) {
-    this.debug(`Sending notification: ${method}`, params);
-  }
-  /**
-   * Enable/disable debug logging
-   */
-  static setDebugEnabled(enabled) {
-    this.isDebugEnabled = enabled;
-  }
-};
-
 // src/unity-client.ts
 import * as net from "net";
 
@@ -5579,7 +5518,7 @@ var POLLING = {
   BUFFER_SECONDS: 10
 };
 
-// src/utils/mcp-debug.ts
+// src/utils/log-to-file.ts
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
@@ -5617,14 +5556,6 @@ var mcpInfo = (...args) => {
     writeToFile(`[MCP-INFO] ${message}`);
   }
 };
-var mcpWarn = (...args) => {
-  if (process.env.MCP_DEBUG) {
-    const message = args.map(
-      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(" ");
-    writeToFile(`[MCP-WARN] ${message}`);
-  }
-};
 var mcpError = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
@@ -5657,7 +5588,6 @@ var UnityClient = class {
    */
   onNotification(method, handler) {
     this.notificationHandlers.set(method, handler);
-    mcpDebug(`[UnityClient] Registered notification handler for method: ${method}`);
   }
   /**
    * Remove notification handler
@@ -5700,7 +5630,6 @@ var UnityClient = class {
    */
   handleNotification(notification) {
     const { method, params } = notification;
-    mcpDebug(`[UnityClient] Received notification: ${method}`, params);
     const handler = this.notificationHandlers.get(method);
     if (handler) {
       try {
@@ -5709,7 +5638,6 @@ var UnityClient = class {
         mcpError(`[UnityClient] Error in notification handler for ${method}:`, error);
       }
     } else {
-      mcpDebug(`[UnityClient] No handler registered for notification: ${method}`);
     }
   }
   /**
@@ -5735,7 +5663,6 @@ var UnityClient = class {
    */
   async testConnection() {
     if (!this._connected || this.socket === null || this.socket.destroyed) {
-      mcpWarn("[UnityClient] Connection test failed: socket not connected or destroyed");
       return false;
     }
     await this.ping(UNITY_CONNECTION.CONNECTION_TEST_MESSAGE);
@@ -5750,7 +5677,6 @@ var UnityClient = class {
         return;
       }
     } catch (error) {
-      mcpWarn("[UnityClient] Connection test failed during ensureConnected:", error);
       this._connected = false;
     }
     this.disconnect();
@@ -5779,7 +5705,6 @@ var UnityClient = class {
       });
       this.socket.on("close", () => {
         this._connected = false;
-        mcpInfo("[UnityClient] Connection lost, starting polling...");
         this.startPolling();
       });
       this.socket.on("data", (data) => {
@@ -5848,17 +5773,14 @@ var UnityClient = class {
    */
   async executeCommand(commandName, params = {}) {
     await this.ensureConnected();
-    mcpDebug(`[UnityClient] Executing command: "${commandName}" with params:`, params);
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
       method: commandName,
       params
     };
-    mcpDebug(`[UnityClient] Sending request:`, request);
     let timeoutMs = this.getTimeoutForCommand(commandName, params);
     const response = await this.sendRequest(request, timeoutMs);
-    mcpDebug(`[UnityClient] Received response:`, response);
     if (response.error) {
       throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
     }
@@ -5871,25 +5793,19 @@ var UnityClient = class {
   getTimeoutForCommand(commandName, params) {
     if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0) {
       const calculatedTimeout = (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1e3;
-      mcpDebug(`[UnityClient] Using dynamic timeout for ${commandName}: params.TimeoutSeconds=${params.TimeoutSeconds}s, final=${calculatedTimeout}ms`);
       return calculatedTimeout;
     }
     switch (commandName) {
       case "runtests":
         const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1e3 + POLLING.BUFFER_SECONDS) * 1e3;
-        mcpDebug(`[UnityClient] Using default timeout for runtests: ${defaultTimeout}ms`);
         return defaultTimeout;
       case "compile":
-        mcpDebug(`[UnityClient] Using default timeout for compile: ${TIMEOUTS.COMPILE}ms`);
         return TIMEOUTS.COMPILE;
       case "getlogs":
-        mcpDebug(`[UnityClient] Using default timeout for getlogs: ${TIMEOUTS.GET_LOGS}ms`);
         return TIMEOUTS.GET_LOGS;
       case "ping":
-        mcpDebug(`[UnityClient] Using default timeout for ping: ${TIMEOUTS.PING}ms`);
         return TIMEOUTS.PING;
       default:
-        mcpDebug(`[UnityClient] Using default timeout for ${commandName}: ${TIMEOUTS.PING}ms`);
         return TIMEOUTS.PING;
     }
   }
@@ -5905,10 +5821,8 @@ var UnityClient = class {
   async sendRequest(request, timeoutMs) {
     return new Promise((resolve, reject) => {
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
-      mcpDebug(`[UnityClient] Setting timeout for request ${request.id} (${request.method}): ${timeout_duration}ms`);
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(request.id);
-        mcpDebug(`[UnityClient] Request ${request.id} (${request.method}) timed out after ${timeout_duration}ms`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
       this.pendingRequests.set(request.id, {
@@ -5946,17 +5860,14 @@ var UnityClient = class {
    */
   startPolling() {
     if (this.pollingInterval) return;
-    mcpInfo(`[UnityClient] Starting connection recovery polling (${POLLING.INTERVAL_MS}ms interval)`);
     this.pollingInterval = setInterval(async () => {
       try {
         await this.connect();
-        mcpInfo("[UnityClient] Connection recovered! Stopping polling");
         this.stopPolling();
         if (this.onReconnectedCallback) {
           this.onReconnectedCallback();
         }
       } catch (error) {
-        mcpDebug(`[UnityClient] Polling retry failed (connection still down):`, error);
       }
     }, POLLING.INTERVAL_MS);
   }
@@ -6032,9 +5943,7 @@ var DynamicUnityCommandTool = class extends BaseTool {
     this.inputSchema = this.generateInputSchema(parameterSchema);
   }
   generateInputSchema(parameterSchema) {
-    mcpDebug(`[DynamicUnityCommandTool] Generating schema for ${this.commandName}:`, parameterSchema);
     if (!parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0) {
-      mcpDebug(`[DynamicUnityCommandTool] No parameters found for ${this.commandName}, using minimal schema`);
       return {
         type: "object",
         properties: {},
@@ -6071,7 +5980,6 @@ var DynamicUnityCommandTool = class extends BaseTool {
       properties,
       required: required.length > 0 ? required : void 0
     };
-    mcpDebug(`[DynamicUnityCommandTool] Generated schema for ${this.commandName}:`, schema);
     return schema;
   }
   convertType(unityType) {
@@ -6189,9 +6097,9 @@ var SimpleMcpServer = class {
   isShuttingDown = false;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
-    DebugLogger.info("Simple Unity MCP Server Starting");
-    DebugLogger.info(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
-    DebugLogger.info(`Development mode: ${this.isDevelopment}`);
+    mcpInfo("Simple Unity MCP Server Starting");
+    mcpInfo(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
+    mcpInfo(`Development mode: ${this.isDevelopment}`);
     this.server = new Server(
       {
         name: "umcp-server",
@@ -6207,7 +6115,6 @@ var SimpleMcpServer = class {
     );
     this.unityClient = new UnityClient();
     this.unityClient.setReconnectedCallback(() => {
-      mcpInfo("[Simple MCP] Unity connection recovered via polling, refreshing tools...");
       this.refreshDynamicTools();
     });
     this.setupHandlers();
@@ -6218,17 +6125,13 @@ var SimpleMcpServer = class {
    */
   async initializeDynamicTools() {
     try {
-      mcpInfo("[Simple MCP] Fetching Unity command details with schemas...");
       await this.unityClient.ensureConnected();
-      mcpInfo("[Simple MCP] Unity connection established successfully");
       const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
-      mcpInfo("[Simple MCP] Raw command details response:", commandDetailsResponse);
       const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
         mcpError("[Simple MCP] Invalid command details response:", commandDetailsResponse);
         return;
       }
-      mcpInfo(`[Simple MCP] Found ${commandDetails.length} Unity commands with schemas`);
       this.dynamicTools.clear();
       const toolContext = { unityClient: this.unityClient };
       for (const commandInfo of commandDetails) {
@@ -6247,9 +6150,7 @@ var SimpleMcpServer = class {
           // Pass schema information
         );
         this.dynamicTools.set(toolName, dynamicTool);
-        mcpDebug(`[Simple MCP] Created dynamic tool: ${toolName} with schema:`, parameterSchema);
       }
-      mcpInfo(`[Simple MCP] Initialized ${this.dynamicTools.size} dynamic Unity command tools with schemas`);
     } catch (error) {
       mcpError("[Simple MCP] Failed to initialize dynamic tools:", error);
     }
@@ -6259,10 +6160,8 @@ var SimpleMcpServer = class {
    * This method can be called to update the tool list when Unity commands change
    */
   async refreshDynamicTools() {
-    mcpInfo("[Simple MCP] Refreshing dynamic tools...");
     await this.initializeDynamicTools();
     this.sendToolsChangedNotification();
-    mcpInfo("[Simple MCP] Dynamic tools refreshed and notification sent");
   }
   setupHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -6313,13 +6212,12 @@ var SimpleMcpServer = class {
           }
         });
       }
-      DebugLogger.debug(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
-      mcpInfo(`[Simple MCP] Providing ${tools.length} tools to MCP client:`, tools.map((t) => t.name));
+      mcpDebug(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
       return { tools };
     });
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      DebugLogger.logToolExecution(name, args);
+      mcpDebug(`Tool executed: ${name}`, { args });
       try {
         if (this.dynamicTools.has(name)) {
           const dynamicTool = this.dynamicTools.get(name);
@@ -6366,12 +6264,6 @@ var SimpleMcpServer = class {
       let responseText = "";
       if (typeof response === "object" && response !== null) {
         const respObj = response;
-        DebugLogger.debug("[UnityPing] Response object properties:", {
-          Message: respObj.Message,
-          StartedAt: respObj.StartedAt,
-          EndedAt: respObj.EndedAt,
-          ExecutionTimeMs: respObj.ExecutionTimeMs
-        });
         responseText = `Message: ${respObj.Message || "No message"}`;
         if (respObj.StartedAt && respObj.EndedAt && respObj.ExecutionTimeMs !== void 0) {
           responseText += `
@@ -6463,48 +6355,38 @@ ${JSON.stringify(details, null, 2)}`
    */
   async start() {
     this.setupUnityEventListener();
-    mcpInfo("[Simple MCP] Initializing dynamic tools before connecting...");
     await this.initializeDynamicTools();
     const transport = new StdioServerTransport();
-    mcpInfo("[Simple MCP] Connecting to MCP transport with all tools ready...");
     await this.server.connect(transport);
-    mcpInfo("[Simple MCP] Server started with Unity event-based tool updates");
   }
   /**
    * Setup Unity event listener for automatic tool updates
    */
   setupUnityEventListener() {
     this.unityClient.onNotification("commandsChanged", async (params) => {
-      mcpInfo("[Simple MCP] Received commandsChanged notification from Unity:", params);
       try {
         await this.refreshDynamicTools();
-        mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity event");
       } catch (error) {
         mcpError("[Simple MCP] Failed to update dynamic tools via Unity event:", error);
       }
     });
     this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
-      mcpInfo("[Simple MCP] Received tools/list_changed notification from Unity:", params);
       try {
         await this.refreshDynamicTools();
-        mcpInfo("[Simple MCP] Dynamic tools updated successfully via Unity notification");
       } catch (error) {
         mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
       }
     });
-    mcpInfo("[Simple MCP] Unity event listeners setup completed");
   }
   /**
    * Send tools changed notification
    */
   sendToolsChangedNotification() {
-    mcpInfo(`[Simple MCP] Sending tools changed notification, dynamic tools count: ${this.dynamicTools.size}`);
     try {
       this.server.notification({
         method: "notifications/tools/list_changed",
         params: {}
       });
-      mcpInfo("[Simple MCP] Tools changed notification sent successfully");
     } catch (error) {
       mcpError("[Simple MCP] Failed to send tools changed notification:", error);
     }
@@ -6514,39 +6396,30 @@ ${JSON.stringify(details, null, 2)}`
    */
   setupSignalHandlers() {
     process.on("SIGINT", () => {
-      mcpInfo("[Simple MCP] Received SIGINT (Ctrl+C), shutting down gracefully...");
       this.gracefulShutdown();
     });
     process.on("SIGTERM", () => {
-      mcpInfo("[Simple MCP] Received SIGTERM, shutting down gracefully...");
       this.gracefulShutdown();
     });
     process.on("SIGHUP", () => {
-      mcpInfo("[Simple MCP] Received SIGHUP (terminal closed), shutting down gracefully...");
       this.gracefulShutdown();
     });
-    mcpInfo("[Simple MCP] Signal handlers setup completed");
   }
   /**
    * Graceful shutdown with proper cleanup
    */
   gracefulShutdown() {
     if (this.isShuttingDown) {
-      mcpInfo("[Simple MCP] Shutdown already in progress, ignoring...");
       return;
     }
     this.isShuttingDown = true;
-    mcpInfo("[Simple MCP] Starting graceful shutdown...");
     try {
       if (this.unityClient) {
-        mcpInfo("[Simple MCP] Disconnecting from Unity...");
         this.unityClient.disconnect();
       }
-      mcpInfo("[Simple MCP] Cleanup completed successfully");
     } catch (error) {
       mcpError("[Simple MCP] Error during cleanup:", error);
     }
-    mcpInfo("[Simple MCP] Goodbye!");
     process.exit(0);
   }
 };
