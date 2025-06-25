@@ -44,7 +44,9 @@ export class UnityDebugClient {
             // Add timeout
             setTimeout(() => {
                 if (!this._connected) {
-                    this.socket.destroy();
+                    if (this.socket) {
+                        this.socket.destroy();
+                    }
                     reject(new Error('Connection timeout'));
                 }
             }, 5000);
@@ -117,19 +119,34 @@ export class UnityDebugClient {
                 reject(new Error('Unity compile timeout'));
             }, 30000);
 
-            this.socket.once('data', (data) => {
-                clearTimeout(timeout);
+            const handleData = (data) => {
                 try {
                     const response = JSON.parse(data.toString());
-                    if (response.error) {
-                        reject(new Error(`Unity compile error: ${response.error.message}`));
-                    } else {
-                        resolve(response.result);
+                    
+                    // Skip notifications - we only want responses with matching request ID
+                    if (response.method && response.method.startsWith('notifications/')) {
+                        return; // Continue listening for the actual response
+                    }
+                    
+                    // Check if this is the response to our request
+                    if (response.id === requestId) {
+                        clearTimeout(timeout);
+                        this.socket.off('data', handleData);
+                        
+                        if (response.error) {
+                            reject(new Error(`Unity compile error: ${response.error.message}`));
+                        } else {
+                            resolve(response.result);
+                        }
                     }
                 } catch (error) {
+                    clearTimeout(timeout);
+                    this.socket.off('data', handleData);
                     reject(new Error('Invalid compile response from Unity'));
                 }
-            });
+            };
+
+            this.socket.on('data', handleData);
         });
     }
 
