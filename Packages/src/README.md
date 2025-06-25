@@ -123,7 +123,8 @@ All commands automatically include the following timing information:
 
 ## Usage
 1. Select Window > uMCP. A dedicated window will open. Press the "Start Server" button.
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/0a1b5ed4-56a9-4209-b2e7-0acbca3cb9a9" />
+<img width="399" alt="image" src="https://github.com/user-attachments/assets/16d938a6-1502-4005-98fd-a03b9e907730" />
+
 
 
 If the display changes as shown below, it's successful.
@@ -134,13 +135,15 @@ If the display changes as shown below, it's successful.
 
 
 2. Next, select the target IDE in the LLM Tool Settings section. Press the "Auto Configure Settings" button to automatically connect to the IDE.
+<img width="396" alt="image" src="https://github.com/user-attachments/assets/f98df91c-79e8-4938-b1b5-bf2f278336d3" />
 
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/379fe674-dee7-4962-9d93-6f43fca13227" />
 
 
 3. IDE connection verification
   - For example, in Cursor, check Tools & Integrations on the settings page and find unity-mcp-{port number}. Click the toggle to enable MCP. If yellow or red circles appear, restart Cursor.
-<img width="657" alt="image" src="https://github.com/user-attachments/assets/14352ec0-c0a4-443d-98d5-35a6c86acd45" />
+<img width="566" alt="image" src="https://github.com/user-attachments/assets/80d85c18-7a55-4b2e-b4a7-0d5c07687e8a" />
+
+
 
 4. Manual configuration (usually not required)
 If necessary, you can manually edit Cursor's configuration file (`.cursor/mcp.json`):
