@@ -51,8 +51,7 @@ namespace io.github.hatayama.uMCP
             {
                 Method = request["method"]?.ToString(),
                 Params = request["params"],
-                Id = request["id"]?.ToObject<object>(),
-                IsNotification = request["id"] == null
+                Id = request["id"]?.ToObject<object>()
             };
         }
 
@@ -119,51 +118,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static async Task<BaseCommandResponse> ExecuteMethod(string method, JToken paramsToken)
         {
-            // Use new command-based structure
             return await UnityApiHandler.ExecuteCommandAsync(method, paramsToken);
         }
-    }
-
-    /// <summary>
-    /// Represents a parsed JSON-RPC request
-    /// </summary>
-    internal class JsonRpcRequest
-    {
-        public string Method { get; set; }
-        public JToken Params { get; set; }
-        /// <summary>
-        /// JSON-RPC 2.0 spec allows id to be string, number, or null.
-        /// We use object type to preserve the original type sent by client.
-        /// The response must return the same id type as received.
-        /// </summary>
-        public object Id { get; set; }
-        public bool IsNotification { get; set; }
-    }
-
-    /// <summary>
-    /// Represents a JSON-RPC response
-    /// </summary>
-    internal class JsonRpcResponse
-    {
-        public string JsonRpc { get; set; } = McpServerConfig.JSONRPC_VERSION;
-        /// <summary>
-        /// JSON-RPC 2.0 spec requires id type to match the request.
-        /// Must be string, number, or null - same as received.
-        /// </summary>
-        public object Id { get; set; }
-        public BaseCommandResponse Result { get; set; }
-        public JsonRpcError Error { get; set; }
-        
-        public bool IsSuccess => Error == null;
-    }
-
-    /// <summary>
-    /// Represents a JSON-RPC error
-    /// </summary>
-    internal class JsonRpcError
-    {
-        public int Code { get; set; }
-        public string Message { get; set; }
-        public object Data { get; set; }
     }
 } 
