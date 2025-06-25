@@ -138,9 +138,6 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void OnAfterAssemblyReload()
         {
-            // Clear the compile-via-MCP flag (just in case).
-            SessionState.EraseBool(McpConstants.SESSION_KEY_COMPILE_FROM_MCP);
-            
             // Clear the domain reload completion flag.
             SessionState.EraseBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS);
             

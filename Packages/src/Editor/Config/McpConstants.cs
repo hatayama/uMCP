@@ -36,7 +36,6 @@ namespace io.github.hatayama.uMCP
         public const string SESSION_KEY_SERVER_PORT = "uMCP.ServerPort";
         public const string SESSION_KEY_AFTER_COMPILE = "uMCP.AfterCompile";
         public const string SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS = "uMCP.DomainReloadInProgress";
-        public const string SESSION_KEY_COMPILE_FROM_MCP = "uMCP.CompileFromMCP";
         public const string SESSION_KEY_SELECTED_EDITOR_TYPE = "uMCP.SelectedEditorType";
         public const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
         public const string SESSION_KEY_COMMUNICATION_LOGS = "uMCP.CommunicationLogs";
