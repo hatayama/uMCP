@@ -1,10 +1,12 @@
 using NUnit.Framework;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.TestTools;
+using System.Linq;
 
 namespace io.github.hatayama.uMCP
 {
@@ -20,10 +22,10 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Verifies that when called from the main thread, it executes immediately
+        /// Verifies that when called from a background thread, it can switch back to main thread
         /// </summary>
         [UnityTest]
-        public IEnumerator SwitchToMainThread_WhenCalledFromMainThread_ShouldExecuteImmediately()
+        public IEnumerator SwitchToMainThread_WhenCalledFromBackgroundThread_ShouldSwitchBackToMainThread()
         {
             // Arrange
             bool executedImmediately = false;
@@ -31,13 +33,17 @@ namespace io.github.hatayama.uMCP
             bool completed = false;
 
             // Act
-            Task.Run(async () => {
-                try {
+            Task.Run(async () =>
+            {
+                try
+                {
                     await MainThreadSwitcher.SwitchToMainThread();
                     executedImmediately = true;
                     executionThreadId = Thread.CurrentThread.ManagedThreadId;
                     completed = true;
-                } catch (System.Exception ex) {
+                }
+                catch (System.Exception ex)
+                {
                     UnityEngine.Debug.LogError($"Test failed: {ex.Message}");
                     completed = true;
                 }
@@ -47,8 +53,8 @@ namespace io.github.hatayama.uMCP
             yield return new UnityEngine.WaitUntil(() => completed);
 
             // Assert
-            Assert.That(executedImmediately, Is.True, "Should execute immediately when called from main thread");
-            Assert.That(executionThreadId, Is.EqualTo(mainThreadId), "Should continue on main thread");
+            Assert.That(executedImmediately, Is.True, "Should execute when called from background thread");
+            Assert.That(executionThreadId, Is.EqualTo(mainThreadId), "Should switch to main thread");
         }
 
         /// <summary>
@@ -66,9 +72,9 @@ namespace io.github.hatayama.uMCP
             Task.Run(async () =>
             {
                 backgroundThreadId = Thread.CurrentThread.ManagedThreadId;
-                
+
                 await MainThreadSwitcher.SwitchToMainThread();
-                
+
                 afterSwitchThreadId = Thread.CurrentThread.ManagedThreadId;
                 taskCompleted = true;
             });
@@ -98,12 +104,16 @@ namespace io.github.hatayama.uMCP
             bool completed = false;
 
             // Act
-            Task.Run(async () => {
-                try {
+            Task.Run(async () =>
+            {
+                try
+                {
                     await MainThreadSwitcher.SwitchToMainThread(timing);
                     executed = true;
                     completed = true;
-                } catch (System.Exception ex) {
+                }
+                catch (System.Exception ex)
+                {
                     UnityEngine.Debug.LogError($"Test failed: {ex.Message}");
                     completed = true;
                 }
@@ -135,9 +145,9 @@ namespace io.github.hatayama.uMCP
                 Task.Run(async () =>
                 {
                     threadIds[index] = Thread.CurrentThread.ManagedThreadId;
-                    
+
                     await MainThreadSwitcher.SwitchToMainThread();
-                    
+
                     switchedThreadIds[index] = Thread.CurrentThread.ManagedThreadId;
                     taskCompleted[index] = true;
                 });
@@ -156,10 +166,10 @@ namespace io.github.hatayama.uMCP
                         break;
                     }
                 }
-                
+
                 if (allCompleted)
                     break;
-                    
+
                 yield return null;
             }
 
@@ -171,5 +181,59 @@ namespace io.github.hatayama.uMCP
                 Assert.That(switchedThreadIds[i], Is.EqualTo(mainThreadId), $"Task {i} should switch to main thread");
             }
         }
+
+        /// <summary>
+        /// Verifies that SwitchToMainThread completes immediately when called directly from the main thread
+        /// </summary>
+        [Test]
+        public void SwitchToMainThread_WhenCalledDirectlyFromMainThread_ShouldCompleteImmediately()
+        {
+            // Arrange & Act & Assert
+            // This should complete immediately without hanging
+            bool completed = false;
+
+            // Execute directly on main thread (not in Task.Run)
+            var task = ExecuteOnMainThread();
+
+            async Task ExecuteOnMainThread()
+            {
+                await MainThreadSwitcher.SwitchToMainThread();
+                completed = true;
+            }
+
+            // Wait for a very short time - if it hangs, this will fail
+            task.Wait(TimeSpan.FromMilliseconds(100));
+
+            Assert.That(completed, Is.True, "SwitchToMainThread should complete immediately when called from main thread");
+            Assert.That(task.IsCompleted, Is.True, "Task should be completed");
+            Assert.That(Thread.CurrentThread.ManagedThreadId, Is.EqualTo(mainThreadId), "Should still be on main thread");
+        }
+
+        /// <summary>
+        /// Verifies that SwitchToMainThread does not hang when called from main thread using async/await pattern
+        /// </summary>
+        [Test]
+        public async Task SwitchToMainThread_WhenCalledFromMainThread_ShouldNotHangWithAsyncAwait()
+        {
+            // Arrange
+            bool operationCompleted = false;
+
+            // Act - This should complete immediately without hanging
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(1));
+            var switchTask = Task.Run(async () =>
+            {
+                await MainThreadSwitcher.SwitchToMainThread();
+                operationCompleted = true;
+            });
+
+            // Wait for either completion or timeout
+            var completedTask = await Task.WhenAny(switchTask, timeoutTask);
+
+            // Assert
+            Assert.That(completedTask, Is.EqualTo(switchTask),
+                "SwitchToMainThread should complete before timeout when called from main thread");
+            Assert.That(operationCompleted, Is.True,
+                "Operation should have completed successfully");
+        }
     }
-} 
+}

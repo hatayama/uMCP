@@ -72,7 +72,7 @@ namespace io.github.hatayama.uMCP
             await McpCommunicationLogger.LogRequest(originalJson);
             object result = await ExecuteMethod(request.Method, request.Params);
             string response = CreateSuccessResponse(request.Id, result);
-            await McpCommunicationLogger.LogResponse(response);
+            McpCommunicationLogger.RecordLogResponse(response);
             return response;
         }
 

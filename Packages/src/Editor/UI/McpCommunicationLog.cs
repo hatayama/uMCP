@@ -118,7 +118,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Records a response (adds it to the log paired with its request).
         /// </summary>
-        public static async Task LogResponse(string jsonResponse)
+        public static async Task RecordLogResponse(string jsonResponse)
         {
             McpLogger.LogDebug($"LogResponse called: {jsonResponse}");
 
