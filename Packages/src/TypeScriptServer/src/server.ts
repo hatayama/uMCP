@@ -24,6 +24,7 @@ class SimpleMcpServer {
   private unityClient: UnityClient;
   private readonly isDevelopment: boolean;
   private readonly dynamicTools: Map<string, DynamicUnityCommandTool> = new Map();
+  private isShuttingDown: boolean = false;
 
   constructor() {
     // Simple environment variable check
@@ -56,6 +57,7 @@ class SimpleMcpServer {
     });
     
     this.setupHandlers();
+    this.setupSignalHandlers();
   }
 
   /**
@@ -445,6 +447,60 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     } catch (error) {
       mcpError('[Simple MCP] Failed to send tools changed notification:', error);
     }
+  }
+
+  /**
+   * Setup signal handlers for graceful shutdown
+   */
+  private setupSignalHandlers(): void {
+    // Handle Ctrl+C (SIGINT)
+    process.on('SIGINT', () => {
+      mcpInfo('[Simple MCP] Received SIGINT (Ctrl+C), shutting down gracefully...');
+      this.gracefulShutdown();
+    });
+
+    // Handle kill command (SIGTERM)
+    process.on('SIGTERM', () => {
+      mcpInfo('[Simple MCP] Received SIGTERM, shutting down gracefully...');
+      this.gracefulShutdown();
+    });
+
+    // Handle terminal close (SIGHUP)
+    process.on('SIGHUP', () => {
+      mcpInfo('[Simple MCP] Received SIGHUP (terminal closed), shutting down gracefully...');
+      this.gracefulShutdown();
+    });
+
+    mcpInfo('[Simple MCP] Signal handlers setup completed');
+  }
+
+  /**
+   * Graceful shutdown with proper cleanup
+   */
+  private gracefulShutdown(): void {
+    // Prevent multiple shutdown attempts
+    if (this.isShuttingDown) {
+      mcpInfo('[Simple MCP] Shutdown already in progress, ignoring...');
+      return;
+    }
+    
+    this.isShuttingDown = true;
+    mcpInfo('[Simple MCP] Starting graceful shutdown...');
+
+    try {
+      // Disconnect from Unity
+      if (this.unityClient) {
+        mcpInfo('[Simple MCP] Disconnecting from Unity...');
+        this.unityClient.disconnect();
+      }
+
+      mcpInfo('[Simple MCP] Cleanup completed successfully');
+    } catch (error) {
+      mcpError('[Simple MCP] Error during cleanup:', error);
+    }
+
+    mcpInfo('[Simple MCP] Goodbye! 👋');
+    process.exit(0);
   }
 
 }

@@ -6186,6 +6186,7 @@ var SimpleMcpServer = class {
   unityClient;
   isDevelopment;
   dynamicTools = /* @__PURE__ */ new Map();
+  isShuttingDown = false;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     DebugLogger.info("Simple Unity MCP Server Starting");
@@ -6210,6 +6211,7 @@ var SimpleMcpServer = class {
       this.refreshDynamicTools();
     });
     this.setupHandlers();
+    this.setupSignalHandlers();
   }
   /**
    * Initialize dynamic Unity command tools
@@ -6503,6 +6505,46 @@ ${JSON.stringify(detailsResponse, null, 2)}`
     } catch (error) {
       mcpError("[Simple MCP] Failed to send tools changed notification:", error);
     }
+  }
+  /**
+   * Setup signal handlers for graceful shutdown
+   */
+  setupSignalHandlers() {
+    process.on("SIGINT", () => {
+      mcpInfo("[Simple MCP] Received SIGINT (Ctrl+C), shutting down gracefully...");
+      this.gracefulShutdown();
+    });
+    process.on("SIGTERM", () => {
+      mcpInfo("[Simple MCP] Received SIGTERM, shutting down gracefully...");
+      this.gracefulShutdown();
+    });
+    process.on("SIGHUP", () => {
+      mcpInfo("[Simple MCP] Received SIGHUP (terminal closed), shutting down gracefully...");
+      this.gracefulShutdown();
+    });
+    mcpInfo("[Simple MCP] Signal handlers setup completed");
+  }
+  /**
+   * Graceful shutdown with proper cleanup
+   */
+  gracefulShutdown() {
+    if (this.isShuttingDown) {
+      mcpInfo("[Simple MCP] Shutdown already in progress, ignoring...");
+      return;
+    }
+    this.isShuttingDown = true;
+    mcpInfo("[Simple MCP] Starting graceful shutdown...");
+    try {
+      if (this.unityClient) {
+        mcpInfo("[Simple MCP] Disconnecting from Unity...");
+        this.unityClient.disconnect();
+      }
+      mcpInfo("[Simple MCP] Cleanup completed successfully");
+    } catch (error) {
+      mcpError("[Simple MCP] Error during cleanup:", error);
+    }
+    mcpInfo("[Simple MCP] Goodbye! \u{1F44B}");
+    process.exit(0);
   }
 };
 var server = new SimpleMcpServer();
