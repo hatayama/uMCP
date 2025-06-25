@@ -1,5 +1,8 @@
+using System;
+
 namespace io.github.hatayama.uMCP
 {
+    [Serializable]
     public record LogEntryDto
     {
         public readonly string Message;

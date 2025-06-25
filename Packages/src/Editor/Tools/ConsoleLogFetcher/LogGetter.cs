@@ -1,19 +1,20 @@
 using UnityEditor;
+using UnityEngine;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// A class that provides a general-purpose static API for retrieving console logs.
-    /// Initializes and retains CustomLogManager appropriately with [InitializeOnLoad].
+    /// Uses ConsoleLogRetriever to access Unity's console logs directly via reflection.
     /// </summary>
     [InitializeOnLoad]
     public static class LogGetter
     {
-        private static readonly CustomLogManager LogManager;
+        private static readonly ConsoleLogRetriever LogRetriever;
         
         static LogGetter()
         {
-            LogManager = new CustomLogManager();
+            LogRetriever = new ConsoleLogRetriever();
         }
 
         /// <summary>
@@ -36,13 +37,29 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Converts McpLogType to Unity's LogType
+        /// </summary>
+        /// <param name="mcpLogType">MCP log type</param>
+        /// <returns>Corresponding Unity LogType</returns>
+        private static LogType ConvertMcpLogTypeToLogType(McpLogType mcpLogType)
+        {
+            return mcpLogType switch
+            {
+                McpLogType.Error => LogType.Error,
+                McpLogType.Warning => LogType.Warning,
+                McpLogType.Log => LogType.Log,
+                _ => LogType.Log
+            };
+        }
+
+        /// <summary>
         /// Retrieves console logs and returns them as a LogDisplayDto.
         /// </summary>
         /// <returns>The retrieved log data.</returns>
         public static LogDisplayDto GetConsoleLog()
         {
-            LogEntryDto[] logEntries = LogManager.GetAllLogEntries();
-            return new LogDisplayDto(logEntries, logEntries.Length);
+            System.Collections.Generic.List<LogEntryDto> logEntries = LogRetriever.GetAllLogs();
+            return new LogDisplayDto(logEntries.ToArray(), logEntries.Count);
         }
 
         /// <summary>
@@ -51,7 +68,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>An array of log entries.</returns>
         public static LogEntryDto[] GetConsoleLogEntries()
         {
-            return LogManager.GetAllLogEntries();
+            return LogRetriever.GetAllLogs().ToArray();
         }
 
         /// <summary>
@@ -61,18 +78,20 @@ namespace io.github.hatayama.uMCP
         /// <returns>The filtered log data.</returns>
         public static LogDisplayDto GetConsoleLog(McpLogType logType)
         {
-            LogEntryDto[] filteredEntries;
+            System.Collections.Generic.List<LogEntryDto> allEntries;
             
             if (logType == McpLogType.All)
             {
-                filteredEntries = LogManager.GetAllLogEntries();
+                allEntries = LogRetriever.GetAllLogs();
             }
             else
             {
-                filteredEntries = LogManager.GetLogEntriesByType(logType);
+                // Convert McpLogType to LogType for ConsoleLogRetriever
+                UnityEngine.LogType unityLogType = ConvertMcpLogTypeToLogType(logType);
+                allEntries = LogRetriever.GetLogsByType(unityLogType);
             }
             
-            return new LogDisplayDto(filteredEntries, filteredEntries.Length);
+            return new LogDisplayDto(allEntries.ToArray(), allEntries.Count);
         }
 
         /// <summary>
@@ -83,8 +102,26 @@ namespace io.github.hatayama.uMCP
         /// <returns>The filtered log data.</returns>
         public static LogDisplayDto GetConsoleLog(McpLogType logType, string searchText)
         {
-            LogEntryDto[] filteredEntries = LogManager.GetLogEntriesByTypeAndMessage(logType, searchText);
-            return new LogDisplayDto(filteredEntries, filteredEntries.Length);
+            // Get logs based on type
+            System.Collections.Generic.List<LogEntryDto> allEntries;
+            if (logType == McpLogType.All)
+            {
+                allEntries = LogRetriever.GetAllLogs();
+            }
+            else
+            {
+                UnityEngine.LogType unityLogType = ConvertMcpLogTypeToLogType(logType);
+                allEntries = LogRetriever.GetLogsByType(unityLogType);
+            }
+            
+            // Filter by search text if provided
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                allEntries = allEntries.FindAll(entry => 
+                    entry.Message.IndexOf(searchText, System.StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+            
+            return new LogDisplayDto(allEntries.ToArray(), allEntries.Count);
         }
 
         /// <summary>
@@ -93,7 +130,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>The total number of logs.</returns>
         public static int GetConsoleLogCount()
         {
-            return LogManager.GetLogCount();
+            return LogRetriever.GetLogCount();
         }
 
         /// <summary>
@@ -101,7 +138,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void ClearCustomLogs()
         {
-            LogManager.ClearLogs();
+            // This method is no longer needed since we're using ConsoleLogRetriever
+            // Console logs are managed by Unity itself
         }
     }
 }
