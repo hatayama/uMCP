@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/hatayama/uMCP/compare/v0.7.0...v0.8.0) (2025-06-25)
+
+
+### Features
+
+* DelayFrame implementation dedicated to editor ([#59](https://github.com/hatayama/uMCP/issues/59)) ([1369c9f](https://github.com/hatayama/uMCP/commit/1369c9fa852e7cd0bd443940fd3f937755b2ea6b))
+* Unify IUnityCommand return type to BaseCommandResponse ([#61](https://github.com/hatayama/uMCP/issues/61)) ([f9b764f](https://github.com/hatayama/uMCP/commit/f9b764f430940fd7d9b994fc5cb24c76dd0efb37))
+
+
+### Bug Fixes
+
+* Change mcpLogger to scriptable singleton ([#64](https://github.com/hatayama/uMCP/issues/64)) ([9f64778](https://github.com/hatayama/uMCP/commit/9f64778f2be52cf5d9bb5c2e6652c7b1fbc39fe7))
+* console masking process ([#63](https://github.com/hatayama/uMCP/issues/63)) ([4cec382](https://github.com/hatayama/uMCP/commit/4cec38206165e2a0ee6b16f5b08bdd645106771b))
+* Improved logging using ConsoleLogRetriever ([#67](https://github.com/hatayama/uMCP/issues/67)) ([c06142b](https://github.com/hatayama/uMCP/commit/c06142b6fc0f6578f56cec39b0a0e3ad61f08909))
+* Improved timeout time and test result output location ([#55](https://github.com/hatayama/uMCP/issues/55)) ([38ae40b](https://github.com/hatayama/uMCP/commit/38ae40b47894428ff903862cfcf31a11152c772b))
+* Remove unnecessary debug logs and improve code quality ([#66](https://github.com/hatayama/uMCP/issues/66)) ([a86f96c](https://github.com/hatayama/uMCP/commit/a86f96c91b2e01d4481fce7b7a95f66e7ed1815f))
+* type safe ([#65](https://github.com/hatayama/uMCP/issues/65)) ([3215462](https://github.com/hatayama/uMCP/commit/321546294e6f16b9f20f6f28adec64552c2dfe84))
+
 ## [0.7.0](https://github.com/hatayama/uMCP/compare/v0.6.0...v0.7.0) (2025-06-23)
 
 
