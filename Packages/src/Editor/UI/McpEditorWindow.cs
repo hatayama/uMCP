@@ -196,7 +196,10 @@ namespace io.github.hatayama.uMCP
             
             // Auto start checkbox
             EditorGUI.BeginChangeCheck();
-            bool newAutoStart = EditorGUILayout.Toggle("Auto Start Server", autoStartServer);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Auto Start Server", GUILayout.Width(200));
+            bool newAutoStart = EditorGUILayout.Toggle(autoStartServer, GUILayout.Width(20));
+            EditorGUILayout.EndHorizontal();
             if (EditorGUI.EndChangeCheck())
             {
                 autoStartServer = newAutoStart;
@@ -484,7 +487,10 @@ namespace io.github.hatayama.uMCP
                 EditorGUILayout.LabelField("TypeScript Server Settings", EditorStyles.boldLabel);
                 
                 EditorGUI.BeginChangeCheck();
-                bool newEnableDevelopmentMode = EditorGUILayout.Toggle("Enable Development Mode", enableDevelopmentMode);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Enable Development Mode", GUILayout.Width(200));
+                bool newEnableDevelopmentMode = EditorGUILayout.Toggle(enableDevelopmentMode, GUILayout.Width(20));
+                EditorGUILayout.EndHorizontal();
                 if (EditorGUI.EndChangeCheck())
                 {
                     enableDevelopmentMode = newEnableDevelopmentMode;
@@ -505,7 +511,10 @@ namespace io.github.hatayama.uMCP
                 
                 // Log control toggle
                 EditorGUI.BeginChangeCheck();
-                bool newEnableMcpLogs = EditorGUILayout.Toggle("Enable MCP Logs", enableMcpLogs);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Enable MCP Logs", GUILayout.Width(200));
+                bool newEnableMcpLogs = EditorGUILayout.Toggle(enableMcpLogs, GUILayout.Width(20));
+                EditorGUILayout.EndHorizontal();
                 if (EditorGUI.EndChangeCheck())
                 {
                     enableMcpLogs = newEnableMcpLogs;
@@ -517,11 +526,20 @@ namespace io.github.hatayama.uMCP
                 
                 // Communication logs toggle
                 EditorGUI.BeginChangeCheck();
-                bool newEnableCommunicationLogs = EditorGUILayout.Toggle("Enable Communication Logs", enableCommunicationLogs);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Enable Communication Logs", GUILayout.Width(200));
+                bool newEnableCommunicationLogs = EditorGUILayout.Toggle(enableCommunicationLogs, GUILayout.Width(20));
+                EditorGUILayout.EndHorizontal();
                 if (EditorGUI.EndChangeCheck())
                 {
                     enableCommunicationLogs = newEnableCommunicationLogs;
                     McpEditorSettings.SetEnableCommunicationLogs(enableCommunicationLogs);
+                    
+                    // Clear logs when communication logs are disabled
+                    if (!enableCommunicationLogs)
+                    {
+                        McpCommunicationLogger.ClearLogs();
+                    }
                 }
                 
                 EditorGUILayout.Space();
@@ -646,7 +664,12 @@ namespace io.github.hatayama.uMCP
                         GUILayout.Height(communicationLogHeight)
                     );
                     
-                    for (int i = logs.Count - 1; i >= 0; i--) // Display from latest
+                    // Display up to maximum logs (from latest)
+                    int displayCount = Mathf.Min(logs.Count, McpUIConstants.MAX_COMMUNICATION_LOG_ENTRIES);
+                    int startIndex = logs.Count - 1;
+                    int endIndex = logs.Count - displayCount;
+                    
+                    for (int i = startIndex; i >= endIndex; i--)
                     {
                         McpCommunicationLogEntry log = logs[i];
                         DrawLogEntry(log);

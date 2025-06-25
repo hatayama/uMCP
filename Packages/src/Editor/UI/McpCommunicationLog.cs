@@ -47,7 +47,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Event for when the log is updated (for UI updates).
         /// </summary>
-        public static event System.Action OnLogUpdated;
+        public static event Action OnLogUpdated;
 
         /// <summary>
         /// Static constructor (automatically executed after a domain reload).
@@ -90,6 +90,12 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static async Task LogRequest(string jsonRequest)
         {
+            // Skip if communication logs are disabled
+            if (!McpEditorSettings.GetSettings().enableCommunicationLogs)
+            {
+                return;
+            }
+            
             JObject request = JObject.Parse(jsonRequest);
             string method = request["method"]?.ToString() ?? "unknown";
             string id = NormalizeId(request["id"]);
@@ -114,6 +120,12 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static async Task RecordLogResponse(string jsonResponse)
         {
+            // Skip if communication logs are disabled
+            if (!McpEditorSettings.GetSettings().enableCommunicationLogs)
+            {
+                return;
+            }
+            
             JObject response = JObject.Parse(jsonResponse);
             string id = NormalizeId(response["id"]);
 
@@ -153,6 +165,12 @@ namespace io.github.hatayama.uMCP
                     }
                     
                     _logs.Add(logEntry);
+                    
+                    // Remove old entries if exceeding maximum
+                    while (_logs.Count > McpUIConstants.MAX_COMMUNICATION_LOG_ENTRIES)
+                    {
+                        _logs.RemoveAt(0); // Remove oldest entry
+                    }
                 }
 
                 // Switch to main thread for SessionState operations
