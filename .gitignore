@@ -102,11 +102,11 @@ yarn-error.log*
 
 # TypeScript Server (開発用ビルドは除外、本番ビルドのみコミット)
 Packages/*/TypeScriptServer/node_modules/
-Packages/*/TypeScriptServer/dist/*.map
-Packages/*/TypeScriptServer/dist/*.d.ts
-Packages/*/TypeScriptServer/dist/*.map.meta
-Packages/*/TypeScriptServer/dist/*.d.ts.meta
+Packages/*/TypeScriptServer/dist/
 Packages/*/TypeScriptServer/.tsbuildinfo
+# Keep dist/server.bundle.js (production bundle)
+!Packages/*/TypeScriptServer/dist/server.bundle.js
+!Packages/*/TypeScriptServer/dist/server.bundle.js.meta
 
 # 環境設定ファイル
 .env
