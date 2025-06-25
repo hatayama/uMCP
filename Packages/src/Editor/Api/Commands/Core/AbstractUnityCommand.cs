@@ -11,8 +11,8 @@ namespace io.github.hatayama.uMCP
     /// <typeparam name="TSchema">Schema type for command parameters</typeparam>
     /// <typeparam name="TResponse">Response type for command results</typeparam>
     public abstract class AbstractUnityCommand<TSchema, TResponse> : IUnityCommand
-        where TSchema : class, new()
-        where TResponse : class
+        where TSchema : BaseCommandSchema, new()
+        where TResponse : BaseCommandResponse
     {
         public abstract string CommandName { get; }
         public abstract string Description { get; }

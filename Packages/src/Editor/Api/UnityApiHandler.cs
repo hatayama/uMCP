@@ -4,6 +4,22 @@ using Newtonsoft.Json.Linq;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
+    /// Response for getAvailableCommands meta command
+    /// </summary>
+    public class GetAvailableCommandsResponse : BaseCommandResponse
+    {
+        public string[] Commands { get; set; }
+    }
+
+    /// <summary>
+    /// Response for getCommandDetails meta command
+    /// </summary>
+    public class GetCommandDetailsResponse : BaseCommandResponse
+    {
+        public CommandInfo[] Commands { get; set; }
+    }
+
+    /// <summary>
     /// Class specialized in handling Unity API calls
     /// Supports new command-based structure
     /// </summary>
@@ -22,7 +38,7 @@ namespace io.github.hatayama.uMCP
         /// <param name="commandName">Command name</param>
         /// <param name="paramsToken">Parameters</param>
         /// <returns>Execution result</returns>
-        public static async Task<object> ExecuteCommandAsync(string commandName, JToken paramsToken)
+        public static async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
             // Check for special meta commands
             if (commandName == "getAvailableCommands")
@@ -34,31 +50,40 @@ namespace io.github.hatayama.uMCP
                 return await HandleGetCommandDetails(paramsToken);
             }
 
-            return await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
+            object result = await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
+            return (BaseCommandResponse)result;
         }
 
         /// <summary>
         /// Get list of available commands
         /// </summary>
-        private static Task<object> HandleGetAvailableCommands(JToken request)
+        private static Task<GetAvailableCommandsResponse> HandleGetAvailableCommands(JToken request)
         {
             UnityCommandRegistry registry = CustomCommandManager.GetRegistry();
             string[] commandNames = registry.GetRegisteredCommandNames();
             
             McpLogger.LogDebug($"GetAvailableCommands: Returning {commandNames.Length} commands");
-            return Task.FromResult<object>(commandNames);
+            GetAvailableCommandsResponse response = new GetAvailableCommandsResponse
+            {
+                Commands = commandNames
+            };
+            return Task.FromResult(response);
         }
 
         /// <summary>
         /// Get detailed command information
         /// </summary>
-        private static Task<object> HandleGetCommandDetails(JToken request)
+        private static Task<GetCommandDetailsResponse> HandleGetCommandDetails(JToken request)
         {
             UnityCommandRegistry registry = CustomCommandManager.GetRegistry();
             CommandInfo[] commands = registry.GetRegisteredCommands();
             
             McpLogger.LogDebug($"GetCommandDetails: Returning {commands.Length} command details");
-            return Task.FromResult<object>(commands);
+            GetCommandDetailsResponse response = new GetCommandDetailsResponse
+            {
+                Commands = commands
+            };
+            return Task.FromResult(response);
         }
     }
 } 

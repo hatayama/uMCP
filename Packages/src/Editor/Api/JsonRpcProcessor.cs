@@ -70,9 +70,9 @@ namespace io.github.hatayama.uMCP
         private static async Task<string> ProcessRpcRequest(JsonRpcRequest request, string originalJson)
         {
             await McpCommunicationLogger.LogRequest(originalJson);
-            object result = await ExecuteMethod(request.Method, request.Params);
+            BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
             string response = CreateSuccessResponse(request.Id, result);
-            McpCommunicationLogger.RecordLogResponse(response);
+            _ = McpCommunicationLogger.RecordLogResponse(response);
             return response;
         }
 
@@ -113,7 +113,7 @@ namespace io.github.hatayama.uMCP
         /// Execute appropriate handler according to method name
         /// Use new command-based structure
         /// </summary>
-        private static async Task<object> ExecuteMethod(string method, JToken paramsToken)
+        private static async Task<BaseCommandResponse> ExecuteMethod(string method, JToken paramsToken)
         {
             // Use new command-based structure
             return await UnityApiHandler.ExecuteCommandAsync(method, paramsToken);
@@ -129,5 +129,28 @@ namespace io.github.hatayama.uMCP
         public JToken Params { get; set; }
         public object Id { get; set; }
         public bool IsNotification { get; set; }
+    }
+
+    /// <summary>
+    /// Represents a JSON-RPC response
+    /// </summary>
+    internal class JsonRpcResponse
+    {
+        public string JsonRpc { get; set; } = McpServerConfig.JSONRPC_VERSION;
+        public object Id { get; set; }
+        public object Result { get; set; }
+        public JsonRpcError Error { get; set; }
+        
+        public bool IsSuccess => Error == null;
+    }
+
+    /// <summary>
+    /// Represents a JSON-RPC error
+    /// </summary>
+    internal class JsonRpcError
+    {
+        public int Code { get; set; }
+        public string Message { get; set; }
+        public object Data { get; set; }
     }
 } 
