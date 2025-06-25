@@ -2,9 +2,8 @@ using System;
 using System.Threading;
 using UnityEditor;
 using UnityEngine;
-using io.github.hatayama.uMCP;
 
-namespace Tests
+namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Manual testing class for EditorDelay
@@ -15,7 +14,7 @@ namespace Tests
         private static int testFrameStart;
         private static int testCounter = 0;
         
-        [MenuItem("Tools/uMCP Test/EditorDelay/1. Basic Delay Tests")]
+        [MenuItem("uMCP/EditorDelay/EditorDelay/1. Basic Delay Tests")]
         public static void TestBasicDelays()
         {
             Debug.Log("========================================");
@@ -66,7 +65,7 @@ namespace Tests
             Debug.Log($"[Test {testCounter}] Multiple Frame Delay - Complete (Frame: {completionFrame}) - Frames elapsed: {framesDiff}");
         }
         
-        [MenuItem("Tools/uMCP Test/EditorDelay/2. Concurrent Execution Test")]
+        [MenuItem("uMCP/EditorDelay/2. Concurrent Execution Test")]
         public static void TestConcurrentExecution()
         {
             Debug.Log("=========================================");
@@ -97,7 +96,7 @@ namespace Tests
             Debug.Log($"Task {taskName}: Complete (Frame: {endFrame}, Total elapsed: {elapsed} frames)");
         }
         
-        [MenuItem("Tools/uMCP Test/EditorDelay/3. Stress Test (100 Tasks)")]
+        [MenuItem("uMCP/EditorDelay/3. Stress Test (100 Tasks)")]
         public static void TestStressLoad()
         {
             Debug.Log("==============================");
@@ -134,7 +133,7 @@ namespace Tests
             onComplete?.Invoke();
         }
         
-        [MenuItem("Tools/uMCP Test/EditorDelay/4. Cancellation Test")]
+        [MenuItem("uMCP/EditorDelay/4. Cancellation Test")]
         public static void TestCancellation()
         {
             Debug.Log("==============================");
@@ -171,7 +170,7 @@ namespace Tests
             }
         }
         
-        [MenuItem("Tools/uMCP Test/EditorDelay/5. Integration Test (McpServerController)")]
+        [MenuItem("uMCP/EditorDelay/5. Integration Test (McpServerController)")]
         public static void TestMcpServerControllerIntegration()
         {
             Debug.Log("==========================================");
@@ -201,7 +200,7 @@ namespace Tests
             Debug.Log("Simulation: Server restoration sequence completed!");
         }
         
-        [MenuItem("Tools/uMCP Test/EditorDelay/Status/Show Manager Status")]
+        [MenuItem("uMCP/EditorDelay/Status/Show Manager Status")]
         public static void ShowDelayManagerStatus()
         {
             Debug.Log("==============================");
@@ -212,7 +211,7 @@ namespace Tests
             Debug.Log($"Time Since Startup: {EditorApplication.timeSinceStartup:F2}s");
         }
         
-        [MenuItem("Tools/uMCP Test/EditorDelay/Status/Clear All Tasks")]
+        [MenuItem("uMCP/EditorDelay/Clear All Tasks")]
         public static void ClearAllTasks()
         {
             int clearedCount = EditorDelayManager.PendingTaskCount;
@@ -220,7 +219,7 @@ namespace Tests
             Debug.Log($"Cleared {clearedCount} pending tasks from EditorDelayManager");
         }
         
-        [MenuItem("Tools/uMCP Test/EditorDelay/Help/Show Test Instructions")]
+        [MenuItem("uMCP/EditorDelay/Help Show Test Instructions")]
         public static void ShowTestInstructions()
         {
             Debug.Log("=======================================");

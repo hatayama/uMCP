@@ -176,10 +176,19 @@ namespace io.github.hatayama.uMCP
 
         /// <summary>
         /// Converts simple mask (1=Error, 2=Warning, 4=Log) to Unity's internal mask format
+        /// Preserves all existing console settings (Clear options, Collapse, Error Pause, etc.)
         /// </summary>
         private int ConvertToUnityMask(int simpleMask)
         {
-            int unityMask = 0x7; // Base value always present
+            // Get current mask to preserve existing console settings
+            int currentMask = GetCurrentMask();
+            
+            // Preserve all console settings except log type flags
+            // Clear log type bits (0x80=Log, 0x100=Warning, 0x200=Error) but keep everything else
+            int preservedSettings = currentMask & ~(0x80 | 0x100 | 0x200);
+            
+            // Start with preserved settings (includes Clear options, Collapse, Error Pause, etc.)
+            int unityMask = preservedSettings;
 
             if ((simpleMask & 1) != 0) // Error
                 unityMask |= 0x200;
