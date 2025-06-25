@@ -6142,10 +6142,10 @@ var package_default = {
     "start:production": "UMCP_PRODUCTION=true node dist/server.bundle.js",
     "start:dev": "NODE_ENV=development node dist/server.bundle.js",
     test: "jest",
-    "test:mcp": "tsx src/test-runner.ts",
-    "test:integration": "tsx src/integration-test.ts",
+    "test:mcp": "tsx src/tools/__tests__/test-runner.ts",
+    "test:integration": "tsx src/tools/__tests__/integration-test.ts",
     "test:watch": "jest --watch",
-    validate: "npm run test:integration && echo '\u2705 Integration tests passed - safe to deploy'",
+    validate: "npm run test:integration && echo 'Integration tests passed - safe to deploy'",
     deploy: "npm run validate && npm run build",
     "debug:compile": "node debug/compile-check.js",
     "debug:logs": "node debug/logs-fetch.js",
@@ -6546,7 +6546,7 @@ ${JSON.stringify(details, null, 2)}`
     } catch (error) {
       mcpError("[Simple MCP] Error during cleanup:", error);
     }
-    mcpInfo("[Simple MCP] Goodbye! \u{1F44B}");
+    mcpInfo("[Simple MCP] Goodbye!");
     process.exit(0);
   }
 };

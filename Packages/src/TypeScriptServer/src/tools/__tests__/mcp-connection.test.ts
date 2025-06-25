@@ -112,24 +112,24 @@ export class McpConnectionValidator {
      * @throws {Error} On first validation failure
      */
     runAllValidations(): void {
-        console.log('🧪 Starting MCP Connection Validation Tests...');
+        console.log('Starting MCP Connection Validation Tests...');
         
         try {
-            console.log('✅ Testing server creation...');
+            console.log('Testing server creation...');
             this.createServer();
             
-            console.log('✅ Testing handler registration...');
+            console.log('Testing handler registration...');
             this.registerHandlers();
             
-            console.log('✅ Testing notification capability...');
+            console.log('Testing notification capability...');
             this.testNotification();
             
-            console.log('✅ Testing JSON RPC compliance...');
+            console.log('Testing JSON RPC compliance...');
             this.validateJsonRpcCompliance();
             
-            console.log('🎉 All MCP connection tests passed!');
+            console.log('All MCP connection tests passed!');
         } catch (error) {
-            console.error('❌ MCP Connection Test Failed:', error);
+            console.error('MCP Connection Test Failed:', error);
             throw error; // Fail fast
         }
     }
