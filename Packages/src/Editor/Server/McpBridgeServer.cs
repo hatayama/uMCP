@@ -13,6 +13,23 @@ using Newtonsoft.Json;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
+    /// Immutable JSON-RPC notification structure
+    /// </summary>
+    internal class JsonRpcNotification
+    {
+        public readonly string JsonRpc;
+        public readonly string Method;
+        public readonly object Params;
+        
+        public JsonRpcNotification(string jsonRpc, string method, object parameters)
+        {
+            JsonRpc = jsonRpc;
+            Method = method;
+            Params = parameters;
+        }
+    }
+
+    /// <summary>
     /// Unity MCP Bridge TCP/IP Server.
     /// Accepts connections from the TypeScript MCP Server and handles JSON-RPC 2.0 communication.
     /// </summary>
@@ -383,12 +400,7 @@ namespace io.github.hatayama.uMCP
             }
 
             // Create JSON-RPC notification
-            object notification = new
-            {
-                jsonrpc = "2.0",
-                method = method,
-                @params = parameters
-            };
+            JsonRpcNotification notification = new JsonRpcNotification("2.0", method, parameters);
 
             string notificationJson = JsonConvert.SerializeObject(notification) + "\n";
             byte[] notificationData = Encoding.UTF8.GetBytes(notificationJson);

@@ -50,8 +50,7 @@ namespace io.github.hatayama.uMCP
                 return await HandleGetCommandDetails(paramsToken);
             }
 
-            object result = await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
-            return (BaseCommandResponse)result;
+            return await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
         }
 
         /// <summary>

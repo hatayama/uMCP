@@ -84,7 +84,7 @@ namespace io.github.hatayama.uMCP
             JObject response = new JObject
             {
                 ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                ["id"] = JToken.FromObject(id),
+                ["id"] = id != null ? JToken.FromObject(id) : null,
                 ["result"] = JToken.FromObject(result)
             };
             return response.ToString(Formatting.None);
