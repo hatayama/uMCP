@@ -119,6 +119,17 @@ namespace io.github.hatayama.uMCP
         /// <param name="developmentMode">Whether to enable development mode.</param>
         public void UpdateDevelopmentMode(int port, bool developmentMode)
         {
+            UpdateDevelopmentSettings(port, developmentMode, false);
+        }
+
+        /// <summary>
+        /// Updates environment variables for development mode and MCP debug logs.
+        /// </summary>
+        /// <param name="port">The port number to use.</param>
+        /// <param name="developmentMode">Whether to enable development mode.</param>
+        /// <param name="enableMcpLogs">Whether to enable MCP debug logs.</param>
+        public void UpdateDevelopmentSettings(int port, bool developmentMode, bool enableMcpLogs)
+        {
             string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
             
             // Create the settings directory (only if necessary)
@@ -135,21 +146,22 @@ namespace io.github.hatayama.uMCP
             {
                 // If it doesn't exist, create it with full configuration
                 AutoConfigure(port);
-                // Then update the development mode
-                UpdateDevelopmentModeOnly(port, developmentMode);
+                // Then update the development settings
+                UpdateDevelopmentSettingsOnly(port, developmentMode, enableMcpLogs);
                 return;
             }
 
-            // Update only the development mode settings
-            UpdateDevelopmentModeOnly(port, developmentMode);
+            // Update only the development settings
+            UpdateDevelopmentSettingsOnly(port, developmentMode, enableMcpLogs);
         }
 
         /// <summary>
-        /// Updates only the environment variables for development mode.
+        /// Updates only the environment variables for development mode and MCP debug logs.
         /// </summary>
         /// <param name="port">The port number.</param>
         /// <param name="developmentMode">Whether to enable development mode.</param>
-        private void UpdateDevelopmentModeOnly(int port, bool developmentMode)
+        /// <param name="enableMcpLogs">Whether to enable MCP debug logs.</param>
+        private void UpdateDevelopmentSettingsOnly(int port, bool developmentMode, bool enableMcpLogs)
         {
             string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
             
@@ -173,6 +185,7 @@ namespace io.github.hatayama.uMCP
             updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_DEBUG);
             updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_PRODUCTION);
             updatedEnv.Remove(McpConstants.ENV_KEY_NODE_ENV);
+            updatedEnv.Remove(McpConstants.ENV_KEY_MCP_DEBUG);
             
             // Add NODE_ENV for development mode (simplified approach)
             if (developmentMode)
@@ -180,6 +193,13 @@ namespace io.github.hatayama.uMCP
                 updatedEnv[McpConstants.ENV_KEY_NODE_ENV] = McpConstants.ENV_VALUE_DEVELOPMENT;
             }
             // For production mode, simply don't set NODE_ENV (default behavior)
+            
+            // Add MCP_DEBUG for MCP debug logs
+            if (enableMcpLogs)
+            {
+                updatedEnv[McpConstants.ENV_KEY_MCP_DEBUG] = McpConstants.ENV_VALUE_TRUE;
+            }
+            // For disabled logs, simply don't set MCP_DEBUG (default behavior)
             
             // Create updated configuration (keeping command and args unchanged)
             McpServerConfigData updatedConfig = new McpServerConfigData(
@@ -197,7 +217,7 @@ namespace io.github.hatayama.uMCP
             _repository.Save(configPath, updatedMcpConfig);
             
             string editorName = GetEditorDisplayName(_editorType);
-            McpLogger.LogInfo($"{editorName} development mode updated: {developmentMode}");
+            McpLogger.LogInfo($"{editorName} development settings updated - Development mode: {developmentMode}, MCP logs: {enableMcpLogs}");
             McpLogger.LogInfo($"Server key: {serverKey}, Configuration file: {configPath}");
             
             // Log environment variables for debugging

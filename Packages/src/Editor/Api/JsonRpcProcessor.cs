@@ -15,65 +15,142 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static async Task<string> ProcessRequest(string jsonRequest)
         {
+            McpLogger.LogJsonRpc("RECEIVED", jsonRequest);
+            
             try
             {
-                McpLogger.LogJsonRpc("RECEIVED", jsonRequest);
-                McpCommunicationLogger.LogRequest(jsonRequest);
+                JsonRpcRequest request = ParseRequest(jsonRequest);
                 
-                JObject request = JObject.Parse(jsonRequest);
-                string method = request["method"]?.ToString();
-                JToken paramsToken = request["params"];
-                object id = request["id"]?.ToObject<object>();
-
-                object result = await ExecuteMethod(method, paramsToken);
-
-                // Success response
-                JObject response = new JObject
+                if (request.IsNotification)
                 {
-                    ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                    ["id"] = JToken.FromObject(id),
-                    ["result"] = JToken.FromObject(result)
-                };
-
-                string responseJson = response.ToString(Formatting.None);
-                McpLogger.LogJsonRpc("SENT", responseJson);
-                McpCommunicationLogger.LogResponse(responseJson);
+                    ProcessNotification(request);
+                    return null;
+                }
                 
-                return responseJson;
+                return await ProcessRpcRequest(request, jsonRequest);
+            }
+            catch (JsonReaderException ex)
+            {
+                McpLogger.LogWarning($"JSON parse error (possibly incomplete data): {ex.Message}");
+                return CreateErrorResponse(null, ex);
             }
             catch (Exception ex)
             {
                 McpLogger.LogError($"JSON-RPC processing error: {ex.Message}");
-                
-                // Error response
-                JObject errorResponse = new JObject
-                {
-                    ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                    ["id"] = null,
-                    ["error"] = new JObject
-                    {
-                        ["code"] = McpServerConfig.INTERNAL_ERROR_CODE,
-                        ["message"] = "Internal error",
-                        ["data"] = ex.Message
-                    }
-                };
-
-                string errorJson = errorResponse.ToString(Formatting.None);
-                McpLogger.LogJsonRpc("ERROR", errorJson);
-                McpCommunicationLogger.LogResponse(errorJson);
-                
-                return errorJson;
+                return CreateErrorResponse(null, ex);
             }
+        }
+
+        /// <summary>
+        /// Parse JSON-RPC request string into structured object
+        /// </summary>
+        private static JsonRpcRequest ParseRequest(string jsonRequest)
+        {
+            JObject request = JObject.Parse(jsonRequest);
+            return new JsonRpcRequest
+            {
+                Method = request["method"]?.ToString(),
+                Params = request["params"],
+                Id = request["id"]?.ToObject<object>(),
+                IsNotification = request["id"] == null
+            };
+        }
+
+        /// <summary>
+        /// Process notification (fire-and-forget)
+        /// </summary>
+        private static void ProcessNotification(JsonRpcRequest request)
+        {
+            McpLogger.LogInfo($"Received notification: {request.Method}");
+        }
+
+        /// <summary>
+        /// Process RPC request and return response JSON
+        /// </summary>
+        private static async Task<string> ProcessRpcRequest(JsonRpcRequest request, string originalJson)
+        {
+            await McpCommunicationLogger.LogRequest(originalJson);
+            BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
+            string response = CreateSuccessResponse(request.Id, result);
+            _ = McpCommunicationLogger.RecordLogResponse(response);
+            return response;
+        }
+
+        /// <summary>
+        /// Create JSON-RPC success response
+        /// </summary>
+        private static string CreateSuccessResponse(object id, object result)
+        {
+            JObject response = new JObject
+            {
+                ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
+                ["id"] = JToken.FromObject(id),
+                ["result"] = JToken.FromObject(result)
+            };
+            return response.ToString(Formatting.None);
+        }
+
+        /// <summary>
+        /// Create JSON-RPC error response
+        /// </summary>
+        private static string CreateErrorResponse(object id, Exception ex)
+        {
+            JObject errorResponse = new JObject
+            {
+                ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
+                ["id"] = id != null ? JToken.FromObject(id) : null,
+                ["error"] = new JObject
+                {
+                    ["code"] = McpServerConfig.INTERNAL_ERROR_CODE,
+                    ["message"] = "Internal error",
+                    ["data"] = ex.Message
+                }
+            };
+            return errorResponse.ToString(Formatting.None);
         }
 
         /// <summary>
         /// Execute appropriate handler according to method name
         /// Use new command-based structure
         /// </summary>
-        private static async Task<object> ExecuteMethod(string method, JToken paramsToken)
+        private static async Task<BaseCommandResponse> ExecuteMethod(string method, JToken paramsToken)
         {
             // Use new command-based structure
             return await UnityApiHandler.ExecuteCommandAsync(method, paramsToken);
         }
+    }
+
+    /// <summary>
+    /// Represents a parsed JSON-RPC request
+    /// </summary>
+    internal class JsonRpcRequest
+    {
+        public string Method { get; set; }
+        public JToken Params { get; set; }
+        public object Id { get; set; }
+        public bool IsNotification { get; set; }
+    }
+
+    /// <summary>
+    /// Represents a JSON-RPC response
+    /// </summary>
+    internal class JsonRpcResponse
+    {
+        public string JsonRpc { get; set; } = McpServerConfig.JSONRPC_VERSION;
+        public object Id { get; set; }
+        public object Result { get; set; }
+        public JsonRpcError Error { get; set; }
+        
+        public bool IsSuccess => Error == null;
+    }
+
+    /// <summary>
+    /// Represents a JSON-RPC error
+    /// </summary>
+    internal class JsonRpcError
+    {
+        public int Code { get; set; }
+        public string Message { get; set; }
+        public object Data { get; set; }
     }
 } 

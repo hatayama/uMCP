@@ -24,6 +24,7 @@ class SimpleMcpServer {
   private unityClient: UnityClient;
   private readonly isDevelopment: boolean;
   private readonly dynamicTools: Map<string, DynamicUnityCommandTool> = new Map();
+  private isShuttingDown: boolean = false;
 
   constructor() {
     // Simple environment variable check
@@ -56,6 +57,7 @@ class SimpleMcpServer {
     });
     
     this.setupHandlers();
+    this.setupSignalHandlers();
   }
 
   /**
@@ -68,11 +70,13 @@ class SimpleMcpServer {
       mcpInfo('[Simple MCP] Unity connection established successfully');
       
       // Get detailed command information including schemas
-      const commandDetails = await this.unityClient.executeCommand('getCommandDetails', {});
-      mcpInfo('[Simple MCP] Raw command details response:', commandDetails);
+      const commandDetailsResponse = await this.unityClient.executeCommand('getCommandDetails', {});
+      mcpInfo('[Simple MCP] Raw command details response:', commandDetailsResponse);
       
+      // Handle new GetCommandDetailsResponse structure
+      const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
-        mcpError('[Simple MCP] Invalid command details response:', commandDetails);
+        mcpError('[Simple MCP] Invalid command details response:', commandDetailsResponse);
         return;
       }
       
@@ -354,15 +358,17 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
       
       // Get command names
       const commandsResponse = await this.unityClient.executeCommand('getAvailableCommands', {});
+      const commands = commandsResponse?.Commands || commandsResponse;
       
       // Get command details with schemas
       const detailsResponse = await this.unityClient.executeCommand('getCommandDetails', {});
+      const details = detailsResponse?.Commands || detailsResponse;
       
       return {
         content: [
           {
             type: 'text',
-            text: `Available Unity Commands:\n${JSON.stringify(commandsResponse, null, 2)}\n\nCommand Details with Schemas:\n${JSON.stringify(detailsResponse, null, 2)}`
+            text: `Available Unity Commands:\n${JSON.stringify(commands, null, 2)}\n\nCommand Details with Schemas:\n${JSON.stringify(details, null, 2)}`
           }
         ]
       };
@@ -384,17 +390,17 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
    * Start the server
    */
   async start(): Promise<void> {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    
-    // Setup Unity event notification listener BEFORE initializing tools
+    // Setup Unity event notification listener BEFORE connecting
     this.setupUnityEventListener();
     
-    // Initialize dynamic Unity command tools
+    // Initialize dynamic Unity command tools BEFORE connecting to MCP transport
+    mcpInfo('[Simple MCP] Initializing dynamic tools before connecting...');
     await this.initializeDynamicTools();
     
-    // Send initial notification to update tool list
-    this.sendToolsChangedNotification();
+    // Now connect to MCP transport - at this point all tools should be ready
+    const transport = new StdioServerTransport();
+    mcpInfo('[Simple MCP] Connecting to MCP transport with all tools ready...');
+    await this.server.connect(transport);
     
     mcpInfo('[Simple MCP] Server started with Unity event-based tool updates');
   }
@@ -434,16 +440,71 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
    * Send tools changed notification
    */
   private sendToolsChangedNotification(): void {
-    DebugLogger.logNotification("notifications/tools/list_changed", { dynamicToolsCount: this.dynamicTools.size });
+    mcpInfo(`[Simple MCP] Sending tools changed notification, dynamic tools count: ${this.dynamicTools.size}`);
     
     try {
       this.server.notification({
         method: "notifications/tools/list_changed",
         params: {}
       });
+      mcpInfo('[Simple MCP] Tools changed notification sent successfully');
     } catch (error) {
-      DebugLogger.error('Failed to send tools changed notification', error);
+      mcpError('[Simple MCP] Failed to send tools changed notification:', error);
     }
+  }
+
+  /**
+   * Setup signal handlers for graceful shutdown
+   */
+  private setupSignalHandlers(): void {
+    // Handle Ctrl+C (SIGINT)
+    process.on('SIGINT', () => {
+      mcpInfo('[Simple MCP] Received SIGINT (Ctrl+C), shutting down gracefully...');
+      this.gracefulShutdown();
+    });
+
+    // Handle kill command (SIGTERM)
+    process.on('SIGTERM', () => {
+      mcpInfo('[Simple MCP] Received SIGTERM, shutting down gracefully...');
+      this.gracefulShutdown();
+    });
+
+    // Handle terminal close (SIGHUP)
+    process.on('SIGHUP', () => {
+      mcpInfo('[Simple MCP] Received SIGHUP (terminal closed), shutting down gracefully...');
+      this.gracefulShutdown();
+    });
+
+    mcpInfo('[Simple MCP] Signal handlers setup completed');
+  }
+
+  /**
+   * Graceful shutdown with proper cleanup
+   */
+  private gracefulShutdown(): void {
+    // Prevent multiple shutdown attempts
+    if (this.isShuttingDown) {
+      mcpInfo('[Simple MCP] Shutdown already in progress, ignoring...');
+      return;
+    }
+    
+    this.isShuttingDown = true;
+    mcpInfo('[Simple MCP] Starting graceful shutdown...');
+
+    try {
+      // Disconnect from Unity
+      if (this.unityClient) {
+        mcpInfo('[Simple MCP] Disconnecting from Unity...');
+        this.unityClient.disconnect();
+      }
+
+      mcpInfo('[Simple MCP] Cleanup completed successfully');
+    } catch (error) {
+      mcpError('[Simple MCP] Error during cleanup:', error);
+    }
+
+    mcpInfo('[Simple MCP] Goodbye! 👋');
+    process.exit(0);
   }
 
 }

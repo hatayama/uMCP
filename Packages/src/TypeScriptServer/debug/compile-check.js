@@ -42,24 +42,28 @@ async function testCompile() {
         console.log(`\n2. Executing compile${forceRecompileFlag ? ' (Force Recompile)' : ''}...`);
         const compileResult = await client.compileProject(forceRecompileFlag);
         
-        console.log('✓ Compile completed!');
-        console.log(`Success: ${compileResult.success}`);
-        console.log(`Errors: ${compileResult.errorCount}`);
-        console.log(`Warnings: ${compileResult.warningCount}`);
-        console.log(`Completed at: ${compileResult.completedAt}`);
-        
-        if (compileResult.errors && compileResult.errors.length > 0) {
-            console.log('\n--- ERRORS ---');
-            compileResult.errors.forEach((error, index) => {
-                console.log(`${index + 1}. ${error.file}(${error.line},${error.column}): ${error.message}`);
-            });
-        }
-        
-        if (compileResult.warnings && compileResult.warnings.length > 0) {
-            console.log('\n--- WARNINGS ---');
-            compileResult.warnings.forEach((warning, index) => {
-                console.log(`${index + 1}. ${warning.file}(${warning.line},${warning.column}): ${warning.message}`);
-            });
+        if (compileResult) {
+            console.log('✓ Compile completed!');
+            console.log(`Success: ${compileResult.Success}`);
+            console.log(`Errors: ${compileResult.ErrorCount}`);
+            console.log(`Warnings: ${compileResult.WarningCount}`);
+            console.log(`Completed at: ${compileResult.CompletedAt}`);
+            
+            if (compileResult.Errors && compileResult.Errors.length > 0) {
+                console.log('\n--- ERRORS ---');
+                compileResult.Errors.forEach((error, index) => {
+                    console.log(`${index + 1}. ${error.file}(${error.line},${error.column}): ${error.message}`);
+                });
+            }
+            
+            if (compileResult.Warnings && compileResult.Warnings.length > 0) {
+                console.log('\n--- WARNINGS ---');
+                compileResult.Warnings.forEach((warning, index) => {
+                    console.log(`${index + 1}. ${warning.file}(${warning.line},${warning.column}): ${warning.message}`);
+                });
+            }
+        } else {
+            console.log('✗ Compile completed but no result returned');
         }
         
     } catch (error) {

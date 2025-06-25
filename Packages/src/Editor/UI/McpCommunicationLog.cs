@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using Newtonsoft.Json;
@@ -87,25 +88,27 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Records a request (awaiting response).
         /// </summary>
-        public static async void LogRequest(string jsonRequest)
+        public static async Task LogRequest(string jsonRequest)
         {
             McpLogger.LogDebug($"LogRequest called: {jsonRequest}");
 
             JObject request = JObject.Parse(jsonRequest);
             string method = request["method"]?.ToString() ?? "unknown";
-            string id = request["id"]?.ToString() ?? "unknown";
+            string id = NormalizeId(request["id"]);
 
-            McpLogger.LogDebug($"Storing request with ID: '{id}' (Type: {id.GetType().Name}), Method: {method}");
+            McpLogger.LogDebug($"Storing request with ID: '{id}', Method: {method}");
 
             PendingRequest pendingRequest = new(method, DateTime.Now, jsonRequest);
 
+            // Store in memory immediately (on any thread)
             lock (_pendingRequests)
             {
                 _pendingRequests[id] = pendingRequest;
             }
 
-            // Switch to the main thread to save SessionState and update the UI.
+            // Switch to main thread for SessionState operations
             await MainThreadSwitcher.SwitchToMainThread();
+            
             SaveToSessionState();
             OnLogUpdated?.Invoke();
 
@@ -115,27 +118,28 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Records a response (adds it to the log paired with its request).
         /// </summary>
-        public static async void LogResponse(string jsonResponse)
+        public static async Task RecordLogResponse(string jsonResponse)
         {
             McpLogger.LogDebug($"LogResponse called: {jsonResponse}");
 
             JObject response = JObject.Parse(jsonResponse);
-            string id = response["id"]?.ToString() ?? "unknown";
+            string id = NormalizeId(response["id"]);
 
-            McpLogger.LogDebug($"Looking for request with ID: '{id}' (Type: {id.GetType().Name})");
+            McpLogger.LogDebug($"Looking for request with ID: '{id}'");
             
             lock (_pendingRequests)
             {
                 McpLogger.LogDebug($"Pending requests count: {_pendingRequests.Count}");
                 foreach (var kvp in _pendingRequests)
                 {
-                    McpLogger.LogDebug($"- Pending ID: '{kvp.Key}' (Type: {kvp.Key.GetType().Name}), Method: {kvp.Value.CommandName}");
+                    McpLogger.LogDebug($"- Pending ID: '{kvp.Key}', Method: {kvp.Value.CommandName}");
                 }
             }
 
             PendingRequest pendingRequest;
             bool foundPendingRequest;
             
+            // Process response in memory immediately (on any thread)
             lock (_pendingRequests)
             {
                 foundPendingRequest = _pendingRequests.TryGetValue(id, out pendingRequest);
@@ -172,12 +176,10 @@ namespace io.github.hatayama.uMCP
 
                 McpLogger.LogDebug($"Response logged - Method: {pendingRequest.CommandName}, Total logs: {_logs.Count}");
 
-                // Switch to the main thread to save SessionState and update the UI.
+                // Switch to main thread for SessionState operations
                 await MainThreadSwitcher.SwitchToMainThread();
-
-                // Save to SessionState immediately (to handle domain reloads).
+                
                 SaveToSessionState();
-
                 OnLogUpdated?.Invoke();
             }
             else
@@ -301,6 +303,20 @@ namespace io.github.hatayama.uMCP
             {
                 McpLogger.LogError($"Failed to clear communication log SessionState: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Normalize ID to consistent string representation for proper matching
+        /// </summary>
+        private static string NormalizeId(JToken idToken)
+        {
+            if (idToken == null)
+            {
+                return "unknown";
+            }
+
+            // Convert both string and numeric IDs to string for consistent matching
+            return idToken.ToString();
         }
     }
 }

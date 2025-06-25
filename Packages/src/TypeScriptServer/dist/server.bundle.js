@@ -480,8 +480,8 @@ function getErrorMap() {
 
 // node_modules/zod/dist/esm/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path, errorMaps, issueData } = params;
-  const fullPath = [...path, ...issueData.path || []];
+  const { data, path: path2, errorMaps, issueData } = params;
+  const fullPath = [...path2, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -597,11 +597,11 @@ var errorUtil;
 
 // node_modules/zod/dist/esm/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path, key) {
+  constructor(parent, value, path2, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path;
+    this._path = path2;
     this._key = key;
   }
   get path() {
@@ -5481,8 +5481,8 @@ var DebugLogger = class {
    */
   static debug(message, data) {
     if (!this.isDebugEnabled) return;
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp}] [DEBUG] ${message}`;
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp2}] [DEBUG] ${message}`;
     if (data !== void 0) {
       console.error(logMessage, data);
     } else {
@@ -5494,8 +5494,8 @@ var DebugLogger = class {
    */
   static info(message, data) {
     if (!this.isDebugEnabled) return;
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp}] [INFO] ${message}`;
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp2}] [INFO] ${message}`;
     if (data !== void 0) {
       console.error(logMessage, data);
     } else {
@@ -5506,8 +5506,8 @@ var DebugLogger = class {
    * Log error message to stderr
    */
   static error(message, error) {
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    const logMessage = `[${timestamp}] [ERROR] ${message}`;
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+    const logMessage = `[${timestamp2}] [ERROR] ${message}`;
     if (error !== void 0) {
       console.error(logMessage, error);
     } else {
@@ -5580,13 +5580,33 @@ var POLLING = {
 };
 
 // src/utils/mcp-debug.ts
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+var logDir = path.join(os.homedir(), ".claude", "umcp-logs");
+var timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").split("T");
+var dateStr = timestamp[0];
+var timeStr = timestamp[1].split(".")[0];
+var logFile = path.join(logDir, `mcp-debug-${dateStr}_${timeStr}.log`);
+var directoryCreated = false;
+var writeToFile = (message) => {
+  try {
+    if (!directoryCreated) {
+      fs.mkdirSync(logDir, { recursive: true });
+      directoryCreated = true;
+    }
+    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+    fs.appendFileSync(logFile, `${timestamp2} ${message}
+`);
+  } catch (error) {
+  }
+};
 var mcpDebug = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(" ");
-    process.stderr.write(`[MCP-DEBUG] ${message}
-`);
+    writeToFile(`[MCP-DEBUG] ${message}`);
   }
 };
 var mcpInfo = (...args) => {
@@ -5594,8 +5614,7 @@ var mcpInfo = (...args) => {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(" ");
-    process.stderr.write(`[MCP-INFO] ${message}
-`);
+    writeToFile(`[MCP-INFO] ${message}`);
   }
 };
 var mcpWarn = (...args) => {
@@ -5603,8 +5622,7 @@ var mcpWarn = (...args) => {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(" ");
-    process.stderr.write(`[MCP-WARN] ${message}
-`);
+    writeToFile(`[MCP-WARN] ${message}`);
   }
 };
 var mcpError = (...args) => {
@@ -5612,8 +5630,7 @@ var mcpError = (...args) => {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(" ");
-    process.stderr.write(`[MCP-ERROR] ${message}
-`);
+    writeToFile(`[MCP-ERROR] ${message}`);
   }
 };
 
@@ -6169,6 +6186,7 @@ var SimpleMcpServer = class {
   unityClient;
   isDevelopment;
   dynamicTools = /* @__PURE__ */ new Map();
+  isShuttingDown = false;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     DebugLogger.info("Simple Unity MCP Server Starting");
@@ -6193,6 +6211,7 @@ var SimpleMcpServer = class {
       this.refreshDynamicTools();
     });
     this.setupHandlers();
+    this.setupSignalHandlers();
   }
   /**
    * Initialize dynamic Unity command tools
@@ -6202,10 +6221,11 @@ var SimpleMcpServer = class {
       mcpInfo("[Simple MCP] Fetching Unity command details with schemas...");
       await this.unityClient.ensureConnected();
       mcpInfo("[Simple MCP] Unity connection established successfully");
-      const commandDetails = await this.unityClient.executeCommand("getCommandDetails", {});
-      mcpInfo("[Simple MCP] Raw command details response:", commandDetails);
+      const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
+      mcpInfo("[Simple MCP] Raw command details response:", commandDetailsResponse);
+      const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
-        mcpError("[Simple MCP] Invalid command details response:", commandDetails);
+        mcpError("[Simple MCP] Invalid command details response:", commandDetailsResponse);
         return;
       }
       mcpInfo(`[Simple MCP] Found ${commandDetails.length} Unity commands with schemas`);
@@ -6410,16 +6430,18 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     try {
       await this.unityClient.ensureConnected();
       const commandsResponse = await this.unityClient.executeCommand("getAvailableCommands", {});
+      const commands = commandsResponse?.Commands || commandsResponse;
       const detailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
+      const details = detailsResponse?.Commands || detailsResponse;
       return {
         content: [
           {
             type: "text",
             text: `Available Unity Commands:
-${JSON.stringify(commandsResponse, null, 2)}
+${JSON.stringify(commands, null, 2)}
 
 Command Details with Schemas:
-${JSON.stringify(detailsResponse, null, 2)}`
+${JSON.stringify(details, null, 2)}`
           }
         ]
       };
@@ -6440,11 +6462,12 @@ ${JSON.stringify(detailsResponse, null, 2)}`
    * Start the server
    */
   async start() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
     this.setupUnityEventListener();
+    mcpInfo("[Simple MCP] Initializing dynamic tools before connecting...");
     await this.initializeDynamicTools();
-    this.sendToolsChangedNotification();
+    const transport = new StdioServerTransport();
+    mcpInfo("[Simple MCP] Connecting to MCP transport with all tools ready...");
+    await this.server.connect(transport);
     mcpInfo("[Simple MCP] Server started with Unity event-based tool updates");
   }
   /**
@@ -6475,15 +6498,56 @@ ${JSON.stringify(detailsResponse, null, 2)}`
    * Send tools changed notification
    */
   sendToolsChangedNotification() {
-    DebugLogger.logNotification("notifications/tools/list_changed", { dynamicToolsCount: this.dynamicTools.size });
+    mcpInfo(`[Simple MCP] Sending tools changed notification, dynamic tools count: ${this.dynamicTools.size}`);
     try {
       this.server.notification({
         method: "notifications/tools/list_changed",
         params: {}
       });
+      mcpInfo("[Simple MCP] Tools changed notification sent successfully");
     } catch (error) {
-      DebugLogger.error("Failed to send tools changed notification", error);
+      mcpError("[Simple MCP] Failed to send tools changed notification:", error);
     }
+  }
+  /**
+   * Setup signal handlers for graceful shutdown
+   */
+  setupSignalHandlers() {
+    process.on("SIGINT", () => {
+      mcpInfo("[Simple MCP] Received SIGINT (Ctrl+C), shutting down gracefully...");
+      this.gracefulShutdown();
+    });
+    process.on("SIGTERM", () => {
+      mcpInfo("[Simple MCP] Received SIGTERM, shutting down gracefully...");
+      this.gracefulShutdown();
+    });
+    process.on("SIGHUP", () => {
+      mcpInfo("[Simple MCP] Received SIGHUP (terminal closed), shutting down gracefully...");
+      this.gracefulShutdown();
+    });
+    mcpInfo("[Simple MCP] Signal handlers setup completed");
+  }
+  /**
+   * Graceful shutdown with proper cleanup
+   */
+  gracefulShutdown() {
+    if (this.isShuttingDown) {
+      mcpInfo("[Simple MCP] Shutdown already in progress, ignoring...");
+      return;
+    }
+    this.isShuttingDown = true;
+    mcpInfo("[Simple MCP] Starting graceful shutdown...");
+    try {
+      if (this.unityClient) {
+        mcpInfo("[Simple MCP] Disconnecting from Unity...");
+        this.unityClient.disconnect();
+      }
+      mcpInfo("[Simple MCP] Cleanup completed successfully");
+    } catch (error) {
+      mcpError("[Simple MCP] Error during cleanup:", error);
+    }
+    mcpInfo("[Simple MCP] Goodbye! \u{1F44B}");
+    process.exit(0);
   }
 };
 var server = new SimpleMcpServer();
