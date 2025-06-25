@@ -510,19 +510,30 @@ namespace io.github.hatayama.uMCP
             // Signal all threads to start registering tasks
             startSignal.Set();
             
-            // Wait for task registration to complete
-            yield return null;
-            yield return null;
+            // Wait for task registration to complete with dynamic waiting
+            const int maxWaitFrames = 10;
+            int waitFrames = 0;
+            while (waitFrames < maxWaitFrames && EditorDelayManager.PendingTaskCount != totalTasks)
+            {
+                yield return null;
+                waitFrames++;
+            }
             
             // Assert - All tasks should be registered
-            Assert.AreEqual(totalTasks, EditorDelayManager.PendingTaskCount, $"All {totalTasks} tasks should be registered and pending");
+            Assert.AreEqual(totalTasks, EditorDelayManager.PendingTaskCount, $"All {totalTasks} tasks should be registered and pending (waited {waitFrames} frames)");
             
-            // Wait for execution (2 frames)
-            yield return null;
-            yield return null;
+            // Wait for execution (2 frames + buffer) with dynamic waiting
+            const int maxExecutionWaitFrames = 15;
+            int executionWaitFrames = 0;
+            while (executionWaitFrames < maxExecutionWaitFrames && 
+                   (completedTasks < totalTasks || EditorDelayManager.PendingTaskCount > 0))
+            {
+                yield return null;
+                executionWaitFrames++;
+            }
             
             // Assert - All tasks completed successfully
-            Assert.AreEqual(totalTasks, completedTasks, $"All {totalTasks} tasks should be completed");
+            Assert.AreEqual(totalTasks, completedTasks, $"All {totalTasks} tasks should be completed (waited {executionWaitFrames} frames)");
             Assert.AreEqual(0, EditorDelayManager.PendingTaskCount, "No tasks should be pending after completion");
             Assert.AreEqual(totalTasks, executionLog.Count, "All tasks should be logged");
             

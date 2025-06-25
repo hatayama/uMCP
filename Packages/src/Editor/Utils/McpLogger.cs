@@ -1,18 +1,25 @@
 using UnityEngine;
+using UnityEditor;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Class for unified management of Unity MCP Server related logs
     /// </summary>
-    public static class McpLogger
+    public class McpLogger : ScriptableSingleton<McpLogger>
     {
-        private const string LOG_PREFIX = "[Unity MCP]";
+        private const string LOG_PREFIX = "[uMCP]";
+        
+        [SerializeField] private bool enableDebugLog = false;
         
         /// <summary>
         /// Whether to output debug logs
         /// </summary>
-        public static bool EnableDebugLog { get; set; } = false;
+        public static bool EnableDebugLog 
+        { 
+            get => instance.enableDebugLog; 
+            set => instance.enableDebugLog = value; 
+        }
         
         /// <summary>
         /// Output information log
