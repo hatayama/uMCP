@@ -254,6 +254,9 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo("Stopping Unity MCP Server...");
             isRunning = false;
             
+            // Explicitly disconnect all connected clients before stopping the server
+            DisconnectAllClients();
+            
             // Request cancellation.
             cancellationTokenSource?.Cancel();
             
@@ -293,6 +296,49 @@ namespace io.github.hatayama.uMCP
             serverTask = null;
             
             McpLogger.LogInfo("Unity MCP Server stopped");
+        }
+
+        /// <summary>
+        /// Explicitly disconnect all connected clients
+        /// This ensures TypeScript clients receive proper close events
+        /// </summary>
+        private void DisconnectAllClients()
+        {
+            if (connectedClients.IsEmpty)
+            {
+                return;
+            }
+
+            McpLogger.LogInfo($"Disconnecting {connectedClients.Count} connected clients...");
+            
+            List<string> clientsToRemove = new List<string>();
+            
+            foreach (KeyValuePair<string, ConnectedClient> client in connectedClients)
+            {
+                try
+                {
+                    // Close the NetworkStream to send proper close event to TypeScript client
+                    if (client.Value.Stream != null && client.Value.Stream.CanWrite)
+                    {
+                        client.Value.Stream.Close();
+                    }
+                    clientsToRemove.Add(client.Key);
+                    McpLogger.LogDebug($"Disconnected client: {client.Key}");
+                }
+                catch (Exception ex)
+                {
+                    McpLogger.LogWarning($"Error disconnecting client {client.Key}: {ex.Message}");
+                    clientsToRemove.Add(client.Key); // Remove even if disconnect failed
+                }
+            }
+            
+            // Remove all clients from the connected clients list
+            foreach (string clientKey in clientsToRemove)
+            {
+                connectedClients.TryRemove(clientKey, out _);
+            }
+            
+            McpLogger.LogInfo("All clients disconnected");
         }
 
         /// <summary>

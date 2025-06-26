@@ -5714,9 +5714,19 @@ var UnityClient = class {
       });
       this.socket.on("error", (error) => {
         this._connected = false;
-        reject(new Error(`Unity connection failed: ${error.message}`));
+        if (this.socket?.connecting) {
+          reject(new Error(`Unity connection failed: ${error.message}`));
+        } else {
+          errorToFile("[UnityClient] Connection error:", error);
+          this.startPolling();
+        }
       });
       this.socket.on("close", () => {
+        this._connected = false;
+        this.startPolling();
+      });
+      this.socket.on("end", () => {
+        errorToFile("[UnityClient] Connection ended by server");
         this._connected = false;
         this.startPolling();
       });

@@ -185,12 +185,27 @@ export class UnityClient {
         resolve();
       });
 
+      // Handle errors (both during connection and after establishment)
       this.socket.on('error', (error) => {
         this._connected = false;
-        reject(new Error(`Unity connection failed: ${error.message}`));
+        if (this.socket?.connecting) {
+          // Error during connection attempt
+          reject(new Error(`Unity connection failed: ${error.message}`));
+        } else {
+          // Error after connection was established
+          errorToFile('[UnityClient] Connection error:', error);
+          this.startPolling();
+        }
       });
 
       this.socket.on('close', () => {
+        this._connected = false;
+        this.startPolling();
+      });
+
+      // Handle graceful end of connection
+      this.socket.on('end', () => {
+        errorToFile('[UnityClient] Connection ended by server');
         this._connected = false;
         this.startPolling();
       });
