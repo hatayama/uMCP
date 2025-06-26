@@ -363,61 +363,97 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Draw connected LLM tools section
         /// </summary>
+        /// <summary>
+        /// Connection display states for UI logic separation
+        /// </summary>
+        private enum ConnectionDisplayState
+        {
+            ServerNotRunning,
+            Reconnecting,
+            HasConnectedClients,
+            NoConnectedClients
+        }
+        
         private void DrawConnectedToolsSection()
         {
             EditorGUILayout.BeginVertical("box");
             
-            // Foldout header
             showConnectedTools = EditorGUILayout.Foldout(showConnectedTools, McpUIConstants.CONNECTED_TOOLS_FOLDOUT_TEXT, true);
             
-            // Show content only when expanded
             if (showConnectedTools)
             {
                 EditorGUILayout.Space();
-                
-                // Check UI display flag first
-                bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
-                
-                if (showReconnectingUI)
-                {
-                    EditorGUILayout.HelpBox(McpUIConstants.RECONNECTING_MESSAGE, MessageType.Info);
-                }
-                else if (McpServerController.IsServerRunning)
-                {
-                    var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
-                    
-                    if (connectedClients != null && connectedClients.Count > 0)
-                    {
-                        // Clear reconnecting flag when clients are actually connected
-                        McpServerController.ClearReconnectingFlag();
-                        
-                        foreach (ConnectedClient client in connectedClients)
-                        {
-                            DrawConnectedClientItem(client);
-                        }
-                    }
-                    else
-                    {
-                        // Check if we should still show reconnecting instead of "No LLM tools"
-                        bool stillReconnecting = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
-                        if (stillReconnecting)
-                        {
-                            EditorGUILayout.HelpBox(McpUIConstants.RECONNECTING_MESSAGE, MessageType.Info);
-                        }
-                        else
-                        {
-                            EditorGUILayout.HelpBox("No LLM tools currently connected.", MessageType.Info);
-                        }
-                    }
-                }
-                else
-                {
-                    EditorGUILayout.HelpBox("Server is not running. Start the server to see connected tools.", MessageType.Warning);
-                }
+                DrawConnectionStatus();
             }
             
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space();
+        }
+        
+        private void DrawConnectionStatus()
+        {
+            ConnectionDisplayState state = GetConnectionDisplayState();
+            DrawConnectionStatusUI(state);
+        }
+        
+        private ConnectionDisplayState GetConnectionDisplayState()
+        {
+            // Check if explicitly showing reconnecting UI
+            bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            if (showReconnectingUI)
+            {
+                return ConnectionDisplayState.Reconnecting;
+            }
+            
+            // Check server status
+            if (!McpServerController.IsServerRunning)
+            {
+                return ConnectionDisplayState.ServerNotRunning;
+            }
+            
+            // Check connected clients
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            if (connectedClients != null && connectedClients.Count > 0)
+            {
+                // Clear reconnecting flag when clients are actually connected
+                McpServerController.ClearReconnectingFlag();
+                return ConnectionDisplayState.HasConnectedClients;
+            }
+            
+            return ConnectionDisplayState.NoConnectedClients;
+        }
+        
+        private void DrawConnectionStatusUI(ConnectionDisplayState state)
+        {
+            switch (state)
+            {
+                case ConnectionDisplayState.ServerNotRunning:
+                    EditorGUILayout.HelpBox("Server is not running. Start the server to see connected tools.", MessageType.Warning);
+                    break;
+                    
+                case ConnectionDisplayState.Reconnecting:
+                    EditorGUILayout.HelpBox(McpUIConstants.RECONNECTING_MESSAGE, MessageType.Info);
+                    break;
+                    
+                case ConnectionDisplayState.HasConnectedClients:
+                    DrawConnectedClientsList();
+                    break;
+                    
+                case ConnectionDisplayState.NoConnectedClients:
+                    EditorGUILayout.HelpBox("No LLM tools currently connected.", MessageType.Info);
+                    break;
+            }
+        }
+        
+        private void DrawConnectedClientsList()
+        {
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            if (connectedClients == null) return;
+            
+            foreach (ConnectedClient client in connectedClients)
+            {
+                DrawConnectedClientItem(client);
+            }
         }
 
         /// <summary>
