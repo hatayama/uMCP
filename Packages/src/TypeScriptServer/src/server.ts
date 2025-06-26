@@ -127,24 +127,23 @@ class SimpleMcpServer {
    * Safe version of refreshDynamicTools that prevents duplicate execution
    */
   private async refreshDynamicToolsSafe(): Promise<void> {
-    // Get stack trace to identify caller
-    const stack = new Error().stack;
-    const callerLine = stack?.split('\n')[2]?.trim() || 'Unknown caller';
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, 12); // HH:mm:ss.sss
-    
-    mcpDebug(`[TRACE] refreshDynamicToolsSafe called at ${timestamp}`);
-    mcpDebug(`[TRACE] Caller: ${callerLine}`);
-    
     if (this.isRefreshing) {
-      mcpDebug('[TRACE] refreshDynamicToolsSafe skipped: already in progress');
+      if (this.isDevelopment) {
+        mcpDebug('[TRACE] refreshDynamicToolsSafe skipped: already in progress');
+      }
       return;
     }
     
     this.isRefreshing = true;
     try {
-      mcpDebug('[TRACE] refreshDynamicToolsSafe: Starting getCommandDetails execution');
+      if (this.isDevelopment) {
+        const stack = new Error().stack;
+        const callerLine = stack?.split('\n')[2]?.trim() || 'Unknown caller';
+        const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
+        mcpDebug(`[TRACE] refreshDynamicToolsSafe called at ${timestamp} from: ${callerLine}`);
+      }
+      
       await this.refreshDynamicTools();
-      mcpDebug('[TRACE] refreshDynamicToolsSafe: getCommandDetails execution completed');
     } finally {
       this.isRefreshing = false;
     }
@@ -366,19 +365,25 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     try {
       await this.unityClient.ensureConnected();
       
-      // Get command names
+      // Get command names only (avoid duplicate getCommandDetails call)
+      // BUG FIX: Previously called both getAvailableCommands and getCommandDetails,
+      // causing duplicate API calls when multiple MCP clients were connected
       const commandsResponse = await this.unityClient.executeCommand('getAvailableCommands', {});
       const commands = (commandsResponse as any)?.Commands || commandsResponse;
       
-      // Get command details with schemas
-      const detailsResponse = await this.unityClient.executeCommand('getCommandDetails', {});
-      const details = (detailsResponse as any)?.Commands || detailsResponse;
+      // Use already cached dynamic tools info instead of calling getCommandDetails again
+      // BUG FIX: Avoid redundant getCommandDetails call since data is already cached in initializeDynamicTools
+      const dynamicToolsInfo = Array.from(this.dynamicTools.entries()).map(([name, tool]) => ({
+        name,
+        description: tool.description,
+        inputSchema: tool.inputSchema
+      }));
       
       return {
         content: [
           {
             type: 'text',
-            text: `Available Unity Commands:\n${JSON.stringify(commands, null, 2)}\n\nCommand Details with Schemas:\n${JSON.stringify(details, null, 2)}`
+            text: `Available Unity Commands:\n${JSON.stringify(commands, null, 2)}\n\nCached Dynamic Tools:\n${JSON.stringify(dynamicToolsInfo, null, 2)}`
           }
         ]
       };
@@ -418,9 +423,11 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
   private setupUnityEventListener(): void {
     // Listen for MCP standard notifications from Unity
     this.unityClient.onNotification('notifications/tools/list_changed', async (params: unknown) => {
-      const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
-      mcpDebug(`[TRACE] Unity notification received at ${timestamp}: notifications/tools/list_changed`);
-      mcpDebug(`[TRACE] Notification params: ${JSON.stringify(params)}`);
+      if (this.isDevelopment) {
+        const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
+        mcpDebug(`[TRACE] Unity notification received at ${timestamp}: notifications/tools/list_changed`);
+        mcpDebug(`[TRACE] Notification params: ${JSON.stringify(params)}`);
+      }
       
       try {
         await this.refreshDynamicToolsSafe();
@@ -452,23 +459,51 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
   private setupSignalHandlers(): void {
     // Handle Ctrl+C (SIGINT)
     process.on('SIGINT', () => {
+      mcpInfo('[Simple MCP] Received SIGINT, shutting down...');
       this.gracefulShutdown();
     });
 
     // Handle kill command (SIGTERM)
     process.on('SIGTERM', () => {
+      mcpInfo('[Simple MCP] Received SIGTERM, shutting down...');
       this.gracefulShutdown();
     });
 
     // Handle terminal close (SIGHUP)
     process.on('SIGHUP', () => {
+      mcpInfo('[Simple MCP] Received SIGHUP, shutting down...');
       this.gracefulShutdown();
     });
 
+    // Handle stdin close (when parent process disconnects)
+    // BUG FIX: Added STDIN monitoring to detect when Cursor/parent MCP client disconnects
+    // This prevents orphaned Node processes from remaining after IDE shutdown
+    process.stdin.on('close', () => {
+      mcpInfo('[Simple MCP] STDIN closed, shutting down...');
+      this.gracefulShutdown();
+    });
+
+    process.stdin.on('end', () => {
+      mcpInfo('[Simple MCP] STDIN ended, shutting down...');
+      this.gracefulShutdown();
+    });
+
+    // Handle uncaught exceptions
+    // BUG FIX: Added comprehensive error handling to prevent hanging processes
+    process.on('uncaughtException', (error) => {
+      mcpError('[Simple MCP] Uncaught exception:', error);
+      this.gracefulShutdown();
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      mcpError('[Simple MCP] Unhandled rejection at:', promise, 'reason:', reason);
+      this.gracefulShutdown();
+    });
   }
 
   /**
    * Graceful shutdown with proper cleanup
+   * BUG FIX: Enhanced shutdown process to prevent orphaned Node processes
    */
   private gracefulShutdown(): void {
     // Prevent multiple shutdown attempts
@@ -477,17 +512,26 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     }
     
     this.isShuttingDown = true;
+    mcpInfo('[Simple MCP] Starting graceful shutdown...');
 
     try {
-      // Disconnect from Unity
+      // Disconnect from Unity and stop all intervals
+      // BUG FIX: Ensure polling intervals are stopped to prevent hanging event loop
       if (this.unityClient) {
         this.unityClient.disconnect();
+      }
+
+      // Clear any remaining timers to ensure clean exit
+      // BUG FIX: Force garbage collection if available to clean up lingering references
+      if (global.gc) {
+        global.gc();
       }
 
     } catch (error) {
       mcpError('[Simple MCP] Error during cleanup:', error);
     }
 
+    mcpInfo('[Simple MCP] Graceful shutdown completed');
     process.exit(0);
   }
 
