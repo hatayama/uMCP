@@ -25,7 +25,7 @@ namespace io.github.hatayama.uMCP
         public readonly NetworkStream Stream;
         public readonly int ProcessId;
 
-        public ConnectedClient(string endpoint, NetworkStream stream, int processId, string clientName = "Unknown Client")
+        public ConnectedClient(string endpoint, NetworkStream stream, int processId, string clientName = McpConstants.UNKNOWN_CLIENT_NAME)
         {
             Endpoint = endpoint;
             Stream = stream;
@@ -127,7 +127,7 @@ namespace io.github.hatayama.uMCP
         {
             if (clientSocket?.RemoteEndPoint is not IPEndPoint remoteEndPoint)
             {
-                return -1;
+                return McpConstants.UNKNOWN_PROCESS_ID;
             }
             
             int remotePort = remoteEndPoint.Port;
@@ -135,8 +135,8 @@ namespace io.github.hatayama.uMCP
             // Use lsof command on macOS/Linux to find the process ID
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = "lsof",
-                Arguments = $"-i :{remotePort}",
+                FileName = McpConstants.LSOF_COMMAND,
+                Arguments = string.Format(McpConstants.LSOF_ARGS_TEMPLATE, remotePort),
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
@@ -150,10 +150,10 @@ namespace io.github.hatayama.uMCP
                 string[] lines = output.Split('\n');
                 foreach (string line in lines)
                 {
-                    if (line.Contains($":{remotePort}") && !line.StartsWith("COMMAND"))
+                    if (line.Contains($":{remotePort}") && !line.StartsWith(McpConstants.LSOF_HEADER_COMMAND))
                     {
                         string[] parts = line.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length >= 2 && int.TryParse(parts[1], out int pid))
+                        if (parts.Length >= McpConstants.LSOF_PID_ARRAY_MIN_LENGTH && int.TryParse(parts[McpConstants.LSOF_PID_COLUMN_INDEX], out int pid))
                         {
                             return pid;
                         }
@@ -161,7 +161,7 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            return -1; // Process ID not found
+            return McpConstants.UNKNOWN_PROCESS_ID; // Process ID not found
         }
 
         /// <summary>

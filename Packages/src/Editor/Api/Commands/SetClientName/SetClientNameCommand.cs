@@ -28,7 +28,7 @@ namespace io.github.hatayama.uMCP
                 {
                     // Find the most recently connected client (with "Unknown Client" name)
                     ConnectedClient mostRecentUnknownClient = connectedClients
-                        .Where(c => c.ClientName == "Unknown Client")
+                        .Where(c => c.ClientName == McpConstants.UNKNOWN_CLIENT_NAME)
                         .OrderByDescending(c => c.ConnectedAt)
                         .FirstOrDefault();
 
@@ -47,7 +47,7 @@ namespace io.github.hatayama.uMCP
                 }
             }
 
-            string message = $"Client name registered successfully: {clientName}";
+            string message = string.Format(McpConstants.CLIENT_SUCCESS_MESSAGE_TEMPLATE, clientName);
             SetClientNameResponse response = new SetClientNameResponse(message, clientName);
             return Task.FromResult(response);
         }

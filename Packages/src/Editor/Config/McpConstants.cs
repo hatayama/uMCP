@@ -32,6 +32,20 @@ namespace io.github.hatayama.uMCP
         // Client names for different editors
         public const string CLIENT_NAME_CURSOR = "Cursor";
         public const string CLIENT_NAME_CLAUDE_CODE = "Claude Code";
+        public const string UNKNOWN_CLIENT_NAME = "Unknown Client";
+        
+        // Process ID constants
+        public const int UNKNOWN_PROCESS_ID = -1;
+        public const int LSOF_PID_COLUMN_INDEX = 1;
+        public const int LSOF_PID_ARRAY_MIN_LENGTH = 2;
+        
+        // System commands and arguments
+        public const string LSOF_COMMAND = "lsof";
+        public const string LSOF_ARGS_TEMPLATE = "-i :{0}";
+        public const string LSOF_HEADER_COMMAND = "COMMAND";
+        
+        // Command messages
+        public const string CLIENT_SUCCESS_MESSAGE_TEMPLATE = "Client name registered successfully: {0}";
         
         // Editor settings keys (development mode)
         public const string SETTINGS_KEY_ENABLE_DEVELOPMENT_MODE = "EnableDevelopmentMode";
@@ -45,5 +59,20 @@ namespace io.github.hatayama.uMCP
         public const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
         public const string SESSION_KEY_COMMUNICATION_LOGS = "uMCP.CommunicationLogs";
         public const string SESSION_KEY_PENDING_REQUESTS = "uMCP.PendingRequests";
+        
+        /// <summary>
+        /// Gets the client name for the specified editor type
+        /// </summary>
+        /// <param name="editorType">The editor type</param>
+        /// <returns>The client name</returns>
+        public static string GetClientNameForEditor(McpEditorType editorType)
+        {
+            return editorType switch
+            {
+                McpEditorType.Cursor => CLIENT_NAME_CURSOR,
+                McpEditorType.ClaudeCode => CLIENT_NAME_CLAUDE_CODE,
+                _ => UNKNOWN_CLIENT_NAME
+            };
+        }
     }
 } 

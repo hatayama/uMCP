@@ -20,7 +20,7 @@ namespace io.github.hatayama.uMCP
             Dictionary<string, string> env = new Dictionary<string, string>
             {
                 { McpConstants.UNITY_TCP_PORT_ENV_KEY, port.ToString() },
-                { McpConstants.ENV_KEY_MCP_CLIENT_NAME, GetClientNameForEditor(editorType) }
+                { McpConstants.ENV_KEY_MCP_CLIENT_NAME, McpConstants.GetClientNameForEditor(editorType) }
             };
 
             return new McpServerConfigData(
@@ -79,19 +79,5 @@ namespace io.github.hatayama.uMCP
             return $"{McpConstants.PROJECT_NAME}-{port}";
         }
 
-        /// <summary>
-        /// Gets the client name for the specified editor type.
-        /// </summary>
-        /// <param name="editorType">The editor type.</param>
-        /// <returns>The client name.</returns>
-        private static string GetClientNameForEditor(McpEditorType editorType)
-        {
-            return editorType switch
-            {
-                McpEditorType.Cursor => McpConstants.CLIENT_NAME_CURSOR,
-                McpEditorType.ClaudeCode => McpConstants.CLIENT_NAME_CLAUDE_CODE,
-                _ => "Unknown MCP Client"
-            };
-        }
     }
 } 

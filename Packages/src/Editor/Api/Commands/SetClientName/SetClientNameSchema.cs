@@ -12,6 +12,6 @@ namespace io.github.hatayama.uMCP
         /// Name of the MCP client tool (e.g., "Claude Code", "Cursor")
         /// </summary>
         [Description("Name of the MCP client tool")]
-        public string ClientName { get; set; } = "Unknown Client";
+        public string ClientName { get; set; } = McpConstants.UNKNOWN_CLIENT_NAME;
     }
 }

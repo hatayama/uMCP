@@ -179,7 +179,7 @@ namespace io.github.hatayama.uMCP
             updatedEnv.Remove(McpConstants.ENV_KEY_MCP_DEBUG);
             
             // Ensure MCP_CLIENT_NAME is set correctly for this editor type
-            string clientName = GetClientNameForEditor(_editorType);
+            string clientName = McpConstants.GetClientNameForEditor(_editorType);
             updatedEnv[McpConstants.ENV_KEY_MCP_CLIENT_NAME] = clientName;
             
             // Add NODE_ENV for development mode (simplified approach)
@@ -232,18 +232,6 @@ namespace io.github.hatayama.uMCP
             };
         }
 
-        /// <summary>
-        /// Gets the client name for the specified editor type.
-        /// </summary>
-        private string GetClientNameForEditor(McpEditorType editorType)
-        {
-            return editorType switch
-            {
-                McpEditorType.Cursor => McpConstants.CLIENT_NAME_CURSOR,
-                McpEditorType.ClaudeCode => McpConstants.CLIENT_NAME_CLAUDE_CODE,
-                _ => "Unknown MCP Client"
-            };
-        }
 
         /// <summary>
         /// Validates configuration parameters for fail-fast behavior

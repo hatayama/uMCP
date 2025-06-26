@@ -368,7 +368,7 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.BeginVertical("box");
             
             // Foldout header
-            showConnectedTools = EditorGUILayout.Foldout(showConnectedTools, "Connected LLM Tools", true);
+            showConnectedTools = EditorGUILayout.Foldout(showConnectedTools, McpUIConstants.CONNECTED_TOOLS_FOLDOUT_TEXT, true);
             
             // Show content only when expanded
             if (showConnectedTools)
@@ -413,7 +413,7 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.BeginHorizontal();
             
             // Client icon and name
-            EditorGUILayout.LabelField("● " + client.ClientName, new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
+            EditorGUILayout.LabelField(McpUIConstants.CLIENT_ICON + client.ClientName, new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
             
             // Flexible space
             GUILayout.FlexibleSpace();
@@ -421,15 +421,15 @@ namespace io.github.hatayama.uMCP
             // Endpoint with PID information
             GUIStyle endpointStyle = new GUIStyle(EditorStyles.miniLabel);
             endpointStyle.normal.textColor = Color.gray;
-            string pidInfo = client.ProcessId > 0 ? $" (PID: {client.ProcessId})" : "";
-            EditorGUILayout.LabelField("→ " + client.Endpoint + pidInfo, endpointStyle);
+            string pidInfo = client.ProcessId > McpConstants.UNKNOWN_PROCESS_ID ? $" (PID: {client.ProcessId})" : "";
+            EditorGUILayout.LabelField(McpUIConstants.ENDPOINT_ARROW + client.Endpoint + pidInfo, endpointStyle);
             
             EditorGUILayout.EndHorizontal();
             
             EditorGUILayout.EndVertical();
             
             // Add small space between client items
-            EditorGUILayout.Space(3);
+            EditorGUILayout.Space(McpUIConstants.CLIENT_ITEM_SPACING);
         }
 
         /// <summary>
