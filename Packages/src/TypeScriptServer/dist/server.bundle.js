@@ -5540,7 +5540,7 @@ var writeToFile = (message) => {
   } catch (error) {
   }
 };
-var mcpDebug = (...args) => {
+var debugToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
@@ -5548,7 +5548,7 @@ var mcpDebug = (...args) => {
     writeToFile(`[MCP-DEBUG] ${message}`);
   }
 };
-var mcpInfo = (...args) => {
+var infoToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
@@ -5556,7 +5556,15 @@ var mcpInfo = (...args) => {
     writeToFile(`[MCP-INFO] ${message}`);
   }
 };
-var mcpError = (...args) => {
+var warnToFile = (...args) => {
+  if (process.env.MCP_DEBUG) {
+    const message = args.map(
+      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(" ");
+    writeToFile(`[MCP-WARN] ${message}`);
+  }
+};
+var errorToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
@@ -5564,6 +5572,101 @@ var mcpError = (...args) => {
     writeToFile(`[MCP-ERROR] ${message}`);
   }
 };
+
+// src/utils/safe-timer.ts
+var SafeTimer = class _SafeTimer {
+  static activeTimers = /* @__PURE__ */ new Set();
+  static cleanupHandlersInstalled = false;
+  timerId = null;
+  isActive = false;
+  callback;
+  delay;
+  isInterval;
+  constructor(callback, delay, isInterval = false) {
+    this.callback = callback;
+    this.delay = delay;
+    this.isInterval = isInterval;
+    _SafeTimer.installCleanupHandlers();
+    this.start();
+  }
+  /**
+   * Start the timer
+   */
+  start() {
+    if (this.isActive) {
+      return;
+    }
+    if (this.isInterval) {
+      this.timerId = setInterval(this.callback, this.delay);
+    } else {
+      this.timerId = setTimeout(this.callback, this.delay);
+    }
+    this.isActive = true;
+    _SafeTimer.activeTimers.add(this);
+  }
+  /**
+   * Stop and clean up the timer
+   */
+  stop() {
+    if (!this.isActive || !this.timerId) {
+      return;
+    }
+    if (this.isInterval) {
+      clearInterval(this.timerId);
+    } else {
+      clearTimeout(this.timerId);
+    }
+    this.timerId = null;
+    this.isActive = false;
+    _SafeTimer.activeTimers.delete(this);
+  }
+  /**
+   * Check if timer is currently active
+   */
+  get active() {
+    return this.isActive;
+  }
+  /**
+   * Install global cleanup handlers to ensure all timers are cleaned up
+   */
+  static installCleanupHandlers() {
+    if (_SafeTimer.cleanupHandlersInstalled) {
+      return;
+    }
+    const cleanup = () => {
+      console.log(`[SafeTimer] Cleaning up ${_SafeTimer.activeTimers.size} active timers`);
+      _SafeTimer.cleanupAll();
+    };
+    process.on("exit", cleanup);
+    process.on("SIGINT", cleanup);
+    process.on("SIGTERM", cleanup);
+    process.on("SIGHUP", cleanup);
+    process.on("uncaughtException", cleanup);
+    process.on("unhandledRejection", cleanup);
+    _SafeTimer.cleanupHandlersInstalled = true;
+  }
+  /**
+   * Clean up all active timers
+   */
+  static cleanupAll() {
+    for (const timer of _SafeTimer.activeTimers) {
+      timer.stop();
+    }
+    _SafeTimer.activeTimers.clear();
+  }
+  /**
+   * Get count of active timers (for debugging)
+   */
+  static getActiveTimerCount() {
+    return _SafeTimer.activeTimers.size;
+  }
+};
+function safeSetTimeout(callback, delay) {
+  return new SafeTimer(callback, delay, false);
+}
+function safeSetInterval(callback, delay) {
+  return new SafeTimer(callback, delay, true);
+}
 
 // src/unity-client.ts
 var UnityClient = class {
@@ -5574,8 +5677,8 @@ var UnityClient = class {
   notificationHandlers = /* @__PURE__ */ new Map();
   pendingRequests = /* @__PURE__ */ new Map();
   reconnectHandlers = /* @__PURE__ */ new Set();
-  // Polling system
-  pollingInterval = null;
+  // Polling system - using SafeTimer for automatic cleanup
+  pollingTimer = null;
   onReconnectedCallback = null;
   constructor() {
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
@@ -5622,7 +5725,7 @@ var UnityClient = class {
         }
       }
     } catch (error) {
-      mcpError("[UnityClient] Error parsing incoming data:", error);
+      errorToFile("[UnityClient] Error parsing incoming data:", error);
     }
   }
   /**
@@ -5635,7 +5738,7 @@ var UnityClient = class {
       try {
         handler(params);
       } catch (error) {
-        mcpError(`[UnityClient] Error in notification handler for ${method}:`, error);
+        errorToFile(`[UnityClient] Error in notification handler for ${method}:`, error);
       }
     } else {
     }
@@ -5654,7 +5757,7 @@ var UnityClient = class {
         pending.resolve(response);
       }
     } else {
-      mcpWarn(`[UnityClient] Received response for unknown request ID: ${id}`);
+      warnToFile(`[UnityClient] Received response for unknown request ID: ${id}`);
     }
   }
   /**
@@ -5688,22 +5791,37 @@ var UnityClient = class {
   async connect() {
     return new Promise((resolve, reject) => {
       this.socket = new net.Socket();
-      this.socket.connect(this.port, this.host, () => {
+      this.socket.connect(this.port, this.host, async () => {
         this._connected = true;
+        try {
+          await this.setClientName();
+        } catch (error) {
+          errorToFile("[UnityClient] Failed to set client name:", error);
+        }
         this.reconnectHandlers.forEach((handler) => {
           try {
             handler();
           } catch (error) {
-            mcpError("[UnityClient] Error in reconnect handler:", error);
+            errorToFile("[UnityClient] Error in reconnect handler:", error);
           }
         });
         resolve();
       });
       this.socket.on("error", (error) => {
         this._connected = false;
-        reject(new Error(`Unity connection failed: ${error.message}`));
+        if (this.socket?.connecting) {
+          reject(new Error(`Unity connection failed: ${error.message}`));
+        } else {
+          errorToFile("[UnityClient] Connection error:", error);
+          this.startPolling();
+        }
       });
       this.socket.on("close", () => {
+        this._connected = false;
+        this.startPolling();
+      });
+      this.socket.on("end", () => {
+        errorToFile("[UnityClient] Connection ended by server");
         this._connected = false;
         this.startPolling();
       });
@@ -5711,6 +5829,37 @@ var UnityClient = class {
         this.handleIncomingData(data.toString());
       });
     });
+  }
+  /**
+   * Detect client name from environment variables
+   */
+  detectClientName() {
+    return process.env.MCP_CLIENT_NAME || "MCP Client";
+  }
+  /**
+   * Send client name to Unity for identification
+   */
+  async setClientName() {
+    if (!this.connected) {
+      return;
+    }
+    const clientName = this.detectClientName();
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: "setClientName",
+      params: {
+        ClientName: clientName
+      }
+    };
+    try {
+      const response = await this.sendRequest(request);
+      if (response.error) {
+        errorToFile(`Failed to set client name: ${response.error.message}`);
+      }
+    } catch (error) {
+      errorToFile("[UnityClient] Error setting client name:", error);
+    }
   }
   /**
    * Send ping to Unity
@@ -5820,17 +5969,17 @@ var UnityClient = class {
   async sendRequest(request, timeoutMs) {
     return new Promise((resolve, reject) => {
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
-      const timeout = setTimeout(() => {
+      const timeoutTimer = safeSetTimeout(() => {
         this.pendingRequests.delete(request.id);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
       this.pendingRequests.set(request.id, {
         resolve: (response) => {
-          clearTimeout(timeout);
+          timeoutTimer.stop();
           resolve(response);
         },
         reject: (error) => {
-          clearTimeout(timeout);
+          timeoutTimer.stop();
           reject(error);
         }
       });
@@ -5839,9 +5988,17 @@ var UnityClient = class {
   }
   /**
    * Disconnect
+   * 
+   * IMPORTANT: Always clean up timers when disconnecting!
+   * Failure to properly clean up timers can cause orphaned processes
+   * that prevent Node.js from exiting gracefully.
    */
   disconnect() {
     this.stopPolling();
+    for (const [id, pending] of this.pendingRequests) {
+      pending.reject(new Error("Connection closed"));
+    }
+    this.pendingRequests.clear();
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
@@ -5858,10 +6015,10 @@ var UnityClient = class {
    * Start polling for connection recovery
    */
   startPolling() {
-    if (this.pollingInterval) {
+    if (this.pollingTimer && this.pollingTimer.active) {
       return;
     }
-    this.pollingInterval = setInterval(async () => {
+    this.pollingTimer = safeSetInterval(async () => {
       try {
         await this.connect();
         this.stopPolling();
@@ -5876,9 +6033,9 @@ var UnityClient = class {
    * Stop polling
    */
   stopPolling() {
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
+    if (this.pollingTimer) {
+      this.pollingTimer.stop();
+      this.pollingTimer = null;
     }
   }
 };
@@ -6099,9 +6256,9 @@ var SimpleMcpServer = class {
   isRefreshing = false;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
-    mcpInfo("Simple Unity MCP Server Starting");
-    mcpInfo(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
-    mcpInfo(`Development mode: ${this.isDevelopment}`);
+    infoToFile("Simple Unity MCP Server Starting");
+    infoToFile(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
+    infoToFile(`Development mode: ${this.isDevelopment}`);
     this.server = new Server(
       {
         name: "umcp-server",
@@ -6131,7 +6288,7 @@ var SimpleMcpServer = class {
       const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
       const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
-        mcpError("[Simple MCP] Invalid command details response:", commandDetailsResponse);
+        errorToFile("[Simple MCP] Invalid command details response:", commandDetailsResponse);
         return;
       }
       this.dynamicTools.clear();
@@ -6140,7 +6297,11 @@ var SimpleMcpServer = class {
         const commandName = commandInfo.name;
         const description = commandInfo.description || `Execute Unity command: ${commandName}`;
         const parameterSchema = commandInfo.parameterSchema;
+        const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
         if (commandName === "ping") {
+          continue;
+        }
+        if (displayDevelopmentOnly && !this.isDevelopment) {
           continue;
         }
         const toolName = commandName;
@@ -6154,7 +6315,7 @@ var SimpleMcpServer = class {
         this.dynamicTools.set(toolName, dynamicTool);
       }
     } catch (error) {
-      mcpError("[Simple MCP] Failed to initialize dynamic tools:", error);
+      errorToFile("[Simple MCP] Failed to initialize dynamic tools:", error);
     }
   }
   /**
@@ -6171,7 +6332,7 @@ var SimpleMcpServer = class {
   async refreshDynamicToolsSafe() {
     if (this.isRefreshing) {
       if (this.isDevelopment) {
-        mcpDebug("[TRACE] refreshDynamicToolsSafe skipped: already in progress");
+        debugToFile("[TRACE] refreshDynamicToolsSafe skipped: already in progress");
       }
       return;
     }
@@ -6181,7 +6342,7 @@ var SimpleMcpServer = class {
         const stack = new Error().stack;
         const callerLine = stack?.split("\n")[2]?.trim() || "Unknown caller";
         const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
-        mcpDebug(`[TRACE] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`);
+        debugToFile(`[TRACE] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`);
       }
       await this.refreshDynamicTools();
     } finally {
@@ -6237,12 +6398,12 @@ var SimpleMcpServer = class {
           }
         });
       }
-      mcpDebug(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
+      debugToFile(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
       return { tools };
     });
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      mcpDebug(`Tool executed: ${name}`, { args });
+      debugToFile(`Tool executed: ${name}`, { args });
       try {
         if (this.dynamicTools.has(name)) {
           const dynamicTool = this.dynamicTools.get(name);
@@ -6393,13 +6554,13 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
     this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
       if (this.isDevelopment) {
         const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
-        mcpDebug(`[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`);
-        mcpDebug(`[TRACE] Notification params: ${JSON.stringify(params)}`);
+        debugToFile(`[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`);
+        debugToFile(`[TRACE] Notification params: ${JSON.stringify(params)}`);
       }
       try {
         await this.refreshDynamicToolsSafe();
       } catch (error) {
-        mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
+        errorToFile("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
       }
     });
   }
@@ -6413,7 +6574,7 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
         params: {}
       });
     } catch (error) {
-      mcpError("[Simple MCP] Failed to send tools changed notification:", error);
+      errorToFile("[Simple MCP] Failed to send tools changed notification:", error);
     }
   }
   /**
@@ -6421,31 +6582,31 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
    */
   setupSignalHandlers() {
     process.on("SIGINT", () => {
-      mcpInfo("[Simple MCP] Received SIGINT, shutting down...");
+      infoToFile("[Simple MCP] Received SIGINT, shutting down...");
       this.gracefulShutdown();
     });
     process.on("SIGTERM", () => {
-      mcpInfo("[Simple MCP] Received SIGTERM, shutting down...");
+      infoToFile("[Simple MCP] Received SIGTERM, shutting down...");
       this.gracefulShutdown();
     });
     process.on("SIGHUP", () => {
-      mcpInfo("[Simple MCP] Received SIGHUP, shutting down...");
+      infoToFile("[Simple MCP] Received SIGHUP, shutting down...");
       this.gracefulShutdown();
     });
     process.stdin.on("close", () => {
-      mcpInfo("[Simple MCP] STDIN closed, shutting down...");
+      infoToFile("[Simple MCP] STDIN closed, shutting down...");
       this.gracefulShutdown();
     });
     process.stdin.on("end", () => {
-      mcpInfo("[Simple MCP] STDIN ended, shutting down...");
+      infoToFile("[Simple MCP] STDIN ended, shutting down...");
       this.gracefulShutdown();
     });
     process.on("uncaughtException", (error) => {
-      mcpError("[Simple MCP] Uncaught exception:", error);
+      errorToFile("[Simple MCP] Uncaught exception:", error);
       this.gracefulShutdown();
     });
     process.on("unhandledRejection", (reason, promise) => {
-      mcpError("[Simple MCP] Unhandled rejection at:", promise, "reason:", reason);
+      errorToFile("[Simple MCP] Unhandled rejection at:", promise, "reason:", reason);
       this.gracefulShutdown();
     });
   }
@@ -6458,7 +6619,7 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
       return;
     }
     this.isShuttingDown = true;
-    mcpInfo("[Simple MCP] Starting graceful shutdown...");
+    infoToFile("[Simple MCP] Starting graceful shutdown...");
     try {
       if (this.unityClient) {
         this.unityClient.disconnect();
@@ -6467,15 +6628,15 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
         global.gc();
       }
     } catch (error) {
-      mcpError("[Simple MCP] Error during cleanup:", error);
+      errorToFile("[Simple MCP] Error during cleanup:", error);
     }
-    mcpInfo("[Simple MCP] Graceful shutdown completed");
+    infoToFile("[Simple MCP] Graceful shutdown completed");
     process.exit(0);
   }
 };
 var server = new SimpleMcpServer();
 server.start().catch((error) => {
-  mcpError("[FATAL] Server startup failed:", error);
+  errorToFile("[FATAL] Server startup failed:", error);
   console.error("[FATAL] Unity MCP Server startup failed:");
   console.error("Error details:", error instanceof Error ? error.message : String(error));
   console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace available");

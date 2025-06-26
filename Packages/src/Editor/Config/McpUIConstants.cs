@@ -40,5 +40,14 @@ namespace io.github.hatayama.uMCP
         
         // Communication log settings
         public const int MAX_COMMUNICATION_LOG_ENTRIES = 20;
+        
+        // Connected clients display
+        public const float CONNECTED_CLIENT_ITEM_HEIGHT = 20f;
+        public const float CONNECTED_CLIENT_INDENT = 16f;
+        public const float CLIENT_ITEM_SPACING = 3f;
+        public const string CONNECTED_TOOLS_FOLDOUT_TEXT = "Connected LLM Tools";
+        public const string CLIENT_ICON = "● ";
+        public const string ENDPOINT_ARROW = "→ ";
+        public const string RECONNECTING_MESSAGE = "Reconnecting...";
     }
 }

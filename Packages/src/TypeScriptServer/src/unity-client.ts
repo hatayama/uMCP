@@ -8,7 +8,8 @@ import {
   ERROR_MESSAGES,
   POLLING 
 } from './constants.js';
-import { mcpError } from './utils/log-to-file.js';
+import { errorToFile, warnToFile } from './utils/log-to-file.js';
+import { SafeTimer, safeSetInterval, safeSetTimeout } from './utils/safe-timer.js';
 
 /**
  * TCP/IP client for communication with Unity
@@ -22,8 +23,8 @@ export class UnityClient {
   private pendingRequests: Map<number, { resolve: (value: unknown) => void, reject: (reason: unknown) => void }> = new Map();
   private reconnectHandlers: Set<() => void> = new Set();
   
-  // Polling system
-  private pollingInterval: NodeJS.Timeout | null = null;
+  // Polling system - using SafeTimer for automatic cleanup
+  private pollingTimer: SafeTimer | null = null;
   private onReconnectedCallback: (() => void) | null = null;
 
   constructor() {
@@ -82,7 +83,7 @@ export class UnityClient {
         }
       }
     } catch (error) {
-        mcpError('[UnityClient] Error parsing incoming data:', error);
+        errorToFile('[UnityClient] Error parsing incoming data:', error);
     }
   }
 
@@ -98,7 +99,7 @@ export class UnityClient {
       try {
         handler(params);
       } catch (error) {
-        mcpError(`[UnityClient] Error in notification handler for ${method}:`, error);
+        errorToFile(`[UnityClient] Error in notification handler for ${method}:`, error);
       }
     } else {
     }
@@ -120,7 +121,7 @@ export class UnityClient {
         pending.resolve(response);
       }
     } else {
-      mcpWarn(`[UnityClient] Received response for unknown request ID: ${id}`);
+      warnToFile(`[UnityClient] Received response for unknown request ID: ${id}`);
     }
   }
 
@@ -163,27 +164,49 @@ export class UnityClient {
     return new Promise((resolve, reject) => {
       this.socket = new net.Socket();
       
-      this.socket.connect(this.port, this.host, () => {
+      this.socket.connect(this.port, this.host, async () => {
         this._connected = true;
+        
+        // Send client name to Unity for identification
+        try {
+          await this.setClientName();
+        } catch (error) {
+          errorToFile('[UnityClient] Failed to set client name:', error);
+        }
         
         // Notify reconnect handlers
         this.reconnectHandlers.forEach(handler => {
           try {
             handler();
           } catch (error) {
-            mcpError('[UnityClient] Error in reconnect handler:', error);
+            errorToFile('[UnityClient] Error in reconnect handler:', error);
           }
         });
         
         resolve();
       });
 
+      // Handle errors (both during connection and after establishment)
       this.socket.on('error', (error) => {
         this._connected = false;
-        reject(new Error(`Unity connection failed: ${error.message}`));
+        if (this.socket?.connecting) {
+          // Error during connection attempt
+          reject(new Error(`Unity connection failed: ${error.message}`));
+        } else {
+          // Error after connection was established
+          errorToFile('[UnityClient] Connection error:', error);
+          this.startPolling();
+        }
       });
 
       this.socket.on('close', () => {
+        this._connected = false;
+        this.startPolling();
+      });
+
+      // Handle graceful end of connection
+      this.socket.on('end', () => {
+        errorToFile('[UnityClient] Connection ended by server');
         this._connected = false;
         this.startPolling();
       });
@@ -193,6 +216,44 @@ export class UnityClient {
         this.handleIncomingData(data.toString());
       });
     });
+  }
+
+  /**
+   * Detect client name from environment variables
+   */
+  private detectClientName(): string {
+    return process.env.MCP_CLIENT_NAME || 'MCP Client';
+  }
+
+  /**
+   * Send client name to Unity for identification
+   */
+  async setClientName(): Promise<void> {
+    if (!this.connected) {
+      return; // Skip if not connected
+    }
+
+    // Detect client name from environment or process
+    const clientName = this.detectClientName();
+
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: 'setClientName',
+      params: {
+        ClientName: clientName
+      }
+    };
+
+    try {
+      const response = await this.sendRequest(request);
+      
+      if (response.error) {
+        errorToFile(`Failed to set client name: ${response.error.message}`);
+      }
+    } catch (error) {
+      errorToFile('[UnityClient] Error setting client name:', error);
+    }
   }
 
   /**
@@ -335,7 +396,8 @@ export class UnityClient {
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
       
 
-      const timeout = setTimeout(() => {
+      // Use SafeTimer for automatic cleanup to prevent orphaned processes
+      const timeoutTimer = safeSetTimeout(() => {
         this.pendingRequests.delete(request.id);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
@@ -343,11 +405,11 @@ export class UnityClient {
       // Store the pending request
       this.pendingRequests.set(request.id, {
         resolve: (response) => {
-          clearTimeout(timeout);
+          timeoutTimer.stop(); // Clean up timer
           resolve(response as { id: number; error?: { message: string }; result?: unknown });
         },
         reject: (error) => {
-          clearTimeout(timeout);
+          timeoutTimer.stop(); // Clean up timer
           reject(error);
         }
       });
@@ -359,9 +421,21 @@ export class UnityClient {
 
   /**
    * Disconnect
+   * 
+   * IMPORTANT: Always clean up timers when disconnecting!
+   * Failure to properly clean up timers can cause orphaned processes
+   * that prevent Node.js from exiting gracefully.
    */
   disconnect(): void {
     this.stopPolling(); // Stop polling when manually disconnecting
+    
+    // Clean up all pending requests and their timers
+    // CRITICAL: This prevents orphaned processes by ensuring all setTimeout timers are cleared
+    for (const [id, pending] of this.pendingRequests) {
+      pending.reject(new Error('Connection closed'));
+    }
+    this.pendingRequests.clear();
+    
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
@@ -380,11 +454,11 @@ export class UnityClient {
    * Start polling for connection recovery
    */
   private startPolling(): void {
-    if (this.pollingInterval) {
+    if (this.pollingTimer && this.pollingTimer.active) {
       return; // Already polling
     }
     
-    this.pollingInterval = setInterval(async () => {
+    this.pollingTimer = safeSetInterval(async () => {
       try {
         await this.connect();
         this.stopPolling();
@@ -403,9 +477,9 @@ export class UnityClient {
    * Stop polling
    */
   private stopPolling(): void {
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
+    if (this.pollingTimer) {
+      this.pollingTimer.stop();
+      this.pollingTimer = null;
     }
   }
 } 

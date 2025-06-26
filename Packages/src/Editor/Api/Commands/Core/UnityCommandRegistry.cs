@@ -61,7 +61,7 @@ namespace io.github.hatayama.uMCP
                     commandTypes.AddRange(types);
                 }
 
-                // Register commands
+                // Register all commands - filtering will be handled by TypeScript side
                 foreach (Type type in commandTypes)
                 {
                     IUnityCommand command = (IUnityCommand)Activator.CreateInstance(type);
@@ -76,6 +76,7 @@ namespace io.github.hatayama.uMCP
                 throw;
             }
         }
+
 
         /// <summary>
         /// Register commands manually (for backward compatibility)
@@ -175,7 +176,18 @@ namespace io.github.hatayama.uMCP
         /// <returns>Array of command information</returns>
         public CommandInfo[] GetRegisteredCommands()
         {
-            return commands.Values.Select(cmd => new CommandInfo(cmd.CommandName, cmd.Description, cmd.ParameterSchema)).ToArray();
+            return commands.Values.Select(cmd => 
+            {
+                // Check if command has McpTool attribute with DisplayDevelopmentOnly
+                bool displayDevelopmentOnly = false;
+                McpToolAttribute attribute = cmd.GetType().GetCustomAttribute<McpToolAttribute>();
+                if (attribute != null)
+                {
+                    displayDevelopmentOnly = attribute.DisplayDevelopmentOnly;
+                }
+                
+                return new CommandInfo(cmd.CommandName, cmd.Description, cmd.ParameterSchema, displayDevelopmentOnly);
+            }).ToArray();
         }
 
         /// <summary>
@@ -210,11 +222,14 @@ namespace io.github.hatayama.uMCP
 
         [JsonProperty("parameterSchema")] public CommandParameterSchema ParameterSchema { get; }
 
-        public CommandInfo(string name, string description, CommandParameterSchema parameterSchema)
+        [JsonProperty("displayDevelopmentOnly")] public bool DisplayDevelopmentOnly { get; }
+
+        public CommandInfo(string name, string description, CommandParameterSchema parameterSchema, bool displayDevelopmentOnly = false)
         {
             Name = name;
             Description = description;
             ParameterSchema = parameterSchema;
+            DisplayDevelopmentOnly = displayDevelopmentOnly;
         }
     }
 }

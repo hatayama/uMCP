@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -12,6 +14,32 @@ using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
+    /// <summary>
+    /// Immutable connected client information
+    /// </summary>
+    public readonly struct ConnectedClient
+    {
+        public readonly string Endpoint;
+        public readonly string ClientName; 
+        public readonly DateTime ConnectedAt;
+        public readonly NetworkStream Stream;
+        public readonly int ProcessId;
+
+        public ConnectedClient(string endpoint, NetworkStream stream, int processId, string clientName = McpConstants.UNKNOWN_CLIENT_NAME)
+        {
+            Endpoint = endpoint;
+            Stream = stream;
+            ProcessId = processId;
+            ClientName = clientName;
+            ConnectedAt = DateTime.Now;
+        }
+        
+        public ConnectedClient WithClientName(string clientName)
+        {
+            return new ConnectedClient(Endpoint, Stream, ProcessId, clientName);
+        }
+    }
+
     /// <summary>
     /// Immutable JSON-RPC notification structure
     /// </summary>
@@ -44,7 +72,7 @@ namespace io.github.hatayama.uMCP
         private bool isRunning = false;
         
         // Client management for broadcasting notifications
-        private readonly ConcurrentDictionary<string, NetworkStream> connectedClients = new ConcurrentDictionary<string, NetworkStream>();
+        private readonly ConcurrentDictionary<string, ConnectedClient> connectedClients = new ConcurrentDictionary<string, ConnectedClient>();
         
         /// <summary>
         /// Whether the server is running.
@@ -70,6 +98,94 @@ namespace io.github.hatayama.uMCP
         /// Event on error.
         /// </summary>
         public event Action<string> OnError;
+
+        /// <summary>
+        /// Get list of connected clients
+        /// </summary>
+        public IReadOnlyCollection<ConnectedClient> GetConnectedClients()
+        {
+            return connectedClients.Values.ToArray();
+        }
+
+        /// <summary>
+        /// Update client name for a connected client
+        /// </summary>
+        public void UpdateClientName(string clientEndpoint, string clientName)
+        {
+            if (connectedClients.TryGetValue(clientEndpoint, out ConnectedClient existingClient))
+            {
+                ConnectedClient updatedClient = existingClient.WithClientName(clientName);
+                connectedClients.TryUpdate(clientEndpoint, updatedClient, existingClient);
+                McpLogger.LogInfo($"Updated client name for {clientEndpoint}: {clientName}");
+            }
+            else
+            {
+                McpLogger.LogWarning($"Client not found for endpoint: {clientEndpoint}");
+            }
+        }
+
+        /// <summary>
+        /// Get the process ID of the client connected to this socket
+        /// </summary>
+        private int GetClientProcessId(Socket clientSocket)
+        {
+            if (clientSocket?.RemoteEndPoint is not IPEndPoint remoteEndPoint)
+            {
+                return McpConstants.UNKNOWN_PROCESS_ID;
+            }
+            
+            int remotePort = remoteEndPoint.Port;
+            string endpoint = remoteEndPoint.ToString();
+            int currentUnityPid = Process.GetCurrentProcess().Id;
+            
+            // Use lsof command on macOS/Linux to find the process ID
+            // Search for connections to the server port (7400) and find the client process
+            int serverPort = tcpListener?.LocalEndpoint is IPEndPoint serverEndpoint ? serverEndpoint.Port : 7400;
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = McpConstants.LSOF_COMMAND,
+                Arguments = string.Format(McpConstants.LSOF_ARGS_TEMPLATE, serverPort),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            
+            using (Process process = Process.Start(startInfo))
+            {
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+                
+                
+                string[] lines = output.Split('\n');
+                foreach (string line in lines)
+                {
+                    
+                    if ((line.Contains($":{serverPort}") || line.Contains($":{remotePort}")) && !line.StartsWith(McpConstants.LSOF_HEADER_COMMAND))
+                    {
+                        string[] parts = line.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
+                        
+                        if (parts.Length >= McpConstants.LSOF_PID_ARRAY_MIN_LENGTH && int.TryParse(parts[McpConstants.LSOF_PID_COLUMN_INDEX], out int pid))
+                        {
+                            // Skip Unity's own PID and look for the client PID
+                            if (pid == currentUnityPid)
+                            {
+                                continue;
+                            }
+                            
+                            // Check if this line represents an ESTABLISHED connection from client to server
+                            // For client connections, look for lines that contain the remote port and are ESTABLISHED but not Unity's PID
+                            if (line.Contains("ESTABLISHED") && line.Contains($":{remotePort}->"))
+                            {
+                                return pid;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return McpConstants.UNKNOWN_PROCESS_ID; // Process ID not found
+        }
 
         /// <summary>
         /// Checks if the specified port is in use.
@@ -161,6 +277,9 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo("Stopping Unity MCP Server...");
             isRunning = false;
             
+            // Explicitly disconnect all connected clients before stopping the server
+            DisconnectAllClients();
+            
             // Request cancellation.
             cancellationTokenSource?.Cancel();
             
@@ -200,6 +319,48 @@ namespace io.github.hatayama.uMCP
             serverTask = null;
             
             McpLogger.LogInfo("Unity MCP Server stopped");
+        }
+
+        /// <summary>
+        /// Explicitly disconnect all connected clients
+        /// This ensures TypeScript clients receive proper close events
+        /// </summary>
+        private void DisconnectAllClients()
+        {
+            if (connectedClients.IsEmpty)
+            {
+                return;
+            }
+
+            McpLogger.LogInfo($"Disconnecting {connectedClients.Count} connected clients...");
+            
+            List<string> clientsToRemove = new List<string>();
+            
+            foreach (KeyValuePair<string, ConnectedClient> client in connectedClients)
+            {
+                try
+                {
+                    // Close the NetworkStream to send proper close event to TypeScript client
+                    if (client.Value.Stream != null && client.Value.Stream.CanWrite)
+                    {
+                        client.Value.Stream.Close();
+                    }
+                    clientsToRemove.Add(client.Key);
+                }
+                catch (Exception ex)
+                {
+                    McpLogger.LogWarning($"Error disconnecting client {client.Key}: {ex.Message}");
+                    clientsToRemove.Add(client.Key); // Remove even if disconnect failed
+                }
+            }
+            
+            // Remove all clients from the connected clients list
+            foreach (string clientKey in clientsToRemove)
+            {
+                connectedClients.TryRemove(clientKey, out _);
+            }
+            
+            McpLogger.LogInfo("All clients disconnected");
         }
 
         /// <summary>
@@ -284,8 +445,15 @@ namespace io.github.hatayama.uMCP
                 using (client)
                 using (NetworkStream stream = client.GetStream())
                 {
+                    // Get client process ID from remote endpoint
+                    int processId = GetClientProcessId(client.Client);
+                    
+                    
                     // Add client to connected clients for notification broadcasting
-                    connectedClients.TryAdd(clientEndpoint, stream);
+                    ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream, processId);
+                    bool addResult = connectedClients.TryAdd(clientEndpoint, connectedClient);
+                    
+                    McpLogger.LogInfo($"All connected clients: {string.Join(", ", connectedClients.Keys)}");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
                     string incompleteJson = string.Empty; // Buffer for incomplete JSON
                     
@@ -346,8 +514,19 @@ namespace io.github.hatayama.uMCP
             }
             finally
             {
+                
                 // Remove client from connected clients list
-                connectedClients.TryRemove(clientEndpoint, out _);
+                bool removeResult = connectedClients.TryRemove(clientEndpoint, out ConnectedClient removedClient);
+                
+                if (removeResult)
+                {
+                    McpLogger.LogInfo($"Successfully removed client {clientEndpoint}. Remaining clients: {string.Join(", ", connectedClients.Keys)}");
+                }
+                else
+                {
+                    McpLogger.LogWarning($"Failed to remove client {clientEndpoint}. Current clients: {string.Join(", ", connectedClients.Keys)}");
+                }
+                
                 
                 client.Close();
                 OnClientDisconnected?.Invoke(clientEndpoint);
@@ -405,13 +584,13 @@ namespace io.github.hatayama.uMCP
         {
             List<string> clientsToRemove = new List<string>();
             
-            foreach (KeyValuePair<string, NetworkStream> client in connectedClients)
+            foreach (KeyValuePair<string, ConnectedClient> client in connectedClients)
             {
                 try
                 {
-                    if (client.Value?.CanWrite == true)
+                    if (client.Value.Stream?.CanWrite == true)
                     {
-                        await client.Value.WriteAsync(notificationData, 0, notificationData.Length);
+                        await client.Value.Stream.WriteAsync(notificationData, 0, notificationData.Length);
                     }
                     else
                     {

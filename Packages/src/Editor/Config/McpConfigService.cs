@@ -65,7 +65,7 @@ namespace io.github.hatayama.uMCP
 
             // Create new settings.
             string serverPath = UnityMcpPathResolver.GetTypeScriptServerPath();
-            McpServerConfigData newConfig = McpServerConfigFactory.CreateUnityMcpConfig(port, serverPath);
+            McpServerConfigData newConfig = McpServerConfigFactory.CreateUnityMcpConfig(port, serverPath, _editorType);
 
             // Retain existing settings and add/update new settings.
             Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
@@ -178,6 +178,10 @@ namespace io.github.hatayama.uMCP
             updatedEnv.Remove(McpConstants.ENV_KEY_NODE_ENV);
             updatedEnv.Remove(McpConstants.ENV_KEY_MCP_DEBUG);
             
+            // Ensure MCP_CLIENT_NAME is set correctly for this editor type
+            string clientName = McpConstants.GetClientNameForEditor(_editorType);
+            updatedEnv[McpConstants.ENV_KEY_MCP_CLIENT_NAME] = clientName;
+            
             // Add NODE_ENV for development mode (simplified approach)
             if (developmentMode)
             {
@@ -227,6 +231,7 @@ namespace io.github.hatayama.uMCP
                 _ => editorType.ToString()
             };
         }
+
 
         /// <summary>
         /// Validates configuration parameters for fail-fast behavior

@@ -102,8 +102,16 @@ export class ToolRegistry {
         const commandName = (command as any).name || (command as any).Name;
         const commandDescription = (command as any).description || (command as any).Description;
         const parameterSchema = (command as any).parameterSchema || (command as any).ParameterSchema;
+        const displayDevelopmentOnly = (command as any).displayDevelopmentOnly || false;
         
         if (commandName && !standardCommands.includes(commandName.toLowerCase())) {
+          // Check if this tool should only be displayed in development mode
+          const isDevelopment = process.env.NODE_ENV === 'development';
+          
+          if (displayDevelopmentOnly && !isDevelopment) {
+            continue; // Skip this tool in production mode
+          }
+          
           const dynamicTool = new DynamicUnityCommandTool(context, commandName, commandDescription, parameterSchema);
           this.register(dynamicTool);
           

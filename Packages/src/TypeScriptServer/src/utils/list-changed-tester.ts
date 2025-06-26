@@ -1,5 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { mcpInfo, mcpWarn, mcpError, mcpDebug } from './log-to-file.js';
+import { infoToFile, warnToFile, errorToFile, debugToFile } from './log-to-file.js';
 
 /**
  * Development/Debug utility for testing MCP notification system
@@ -47,12 +47,12 @@ export class NotificationTester {
    */
   startPeriodicTest(intervalMs: number = 10000): void {
     if (this.isRunning) {
-      mcpWarn('Notification test is already running');
+      warnToFile('Notification test is already running');
       return;
     }
 
     this.isRunning = true;
-    mcpInfo(`Starting periodic notification test every ${intervalMs}ms`);
+    infoToFile(`Starting periodic notification test every ${intervalMs}ms`);
 
     this.testInterval = setInterval(() => {
       this.performNotificationTest();
@@ -71,7 +71,7 @@ export class NotificationTester {
       this.testInterval = null;
     }
     this.isRunning = false;
-    mcpInfo('Periodic notification test stopped');
+    infoToFile('Periodic notification test stopped');
   }
 
   /**
@@ -87,7 +87,7 @@ export class NotificationTester {
       timestamp: new Date().toISOString()
     };
 
-    mcpDebug('Periodic Test: Tool Count Change', testData);
+    debugToFile('Periodic Test: Tool Count Change', testData);
     
     try {
       // Send tools/list_changed notification
@@ -96,13 +96,13 @@ export class NotificationTester {
         params: {}
       });
       
-      mcpInfo('Sending notification: notifications/tools/list_changed', {
+      infoToFile('Sending notification: notifications/tools/list_changed', {
         simulatedToolCount: this.toolCount,
         success: true
       });
       
     } catch (error) {
-      mcpError('Failed to send notification', error);
+      errorToFile('Failed to send notification', error);
     }
   }
 

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -22,6 +23,7 @@ namespace io.github.hatayama.uMCP
         private int customPort = McpServerConfig.DEFAULT_PORT;
         private bool autoStartServer = false;
         private bool showLLMToolSettings = true;
+        private bool showConnectedTools = true;
 #if UMCP_DEBUG
         private bool showDeveloperTools = false;
         private bool enableCommunicationLogs = false;
@@ -42,6 +44,16 @@ namespace io.github.hatayama.uMCP
         
         // Scroll position for entire window
         private Vector2 mainScrollPosition;
+        
+        // UI update management
+        private bool needsRepaint = false;
+        private bool isPostCompileMode = false; // True after compilation, false when clients connect
+        
+        // Server state tracking for change detection
+        private bool lastServerRunning = false;
+        private int lastServerPort = 0;
+        private int lastConnectedClientsCount = 0;
+        private string lastClientsInfoHash = "";
         
         // Configuration services
         private readonly McpConfigRepository _repository = new(McpEditorType.Cursor);
@@ -92,6 +104,21 @@ namespace io.github.hatayama.uMCP
             // Subscribe to log update events
             McpCommunicationLogger.OnLogUpdated += Repaint;
             
+            // Subscribe to client disconnection events for immediate UI updates
+            SubscribeToServerEvents();
+            
+            // Subscribe to update events for UI refresh
+            EditorApplication.update += OnEditorUpdate;
+            
+            // Enable post-compile mode after domain reload - always on after OnEnable
+            isPostCompileMode = true;
+            needsRepaint = true;
+            
+            // Clear reconnecting UI flag on domain reload to ensure proper state
+            SessionState.SetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            
+            UnityEngine.Debug.Log("[McpEditorWindow] Post-compile mode enabled");
+            
             // Check if after compilation
             bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
             
@@ -122,12 +149,144 @@ namespace io.github.hatayama.uMCP
             // Unsubscribe from log update events
             McpCommunicationLogger.OnLogUpdated -= Repaint;
             
+            // Unsubscribe from server events
+            UnsubscribeFromServerEvents();
+            
+            // Unsubscribe from update events
+            EditorApplication.update -= OnEditorUpdate;
+            
             // Save editor selection state
             SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             
             // Leave server management completely to McpServerController
             // Server does not stop when window is closed (treated as global resource)
             // Window closing, server will keep running if active
+        }
+
+        /// <summary>
+        /// Subscribe to server events for immediate UI updates
+        /// </summary>
+        private void SubscribeToServerEvents()
+        {
+            // Unsubscribe first to avoid duplicate subscriptions
+            UnsubscribeFromServerEvents();
+            
+            McpBridgeServer currentServer = McpServerController.CurrentServer;
+            if (currentServer != null)
+            {
+                currentServer.OnClientConnected += OnClientConnectedHandler;
+                currentServer.OnClientDisconnected += OnClientDisconnectedHandler;
+            }
+        }
+
+        /// <summary>
+        /// Unsubscribe from server events
+        /// </summary>
+        private void UnsubscribeFromServerEvents()
+        {
+            McpBridgeServer currentServer = McpServerController.CurrentServer;
+            if (currentServer != null)
+            {
+                currentServer.OnClientConnected -= OnClientConnectedHandler;
+                currentServer.OnClientDisconnected -= OnClientDisconnectedHandler;
+            }
+        }
+
+        /// <summary>
+        /// Handle client connection event - force UI repaint for immediate update
+        /// </summary>
+        private void OnClientConnectedHandler(string clientEndpoint)
+        {
+            // Mark that repaint is needed since events are called from background thread
+            needsRepaint = true;
+            
+            // Exit post-compile mode when client connects
+            if (isPostCompileMode)
+            {
+                isPostCompileMode = false;
+            }
+        }
+
+        /// <summary>
+        /// Handle client disconnection event - force UI repaint for immediate update
+        /// </summary>
+        private void OnClientDisconnectedHandler(string clientEndpoint)
+        {
+            // Mark that repaint is needed since events are called from background thread
+            needsRepaint = true;
+        }
+
+        /// <summary>
+        /// Called from EditorApplication.update - handles UI refresh even when Unity is not focused
+        /// </summary>
+        private void OnEditorUpdate()
+        {
+            // Always check for server state changes
+            CheckServerStateChanges();
+            
+            // In post-compile mode, always repaint for immediate updates
+            if (isPostCompileMode)
+            {
+                Repaint();
+                return;
+            }
+            
+            // Normal mode: repaint only when needed
+            if (needsRepaint)
+            {
+                needsRepaint = false;
+                Repaint();
+            }
+        }
+        
+        /// <summary>
+        /// Check if server state has changed and mark repaint if needed
+        /// </summary>
+        private void CheckServerStateChanges()
+        {
+            (bool isRunning, int port, bool wasRestored) = McpServerController.GetServerStatus();
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            int connectedCount = connectedClients?.Count ?? 0;
+            
+            // Generate hash of client information to detect changes in client names
+            string clientsInfoHash = GenerateClientsInfoHash(connectedClients);
+            
+            // Check if any server state has changed
+            if (isRunning != lastServerRunning || 
+                port != lastServerPort || 
+                connectedCount != lastConnectedClientsCount ||
+                clientsInfoHash != lastClientsInfoHash)
+            {
+                lastServerRunning = isRunning;
+                lastServerPort = port;
+                lastConnectedClientsCount = connectedCount;
+                lastClientsInfoHash = clientsInfoHash;
+                needsRepaint = true;
+            }
+        }
+        
+        /// <summary>
+        /// Generate hash string from client information to detect changes
+        /// </summary>
+        private string GenerateClientsInfoHash(System.Collections.Generic.IReadOnlyCollection<ConnectedClient> clients)
+        {
+            if (clients == null || clients.Count == 0)
+            {
+                return "empty";
+            }
+            
+            // Create a hash based on endpoint, client name, and process ID for unique identification
+            var info = clients.Select(c => $"{c.Endpoint}:{c.ClientName}:{c.ProcessId}").OrderBy(s => s);
+            return string.Join("|", info);
+        }
+
+        /// <summary>
+        /// Called when the window gets focus - update UI to reflect current state
+        /// </summary>
+        private void OnFocus()
+        {
+            // Refresh UI when window gains focus to reflect any state changes
+            Repaint();
         }
 
         private void OnGUI()
@@ -140,6 +299,7 @@ namespace io.github.hatayama.uMCP
             
             DrawServerStatus();
             DrawServerControls();
+            DrawConnectedToolsSection();
             DrawEditorConfigSection();
 #if UMCP_DEBUG
             DrawDeveloperTools();
@@ -190,12 +350,6 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.LabelField($"{status}", statusStyle, GUILayout.Width(McpUIConstants.LABEL_WIDTH_STATUS));
             EditorGUILayout.LabelField($"Port: {port}");
             EditorGUILayout.EndHorizontal();
-            
-            if (isRunning)
-            {
-                EditorGUILayout.LabelField("Listening for TypeScript MCP Server connections...");
-            }
-            
             EditorGUILayout.EndVertical();
         }
 
@@ -309,6 +463,13 @@ namespace io.github.hatayama.uMCP
             try
             {
                 McpServerController.StartServer(customPort);
+                
+                // Subscribe to new server events after successful start
+                SubscribeToServerEvents();
+                
+                // Force UI update after server start
+                Repaint();
+                
                 return true;
             }
             catch (InvalidOperationException ex)
@@ -359,6 +520,134 @@ namespace io.github.hatayama.uMCP
                     "OK");
                 McpLogger.LogError($"Failed to notify command changes: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Draw connected LLM tools section
+        /// </summary>
+        /// <summary>
+        /// Connection display states for UI logic separation
+        /// </summary>
+        private enum ConnectionDisplayState
+        {
+            ServerNotRunning,
+            Reconnecting,
+            HasConnectedClients,
+            NoConnectedClients
+        }
+        
+        private void DrawConnectedToolsSection()
+        {
+            EditorGUILayout.BeginVertical("box");
+            
+            showConnectedTools = EditorGUILayout.Foldout(showConnectedTools, McpUIConstants.CONNECTED_TOOLS_FOLDOUT_TEXT, true);
+            
+            if (showConnectedTools)
+            {
+                EditorGUILayout.Space();
+                DrawConnectionStatus();
+            }
+            
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space();
+        }
+        
+        private void DrawConnectionStatus()
+        {
+            ConnectionDisplayState state = GetConnectionDisplayState();
+            DrawConnectionStatusUI(state);
+        }
+        
+        private ConnectionDisplayState GetConnectionDisplayState()
+        {
+            // Check if explicitly showing reconnecting UI
+            bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            
+            if (showReconnectingUI)
+            {
+                return ConnectionDisplayState.Reconnecting;
+            }
+            
+            // Check server status
+            if (!McpServerController.IsServerRunning)
+            {
+                return ConnectionDisplayState.ServerNotRunning;
+            }
+            
+            // Check connected clients
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            if (connectedClients != null && connectedClients.Count > 0)
+            {
+                // Clear reconnecting flag when clients are actually connected
+                McpServerController.ClearReconnectingFlag();
+                return ConnectionDisplayState.HasConnectedClients;
+            }
+            
+            return ConnectionDisplayState.NoConnectedClients;
+        }
+        
+        private void DrawConnectionStatusUI(ConnectionDisplayState state)
+        {
+            switch (state)
+            {
+                case ConnectionDisplayState.ServerNotRunning:
+                    EditorGUILayout.HelpBox("Server is not running. Start the server to see connected tools.", MessageType.Warning);
+                    break;
+                    
+                case ConnectionDisplayState.Reconnecting:
+                    EditorGUILayout.HelpBox(McpUIConstants.RECONNECTING_MESSAGE, MessageType.Info);
+                    break;
+                    
+                case ConnectionDisplayState.HasConnectedClients:
+                    DrawConnectedClientsList();
+                    break;
+                    
+                case ConnectionDisplayState.NoConnectedClients:
+                    EditorGUILayout.HelpBox("No LLM tools currently connected.", MessageType.Info);
+                    break;
+            }
+        }
+        
+        private void DrawConnectedClientsList()
+        {
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            if (connectedClients == null) return;
+            
+            foreach (ConnectedClient client in connectedClients)
+            {
+                DrawConnectedClientItem(client);
+            }
+        }
+
+        /// <summary>
+        /// Draw individual connected client item with improved UI/UX
+        /// </summary>
+        private void DrawConnectedClientItem(ConnectedClient client)
+        {
+            // Box grouping for visual separation
+            EditorGUILayout.BeginVertical("box");
+            
+            // Single line with client name and endpoint/PID information
+            EditorGUILayout.BeginHorizontal();
+            
+            // Client icon and name
+            EditorGUILayout.LabelField(McpUIConstants.CLIENT_ICON + client.ClientName, new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
+            
+            // Flexible space
+            GUILayout.FlexibleSpace();
+            
+            // Endpoint with PID information
+            GUIStyle endpointStyle = new GUIStyle(EditorStyles.miniLabel);
+            endpointStyle.normal.textColor = Color.gray;
+            string pidInfo = client.ProcessId > McpConstants.UNKNOWN_PROCESS_ID ? $" (PID: {client.ProcessId})" : "";
+            EditorGUILayout.LabelField(McpUIConstants.ENDPOINT_ARROW + client.Endpoint + pidInfo, endpointStyle);
+            
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.EndVertical();
+            
+            // Add small space between client items
+            EditorGUILayout.Space(McpUIConstants.CLIENT_ITEM_SPACING);
         }
 
         /// <summary>
@@ -442,7 +731,7 @@ namespace io.github.hatayama.uMCP
             catch (System.Exception ex)
             {
                 EditorGUILayout.HelpBox($"Error loading {editorName} configuration: {ex.Message}", MessageType.Error);
-                throw;
+                return; // Don't throw, just return to avoid GUI layout issues
             }
             
             if (isConfigured)

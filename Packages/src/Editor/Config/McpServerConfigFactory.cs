@@ -13,12 +13,14 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="port">The port number to use.</param>
         /// <param name="serverPath">The path to the TypeScript server.</param>
+        /// <param name="editorType">The editor type for client name.</param>
         /// <returns>Settings data for Unity MCP.</returns>
-        public static McpServerConfigData CreateUnityMcpConfig(int port, string serverPath)
+        public static McpServerConfigData CreateUnityMcpConfig(int port, string serverPath, McpEditorType editorType)
         {
             Dictionary<string, string> env = new Dictionary<string, string>
             {
-                { McpConstants.UNITY_TCP_PORT_ENV_KEY, port.ToString() }
+                { McpConstants.UNITY_TCP_PORT_ENV_KEY, port.ToString() },
+                { McpConstants.ENV_KEY_MCP_CLIENT_NAME, McpConstants.GetClientNameForEditor(editorType) }
             };
 
             return new McpServerConfigData(
@@ -26,6 +28,17 @@ namespace io.github.hatayama.uMCP
                 args: new[] { serverPath },
                 env: env
             );
+        }
+
+        /// <summary>
+        /// Creates Unity MCP server configuration (legacy overload for backward compatibility).
+        /// </summary>
+        /// <param name="port">The port number to use.</param>
+        /// <param name="serverPath">The path to the TypeScript server.</param>
+        /// <returns>Settings data for Unity MCP.</returns>
+        public static McpServerConfigData CreateUnityMcpConfig(int port, string serverPath)
+        {
+            return CreateUnityMcpConfig(port, serverPath, McpEditorType.ClaudeCode);
         }
 
         /// <summary>
@@ -65,5 +78,6 @@ namespace io.github.hatayama.uMCP
         {
             return $"{McpConstants.PROJECT_NAME}-{port}";
         }
+
     }
 } 
