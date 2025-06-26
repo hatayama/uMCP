@@ -270,9 +270,6 @@ export class UnityClient {
    * Execute any Unity command dynamically
    */
   async executeCommand(commandName: string, params: Record<string, unknown> = {}): Promise<unknown> {
-    await this.ensureConnected();
-    
-    
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
@@ -383,8 +380,9 @@ export class UnityClient {
    * Start polling for connection recovery
    */
   private startPolling(): void {
-    if (this.pollingInterval) return; // Already polling
-    
+    if (this.pollingInterval) {
+      return; // Already polling
+    }
     
     this.pollingInterval = setInterval(async () => {
       try {
@@ -396,6 +394,7 @@ export class UnityClient {
           this.onReconnectedCallback();
         }
       } catch (error) {
+        // Silent polling - don't spam logs for expected connection failures
       }
     }, POLLING.INTERVAL_MS);
   }

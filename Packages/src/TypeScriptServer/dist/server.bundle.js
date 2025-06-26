@@ -5772,7 +5772,6 @@ var UnityClient = class {
    * Execute any Unity command dynamically
    */
   async executeCommand(commandName, params = {}) {
-    await this.ensureConnected();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
@@ -5859,7 +5858,9 @@ var UnityClient = class {
    * Start polling for connection recovery
    */
   startPolling() {
-    if (this.pollingInterval) return;
+    if (this.pollingInterval) {
+      return;
+    }
     this.pollingInterval = setInterval(async () => {
       try {
         await this.connect();
@@ -6095,6 +6096,7 @@ var SimpleMcpServer = class {
   isDevelopment;
   dynamicTools = /* @__PURE__ */ new Map();
   isShuttingDown = false;
+  isRefreshing = false;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     mcpInfo("Simple Unity MCP Server Starting");
@@ -6115,7 +6117,7 @@ var SimpleMcpServer = class {
     );
     this.unityClient = new UnityClient();
     this.unityClient.setReconnectedCallback(() => {
-      this.refreshDynamicTools();
+      this.refreshDynamicToolsSafe();
     });
     this.setupHandlers();
     this.setupSignalHandlers();
@@ -6162,6 +6164,29 @@ var SimpleMcpServer = class {
   async refreshDynamicTools() {
     await this.initializeDynamicTools();
     this.sendToolsChangedNotification();
+  }
+  /**
+   * Safe version of refreshDynamicTools that prevents duplicate execution
+   */
+  async refreshDynamicToolsSafe() {
+    if (this.isRefreshing) {
+      if (this.isDevelopment) {
+        mcpDebug("[TRACE] refreshDynamicToolsSafe skipped: already in progress");
+      }
+      return;
+    }
+    this.isRefreshing = true;
+    try {
+      if (this.isDevelopment) {
+        const stack = new Error().stack;
+        const callerLine = stack?.split("\n")[2]?.trim() || "Unknown caller";
+        const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
+        mcpDebug(`[TRACE] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`);
+      }
+      await this.refreshDynamicTools();
+    } finally {
+      this.isRefreshing = false;
+    }
   }
   setupHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -6258,7 +6283,6 @@ var SimpleMcpServer = class {
   async handleUnityPing(args) {
     const message = args?.message || DEFAULT_MESSAGES.UNITY_PING;
     try {
-      await this.unityClient.ensureConnected();
       const response = await this.unityClient.ping(message);
       const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
       let responseText = "";
@@ -6323,8 +6347,11 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
       await this.unityClient.ensureConnected();
       const commandsResponse = await this.unityClient.executeCommand("getAvailableCommands", {});
       const commands = commandsResponse?.Commands || commandsResponse;
-      const detailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
-      const details = detailsResponse?.Commands || detailsResponse;
+      const dynamicToolsInfo = Array.from(this.dynamicTools.entries()).map(([name, tool]) => ({
+        name,
+        description: tool.description,
+        inputSchema: tool.inputSchema
+      }));
       return {
         content: [
           {
@@ -6332,8 +6359,8 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
             text: `Available Unity Commands:
 ${JSON.stringify(commands, null, 2)}
 
-Command Details with Schemas:
-${JSON.stringify(details, null, 2)}`
+Cached Dynamic Tools:
+${JSON.stringify(dynamicToolsInfo, null, 2)}`
           }
         ]
       };
@@ -6363,16 +6390,14 @@ ${JSON.stringify(details, null, 2)}`
    * Setup Unity event listener for automatic tool updates
    */
   setupUnityEventListener() {
-    this.unityClient.onNotification("commandsChanged", async (params) => {
-      try {
-        await this.refreshDynamicTools();
-      } catch (error) {
-        mcpError("[Simple MCP] Failed to update dynamic tools via Unity event:", error);
-      }
-    });
     this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
+      if (this.isDevelopment) {
+        const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
+        mcpDebug(`[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`);
+        mcpDebug(`[TRACE] Notification params: ${JSON.stringify(params)}`);
+      }
       try {
-        await this.refreshDynamicTools();
+        await this.refreshDynamicToolsSafe();
       } catch (error) {
         mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
       }
@@ -6396,30 +6421,55 @@ ${JSON.stringify(details, null, 2)}`
    */
   setupSignalHandlers() {
     process.on("SIGINT", () => {
+      mcpInfo("[Simple MCP] Received SIGINT, shutting down...");
       this.gracefulShutdown();
     });
     process.on("SIGTERM", () => {
+      mcpInfo("[Simple MCP] Received SIGTERM, shutting down...");
       this.gracefulShutdown();
     });
     process.on("SIGHUP", () => {
+      mcpInfo("[Simple MCP] Received SIGHUP, shutting down...");
+      this.gracefulShutdown();
+    });
+    process.stdin.on("close", () => {
+      mcpInfo("[Simple MCP] STDIN closed, shutting down...");
+      this.gracefulShutdown();
+    });
+    process.stdin.on("end", () => {
+      mcpInfo("[Simple MCP] STDIN ended, shutting down...");
+      this.gracefulShutdown();
+    });
+    process.on("uncaughtException", (error) => {
+      mcpError("[Simple MCP] Uncaught exception:", error);
+      this.gracefulShutdown();
+    });
+    process.on("unhandledRejection", (reason, promise) => {
+      mcpError("[Simple MCP] Unhandled rejection at:", promise, "reason:", reason);
       this.gracefulShutdown();
     });
   }
   /**
    * Graceful shutdown with proper cleanup
+   * BUG FIX: Enhanced shutdown process to prevent orphaned Node processes
    */
   gracefulShutdown() {
     if (this.isShuttingDown) {
       return;
     }
     this.isShuttingDown = true;
+    mcpInfo("[Simple MCP] Starting graceful shutdown...");
     try {
       if (this.unityClient) {
         this.unityClient.disconnect();
       }
+      if (global.gc) {
+        global.gc();
+      }
     } catch (error) {
       mcpError("[Simple MCP] Error during cleanup:", error);
     }
+    mcpInfo("[Simple MCP] Graceful shutdown completed");
     process.exit(0);
   }
 };

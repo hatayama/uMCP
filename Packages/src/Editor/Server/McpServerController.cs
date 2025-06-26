@@ -171,9 +171,6 @@ namespace io.github.hatayama.uMCP
                 if (isAfterCompile)
                 {
                     SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
-                    
-                    // Send notification for post-compilation changes
-                    _ = SendCommandNotificationForPostCompile();
                 }
                 return;
             }
@@ -236,9 +233,7 @@ namespace io.github.hatayama.uMCP
                 
                 McpLogger.LogInfo($"Unity MCP Server restored on port {port}");
                 
-                // Send commands changed notification after server restoration
-                // This ensures TypeScript clients can receive the notification
-                _ = SendNotificationAfterRestore();
+                // Commands changed notification will be sent by OnAfterAssemblyReload
             }
             catch (System.Exception ex)
             {
@@ -310,19 +305,25 @@ namespace io.github.hatayama.uMCP
         {
             try
             {
+                // Log with stack trace to identify caller
+                System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace(true);
+                string callerInfo = stackTrace.GetFrame(1)?.GetMethod()?.Name ?? "Unknown";
+                McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification called from: {callerInfo}");
+                McpLogger.LogDebug($"[TRACE] Full stack trace:\n{stackTrace.ToString()}");
+                
                 if (mcpServer == null)
                 {
+                    McpLogger.LogDebug("[TRACE] SendCommandsChangedNotification skipped: mcpServer is null");
                     return;
                 }
                 
-                // Send both notification formats to ensure compatibility
+                // Send MCP standard notification only
                 var notificationParams = new
                 {
                     timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                     message = "Unity commands have been updated"
                 };
                 
-                // Send MCP standard notification first
                 var mcpNotification = new
                 {
                     jsonrpc = McpServerConfig.JSONRPC_VERSION,
@@ -333,23 +334,11 @@ namespace io.github.hatayama.uMCP
                 string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
                 _ = mcpServer.SendNotificationToClients(mcpNotificationJson);
                 
-                // Add small delay to prevent connection reset issues
-                await EditorDelay.DelayFrame(1);
-                
-                // Send custom commandsChanged notification
-                var customNotification = new
-                {
-                    jsonrpc = McpServerConfig.JSONRPC_VERSION,
-                    method = "commandsChanged",
-                    @params = notificationParams
-                };
-                
-                string customNotificationJson = JsonConvert.SerializeObject(customNotification);
-                _ = mcpServer.SendNotificationToClients(customNotificationJson);
+                McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification sent successfully at {System.DateTime.Now:HH:mm:ss.fff}");
             }
             catch (System.Exception ex)
             {
-                McpLogger.LogError($"Failed to send commands changed notification: {ex.Message}");
+                McpLogger.LogError($"[TRACE] Failed to send commands changed notification: {ex.Message}");
             }
         }
 
@@ -359,9 +348,15 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void TriggerCommandChangeNotification()
         {
+            McpLogger.LogDebug($"[TRACE] TriggerCommandChangeNotification called at {System.DateTime.Now:HH:mm:ss.fff}");
+            
             if (IsServerRunning)
             {
                 _ = SendCommandsChangedNotification();
+            }
+            else
+            {
+                McpLogger.LogDebug("[TRACE] TriggerCommandChangeNotification skipped: Server not running");
             }
         }
         
@@ -370,23 +365,16 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static async Task SendCommandNotificationAfterCompilation()
         {
+            McpLogger.LogDebug($"[TRACE] SendCommandNotificationAfterCompilation started at {System.DateTime.Now:HH:mm:ss.fff}");
+            
             // Use frame delay for timing adjustment after domain reload
             // This ensures Unity Editor is in a stable state before sending notifications
             await EditorDelay.DelayFrame(1);
             
+            McpLogger.LogDebug("[TRACE] SendCommandNotificationAfterCompilation: About to call TriggerCommandsChangedNotification (AFTER_COMPILATION)");
             UnityCommandRegistry.TriggerCommandsChangedNotification();
         }
         
-        /// <summary>
-        /// Send command notification for post-compilation changes
-        /// </summary>
-        private static async Task SendCommandNotificationForPostCompile()
-        {
-            // Frame delay for timing adjustment, ensuring stable state after compilation
-            await EditorDelay.DelayFrame(1);
-            
-            UnityCommandRegistry.TriggerCommandsChangedNotification();
-        }
         
         /// <summary>
         /// Restore server after compilation with frame delay
@@ -410,16 +398,6 @@ namespace io.github.hatayama.uMCP
             TryRestoreServerWithRetry(port, 0);
         }
         
-        /// <summary>
-        /// Send notification after server restore with frame delay
-        /// </summary>
-        private static async Task SendNotificationAfterRestore()
-        {
-            // Frame delay for timing adjustment, ensuring server is fully ready
-            await EditorDelay.DelayFrame(1);
-            
-            _ = SendCommandsChangedNotification();
-        }
         
         /// <summary>
         /// Retry server restore with frame delay

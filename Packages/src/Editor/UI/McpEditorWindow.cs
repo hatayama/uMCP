@@ -21,6 +21,8 @@ namespace io.github.hatayama.uMCP
         // UI state
         private int customPort = McpServerConfig.DEFAULT_PORT;
         private bool autoStartServer = false;
+        private bool showLLMToolSettings = true;
+#if UMCP_DEBUG
         private bool showDeveloperTools = false;
         private bool enableCommunicationLogs = false;
         private bool showCommunicationLogs = false;
@@ -29,6 +31,7 @@ namespace io.github.hatayama.uMCP
         private Vector2 communicationLogScrollPosition;
         private float communicationLogHeight = McpUIConstants.DEFAULT_COMMUNICATION_LOG_HEIGHT; // Height of resizable communication log area
         private bool isResizingCommunicationLog = false; // Whether currently resizing
+#endif
         
         // UI state for editor selection
         private McpEditorType selectedEditorType = McpEditorType.Cursor;
@@ -65,19 +68,23 @@ namespace io.github.hatayama.uMCP
             McpEditorSettingsData settings = McpEditorSettings.GetSettings();
             customPort = settings.customPort;
             autoStartServer = settings.autoStartServer;
+#if UMCP_DEBUG
             showDeveloperTools = settings.showDeveloperTools;
             enableMcpLogs = settings.enableMcpLogs;
             enableCommunicationLogs = settings.enableCommunicationLogs;
             enableDevelopmentMode = settings.enableDevelopmentMode;
+#endif
             
             // Restore editor selection state
             selectedEditorType = (McpEditorType)SessionState.GetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
             
+#if UMCP_DEBUG
             // Synchronize McpLogger settings
             McpLogger.EnableDebugLog = enableMcpLogs;
             
             // Restore communication log area height (from SessionState)
             communicationLogHeight = SessionState.GetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, McpUIConstants.DEFAULT_COMMUNICATION_LOG_HEIGHT);
+#endif
             
             // Subscribe to log update events
             McpCommunicationLogger.OnLogUpdated += Repaint;
@@ -131,7 +138,9 @@ namespace io.github.hatayama.uMCP
             DrawServerStatus();
             DrawServerControls();
             DrawEditorConfigSection();
+#if UMCP_DEBUG
             DrawDeveloperTools();
+#endif
             
             EditorGUILayout.EndScrollView();
         }
@@ -333,6 +342,7 @@ namespace io.github.hatayama.uMCP
         {
             try
             {
+                McpLogger.LogDebug("[TRACE] McpEditorWindow.NotifyCommandChanges: About to call TriggerCommandsChangedNotification (MANUAL_BUTTON)");
                 UnityCommandRegistry.TriggerCommandsChangedNotification();
                 EditorUtility.DisplayDialog("Command Notification", 
                     "Command changes have been notified to Cursor successfully!", 
@@ -353,25 +363,37 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void DrawEditorConfigSection()
         {
-            EditorGUILayout.LabelField("LLM Tool Settings", EditorStyles.boldLabel);
+            EditorGUILayout.BeginVertical("box");
             
-            // Editor selection dropdown
-            EditorGUI.BeginChangeCheck();
-            selectedEditorType = (McpEditorType)EditorGUILayout.EnumPopup("Target:", selectedEditorType);
-            if (EditorGUI.EndChangeCheck())
+            // Foldout header
+            showLLMToolSettings = EditorGUILayout.Foldout(showLLMToolSettings, "LLM Tool Settings", true);
+            
+            // Show content only when expanded
+            if (showLLMToolSettings)
             {
-                // Save to session when selection changes
-                SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+                EditorGUILayout.Space();
+                
+                // Editor selection dropdown
+                EditorGUI.BeginChangeCheck();
+                selectedEditorType = (McpEditorType)EditorGUILayout.EnumPopup("Target:", selectedEditorType);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    // Save to session when selection changes
+                    SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+                }
+                
+                bool isServerRunning = McpServerController.IsServerRunning;
+                int currentServerPort = McpServerController.ServerPort;
+                
+                // Display only the selected editor's configuration
+                McpConfigService configService = GetConfigService(selectedEditorType);
+                string editorName = GetEditorDisplayName(selectedEditorType);
+                
+                DrawConfigurationSection(editorName, configService, isServerRunning, currentServerPort);
             }
             
-            bool isServerRunning = McpServerController.IsServerRunning;
-            int currentServerPort = McpServerController.ServerPort;
-            
-            // Display only the selected editor's configuration
-            McpConfigService configService = GetConfigService(selectedEditorType);
-            string editorName = GetEditorDisplayName(selectedEditorType);
-            
-            DrawConfigurationSection(editorName, configService, isServerRunning, currentServerPort);
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space();
         }
 
         /// <summary>
@@ -405,7 +427,6 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void DrawConfigurationSection(string editorName, McpConfigService configService, bool isServerRunning, int currentServerPort)
         {
-            EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField($"{editorName} Settings", EditorStyles.boldLabel);
             
             bool isConfigured = false;
@@ -455,14 +476,16 @@ namespace io.github.hatayama.uMCP
             {
                 int portToUse = isServerRunning ? currentServerPort : customPort;
                 configService.AutoConfigure(portToUse);
+#if UMCP_DEBUG
                 // Also update development settings to reflect current UI state
                 configService.UpdateDevelopmentSettings(portToUse, enableDevelopmentMode, enableMcpLogs);
+#endif
                 Repaint();
             }
-            
-            EditorGUILayout.EndVertical();
         }
 
+        
+#if UMCP_DEBUG
         /// <summary>
         /// Draw developer tools section
         /// </summary>
@@ -911,5 +934,6 @@ namespace io.github.hatayama.uMCP
                 McpLogger.LogError($"Failed to update {editorDisplayName} development settings: {ex.Message}");
             }
         }
+#endif
     }
 } 

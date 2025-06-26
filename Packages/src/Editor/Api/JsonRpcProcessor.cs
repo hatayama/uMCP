@@ -66,9 +66,12 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static async Task<string> ProcessRpcRequest(JsonRpcRequest request, string originalJson)
         {
+            await MainThreadSwitcher.SwitchToMainThread();
             await McpCommunicationLogger.LogRequest(originalJson);
             BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
             string response = CreateSuccessResponse(request.Id, result);
+            
+            McpLogger.LogDebug($"Method: [{request.Method}], executed in {result.ExecutionTimeMs}ms");
             _ = McpCommunicationLogger.RecordLogResponse(response);
             return response;
         }

@@ -20,8 +20,12 @@ export class GetAvailableCommandsTool extends BaseTool {
 
   async execute(args: unknown) {
     try {
-      const commands = await this.context.unityClient.getAvailableCommands();
+      // Only get command details (which includes names)
+      // BUG FIX: Removed duplicate API call to getAvailableCommands
+      // Previously called both getAvailableCommands() and getCommandDetails(), 
+      // causing redundant Unity API calls when multiple MCP servers were connected
       const commandDetails = await this.context.unityClient.getCommandDetails();
+      const commands = commandDetails.map((cmd: any) => cmd.Name || cmd.name).filter(Boolean);
       
       let responseText = `Available Unity Commands (${commands.length}):\n\n`;
       
