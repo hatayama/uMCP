@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/hatayama/uMCP/compare/v0.8.1...v0.9.0) (2025-06-26)
+
+
+### Features
+
+* vscode support ([#71](https://github.com/hatayama/uMCP/issues/71)) ([5f8b6c5](https://github.com/hatayama/uMCP/commit/5f8b6c5d7f5d9a0f742bd6eddccf275316e3912c))
+
 ## [0.8.1](https://github.com/hatayama/uMCP/compare/v0.8.0...v0.8.1) (2025-06-26)
 
 
