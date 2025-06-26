@@ -93,6 +93,9 @@ namespace io.github.hatayama.uMCP
             // Subscribe to log update events
             McpCommunicationLogger.OnLogUpdated += Repaint;
             
+            // Subscribe to client disconnection events for immediate UI updates
+            SubscribeToServerEvents();
+            
             // Check if after compilation
             bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
             
@@ -123,12 +126,51 @@ namespace io.github.hatayama.uMCP
             // Unsubscribe from log update events
             McpCommunicationLogger.OnLogUpdated -= Repaint;
             
+            // Unsubscribe from server events
+            UnsubscribeFromServerEvents();
+            
             // Save editor selection state
             SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             
             // Leave server management completely to McpServerController
             // Server does not stop when window is closed (treated as global resource)
             // Window closing, server will keep running if active
+        }
+
+        /// <summary>
+        /// Subscribe to server events for immediate UI updates
+        /// </summary>
+        private void SubscribeToServerEvents()
+        {
+            // Unsubscribe first to avoid duplicate subscriptions
+            UnsubscribeFromServerEvents();
+            
+            McpBridgeServer currentServer = McpServerController.CurrentServer;
+            if (currentServer != null)
+            {
+                currentServer.OnClientDisconnected += OnClientDisconnectedHandler;
+            }
+        }
+
+        /// <summary>
+        /// Unsubscribe from server events
+        /// </summary>
+        private void UnsubscribeFromServerEvents()
+        {
+            McpBridgeServer currentServer = McpServerController.CurrentServer;
+            if (currentServer != null)
+            {
+                currentServer.OnClientDisconnected -= OnClientDisconnectedHandler;
+            }
+        }
+
+        /// <summary>
+        /// Handle client disconnection event - force UI repaint for immediate update
+        /// </summary>
+        private void OnClientDisconnectedHandler(string clientEndpoint)
+        {
+            // Force immediate UI update even when Unity Editor is in background
+            Repaint();
         }
 
         private void OnGUI()
@@ -192,12 +234,6 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.LabelField($"{status}", statusStyle, GUILayout.Width(McpUIConstants.LABEL_WIDTH_STATUS));
             EditorGUILayout.LabelField($"Port: {port}");
             EditorGUILayout.EndHorizontal();
-            
-            if (isRunning)
-            {
-                EditorGUILayout.LabelField("Listening for TypeScript MCP Server connections...");
-            }
-            
             EditorGUILayout.EndVertical();
         }
 
@@ -311,6 +347,10 @@ namespace io.github.hatayama.uMCP
             try
             {
                 McpServerController.StartServer(customPort);
+                
+                // Subscribe to new server events after successful start
+                SubscribeToServerEvents();
+                
                 return true;
             }
             catch (InvalidOperationException ex)

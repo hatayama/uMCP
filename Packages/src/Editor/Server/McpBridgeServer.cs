@@ -118,6 +118,10 @@ namespace io.github.hatayama.uMCP
                 connectedClients.TryUpdate(clientEndpoint, updatedClient, existingClient);
                 McpLogger.LogInfo($"Updated client name for {clientEndpoint}: {clientName}");
             }
+            else
+            {
+                McpLogger.LogWarning($"Client not found for endpoint: {clientEndpoint}");
+            }
         }
 
         /// <summary>
@@ -131,31 +135,50 @@ namespace io.github.hatayama.uMCP
             }
             
             int remotePort = remoteEndPoint.Port;
+            string endpoint = remoteEndPoint.ToString();
+            int currentUnityPid = Process.GetCurrentProcess().Id;
             
             // Use lsof command on macOS/Linux to find the process ID
+            // Search for connections to the server port (7400) and find the client process
+            int serverPort = tcpListener?.LocalEndpoint is IPEndPoint serverEndpoint ? serverEndpoint.Port : 7400;
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = McpConstants.LSOF_COMMAND,
-                Arguments = string.Format(McpConstants.LSOF_ARGS_TEMPLATE, remotePort),
+                Arguments = string.Format(McpConstants.LSOF_ARGS_TEMPLATE, serverPort),
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
             };
+            
             
             using (Process process = Process.Start(startInfo))
             {
                 string output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
                 
+                
                 string[] lines = output.Split('\n');
                 foreach (string line in lines)
                 {
-                    if (line.Contains($":{remotePort}") && !line.StartsWith(McpConstants.LSOF_HEADER_COMMAND))
+                    
+                    if ((line.Contains($":{serverPort}") || line.Contains($":{remotePort}")) && !line.StartsWith(McpConstants.LSOF_HEADER_COMMAND))
                     {
                         string[] parts = line.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
+                        
                         if (parts.Length >= McpConstants.LSOF_PID_ARRAY_MIN_LENGTH && int.TryParse(parts[McpConstants.LSOF_PID_COLUMN_INDEX], out int pid))
                         {
-                            return pid;
+                            // Skip Unity's own PID and look for the client PID
+                            if (pid == currentUnityPid)
+                            {
+                                continue;
+                            }
+                            
+                            // Check if this line represents an ESTABLISHED connection from client to server
+                            // For client connections, look for lines that contain the remote port and are ESTABLISHED but not Unity's PID
+                            if (line.Contains("ESTABLISHED") && line.Contains($":{remotePort}->"))
+                            {
+                                return pid;
+                            }
                         }
                     }
                 }
@@ -323,7 +346,6 @@ namespace io.github.hatayama.uMCP
                         client.Value.Stream.Close();
                     }
                     clientsToRemove.Add(client.Key);
-                    McpLogger.LogDebug($"Disconnected client: {client.Key}");
                 }
                 catch (Exception ex)
                 {
@@ -426,9 +448,12 @@ namespace io.github.hatayama.uMCP
                     // Get client process ID from remote endpoint
                     int processId = GetClientProcessId(client.Client);
                     
+                    
                     // Add client to connected clients for notification broadcasting
                     ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream, processId);
-                    connectedClients.TryAdd(clientEndpoint, connectedClient);
+                    bool addResult = connectedClients.TryAdd(clientEndpoint, connectedClient);
+                    
+                    McpLogger.LogInfo($"All connected clients: {string.Join(", ", connectedClients.Keys)}");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
                     string incompleteJson = string.Empty; // Buffer for incomplete JSON
                     
@@ -489,8 +514,12 @@ namespace io.github.hatayama.uMCP
             }
             finally
             {
+                
                 // Remove client from connected clients list
-                connectedClients.TryRemove(clientEndpoint, out _);
+                bool removeResult = connectedClients.TryRemove(clientEndpoint, out ConnectedClient removedClient);
+                
+                McpLogger.LogInfo($"Clients after removal: {string.Join(", ", connectedClients.Keys)}");
+                
                 
                 client.Close();
                 OnClientDisconnected?.Invoke(clientEndpoint);
