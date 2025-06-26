@@ -22,6 +22,7 @@ namespace io.github.hatayama.uMCP
         private int customPort = McpServerConfig.DEFAULT_PORT;
         private bool autoStartServer = false;
         private bool showLLMToolSettings = true;
+        private bool showConnectedTools = true;
 #if UMCP_DEBUG
         private bool showDeveloperTools = false;
         private bool enableCommunicationLogs = false;
@@ -137,6 +138,7 @@ namespace io.github.hatayama.uMCP
             
             DrawServerStatus();
             DrawServerControls();
+            DrawConnectedToolsSection();
             DrawEditorConfigSection();
 #if UMCP_DEBUG
             DrawDeveloperTools();
@@ -359,6 +361,89 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Draw connected LLM tools section
+        /// </summary>
+        private void DrawConnectedToolsSection()
+        {
+            EditorGUILayout.BeginVertical("box");
+            
+            // Foldout header
+            showConnectedTools = EditorGUILayout.Foldout(showConnectedTools, "Connected LLM Tools", true);
+            
+            // Show content only when expanded
+            if (showConnectedTools)
+            {
+                EditorGUILayout.Space();
+                
+                if (McpServerController.IsServerRunning)
+                {
+                    var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+                    
+                    if (connectedClients != null && connectedClients.Count > 0)
+                    {
+                        foreach (ConnectedClient client in connectedClients)
+                        {
+                            DrawConnectedClientItem(client);
+                        }
+                    }
+                    else
+                    {
+                        EditorGUILayout.HelpBox("No LLM tools currently connected.", MessageType.Info);
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Server is not running. Start the server to see connected tools.", MessageType.Warning);
+                }
+            }
+            
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space();
+        }
+
+        /// <summary>
+        /// Draw individual connected client item with improved UI/UX
+        /// </summary>
+        private void DrawConnectedClientItem(ConnectedClient client)
+        {
+            // Box grouping for visual separation
+            EditorGUILayout.BeginVertical("box");
+            
+            // First line: Client name (left) and connection time (right)
+            EditorGUILayout.BeginHorizontal();
+            
+            // Client icon and name
+            EditorGUILayout.LabelField("● " + client.ClientName, new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
+            
+            // Flexible space to push time to the right
+            GUILayout.FlexibleSpace();
+            
+            // Connection time
+            string connectedTime = client.ConnectedAt.ToString("HH:mm:ss");
+            EditorGUILayout.LabelField(connectedTime, EditorStyles.miniLabel);
+            
+            EditorGUILayout.EndHorizontal();
+            
+            // Second line: Endpoint information with indentation
+            EditorGUILayout.BeginHorizontal();
+            
+            // Indentation for endpoint
+            GUILayout.Space(16);
+            
+            // Endpoint with ASCII arrow icon
+            GUIStyle endpointStyle = new GUIStyle(EditorStyles.miniLabel);
+            endpointStyle.normal.textColor = Color.gray;
+            EditorGUILayout.LabelField("→ " + client.Endpoint, endpointStyle);
+            
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.EndVertical();
+            
+            // Add small space between client items
+            EditorGUILayout.Space(3);
+        }
+
+        /// <summary>
         /// Draw editor configuration section
         /// </summary>
         private void DrawEditorConfigSection()
@@ -437,7 +522,7 @@ namespace io.github.hatayama.uMCP
             catch (System.Exception ex)
             {
                 EditorGUILayout.HelpBox($"Error loading {editorName} configuration: {ex.Message}", MessageType.Error);
-                throw;
+                return; // Don't throw, just return to avoid GUI layout issues
             }
             
             if (isConfigured)

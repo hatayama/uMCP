@@ -5556,6 +5556,14 @@ var mcpInfo = (...args) => {
     writeToFile(`[MCP-INFO] ${message}`);
   }
 };
+var mcpWarn = (...args) => {
+  if (process.env.MCP_DEBUG) {
+    const message = args.map(
+      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(" ");
+    writeToFile(`[MCP-WARN] ${message}`);
+  }
+};
 var mcpError = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
@@ -5688,8 +5696,13 @@ var UnityClient = class {
   async connect() {
     return new Promise((resolve, reject) => {
       this.socket = new net.Socket();
-      this.socket.connect(this.port, this.host, () => {
+      this.socket.connect(this.port, this.host, async () => {
         this._connected = true;
+        try {
+          await this.setClientName();
+        } catch (error) {
+          mcpError("[UnityClient] Failed to set client name:", error);
+        }
         this.reconnectHandlers.forEach((handler) => {
           try {
             handler();
@@ -5711,6 +5724,31 @@ var UnityClient = class {
         this.handleIncomingData(data.toString());
       });
     });
+  }
+  /**
+   * Send client name to Unity for identification
+   */
+  async setClientName() {
+    if (!this.connected) {
+      return;
+    }
+    const clientName = process.env.MCP_CLIENT_NAME || "Unknown MCP Client";
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: "setClientName",
+      params: {
+        ClientName: clientName
+      }
+    };
+    try {
+      const response = await this.sendRequest(request);
+      if (response.error) {
+        mcpError(`Failed to set client name: ${response.error.message}`);
+      }
+    } catch (error) {
+      mcpError("[UnityClient] Error setting client name:", error);
+    }
   }
   /**
    * Send ping to Unity

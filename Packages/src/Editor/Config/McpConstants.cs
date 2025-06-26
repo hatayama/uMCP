@@ -23,10 +23,15 @@ namespace io.github.hatayama.uMCP
         public const string ENV_KEY_UMCP_PRODUCTION = "UMCP_PRODUCTION";
         public const string ENV_KEY_NODE_ENV = "NODE_ENV";
         public const string ENV_KEY_MCP_DEBUG = "MCP_DEBUG";
+        public const string ENV_KEY_MCP_CLIENT_NAME = "MCP_CLIENT_NAME";
         
         // Environment variable values
         public const string ENV_VALUE_TRUE = "true";
         public const string ENV_VALUE_DEVELOPMENT = "development";
+        
+        // Client names for different editors
+        public const string CLIENT_NAME_CURSOR = "Cursor";
+        public const string CLIENT_NAME_CLAUDE_CODE = "Claude Code";
         
         // Editor settings keys (development mode)
         public const string SETTINGS_KEY_ENABLE_DEVELOPMENT_MODE = "EnableDevelopmentMode";

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -12,6 +13,30 @@ using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
+    /// <summary>
+    /// Immutable connected client information
+    /// </summary>
+    public readonly struct ConnectedClient
+    {
+        public readonly string Endpoint;
+        public readonly string ClientName; 
+        public readonly DateTime ConnectedAt;
+        public readonly NetworkStream Stream;
+
+        public ConnectedClient(string endpoint, NetworkStream stream, string clientName = "Unknown Client")
+        {
+            Endpoint = endpoint;
+            Stream = stream;
+            ClientName = clientName;
+            ConnectedAt = DateTime.Now;
+        }
+        
+        public ConnectedClient WithClientName(string clientName)
+        {
+            return new ConnectedClient(Endpoint, Stream, clientName);
+        }
+    }
+
     /// <summary>
     /// Immutable JSON-RPC notification structure
     /// </summary>
@@ -44,7 +69,7 @@ namespace io.github.hatayama.uMCP
         private bool isRunning = false;
         
         // Client management for broadcasting notifications
-        private readonly ConcurrentDictionary<string, NetworkStream> connectedClients = new ConcurrentDictionary<string, NetworkStream>();
+        private readonly ConcurrentDictionary<string, ConnectedClient> connectedClients = new ConcurrentDictionary<string, ConnectedClient>();
         
         /// <summary>
         /// Whether the server is running.
@@ -70,6 +95,27 @@ namespace io.github.hatayama.uMCP
         /// Event on error.
         /// </summary>
         public event Action<string> OnError;
+
+        /// <summary>
+        /// Get list of connected clients
+        /// </summary>
+        public IReadOnlyCollection<ConnectedClient> GetConnectedClients()
+        {
+            return connectedClients.Values.ToArray();
+        }
+
+        /// <summary>
+        /// Update client name for a connected client
+        /// </summary>
+        public void UpdateClientName(string clientEndpoint, string clientName)
+        {
+            if (connectedClients.TryGetValue(clientEndpoint, out ConnectedClient existingClient))
+            {
+                ConnectedClient updatedClient = existingClient.WithClientName(clientName);
+                connectedClients.TryUpdate(clientEndpoint, updatedClient, existingClient);
+                McpLogger.LogInfo($"Updated client name for {clientEndpoint}: {clientName}");
+            }
+        }
 
         /// <summary>
         /// Checks if the specified port is in use.
@@ -285,7 +331,8 @@ namespace io.github.hatayama.uMCP
                 using (NetworkStream stream = client.GetStream())
                 {
                     // Add client to connected clients for notification broadcasting
-                    connectedClients.TryAdd(clientEndpoint, stream);
+                    ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream);
+                    connectedClients.TryAdd(clientEndpoint, connectedClient);
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
                     string incompleteJson = string.Empty; // Buffer for incomplete JSON
                     
@@ -405,13 +452,13 @@ namespace io.github.hatayama.uMCP
         {
             List<string> clientsToRemove = new List<string>();
             
-            foreach (KeyValuePair<string, NetworkStream> client in connectedClients)
+            foreach (KeyValuePair<string, ConnectedClient> client in connectedClients)
             {
                 try
                 {
-                    if (client.Value?.CanWrite == true)
+                    if (client.Value.Stream?.CanWrite == true)
                     {
-                        await client.Value.WriteAsync(notificationData, 0, notificationData.Length);
+                        await client.Value.Stream.WriteAsync(notificationData, 0, notificationData.Length);
                     }
                     else
                     {

@@ -40,5 +40,9 @@ namespace io.github.hatayama.uMCP
         
         // Communication log settings
         public const int MAX_COMMUNICATION_LOG_ENTRIES = 20;
+        
+        // Connected clients display
+        public const float CONNECTED_CLIENT_ITEM_HEIGHT = 20f;
+        public const float CONNECTED_CLIENT_INDENT = 16f;
     }
 }

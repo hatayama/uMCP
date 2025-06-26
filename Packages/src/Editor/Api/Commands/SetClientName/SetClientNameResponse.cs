@@ -1,0 +1,30 @@
+namespace io.github.hatayama.uMCP
+{
+    /// <summary>
+    /// Response schema for SetClientName command
+    /// Confirms client name registration
+    /// </summary>
+    public class SetClientNameResponse : BaseCommandResponse
+    {
+        /// <summary>
+        /// Success status message
+        /// </summary>
+        public string Message { get; set; }
+
+        /// <summary>
+        /// Registered client name
+        /// </summary>
+        public string ClientName { get; set; }
+
+        /// <summary>
+        /// Create a new SetClientNameResponse
+        /// </summary>
+        /// <param name="message">Success message</param>
+        /// <param name="clientName">Registered client name</param>
+        public SetClientNameResponse(string message, string clientName)
+        {
+            Message = message;
+            ClientName = clientName;
+        }
+    }
+}

@@ -65,7 +65,7 @@ namespace io.github.hatayama.uMCP
 
             // Create new settings.
             string serverPath = UnityMcpPathResolver.GetTypeScriptServerPath();
-            McpServerConfigData newConfig = McpServerConfigFactory.CreateUnityMcpConfig(port, serverPath);
+            McpServerConfigData newConfig = McpServerConfigFactory.CreateUnityMcpConfig(port, serverPath, _editorType);
 
             // Retain existing settings and add/update new settings.
             Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
@@ -178,6 +178,10 @@ namespace io.github.hatayama.uMCP
             updatedEnv.Remove(McpConstants.ENV_KEY_NODE_ENV);
             updatedEnv.Remove(McpConstants.ENV_KEY_MCP_DEBUG);
             
+            // Ensure MCP_CLIENT_NAME is set correctly for this editor type
+            string clientName = GetClientNameForEditor(_editorType);
+            updatedEnv[McpConstants.ENV_KEY_MCP_CLIENT_NAME] = clientName;
+            
             // Add NODE_ENV for development mode (simplified approach)
             if (developmentMode)
             {
@@ -225,6 +229,19 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.Cursor => "Cursor",
                 McpEditorType.ClaudeCode => "Claude Code",
                 _ => editorType.ToString()
+            };
+        }
+
+        /// <summary>
+        /// Gets the client name for the specified editor type.
+        /// </summary>
+        private string GetClientNameForEditor(McpEditorType editorType)
+        {
+            return editorType switch
+            {
+                McpEditorType.Cursor => McpConstants.CLIENT_NAME_CURSOR,
+                McpEditorType.ClaudeCode => McpConstants.CLIENT_NAME_CLAUDE_CODE,
+                _ => "Unknown MCP Client"
             };
         }
 

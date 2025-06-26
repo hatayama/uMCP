@@ -8,7 +8,7 @@ import {
   ERROR_MESSAGES,
   POLLING 
 } from './constants.js';
-import { mcpError } from './utils/log-to-file.js';
+import { mcpError, mcpWarn } from './utils/log-to-file.js';
 
 /**
  * TCP/IP client for communication with Unity
@@ -163,8 +163,15 @@ export class UnityClient {
     return new Promise((resolve, reject) => {
       this.socket = new net.Socket();
       
-      this.socket.connect(this.port, this.host, () => {
+      this.socket.connect(this.port, this.host, async () => {
         this._connected = true;
+        
+        // Send client name to Unity for identification
+        try {
+          await this.setClientName();
+        } catch (error) {
+          mcpError('[UnityClient] Failed to set client name:', error);
+        }
         
         // Notify reconnect handlers
         this.reconnectHandlers.forEach(handler => {
@@ -193,6 +200,36 @@ export class UnityClient {
         this.handleIncomingData(data.toString());
       });
     });
+  }
+
+  /**
+   * Send client name to Unity for identification
+   */
+  async setClientName(): Promise<void> {
+    if (!this.connected) {
+      return; // Skip if not connected
+    }
+
+    const clientName = process.env.MCP_CLIENT_NAME || 'Unknown MCP Client';
+
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id: this.generateId(),
+      method: 'setClientName',
+      params: {
+        ClientName: clientName
+      }
+    };
+
+    try {
+      const response = await this.sendRequest(request);
+      
+      if (response.error) {
+        mcpError(`Failed to set client name: ${response.error.message}`);
+      }
+    } catch (error) {
+      mcpError('[UnityClient] Error setting client name:', error);
+    }
   }
 
   /**
