@@ -12,7 +12,7 @@ namespace io.github.hatayama.uMCP
         private static UnityTestExecutionManager testRunnerController;
         private static bool shouldSaveXml = true;
         
-        [MenuItem("uMCP/Test Runner/Run EditMode Tests (Save XML)")]
+        [MenuItem("uMCP/Test Runner/EditMode/Run EditMode Tests (Save XML)")]
         public static void RunEditModeTestsAndSaveXml()
         {
             Debug.Log("Masamichi, I'm running the EditMode tests and saving to XML!");
@@ -22,7 +22,7 @@ namespace io.github.hatayama.uMCP
             testRunnerController.RunEditModeTests(OnTestRunComplete);
         }
         
-        [MenuItem("uMCP/Test Runner/Run EditMode Tests (Log XML)")]
+        [MenuItem("uMCP/Test Runner/EditMode/Run EditMode Tests (Log XML)")]
         public static void RunEditModeTestsAndLogXml()
         {
             Debug.Log("Masamichi, I'm running the EditMode tests and logging the XML!");
@@ -30,6 +30,26 @@ namespace io.github.hatayama.uMCP
             shouldSaveXml = false;
             testRunnerController = new UnityTestExecutionManager();
             testRunnerController.RunEditModeTests(OnTestRunComplete);
+        }
+
+        [MenuItem("uMCP/Test Runner/PlayMode/Run PlayMode Tests (Save XML)")]
+        public static void RunPlayModeTestsAndSaveXml()
+        {
+            Debug.Log("Masamichi, I'm running the PlayMode tests and saving to XML!");
+            
+            shouldSaveXml = true;
+            testRunnerController = new UnityTestExecutionManager();
+            testRunnerController.RunPlayModeTests(OnTestRunComplete);
+        }
+        
+        [MenuItem("uMCP/Test Runner/PlayMode/Run PlayMode Tests (Log XML)")]
+        public static void RunPlayModeTestsAndLogXml()
+        {
+            Debug.Log("Masamichi, I'm running the PlayMode tests and logging the XML!");
+            
+            shouldSaveXml = false;
+            testRunnerController = new UnityTestExecutionManager();
+            testRunnerController.RunPlayModeTests(OnTestRunComplete);
         }
         
         [MenuItem("uMCP/Test Runner/Open Test Runner Window")]
