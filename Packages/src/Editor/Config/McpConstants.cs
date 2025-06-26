@@ -32,6 +32,7 @@ namespace io.github.hatayama.uMCP
         // Client names for different editors
         public const string CLIENT_NAME_CURSOR = "Cursor";
         public const string CLIENT_NAME_CLAUDE_CODE = "Claude Code";
+        public const string CLIENT_NAME_VSCODE = "VSCode";
         public const string UNKNOWN_CLIENT_NAME = "Unknown Client";
         
         // Process ID constants
@@ -76,6 +77,7 @@ namespace io.github.hatayama.uMCP
             {
                 McpEditorType.Cursor => CLIENT_NAME_CURSOR,
                 McpEditorType.ClaudeCode => CLIENT_NAME_CLAUDE_CODE,
+                McpEditorType.VSCode => CLIENT_NAME_VSCODE,
                 _ => UNKNOWN_CLIENT_NAME
             };
         }
