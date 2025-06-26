@@ -518,7 +518,14 @@ namespace io.github.hatayama.uMCP
                 // Remove client from connected clients list
                 bool removeResult = connectedClients.TryRemove(clientEndpoint, out ConnectedClient removedClient);
                 
-                McpLogger.LogInfo($"Clients after removal: {string.Join(", ", connectedClients.Keys)}");
+                if (removeResult)
+                {
+                    McpLogger.LogInfo($"Successfully removed client {clientEndpoint}. Remaining clients: {string.Join(", ", connectedClients.Keys)}");
+                }
+                else
+                {
+                    McpLogger.LogWarning($"Failed to remove client {clientEndpoint}. Current clients: {string.Join(", ", connectedClients.Keys)}");
+                }
                 
                 
                 client.Close();

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -43,6 +44,16 @@ namespace io.github.hatayama.uMCP
         
         // Scroll position for entire window
         private Vector2 mainScrollPosition;
+        
+        // UI update management
+        private bool needsRepaint = false;
+        private bool isPostCompileMode = false; // True after compilation, false when clients connect
+        
+        // Server state tracking for change detection
+        private bool lastServerRunning = false;
+        private int lastServerPort = 0;
+        private int lastConnectedClientsCount = 0;
+        private string lastClientsInfoHash = "";
         
         // Configuration services
         private readonly McpConfigRepository _repository = new(McpEditorType.Cursor);
@@ -96,6 +107,18 @@ namespace io.github.hatayama.uMCP
             // Subscribe to client disconnection events for immediate UI updates
             SubscribeToServerEvents();
             
+            // Subscribe to update events for UI refresh
+            EditorApplication.update += OnEditorUpdate;
+            
+            // Enable post-compile mode after domain reload - always on after OnEnable
+            isPostCompileMode = true;
+            needsRepaint = true;
+            
+            // Clear reconnecting UI flag on domain reload to ensure proper state
+            SessionState.SetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            
+            UnityEngine.Debug.Log("[McpEditorWindow] Post-compile mode enabled");
+            
             // Check if after compilation
             bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
             
@@ -129,6 +152,9 @@ namespace io.github.hatayama.uMCP
             // Unsubscribe from server events
             UnsubscribeFromServerEvents();
             
+            // Unsubscribe from update events
+            EditorApplication.update -= OnEditorUpdate;
+            
             // Save editor selection state
             SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
             
@@ -148,6 +174,7 @@ namespace io.github.hatayama.uMCP
             McpBridgeServer currentServer = McpServerController.CurrentServer;
             if (currentServer != null)
             {
+                currentServer.OnClientConnected += OnClientConnectedHandler;
                 currentServer.OnClientDisconnected += OnClientDisconnectedHandler;
             }
         }
@@ -160,7 +187,23 @@ namespace io.github.hatayama.uMCP
             McpBridgeServer currentServer = McpServerController.CurrentServer;
             if (currentServer != null)
             {
+                currentServer.OnClientConnected -= OnClientConnectedHandler;
                 currentServer.OnClientDisconnected -= OnClientDisconnectedHandler;
+            }
+        }
+
+        /// <summary>
+        /// Handle client connection event - force UI repaint for immediate update
+        /// </summary>
+        private void OnClientConnectedHandler(string clientEndpoint)
+        {
+            // Mark that repaint is needed since events are called from background thread
+            needsRepaint = true;
+            
+            // Exit post-compile mode when client connects
+            if (isPostCompileMode)
+            {
+                isPostCompileMode = false;
             }
         }
 
@@ -169,7 +212,80 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void OnClientDisconnectedHandler(string clientEndpoint)
         {
-            // Force immediate UI update even when Unity Editor is in background
+            // Mark that repaint is needed since events are called from background thread
+            needsRepaint = true;
+        }
+
+        /// <summary>
+        /// Called from EditorApplication.update - handles UI refresh even when Unity is not focused
+        /// </summary>
+        private void OnEditorUpdate()
+        {
+            // Always check for server state changes
+            CheckServerStateChanges();
+            
+            // In post-compile mode, always repaint for immediate updates
+            if (isPostCompileMode)
+            {
+                Repaint();
+                return;
+            }
+            
+            // Normal mode: repaint only when needed
+            if (needsRepaint)
+            {
+                needsRepaint = false;
+                Repaint();
+            }
+        }
+        
+        /// <summary>
+        /// Check if server state has changed and mark repaint if needed
+        /// </summary>
+        private void CheckServerStateChanges()
+        {
+            (bool isRunning, int port, bool wasRestored) = McpServerController.GetServerStatus();
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            int connectedCount = connectedClients?.Count ?? 0;
+            
+            // Generate hash of client information to detect changes in client names
+            string clientsInfoHash = GenerateClientsInfoHash(connectedClients);
+            
+            // Check if any server state has changed
+            if (isRunning != lastServerRunning || 
+                port != lastServerPort || 
+                connectedCount != lastConnectedClientsCount ||
+                clientsInfoHash != lastClientsInfoHash)
+            {
+                lastServerRunning = isRunning;
+                lastServerPort = port;
+                lastConnectedClientsCount = connectedCount;
+                lastClientsInfoHash = clientsInfoHash;
+                needsRepaint = true;
+            }
+        }
+        
+        /// <summary>
+        /// Generate hash string from client information to detect changes
+        /// </summary>
+        private string GenerateClientsInfoHash(System.Collections.Generic.IReadOnlyCollection<ConnectedClient> clients)
+        {
+            if (clients == null || clients.Count == 0)
+            {
+                return "empty";
+            }
+            
+            // Create a hash based on endpoint, client name, and process ID for unique identification
+            var info = clients.Select(c => $"{c.Endpoint}:{c.ClientName}:{c.ProcessId}").OrderBy(s => s);
+            return string.Join("|", info);
+        }
+
+        /// <summary>
+        /// Called when the window gets focus - update UI to reflect current state
+        /// </summary>
+        private void OnFocus()
+        {
+            // Refresh UI when window gains focus to reflect any state changes
             Repaint();
         }
 
@@ -351,6 +467,9 @@ namespace io.github.hatayama.uMCP
                 // Subscribe to new server events after successful start
                 SubscribeToServerEvents();
                 
+                // Force UI update after server start
+                Repaint();
+                
                 return true;
             }
             catch (InvalidOperationException ex)
@@ -443,6 +562,7 @@ namespace io.github.hatayama.uMCP
         {
             // Check if explicitly showing reconnecting UI
             bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            
             if (showReconnectingUI)
             {
                 return ConnectionDisplayState.Reconnecting;

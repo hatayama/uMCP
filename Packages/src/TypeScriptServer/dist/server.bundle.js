@@ -5573,6 +5573,101 @@ var errorToFile = (...args) => {
   }
 };
 
+// src/utils/safe-timer.ts
+var SafeTimer = class _SafeTimer {
+  static activeTimers = /* @__PURE__ */ new Set();
+  static cleanupHandlersInstalled = false;
+  timerId = null;
+  isActive = false;
+  callback;
+  delay;
+  isInterval;
+  constructor(callback, delay, isInterval = false) {
+    this.callback = callback;
+    this.delay = delay;
+    this.isInterval = isInterval;
+    _SafeTimer.installCleanupHandlers();
+    this.start();
+  }
+  /**
+   * Start the timer
+   */
+  start() {
+    if (this.isActive) {
+      return;
+    }
+    if (this.isInterval) {
+      this.timerId = setInterval(this.callback, this.delay);
+    } else {
+      this.timerId = setTimeout(this.callback, this.delay);
+    }
+    this.isActive = true;
+    _SafeTimer.activeTimers.add(this);
+  }
+  /**
+   * Stop and clean up the timer
+   */
+  stop() {
+    if (!this.isActive || !this.timerId) {
+      return;
+    }
+    if (this.isInterval) {
+      clearInterval(this.timerId);
+    } else {
+      clearTimeout(this.timerId);
+    }
+    this.timerId = null;
+    this.isActive = false;
+    _SafeTimer.activeTimers.delete(this);
+  }
+  /**
+   * Check if timer is currently active
+   */
+  get active() {
+    return this.isActive;
+  }
+  /**
+   * Install global cleanup handlers to ensure all timers are cleaned up
+   */
+  static installCleanupHandlers() {
+    if (_SafeTimer.cleanupHandlersInstalled) {
+      return;
+    }
+    const cleanup = () => {
+      console.log(`[SafeTimer] Cleaning up ${_SafeTimer.activeTimers.size} active timers`);
+      _SafeTimer.cleanupAll();
+    };
+    process.on("exit", cleanup);
+    process.on("SIGINT", cleanup);
+    process.on("SIGTERM", cleanup);
+    process.on("SIGHUP", cleanup);
+    process.on("uncaughtException", cleanup);
+    process.on("unhandledRejection", cleanup);
+    _SafeTimer.cleanupHandlersInstalled = true;
+  }
+  /**
+   * Clean up all active timers
+   */
+  static cleanupAll() {
+    for (const timer of _SafeTimer.activeTimers) {
+      timer.stop();
+    }
+    _SafeTimer.activeTimers.clear();
+  }
+  /**
+   * Get count of active timers (for debugging)
+   */
+  static getActiveTimerCount() {
+    return _SafeTimer.activeTimers.size;
+  }
+};
+function safeSetTimeout(callback, delay) {
+  return new SafeTimer(callback, delay, false);
+}
+function safeSetInterval(callback, delay) {
+  return new SafeTimer(callback, delay, true);
+}
+
 // src/unity-client.ts
 var UnityClient = class {
   socket = null;
@@ -5582,8 +5677,8 @@ var UnityClient = class {
   notificationHandlers = /* @__PURE__ */ new Map();
   pendingRequests = /* @__PURE__ */ new Map();
   reconnectHandlers = /* @__PURE__ */ new Set();
-  // Polling system
-  pollingInterval = null;
+  // Polling system - using SafeTimer for automatic cleanup
+  pollingTimer = null;
   onReconnectedCallback = null;
   constructor() {
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
@@ -5736,13 +5831,19 @@ var UnityClient = class {
     });
   }
   /**
+   * Detect client name from environment variables
+   */
+  detectClientName() {
+    return process.env.MCP_CLIENT_NAME || "MCP Client";
+  }
+  /**
    * Send client name to Unity for identification
    */
   async setClientName() {
     if (!this.connected) {
       return;
     }
-    const clientName = process.env.MCP_CLIENT_NAME || "Unknown MCP Client";
+    const clientName = this.detectClientName();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
@@ -5868,17 +5969,17 @@ var UnityClient = class {
   async sendRequest(request, timeoutMs) {
     return new Promise((resolve, reject) => {
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
-      const timeout = setTimeout(() => {
+      const timeoutTimer = safeSetTimeout(() => {
         this.pendingRequests.delete(request.id);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
       this.pendingRequests.set(request.id, {
         resolve: (response) => {
-          clearTimeout(timeout);
+          timeoutTimer.stop();
           resolve(response);
         },
         reject: (error) => {
-          clearTimeout(timeout);
+          timeoutTimer.stop();
           reject(error);
         }
       });
@@ -5887,9 +5988,17 @@ var UnityClient = class {
   }
   /**
    * Disconnect
+   * 
+   * IMPORTANT: Always clean up timers when disconnecting!
+   * Failure to properly clean up timers can cause orphaned processes
+   * that prevent Node.js from exiting gracefully.
    */
   disconnect() {
     this.stopPolling();
+    for (const [id, pending] of this.pendingRequests) {
+      pending.reject(new Error("Connection closed"));
+    }
+    this.pendingRequests.clear();
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
@@ -5906,10 +6015,10 @@ var UnityClient = class {
    * Start polling for connection recovery
    */
   startPolling() {
-    if (this.pollingInterval) {
+    if (this.pollingTimer && this.pollingTimer.active) {
       return;
     }
-    this.pollingInterval = setInterval(async () => {
+    this.pollingTimer = safeSetInterval(async () => {
       try {
         await this.connect();
         this.stopPolling();
@@ -5924,9 +6033,9 @@ var UnityClient = class {
    * Stop polling
    */
   stopPolling() {
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
+    if (this.pollingTimer) {
+      this.pollingTimer.stop();
+      this.pollingTimer = null;
     }
   }
 };
