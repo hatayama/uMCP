@@ -409,31 +409,20 @@ namespace io.github.hatayama.uMCP
             // Box grouping for visual separation
             EditorGUILayout.BeginVertical("box");
             
-            // First line: Client name (left) and connection time (right)
+            // Single line with client name and endpoint/PID information
             EditorGUILayout.BeginHorizontal();
             
             // Client icon and name
             EditorGUILayout.LabelField("● " + client.ClientName, new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
             
-            // Flexible space to push time to the right
+            // Flexible space
             GUILayout.FlexibleSpace();
             
-            // Connection time
-            string connectedTime = client.ConnectedAt.ToString("HH:mm:ss");
-            EditorGUILayout.LabelField(connectedTime, EditorStyles.miniLabel);
-            
-            EditorGUILayout.EndHorizontal();
-            
-            // Second line: Endpoint information with indentation
-            EditorGUILayout.BeginHorizontal();
-            
-            // Indentation for endpoint
-            GUILayout.Space(16);
-            
-            // Endpoint with ASCII arrow icon
+            // Endpoint with PID information
             GUIStyle endpointStyle = new GUIStyle(EditorStyles.miniLabel);
             endpointStyle.normal.textColor = Color.gray;
-            EditorGUILayout.LabelField("→ " + client.Endpoint, endpointStyle);
+            string pidInfo = client.ProcessId > 0 ? $" (PID: {client.ProcessId})" : "";
+            EditorGUILayout.LabelField("→ " + client.Endpoint + pidInfo, endpointStyle);
             
             EditorGUILayout.EndHorizontal();
             

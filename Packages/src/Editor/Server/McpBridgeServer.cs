@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,18 +23,20 @@ namespace io.github.hatayama.uMCP
         public readonly string ClientName; 
         public readonly DateTime ConnectedAt;
         public readonly NetworkStream Stream;
+        public readonly int ProcessId;
 
-        public ConnectedClient(string endpoint, NetworkStream stream, string clientName = "Unknown Client")
+        public ConnectedClient(string endpoint, NetworkStream stream, int processId, string clientName = "Unknown Client")
         {
             Endpoint = endpoint;
             Stream = stream;
+            ProcessId = processId;
             ClientName = clientName;
             ConnectedAt = DateTime.Now;
         }
         
         public ConnectedClient WithClientName(string clientName)
         {
-            return new ConnectedClient(Endpoint, Stream, clientName);
+            return new ConnectedClient(Endpoint, Stream, ProcessId, clientName);
         }
     }
 
@@ -115,6 +118,50 @@ namespace io.github.hatayama.uMCP
                 connectedClients.TryUpdate(clientEndpoint, updatedClient, existingClient);
                 McpLogger.LogInfo($"Updated client name for {clientEndpoint}: {clientName}");
             }
+        }
+
+        /// <summary>
+        /// Get the process ID of the client connected to this socket
+        /// </summary>
+        private int GetClientProcessId(Socket clientSocket)
+        {
+            if (clientSocket?.RemoteEndPoint is not IPEndPoint remoteEndPoint)
+            {
+                return -1;
+            }
+            
+            int remotePort = remoteEndPoint.Port;
+            
+            // Use lsof command on macOS/Linux to find the process ID
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = "lsof",
+                Arguments = $"-i :{remotePort}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using (Process process = Process.Start(startInfo))
+            {
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+                
+                string[] lines = output.Split('\n');
+                foreach (string line in lines)
+                {
+                    if (line.Contains($":{remotePort}") && !line.StartsWith("COMMAND"))
+                    {
+                        string[] parts = line.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2 && int.TryParse(parts[1], out int pid))
+                        {
+                            return pid;
+                        }
+                    }
+                }
+            }
+            
+            return -1; // Process ID not found
         }
 
         /// <summary>
@@ -330,8 +377,11 @@ namespace io.github.hatayama.uMCP
                 using (client)
                 using (NetworkStream stream = client.GetStream())
                 {
+                    // Get client process ID from remote endpoint
+                    int processId = GetClientProcessId(client.Client);
+                    
                     // Add client to connected clients for notification broadcasting
-                    ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream);
+                    ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream, processId);
                     connectedClients.TryAdd(clientEndpoint, connectedClient);
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
                     string incompleteJson = string.Empty; // Buffer for incomplete JSON
