@@ -6183,7 +6183,6 @@ var SimpleMcpServer = class {
           continue;
         }
         if (displayDevelopmentOnly && !this.isDevelopment) {
-          mcpDebug(`Skipping ${commandName} in production mode`);
           continue;
         }
         const toolName = commandName;

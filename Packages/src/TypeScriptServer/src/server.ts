@@ -94,7 +94,6 @@ class SimpleMcpServer {
         
         // Check if this tool should only be displayed in development mode
         if (displayDevelopmentOnly && !this.isDevelopment) {
-          mcpDebug(`Skipping ${commandName} in production mode`);
           continue; // Skip this tool in production mode
         }
         

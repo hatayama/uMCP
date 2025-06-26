@@ -176,7 +176,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>Array of command information</returns>
         public CommandInfo[] GetRegisteredCommands()
         {
-            var result = commands.Values.Select(cmd => 
+            return commands.Values.Select(cmd => 
             {
                 // Check if command has McpTool attribute with DisplayDevelopmentOnly
                 bool displayDevelopmentOnly = false;
@@ -186,14 +186,8 @@ namespace io.github.hatayama.uMCP
                     displayDevelopmentOnly = attribute.DisplayDevelopmentOnly;
                 }
                 
-                // Debug logging
-                UnityEngine.Debug.Log($"[DEBUG] Command: {cmd.CommandName}, displayDevelopmentOnly: {displayDevelopmentOnly}");
-                
                 return new CommandInfo(cmd.CommandName, cmd.Description, cmd.ParameterSchema, displayDevelopmentOnly);
             }).ToArray();
-            
-            UnityEngine.Debug.Log($"[DEBUG] Total registered commands: {result.Length}");
-            return result;
         }
 
         /// <summary>
