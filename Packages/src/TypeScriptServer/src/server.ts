@@ -10,7 +10,7 @@ import {
 import { z } from 'zod';
 import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
-import { mcpError, mcpDebug, mcpInfo } from './utils/log-to-file.js';
+import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
 import { ENVIRONMENT, DEFAULT_MESSAGES, UNITY_CONNECTION } from './constants.js';
 import packageJson from '../package.json' assert { type: 'json' };
 import { ToolResponse } from './types/tool-types.js';
@@ -30,9 +30,9 @@ class SimpleMcpServer {
     // Simple environment variable check
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     
-    mcpInfo('Simple Unity MCP Server Starting');
-    mcpInfo(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
-    mcpInfo(`Development mode: ${this.isDevelopment}`);
+    infoToFile('Simple Unity MCP Server Starting');
+    infoToFile(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
+    infoToFile(`Development mode: ${this.isDevelopment}`);
     
     this.server = new Server(
       {
@@ -72,7 +72,7 @@ class SimpleMcpServer {
       // Handle new GetCommandDetailsResponse structure
       const commandDetails = (commandDetailsResponse as any)?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
-        mcpError('[Simple MCP] Invalid command details response:', commandDetailsResponse);
+        errorToFile('[Simple MCP] Invalid command details response:', commandDetailsResponse);
         return;
       }
       
@@ -113,7 +113,7 @@ class SimpleMcpServer {
       
       
     } catch (error) {
-      mcpError('[Simple MCP] Failed to initialize dynamic tools:', error);
+      errorToFile('[Simple MCP] Failed to initialize dynamic tools:', error);
       // Continue without dynamic tools
     }
   }
@@ -135,7 +135,7 @@ class SimpleMcpServer {
   private async refreshDynamicToolsSafe(): Promise<void> {
     if (this.isRefreshing) {
       if (this.isDevelopment) {
-        mcpDebug('[TRACE] refreshDynamicToolsSafe skipped: already in progress');
+        debugToFile('[TRACE] refreshDynamicToolsSafe skipped: already in progress');
       }
       return;
     }
@@ -146,7 +146,7 @@ class SimpleMcpServer {
         const stack = new Error().stack;
         const callerLine = stack?.split('\n')[2]?.trim() || 'Unknown caller';
         const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
-        mcpDebug(`[TRACE] refreshDynamicToolsSafe called at ${timestamp} from: ${callerLine}`);
+        debugToFile(`[TRACE] refreshDynamicToolsSafe called at ${timestamp} from: ${callerLine}`);
       }
       
       await this.refreshDynamicTools();
@@ -233,7 +233,7 @@ class SimpleMcpServer {
       }
       */
       
-      mcpDebug(`Providing ${tools.length} tools`, { toolNames: tools.map(t => t.name) });
+      debugToFile(`Providing ${tools.length} tools`, { toolNames: tools.map(t => t.name) });
       return { tools };
     });
 
@@ -241,7 +241,7 @@ class SimpleMcpServer {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
       
-      mcpDebug(`Tool executed: ${name}`, { args });
+      debugToFile(`Tool executed: ${name}`, { args });
       
       try {
         // Check if it's a dynamic Unity command tool
@@ -431,14 +431,14 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     this.unityClient.onNotification('notifications/tools/list_changed', async (params: unknown) => {
       if (this.isDevelopment) {
         const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
-        mcpDebug(`[TRACE] Unity notification received at ${timestamp}: notifications/tools/list_changed`);
-        mcpDebug(`[TRACE] Notification params: ${JSON.stringify(params)}`);
+        debugToFile(`[TRACE] Unity notification received at ${timestamp}: notifications/tools/list_changed`);
+        debugToFile(`[TRACE] Notification params: ${JSON.stringify(params)}`);
       }
       
       try {
         await this.refreshDynamicToolsSafe();
       } catch (error) {
-        mcpError('[Simple MCP] Failed to update dynamic tools via Unity notification:', error);
+        errorToFile('[Simple MCP] Failed to update dynamic tools via Unity notification:', error);
       }
     });
     
@@ -455,7 +455,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
         params: {}
       });
     } catch (error) {
-      mcpError('[Simple MCP] Failed to send tools changed notification:', error);
+      errorToFile('[Simple MCP] Failed to send tools changed notification:', error);
     }
   }
 
@@ -465,19 +465,19 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
   private setupSignalHandlers(): void {
     // Handle Ctrl+C (SIGINT)
     process.on('SIGINT', () => {
-      mcpInfo('[Simple MCP] Received SIGINT, shutting down...');
+      infoToFile('[Simple MCP] Received SIGINT, shutting down...');
       this.gracefulShutdown();
     });
 
     // Handle kill command (SIGTERM)
     process.on('SIGTERM', () => {
-      mcpInfo('[Simple MCP] Received SIGTERM, shutting down...');
+      infoToFile('[Simple MCP] Received SIGTERM, shutting down...');
       this.gracefulShutdown();
     });
 
     // Handle terminal close (SIGHUP)
     process.on('SIGHUP', () => {
-      mcpInfo('[Simple MCP] Received SIGHUP, shutting down...');
+      infoToFile('[Simple MCP] Received SIGHUP, shutting down...');
       this.gracefulShutdown();
     });
 
@@ -485,24 +485,24 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     // BUG FIX: Added STDIN monitoring to detect when Cursor/parent MCP client disconnects
     // This prevents orphaned Node processes from remaining after IDE shutdown
     process.stdin.on('close', () => {
-      mcpInfo('[Simple MCP] STDIN closed, shutting down...');
+      infoToFile('[Simple MCP] STDIN closed, shutting down...');
       this.gracefulShutdown();
     });
 
     process.stdin.on('end', () => {
-      mcpInfo('[Simple MCP] STDIN ended, shutting down...');
+      infoToFile('[Simple MCP] STDIN ended, shutting down...');
       this.gracefulShutdown();
     });
 
     // Handle uncaught exceptions
     // BUG FIX: Added comprehensive error handling to prevent hanging processes
     process.on('uncaughtException', (error) => {
-      mcpError('[Simple MCP] Uncaught exception:', error);
+      errorToFile('[Simple MCP] Uncaught exception:', error);
       this.gracefulShutdown();
     });
 
     process.on('unhandledRejection', (reason, promise) => {
-      mcpError('[Simple MCP] Unhandled rejection at:', promise, 'reason:', reason);
+      errorToFile('[Simple MCP] Unhandled rejection at:', promise, 'reason:', reason);
       this.gracefulShutdown();
     });
   }
@@ -518,7 +518,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
     }
     
     this.isShuttingDown = true;
-    mcpInfo('[Simple MCP] Starting graceful shutdown...');
+    infoToFile('[Simple MCP] Starting graceful shutdown...');
 
     try {
       // Disconnect from Unity and stop all intervals
@@ -534,10 +534,10 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
       }
 
     } catch (error) {
-      mcpError('[Simple MCP] Error during cleanup:', error);
+      errorToFile('[Simple MCP] Error during cleanup:', error);
     }
 
-    mcpInfo('[Simple MCP] Graceful shutdown completed');
+    infoToFile('[Simple MCP] Graceful shutdown completed');
     process.exit(0);
   }
 
@@ -547,7 +547,7 @@ Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
 const server = new SimpleMcpServer();
 
 server.start().catch((error) => {
-  mcpError('[FATAL] Server startup failed:', error);
+  errorToFile('[FATAL] Server startup failed:', error);
   console.error('[FATAL] Unity MCP Server startup failed:');
   console.error('Error details:', error instanceof Error ? error.message : String(error));
   console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');

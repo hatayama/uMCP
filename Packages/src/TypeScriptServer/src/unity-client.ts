@@ -8,7 +8,7 @@ import {
   ERROR_MESSAGES,
   POLLING 
 } from './constants.js';
-import { mcpError, mcpWarn } from './utils/log-to-file.js';
+import { errorToFile, warnToFile } from './utils/log-to-file.js';
 
 /**
  * TCP/IP client for communication with Unity
@@ -82,7 +82,7 @@ export class UnityClient {
         }
       }
     } catch (error) {
-        mcpError('[UnityClient] Error parsing incoming data:', error);
+        errorToFile('[UnityClient] Error parsing incoming data:', error);
     }
   }
 
@@ -98,7 +98,7 @@ export class UnityClient {
       try {
         handler(params);
       } catch (error) {
-        mcpError(`[UnityClient] Error in notification handler for ${method}:`, error);
+        errorToFile(`[UnityClient] Error in notification handler for ${method}:`, error);
       }
     } else {
     }
@@ -120,7 +120,7 @@ export class UnityClient {
         pending.resolve(response);
       }
     } else {
-      mcpWarn(`[UnityClient] Received response for unknown request ID: ${id}`);
+      warnToFile(`[UnityClient] Received response for unknown request ID: ${id}`);
     }
   }
 
@@ -170,7 +170,7 @@ export class UnityClient {
         try {
           await this.setClientName();
         } catch (error) {
-          mcpError('[UnityClient] Failed to set client name:', error);
+          errorToFile('[UnityClient] Failed to set client name:', error);
         }
         
         // Notify reconnect handlers
@@ -178,7 +178,7 @@ export class UnityClient {
           try {
             handler();
           } catch (error) {
-            mcpError('[UnityClient] Error in reconnect handler:', error);
+            errorToFile('[UnityClient] Error in reconnect handler:', error);
           }
         });
         
@@ -225,10 +225,10 @@ export class UnityClient {
       const response = await this.sendRequest(request);
       
       if (response.error) {
-        mcpError(`Failed to set client name: ${response.error.message}`);
+        errorToFile(`Failed to set client name: ${response.error.message}`);
       }
     } catch (error) {
-      mcpError('[UnityClient] Error setting client name:', error);
+      errorToFile('[UnityClient] Error setting client name:', error);
     }
   }
 

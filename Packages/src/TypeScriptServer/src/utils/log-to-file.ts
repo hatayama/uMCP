@@ -59,7 +59,7 @@ const writeToFile = (message: string): void => {
  * MCP development debug log
  * Only outputs to file when MCP_DEBUG environment variable is set
  */
-export const mcpDebug = (...args: any[]): void => {
+export const debugToFile = (...args: any[]): void => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(arg => 
       typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
@@ -71,7 +71,7 @@ export const mcpDebug = (...args: any[]): void => {
 /**
  * MCP development information log
  */
-export const mcpInfo = (...args: any[]): void => {
+export const infoToFile = (...args: any[]): void => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(arg => 
       typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
@@ -83,7 +83,7 @@ export const mcpInfo = (...args: any[]): void => {
 /**
  * MCP development warning log
  */
-export const mcpWarn = (...args: any[]): void => {
+export const warnToFile = (...args: any[]): void => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(arg => 
       typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
@@ -95,7 +95,7 @@ export const mcpWarn = (...args: any[]): void => {
 /**
  * MCP development error log
  */
-export const mcpError = (...args: any[]): void => {
+export const errorToFile = (...args: any[]): void => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(arg => 
       typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)

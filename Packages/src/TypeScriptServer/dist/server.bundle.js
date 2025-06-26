@@ -5540,7 +5540,7 @@ var writeToFile = (message) => {
   } catch (error) {
   }
 };
-var mcpDebug = (...args) => {
+var debugToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
@@ -5548,7 +5548,7 @@ var mcpDebug = (...args) => {
     writeToFile(`[MCP-DEBUG] ${message}`);
   }
 };
-var mcpInfo = (...args) => {
+var infoToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
@@ -5556,7 +5556,7 @@ var mcpInfo = (...args) => {
     writeToFile(`[MCP-INFO] ${message}`);
   }
 };
-var mcpWarn = (...args) => {
+var warnToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
@@ -5564,7 +5564,7 @@ var mcpWarn = (...args) => {
     writeToFile(`[MCP-WARN] ${message}`);
   }
 };
-var mcpError = (...args) => {
+var errorToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
     const message = args.map(
       (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
@@ -5630,7 +5630,7 @@ var UnityClient = class {
         }
       }
     } catch (error) {
-      mcpError("[UnityClient] Error parsing incoming data:", error);
+      errorToFile("[UnityClient] Error parsing incoming data:", error);
     }
   }
   /**
@@ -5643,7 +5643,7 @@ var UnityClient = class {
       try {
         handler(params);
       } catch (error) {
-        mcpError(`[UnityClient] Error in notification handler for ${method}:`, error);
+        errorToFile(`[UnityClient] Error in notification handler for ${method}:`, error);
       }
     } else {
     }
@@ -5662,7 +5662,7 @@ var UnityClient = class {
         pending.resolve(response);
       }
     } else {
-      mcpWarn(`[UnityClient] Received response for unknown request ID: ${id}`);
+      warnToFile(`[UnityClient] Received response for unknown request ID: ${id}`);
     }
   }
   /**
@@ -5701,13 +5701,13 @@ var UnityClient = class {
         try {
           await this.setClientName();
         } catch (error) {
-          mcpError("[UnityClient] Failed to set client name:", error);
+          errorToFile("[UnityClient] Failed to set client name:", error);
         }
         this.reconnectHandlers.forEach((handler) => {
           try {
             handler();
           } catch (error) {
-            mcpError("[UnityClient] Error in reconnect handler:", error);
+            errorToFile("[UnityClient] Error in reconnect handler:", error);
           }
         });
         resolve();
@@ -5744,10 +5744,10 @@ var UnityClient = class {
     try {
       const response = await this.sendRequest(request);
       if (response.error) {
-        mcpError(`Failed to set client name: ${response.error.message}`);
+        errorToFile(`Failed to set client name: ${response.error.message}`);
       }
     } catch (error) {
-      mcpError("[UnityClient] Error setting client name:", error);
+      errorToFile("[UnityClient] Error setting client name:", error);
     }
   }
   /**
@@ -6137,9 +6137,9 @@ var SimpleMcpServer = class {
   isRefreshing = false;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
-    mcpInfo("Simple Unity MCP Server Starting");
-    mcpInfo(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
-    mcpInfo(`Development mode: ${this.isDevelopment}`);
+    infoToFile("Simple Unity MCP Server Starting");
+    infoToFile(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
+    infoToFile(`Development mode: ${this.isDevelopment}`);
     this.server = new Server(
       {
         name: "umcp-server",
@@ -6169,7 +6169,7 @@ var SimpleMcpServer = class {
       const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
       const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
-        mcpError("[Simple MCP] Invalid command details response:", commandDetailsResponse);
+        errorToFile("[Simple MCP] Invalid command details response:", commandDetailsResponse);
         return;
       }
       this.dynamicTools.clear();
@@ -6196,7 +6196,7 @@ var SimpleMcpServer = class {
         this.dynamicTools.set(toolName, dynamicTool);
       }
     } catch (error) {
-      mcpError("[Simple MCP] Failed to initialize dynamic tools:", error);
+      errorToFile("[Simple MCP] Failed to initialize dynamic tools:", error);
     }
   }
   /**
@@ -6213,7 +6213,7 @@ var SimpleMcpServer = class {
   async refreshDynamicToolsSafe() {
     if (this.isRefreshing) {
       if (this.isDevelopment) {
-        mcpDebug("[TRACE] refreshDynamicToolsSafe skipped: already in progress");
+        debugToFile("[TRACE] refreshDynamicToolsSafe skipped: already in progress");
       }
       return;
     }
@@ -6223,7 +6223,7 @@ var SimpleMcpServer = class {
         const stack = new Error().stack;
         const callerLine = stack?.split("\n")[2]?.trim() || "Unknown caller";
         const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
-        mcpDebug(`[TRACE] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`);
+        debugToFile(`[TRACE] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`);
       }
       await this.refreshDynamicTools();
     } finally {
@@ -6279,12 +6279,12 @@ var SimpleMcpServer = class {
           }
         });
       }
-      mcpDebug(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
+      debugToFile(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
       return { tools };
     });
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      mcpDebug(`Tool executed: ${name}`, { args });
+      debugToFile(`Tool executed: ${name}`, { args });
       try {
         if (this.dynamicTools.has(name)) {
           const dynamicTool = this.dynamicTools.get(name);
@@ -6435,13 +6435,13 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
     this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
       if (this.isDevelopment) {
         const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
-        mcpDebug(`[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`);
-        mcpDebug(`[TRACE] Notification params: ${JSON.stringify(params)}`);
+        debugToFile(`[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`);
+        debugToFile(`[TRACE] Notification params: ${JSON.stringify(params)}`);
       }
       try {
         await this.refreshDynamicToolsSafe();
       } catch (error) {
-        mcpError("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
+        errorToFile("[Simple MCP] Failed to update dynamic tools via Unity notification:", error);
       }
     });
   }
@@ -6455,7 +6455,7 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
         params: {}
       });
     } catch (error) {
-      mcpError("[Simple MCP] Failed to send tools changed notification:", error);
+      errorToFile("[Simple MCP] Failed to send tools changed notification:", error);
     }
   }
   /**
@@ -6463,31 +6463,31 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
    */
   setupSignalHandlers() {
     process.on("SIGINT", () => {
-      mcpInfo("[Simple MCP] Received SIGINT, shutting down...");
+      infoToFile("[Simple MCP] Received SIGINT, shutting down...");
       this.gracefulShutdown();
     });
     process.on("SIGTERM", () => {
-      mcpInfo("[Simple MCP] Received SIGTERM, shutting down...");
+      infoToFile("[Simple MCP] Received SIGTERM, shutting down...");
       this.gracefulShutdown();
     });
     process.on("SIGHUP", () => {
-      mcpInfo("[Simple MCP] Received SIGHUP, shutting down...");
+      infoToFile("[Simple MCP] Received SIGHUP, shutting down...");
       this.gracefulShutdown();
     });
     process.stdin.on("close", () => {
-      mcpInfo("[Simple MCP] STDIN closed, shutting down...");
+      infoToFile("[Simple MCP] STDIN closed, shutting down...");
       this.gracefulShutdown();
     });
     process.stdin.on("end", () => {
-      mcpInfo("[Simple MCP] STDIN ended, shutting down...");
+      infoToFile("[Simple MCP] STDIN ended, shutting down...");
       this.gracefulShutdown();
     });
     process.on("uncaughtException", (error) => {
-      mcpError("[Simple MCP] Uncaught exception:", error);
+      errorToFile("[Simple MCP] Uncaught exception:", error);
       this.gracefulShutdown();
     });
     process.on("unhandledRejection", (reason, promise) => {
-      mcpError("[Simple MCP] Unhandled rejection at:", promise, "reason:", reason);
+      errorToFile("[Simple MCP] Unhandled rejection at:", promise, "reason:", reason);
       this.gracefulShutdown();
     });
   }
@@ -6500,7 +6500,7 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
       return;
     }
     this.isShuttingDown = true;
-    mcpInfo("[Simple MCP] Starting graceful shutdown...");
+    infoToFile("[Simple MCP] Starting graceful shutdown...");
     try {
       if (this.unityClient) {
         this.unityClient.disconnect();
@@ -6509,15 +6509,15 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
         global.gc();
       }
     } catch (error) {
-      mcpError("[Simple MCP] Error during cleanup:", error);
+      errorToFile("[Simple MCP] Error during cleanup:", error);
     }
-    mcpInfo("[Simple MCP] Graceful shutdown completed");
+    infoToFile("[Simple MCP] Graceful shutdown completed");
     process.exit(0);
   }
 };
 var server = new SimpleMcpServer();
 server.start().catch((error) => {
-  mcpError("[FATAL] Server startup failed:", error);
+  errorToFile("[FATAL] Server startup failed:", error);
   console.error("[FATAL] Unity MCP Server startup failed:");
   console.error("Error details:", error instanceof Error ? error.message : String(error));
   console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace available");
