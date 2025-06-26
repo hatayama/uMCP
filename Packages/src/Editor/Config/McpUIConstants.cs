@@ -48,5 +48,6 @@ namespace io.github.hatayama.uMCP
         public const string CONNECTED_TOOLS_FOLDOUT_TEXT = "Connected LLM Tools";
         public const string CLIENT_ICON = "● ";
         public const string ENDPOINT_ARROW = "→ ";
+        public const string RECONNECTING_MESSAGE = "Reconnecting...";
     }
 }

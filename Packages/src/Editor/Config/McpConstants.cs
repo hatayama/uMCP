@@ -47,6 +47,9 @@ namespace io.github.hatayama.uMCP
         // Command messages
         public const string CLIENT_SUCCESS_MESSAGE_TEMPLATE = "Client name registered successfully: {0}";
         
+        // Reconnection settings
+        public const int RECONNECTION_TIMEOUT_SECONDS = 10;
+        
         // Editor settings keys (development mode)
         public const string SETTINGS_KEY_ENABLE_DEVELOPMENT_MODE = "EnableDevelopmentMode";
         
@@ -59,6 +62,8 @@ namespace io.github.hatayama.uMCP
         public const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
         public const string SESSION_KEY_COMMUNICATION_LOGS = "uMCP.CommunicationLogs";
         public const string SESSION_KEY_PENDING_REQUESTS = "uMCP.PendingRequests";
+        public const string SESSION_KEY_RECONNECTING = "uMCP.Reconnecting";
+        public const string SESSION_KEY_SHOW_RECONNECTING_UI = "uMCP.ShowReconnectingUI";
         
         /// <summary>
         /// Gets the client name for the specified editor type

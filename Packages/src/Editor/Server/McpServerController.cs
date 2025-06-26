@@ -100,6 +100,11 @@ namespace io.github.hatayama.uMCP
             // Set the domain reload start flag.
             SessionState.SetBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS, true);
             
+            // Debug: Log server state before assembly reload
+            bool serverExists = mcpServer != null;
+            bool serverRunning = mcpServer?.IsRunning ?? false;
+            McpLogger.LogDebug($"[RECONNECTION] OnBeforeAssemblyReload: serverExists={serverExists}, serverRunning={serverRunning}");
+            
             // If the server is running, save its state and stop it.
             if (mcpServer?.IsRunning == true)
             {
@@ -109,6 +114,8 @@ namespace io.github.hatayama.uMCP
                 SessionState.SetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, true);
                 SessionState.SetInt(McpConstants.SESSION_KEY_SERVER_PORT, portToSave);
                 SessionState.SetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, true); // Set the post-compilation flag.
+                SessionState.SetBool(McpConstants.SESSION_KEY_RECONNECTING, true); // Set the reconnecting flag.
+                SessionState.SetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, true); // Set the UI display flag.
                 
                 // Force-save the communication log as well.
                 McpCommunicationLogger.SaveToSessionState();
@@ -140,6 +147,15 @@ namespace io.github.hatayama.uMCP
         {
             // Clear the domain reload completion flag.
             SessionState.EraseBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS);
+            
+            // Start UI timeout if UI display flag is set
+            bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            McpLogger.LogDebug($"[RECONNECTION] OnAfterAssemblyReload: showReconnectingUI={showReconnectingUI}");
+            
+            if (showReconnectingUI)
+            {
+                _ = StartReconnectionUITimeout();
+            }
             
             // Restore server state.
             RestoreServerStateIfNeeded();
@@ -232,6 +248,11 @@ namespace io.github.hatayama.uMCP
                 mcpServer.StartServer(port);
                 
                 McpLogger.LogInfo($"Unity MCP Server restored on port {port}");
+                
+                // Clear server-side reconnecting flag on successful restoration
+                // NOTE: Do NOT clear UI display flag here - let it be cleared by timeout or client connection
+                SessionState.EraseBool(McpConstants.SESSION_KEY_RECONNECTING);
+                McpLogger.LogDebug("[RECONNECTION] Server restored successfully, cleared server reconnecting flag");
                 
                 // Commands changed notification will be sent by OnAfterAssemblyReload
             }
@@ -409,6 +430,68 @@ namespace io.github.hatayama.uMCP
             
             // Do not change the port number; retry with the same port
             TryRestoreServerWithRetry(port, retryCount + 1);
+        }
+        
+        /// <summary>
+        /// Start reconnection timeout timer
+        /// </summary>
+        private static async Task StartReconnectionTimeout()
+        {
+            McpLogger.LogDebug($"[RECONNECTION] Starting reconnection timeout ({McpConstants.RECONNECTION_TIMEOUT_SECONDS} seconds)");
+            
+            // Wait for the timeout period (convert seconds to frames at ~60fps)
+            int timeoutFrames = McpConstants.RECONNECTION_TIMEOUT_SECONDS * 60;
+            await EditorDelay.DelayFrame(timeoutFrames);
+            
+            // Check if reconnecting flag is still set after timeout
+            bool isStillReconnecting = SessionState.GetBool(McpConstants.SESSION_KEY_RECONNECTING, false);
+            if (isStillReconnecting)
+            {
+                McpLogger.LogWarning("[RECONNECTION] Timeout reached, clearing reconnecting flag");
+                SessionState.EraseBool(McpConstants.SESSION_KEY_RECONNECTING);
+            }
+        }
+        
+        /// <summary>
+        /// Start UI display timeout timer for reconnecting message
+        /// </summary>
+        private static async Task StartReconnectionUITimeout()
+        {
+            McpLogger.LogDebug($"[RECONNECTION UI] Starting UI timeout ({McpConstants.RECONNECTION_TIMEOUT_SECONDS} seconds)");
+            
+            // Wait for the timeout period (convert seconds to frames at ~60fps)
+            int timeoutFrames = McpConstants.RECONNECTION_TIMEOUT_SECONDS * 60;
+            await EditorDelay.DelayFrame(timeoutFrames);
+            
+            // Check if UI flag is still set after timeout
+            bool isStillShowingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            if (isStillShowingUI)
+            {
+                McpLogger.LogDebug("[RECONNECTION UI] Timeout reached, clearing UI display flag");
+                SessionState.EraseBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI);
+            }
+        }
+        
+        /// <summary>
+        /// Clear reconnecting flags when client connects
+        /// Called by UI or bridge server when client connection is detected
+        /// </summary>
+        public static void ClearReconnectingFlag()
+        {
+            bool wasReconnecting = SessionState.GetBool(McpConstants.SESSION_KEY_RECONNECTING, false);
+            bool wasShowingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            
+            if (wasReconnecting)
+            {
+                SessionState.EraseBool(McpConstants.SESSION_KEY_RECONNECTING);
+                McpLogger.LogDebug("[RECONNECTION] Client connected, cleared reconnecting flag");
+            }
+            
+            if (wasShowingUI)
+            {
+                SessionState.EraseBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI);
+                McpLogger.LogDebug("[RECONNECTION UI] Client connected, cleared UI display flag");
+            }
         }
 
         /// <summary>

@@ -375,12 +375,22 @@ namespace io.github.hatayama.uMCP
             {
                 EditorGUILayout.Space();
                 
-                if (McpServerController.IsServerRunning)
+                // Check UI display flag first
+                bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+                
+                if (showReconnectingUI)
+                {
+                    EditorGUILayout.HelpBox(McpUIConstants.RECONNECTING_MESSAGE, MessageType.Info);
+                }
+                else if (McpServerController.IsServerRunning)
                 {
                     var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
                     
                     if (connectedClients != null && connectedClients.Count > 0)
                     {
+                        // Clear reconnecting flag when clients are actually connected
+                        McpServerController.ClearReconnectingFlag();
+                        
                         foreach (ConnectedClient client in connectedClients)
                         {
                             DrawConnectedClientItem(client);
@@ -388,7 +398,16 @@ namespace io.github.hatayama.uMCP
                     }
                     else
                     {
-                        EditorGUILayout.HelpBox("No LLM tools currently connected.", MessageType.Info);
+                        // Check if we should still show reconnecting instead of "No LLM tools"
+                        bool stillReconnecting = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+                        if (stillReconnecting)
+                        {
+                            EditorGUILayout.HelpBox(McpUIConstants.RECONNECTING_MESSAGE, MessageType.Info);
+                        }
+                        else
+                        {
+                            EditorGUILayout.HelpBox("No LLM tools currently connected.", MessageType.Info);
+                        }
                     }
                 }
                 else
