@@ -10,6 +10,7 @@ namespace io.github.hatayama.uMCP
     public static class UnityMcpPathResolver
     {
         private const string CURSOR_CONFIG_DIR = ".cursor";
+        private const string VSCODE_CONFIG_DIR = ".vscode";
         private const string MCP_CONFIG_FILE = "mcp.json";
         private const string CLAUDE_CODE_CONFIG_FILE = ".mcp.json";
 
@@ -40,6 +41,15 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Gets the path to the VSCode configuration file (.vscode/mcp.json).
+        /// </summary>
+        public static string GetVSCodeConfigPath()
+        {
+            string projectRoot = GetProjectRoot();
+            return Path.Combine(projectRoot, VSCODE_CONFIG_DIR, MCP_CONFIG_FILE);
+        }
+
+        /// <summary>
         /// Gets the configuration file path for the specified editor.
         /// </summary>
         /// <param name="editorType">The type of editor.</param>
@@ -50,6 +60,7 @@ namespace io.github.hatayama.uMCP
             {
                 McpEditorType.Cursor => GetMcpConfigPath(),
                 McpEditorType.ClaudeCode => GetClaudeCodeConfigPath(),
+                McpEditorType.VSCode => GetVSCodeConfigPath(),
                 _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
             };
         }
@@ -64,6 +75,15 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Gets the path to the .vscode directory.
+        /// </summary>
+        public static string GetVSCodeConfigDirectory()
+        {
+            string projectRoot = GetProjectRoot();
+            return Path.Combine(projectRoot, VSCODE_CONFIG_DIR);
+        }
+
+        /// <summary>
         /// Gets the configuration directory for the specified editor (only if it exists).
         /// </summary>
         /// <param name="editorType">The type of editor.</param>
@@ -74,6 +94,7 @@ namespace io.github.hatayama.uMCP
             {
                 McpEditorType.Cursor => GetCursorConfigDirectory(),
                 McpEditorType.ClaudeCode => null, // Claude Code is placed directly in the project root.
+                McpEditorType.VSCode => GetVSCodeConfigDirectory(),
                 _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
             };
         }
@@ -141,6 +162,7 @@ namespace io.github.hatayama.uMCP
     public enum McpEditorType
     {
         Cursor,
-        ClaudeCode
+        ClaudeCode,
+        VSCode
     }
 } 

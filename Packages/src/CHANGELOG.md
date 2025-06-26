@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/hatayama/uMCP/compare/v0.8.1...v0.9.0) (2025-06-26)
+
+
+### Features
+
+* vscode support ([#71](https://github.com/hatayama/uMCP/issues/71)) ([5f8b6c5](https://github.com/hatayama/uMCP/commit/5f8b6c5d7f5d9a0f742bd6eddccf275316e3912c))
+
+## [0.8.1](https://github.com/hatayama/uMCP/compare/v0.8.0...v0.8.1) (2025-06-26)
+
+
+### Bug Fixes
+
+* Fixed a communication warning that occurred after compilation、node server surviving after closing LLM Tool、Apply UMPC_DEBUG symbol to debug tools, Changed LLM Tool Settins area to be collapsible ([#68](https://github.com/hatayama/uMCP/issues/68)) ([0c6c5d6](https://github.com/hatayama/uMCP/commit/0c6c5d65173bed8d119f9ede8a1baeea130b56a3))
+
 ## [0.8.0](https://github.com/hatayama/uMCP/compare/v0.7.0...v0.8.0) (2025-06-25)
 
 

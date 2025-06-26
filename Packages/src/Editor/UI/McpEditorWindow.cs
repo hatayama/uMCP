@@ -48,6 +48,7 @@ namespace io.github.hatayama.uMCP
         private readonly McpConfigRepository _repository = new(McpEditorType.Cursor);
         private McpConfigService _cursorConfigService;
         private McpConfigService _claudeCodeConfigService;
+        private McpConfigService _vscodeConfigService;
         
         [MenuItem("Window/uMCP")]
         public static void ShowWindow()
@@ -62,8 +63,10 @@ namespace io.github.hatayama.uMCP
             // Initialize configuration services
             McpConfigRepository cursorRepository = new(McpEditorType.Cursor);
             McpConfigRepository claudeCodeRepository = new(McpEditorType.ClaudeCode);
+            McpConfigRepository vscodeRepository = new(McpEditorType.VSCode);
             _cursorConfigService = new McpConfigService(cursorRepository, McpEditorType.Cursor);
             _claudeCodeConfigService = new McpConfigService(claudeCodeRepository, McpEditorType.ClaudeCode);
+            _vscodeConfigService = new McpConfigService(vscodeRepository, McpEditorType.VSCode);
             
             // Load saved settings
             McpEditorSettingsData settings = McpEditorSettings.GetSettings();
@@ -534,6 +537,7 @@ namespace io.github.hatayama.uMCP
             {
                 McpEditorType.Cursor => _cursorConfigService,
                 McpEditorType.ClaudeCode => _claudeCodeConfigService,
+                McpEditorType.VSCode => _vscodeConfigService,
                 _ => throw new ArgumentException($"Unsupported editor type: {editorType}")
             };
         }
@@ -547,6 +551,7 @@ namespace io.github.hatayama.uMCP
             {
                 McpEditorType.Cursor => "Cursor",
                 McpEditorType.ClaudeCode => "Claude Code",
+                McpEditorType.VSCode => "VSCode",
                 _ => editorType.ToString()
             };
         }
