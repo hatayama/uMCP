@@ -85,10 +85,17 @@ class SimpleMcpServer {
         const commandName = commandInfo.name;
         const description = commandInfo.description || `Execute Unity command: ${commandName}`;
         const parameterSchema = commandInfo.parameterSchema;
+        const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
         
         // Skip ping command as we have a dedicated unity-ping tool
         if (commandName === 'ping') {
           continue;
+        }
+        
+        // Check if this tool should only be displayed in development mode
+        if (displayDevelopmentOnly && !this.isDevelopment) {
+          mcpDebug(`Skipping ${commandName} in production mode`);
+          continue; // Skip this tool in production mode
         }
         
         const toolName = commandName;

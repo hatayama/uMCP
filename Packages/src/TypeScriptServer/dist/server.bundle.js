@@ -6178,7 +6178,12 @@ var SimpleMcpServer = class {
         const commandName = commandInfo.name;
         const description = commandInfo.description || `Execute Unity command: ${commandName}`;
         const parameterSchema = commandInfo.parameterSchema;
+        const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
         if (commandName === "ping") {
+          continue;
+        }
+        if (displayDevelopmentOnly && !this.isDevelopment) {
+          mcpDebug(`Skipping ${commandName} in production mode`);
           continue;
         }
         const toolName = commandName;

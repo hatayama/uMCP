@@ -10,6 +10,11 @@ namespace io.github.hatayama.uMCP
     public class McpToolAttribute : Attribute
     {
         /// <summary>
+        /// Gets whether this tool should only be displayed in development mode
+        /// </summary>
+        public bool DisplayDevelopmentOnly { get; set; } = false;
+
+        /// <summary>
         /// Initialize McpTool attribute
         /// </summary>
         public McpToolAttribute()

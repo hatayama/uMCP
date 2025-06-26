@@ -3,6 +3,7 @@ import { PingTool } from './ping-tool.js';
 import { UnityPingTool } from './unity-ping-tool.js';
 import { GetAvailableCommandsTool } from './get-available-commands-tool.js';
 import { DynamicUnityCommandTool } from './dynamic-unity-command-tool.js';
+import { mcpDebug } from '../utils/log-to-file.js';
 
 /**
  * Tool registry
@@ -90,10 +91,12 @@ export class ToolRegistry {
    */
   private async loadDynamicTools(context: ToolContext): Promise<void> {
     try {
+      mcpDebug('loadDynamicTools called');
       // Wait a bit for Unity to be ready
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const commands = await context.unityClient.getCommandDetails();
+      mcpDebug('Got commands from Unity:', commands.length, commands);
       
       // Skip standard commands that are already registered as specific tools
       const standardCommands = ['ping', 'getavailablecommands'];
@@ -102,8 +105,20 @@ export class ToolRegistry {
         const commandName = (command as any).name || (command as any).Name;
         const commandDescription = (command as any).description || (command as any).Description;
         const parameterSchema = (command as any).parameterSchema || (command as any).ParameterSchema;
+        const displayDevelopmentOnly = (command as any).displayDevelopmentOnly || false;
         
         if (commandName && !standardCommands.includes(commandName.toLowerCase())) {
+          // Check if this tool should only be displayed in development mode
+          const isDevelopment = process.env.NODE_ENV === 'development';
+          
+          // Debug logging
+          mcpDebug(`Command: ${commandName}, displayDevelopmentOnly: ${displayDevelopmentOnly}, NODE_ENV: ${process.env.NODE_ENV}, isDevelopment: ${isDevelopment}`);
+          
+          if (displayDevelopmentOnly && !isDevelopment) {
+            mcpDebug(`Skipping ${commandName} in production mode`);
+            continue; // Skip this tool in production mode
+          }
+          
           const dynamicTool = new DynamicUnityCommandTool(context, commandName, commandDescription, parameterSchema);
           this.register(dynamicTool);
           
