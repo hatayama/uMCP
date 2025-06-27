@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/hatayama/uMCP/compare/v0.10.0...v0.11.0) (2025-06-27)
+
+
+### Features
+
+* add  execute menuItem tool, play mode test tool ([#74](https://github.com/hatayama/uMCP/issues/74)) ([a6d2a58](https://github.com/hatayama/uMCP/commit/a6d2a58a0b0eabbcf64ee28101c99d2a9e3c8845))
+
 ## [0.10.0](https://github.com/hatayama/uMCP/compare/v0.9.0...v0.10.0) (2025-06-26)
 
 
