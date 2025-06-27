@@ -30,6 +30,29 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
+        /// Run tests based on test mode
+        /// </summary>
+        public void RunTests(TestMode testMode, Action<ITestResultAdaptor> onComplete = null)
+        {
+            RunTests(testMode, null, onComplete);
+        }
+        
+        /// <summary>
+        /// Run tests based on test mode and filter
+        /// </summary>
+        public void RunTests(TestMode testMode, TestExecutionFilter testFilter, Action<ITestResultAdaptor> onComplete = null)
+        {
+            if (testMode == TestMode.EditMode)
+            {
+                RunEditModeTests(testFilter, onComplete);
+            }
+            else if (testMode == TestMode.PlayMode)
+            {
+                RunPlayModeTests(testFilter, onComplete);
+            }
+        }
+        
+        /// <summary>
         /// Executes specific EditMode tests.
         /// </summary>
         /// <param name="testFilter">Test execution filter (if null, all tests are run).</param>
@@ -54,7 +77,7 @@ namespace io.github.hatayama.uMCP
             // Create a filter for EditMode.
             Filter filter = new Filter()
             {
-                testMode = TestMode.EditMode
+                testMode = UnityEditor.TestTools.TestRunner.Api.TestMode.EditMode
             };
             
             // Apply custom filter.
@@ -72,6 +95,66 @@ namespace io.github.hatayama.uMCP
                     case TestExecutionFilterType.Namespace:
                         // Filtering by namespace.
                         filter.testNames = new string[] { testFilter.FilterValue };
+                        break;
+                    case TestExecutionFilterType.AssemblyName:
+                        filter.assemblyNames = new string[] { testFilter.FilterValue };
+                        break;
+                }
+            }
+            
+            // Execute tests.
+            testRunnerApi.Execute(new ExecutionSettings(filter));
+        }
+        
+        /// <summary>
+        /// Executes PlayMode tests.
+        /// </summary>
+        public void RunPlayModeTests(Action<ITestResultAdaptor> onComplete = null)
+        {
+            RunPlayModeTests(null, onComplete);
+        }
+        
+        /// <summary>
+        /// Executes specific PlayMode tests.
+        /// </summary>
+        /// <param name="testFilter">Test execution filter (if null, all tests are run).</param>
+        /// <param name="onComplete">Callback on completion.</param>
+        public void RunPlayModeTests(TestExecutionFilter testFilter, Action<ITestResultAdaptor> onComplete = null)
+        {
+            if (isRunning)
+            {
+                McpLogger.LogWarning("Tests are already running.");
+                return;
+            }
+            
+            isRunning = true;
+            onRunFinished = onComplete;
+            
+            // Create an instance of TestRunnerApi.
+            testRunnerApi = ScriptableObject.CreateInstance<TestRunnerApi>();
+            
+            // Register callbacks.
+            testRunnerApi.RegisterCallbacks(this);
+            
+            // Create a filter for PlayMode.
+            Filter filter = new Filter()
+            {
+                testMode = UnityEditor.TestTools.TestRunner.Api.TestMode.PlayMode
+            };
+            
+            // Apply custom filter.
+            if (testFilter != null)
+            {
+                switch (testFilter.FilterType)
+                {
+                    case TestExecutionFilterType.TestName:
+                        filter.testNames = new string[] { testFilter.FilterValue };
+                        break;
+                    case TestExecutionFilterType.ClassName:
+                        filter.testNames = new string[] { testFilter.FilterValue };
+                        break;
+                    case TestExecutionFilterType.Namespace:
+                        filter.assemblyNames = new string[] { testFilter.FilterValue };
                         break;
                     case TestExecutionFilterType.AssemblyName:
                         filter.assemblyNames = new string[] { testFilter.FilterValue };

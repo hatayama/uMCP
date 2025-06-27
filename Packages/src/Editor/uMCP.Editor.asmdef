@@ -1,9 +1,7 @@
 {
-    "name": "UnityMCP.Editor",
+    "name": "uMCP.Editor",
     "rootNamespace": "",
-    "references": [
-        "UniTask"
-    ],
+    "references": [],
     "includePlatforms": [
         "Editor"
     ],
