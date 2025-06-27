@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
-using UnityEditor;
 using uMCP.Editor.Api.Commands.GetMenuItems;
 
 namespace io.github.hatayama.uMCP
@@ -29,8 +26,8 @@ namespace io.github.hatayama.uMCP
             // Switch to the main thread for Unity API access
             await MainThreadSwitcher.SwitchToMainThread();
             
-            // Discover all MenuItems using reflection
-            List<MenuItemInfo> allMenuItems = DiscoverMenuItems();
+            // Discover all MenuItems using the service
+            List<MenuItemInfo> allMenuItems = MenuItemDiscoveryService.DiscoverAllMenuItems();
             
             // Apply filtering
             List<MenuItemInfo> filteredMenuItems = ApplyFiltering(allMenuItems, filterText, filterType, includeValidation);
@@ -52,73 +49,6 @@ namespace io.github.hatayama.uMCP
             };
             
             return response;
-        }
-
-        /// <summary>
-        /// Discovers all MenuItem methods in loaded assemblies using reflection
-        /// </summary>
-        private List<MenuItemInfo> DiscoverMenuItems()
-        {
-            List<MenuItemInfo> menuItems = new List<MenuItemInfo>();
-            
-            try
-            {
-                // Get all assemblies in the current domain
-                Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                
-                foreach (Assembly assembly in assemblies)
-                {
-                    try
-                    {
-                        // Get all types in the assembly
-                        Type[] types = assembly.GetTypes();
-                        
-                        foreach (Type type in types)
-                        {
-                            // Get all static methods in the type
-                            MethodInfo[] methods = type.GetMethods(
-                                BindingFlags.Static | 
-                                BindingFlags.Public | 
-                                BindingFlags.NonPublic
-                            );
-                            
-                            foreach (MethodInfo method in methods)
-                            {
-                                // Check if method has MenuItem attribute
-                                MenuItem menuItemAttribute = method.GetCustomAttribute<MenuItem>();
-                                if (menuItemAttribute != null)
-                                {
-                                    MenuItemInfo menuItemInfo = new MenuItemInfo(
-                                        menuItemAttribute.menuItem,
-                                        method,
-                                        menuItemAttribute.priority,
-                                        menuItemAttribute.validate
-                                    );
-                                    
-                                    menuItems.Add(menuItemInfo);
-                                }
-                            }
-                        }
-                    }
-                    catch (ReflectionTypeLoadException)
-                    {
-                        // Skip assemblies that can't be loaded
-                        continue;
-                    }
-                    catch (Exception)
-                    {
-                        // Skip assemblies that cause other reflection issues
-                        continue;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                UnityEngine.Debug.LogError($"Error discovering MenuItems: {ex.Message}");
-            }
-            
-            // Sort by path for consistent ordering
-            return menuItems.OrderBy(item => item.Path).ToList();
         }
 
         /// <summary>
@@ -158,13 +88,13 @@ namespace io.github.hatayama.uMCP
             return filterType switch
             {
                 MenuItemFilterType.exact => menuItems.Where(item => 
-                    string.Equals(item.Path, filterText, StringComparison.OrdinalIgnoreCase)).ToList(),
+                    string.Equals(item.Path, filterText, System.StringComparison.OrdinalIgnoreCase)).ToList(),
                     
                 MenuItemFilterType.startswith => menuItems.Where(item => 
-                    item.Path.StartsWith(filterText, StringComparison.OrdinalIgnoreCase)).ToList(),
+                    item.Path.StartsWith(filterText, System.StringComparison.OrdinalIgnoreCase)).ToList(),
                     
                 MenuItemFilterType.contains => menuItems.Where(item => 
-                    item.Path.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0).ToList(),
+                    item.Path.IndexOf(filterText, System.StringComparison.OrdinalIgnoreCase) >= 0).ToList(),
                     
                 _ => menuItems
             };

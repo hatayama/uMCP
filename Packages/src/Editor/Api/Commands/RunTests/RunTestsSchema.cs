@@ -49,7 +49,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Timeout for test execution in seconds (default: 60 seconds for EditMode, 120 seconds for PlayMode)
         /// </summary>
-        [Description("Timeout for test execution in seconds (default: 60 seconds for EditMode, 120 seconds for PlayMode)")]
-        public override int TimeoutSeconds { get; set; } = 60;
+        [Description("Timeout for test execution in seconds (default: 30 seconds)")]
+        public override int TimeoutSeconds { get; set; } = 30;
     }
 } 

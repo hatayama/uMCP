@@ -12,6 +12,6 @@ namespace io.github.hatayama.uMCP
         /// Timeout for command execution in seconds (default: 15 seconds)
         /// </summary>
         [Description("Timeout for command execution in seconds (default: 15 seconds)")]
-        public virtual int TimeoutSeconds { get; set; } = 15;
+        public virtual int TimeoutSeconds { get; set; } = 10;
     }
 } 
