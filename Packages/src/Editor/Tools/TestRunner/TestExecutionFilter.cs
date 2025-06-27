@@ -6,6 +6,11 @@ namespace io.github.hatayama.uMCP
     public enum TestExecutionFilterType
     {
         /// <summary>
+        /// Run all tests without any filter.
+        /// </summary>
+        All,
+        
+        /// <summary>
         /// Filter by a specific test name.
         /// </summary>
         TestName,
@@ -32,12 +37,18 @@ namespace io.github.hatayama.uMCP
     public class TestExecutionFilter
     {
         /// <summary>
-        /// Filter type.
+        /// The type of filter to apply (TestName, ClassName, Namespace, or AssemblyName).
+        /// This determines how the FilterValue will be interpreted.
         /// </summary>
         public TestExecutionFilterType FilterType { get; }
         
         /// <summary>
-        /// Filter value.
+        /// The specific value to filter tests by, based on the FilterType.
+        /// Examples:
+        /// • When FilterType is TestName: "MySpecificTestMethod"
+        /// • When FilterType is ClassName: "io.github.hatayama.uMCP.CompileCommandTests"
+        /// • When FilterType is Namespace: "io.github.hatayama.uMCP"
+        /// • When FilterType is AssemblyName: "uMCP.Tests.Editor"
         /// </summary>
         public string FilterValue { get; }
         
@@ -80,6 +91,14 @@ namespace io.github.hatayama.uMCP
         public static TestExecutionFilter ByAssemblyName(string assemblyName)
         {
             return new TestExecutionFilter(TestExecutionFilterType.AssemblyName, assemblyName);
+        }
+        
+        /// <summary>
+        /// Creates a filter to run all tests without any filter.
+        /// </summary>
+        public static TestExecutionFilter All()
+        {
+            return new TestExecutionFilter(TestExecutionFilterType.All, string.Empty);
         }
     }
 } 

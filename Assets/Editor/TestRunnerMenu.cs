@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.TestTools.TestRunner.Api;
 using UnityEngine;
@@ -9,27 +10,52 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class TestRunnerMenu
     {
-        private static UnityTestExecutionManager testRunnerController;
-        private static bool shouldSaveXml = true;
-        
-        [MenuItem("uMCP/Test Runner/Run EditMode Tests (Save XML)")]
-        public static void RunEditModeTestsAndSaveXml()
+        [MenuItem("uMCP/Test Runner/EditMode/Run EditMode Tests (Save XML)")]
+        public static async void RunEditModeTestsAndSaveXml()
         {
-            Debug.Log("Masamichi, I'm running the EditMode tests and saving to XML!");
+            Debug.Log("Running EditMode tests and saving to XML!");
             
-            shouldSaveXml = true;
-            testRunnerController = new UnityTestExecutionManager();
-            testRunnerController.RunEditModeTests(OnTestRunComplete);
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
+                null, 
+                true);
+                
+            LogTestResult(result);
         }
         
-        [MenuItem("uMCP/Test Runner/Run EditMode Tests (Log XML)")]
-        public static void RunEditModeTestsAndLogXml()
+        [MenuItem("uMCP/Test Runner/EditMode/Run EditMode Tests (Log Only)")]
+        public static async void RunEditModeTestsAndLogOnly()
         {
-            Debug.Log("Masamichi, I'm running the EditMode tests and logging the XML!");
+            Debug.Log("Running EditMode tests (log only)!");
             
-            shouldSaveXml = false;
-            testRunnerController = new UnityTestExecutionManager();
-            testRunnerController.RunEditModeTests(OnTestRunComplete);
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
+                null, 
+                false);
+                
+            LogTestResult(result);
+        }
+
+        [MenuItem("uMCP/Test Runner/PlayMode/Run PlayMode Tests (Save XML)")]
+        public static async void RunPlayModeTestsAndSaveXml()
+        {
+            Debug.Log("Running PlayMode tests and saving to XML!");
+            
+            SerializableTestResult result = await PlayModeTestExecuter.ExecutePlayModeTest(
+                null, 
+                true);
+                
+            LogTestResult(result);
+        }
+        
+        [MenuItem("uMCP/Test Runner/PlayMode/Run PlayMode Tests (Log Only)")]
+        public static async void RunPlayModeTestsAndLogOnly()
+        {
+            Debug.Log("Running PlayMode tests (log only)!");
+            
+            SerializableTestResult result = await PlayModeTestExecuter.ExecutePlayModeTest(
+                null, 
+                false);
+                
+            LogTestResult(result);
         }
         
         [MenuItem("uMCP/Test Runner/Open Test Runner Window")]
@@ -44,81 +70,86 @@ namespace io.github.hatayama.uMCP
         // ===== Menu to run a specific test class =====
         
         [MenuItem("uMCP/Test Runner/Run Specific Test/CompileCommandTests")]
-        public static void RunCompileCommandTests()
+        public static async void RunCompileCommandTests()
         {
             Debug.Log("Running only CompileCommandTests!");
-            shouldSaveXml = false;
-            testRunnerController = new UnityTestExecutionManager();
-            // Tests for the io.github.hatayama.uMCP namespace
+            
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.CompileCommandTests");
-            testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
+                filter, 
+                false);
+                
+            LogTestResult(result);
         }
         
         [MenuItem("uMCP/Test Runner/Run Specific Test/GetLogsCommandTests")]
-        public static void RunGetLogsCommandTests()
+        public static async void RunGetLogsCommandTests()
         {
             Debug.Log("Running only GetLogsCommandTests!");
-            shouldSaveXml = false;
-            testRunnerController = new UnityTestExecutionManager();
+            
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.GetLogsCommandTests");
-            testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
+                filter, 
+                false);
+                
+            LogTestResult(result);
         }
         
         [MenuItem("uMCP/Test Runner/Run Specific Test/MainThreadSwitcherTests")]
-        public static void RunMainThreadSwitcherTests()
+        public static async void RunMainThreadSwitcherTests()
         {
             Debug.Log("Running only MainThreadSwitcherTests!");
-            shouldSaveXml = false;
-            testRunnerController = new UnityTestExecutionManager();
+            
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.MainThreadSwitcherTests");
-            testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
+                filter, 
+                false);
+                
+            LogTestResult(result);
         }
         
         [MenuItem("uMCP/Test Runner/Run Specific Test/SampleEditModeTest")]
-        public static void RunSampleEditModeTest()
+        public static async void RunSampleEditModeTest()
         {
             Debug.Log("Running only SampleEditModeTest!");
-            shouldSaveXml = false;
-            testRunnerController = new UnityTestExecutionManager();
+            
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("Tests.SampleEditModeTest");
-            testRunnerController.RunEditModeTests(filter, OnTestRunComplete);
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
+                filter, 
+                false);
+                
+            LogTestResult(result);
         }
         
         /// <summary>
-        /// Callback on test run completion.
+        /// Log test result
         /// </summary>
-        private static void OnTestRunComplete(ITestResultAdaptor result)
+        private static void LogTestResult(SerializableTestResult result)
         {
-            Debug.Log("Masamichi, the test run is complete!");
-            
-            if (shouldSaveXml)
+            if (result.success)
             {
-                // Call the XML save process
-                string savedPath = NUnitXmlResultExporter.SaveTestResultAsXml(result);
-                
-                if (!string.IsNullOrEmpty(savedPath))
-                {
-                    Debug.Log($"XML file saved successfully!\nPath: {savedPath}");
-                    
-                    // Select the file in the Project view
-                    UnityEngine.Object xmlAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(
-                        savedPath.Replace(Application.dataPath, "Assets"));
-                    if (xmlAsset != null)
-                    {
-                        EditorGUIUtility.PingObject(xmlAsset);
-                        Selection.activeObject = xmlAsset;
-                    }
-                }
-                else
-                {
-                    Debug.LogError("Failed to save the XML file...");
-                }
+                Debug.Log($"Test completed successfully! " +
+                         $"Passed: {result.passedCount}, " +
+                         $"Failed: {result.failedCount}, " +
+                         $"Skipped: {result.skippedCount}");
             }
             else
             {
-                // Log XML to console
-                NUnitXmlResultExporter.LogTestResultAsXml(result);
-                Debug.Log("Outputted XML to the console! Check the logs above~");
+                Debug.LogError($"Test failed: {result.message}");
+            }
+            
+            if (!string.IsNullOrEmpty(result.xmlPath))
+            {
+                Debug.Log($"XML file saved to: {result.xmlPath}");
+                
+                // Select the file in the Project view if it exists
+                Object xmlAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(
+                    result.xmlPath.Replace(Application.dataPath, "Assets"));
+                if (xmlAsset != null)
+                {
+                    EditorGUIUtility.PingObject(xmlAsset);
+                    Selection.activeObject = xmlAsset;
+                }
             }
         }
     }

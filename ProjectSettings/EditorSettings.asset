@@ -3,7 +3,7 @@
 --- !u!159 &1
 EditorSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 13
+  serializedVersion: 12
   m_SerializationMode: 2
   m_LineEndingsForNewScripts: 0
   m_DefaultBehaviorMode: 0
@@ -24,7 +24,7 @@ EditorSettings:
   m_EnableEditorAsyncCPUTextureLoading: 0
   m_AsyncShaderCompilation: 1
   m_PrefabModeAllowAutoSave: 1
-  m_EnterPlayModeOptionsEnabled: 1
+  m_EnterPlayModeOptionsEnabled: 0
   m_EnterPlayModeOptions: 0
   m_GameObjectNamingDigits: 1
   m_GameObjectNamingScheme: 0
@@ -45,4 +45,3 @@ EditorSettings:
   m_CacheServerValidationMode: 2
   m_CacheServerDownloadBatchSize: 128
   m_EnableEnlightenBakedGI: 0
-  m_ReferencedClipsExactNaming: 1

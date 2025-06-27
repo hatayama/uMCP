@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using UnityEditor.TestTools.TestRunner.Api;
 
 namespace io.github.hatayama.uMCP
 {
@@ -17,6 +18,12 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class RunTestsSchema : BaseCommandSchema
     {
+        /// <summary>
+        /// Test mode (EditMode or PlayMode)
+        /// </summary>
+        [Description("Test mode (EditMode or PlayMode)")]
+        public TestMode TestMode { get; set; } = TestMode.EditMode;
+
         /// <summary>
         /// Type of test filter
         /// </summary>
@@ -40,9 +47,9 @@ namespace io.github.hatayama.uMCP
         public bool SaveXml { get; set; } = false;
 
         /// <summary>
-        /// Timeout for test execution in seconds (default: 60 seconds for longer test runs)
+        /// Timeout for test execution in seconds (default: 60 seconds for EditMode, 120 seconds for PlayMode)
         /// </summary>
-        [Description("Timeout for test execution in seconds (default: 60 seconds for longer test runs)")]
-        public override int TimeoutSeconds { get; set; } = 60;
+        [Description("Timeout for test execution in seconds (default: 30 seconds)")]
+        public override int TimeoutSeconds { get; set; } = 30;
     }
 } 
