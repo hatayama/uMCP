@@ -15,6 +15,11 @@ import { ENVIRONMENT, DEFAULT_MESSAGES, UNITY_CONNECTION } from './constants.js'
 import packageJson from '../package.json' assert { type: 'json' };
 import { ToolResponse } from './types/tool-types.js';
 
+// Related classes:
+// - UnityClient: Handles the TCP connection to the Unity Editor.
+// - DynamicUnityCommandTool: Dynamically creates tools based on commands from Unity.
+// - @modelcontextprotocol/sdk/server: The core MCP server implementation.
+
 /**
  * Simple Unity MCP Server for testing notifications
  */

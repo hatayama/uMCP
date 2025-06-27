@@ -5,6 +5,10 @@ using System;
 
 namespace io.github.hatayama.uMCP
 {
+    // Related classes:
+    // - IUnityCommand: The interface that this class implements.
+    // - UnityCommandRegistry: Registers and manages instances of command implementations.
+    // - CommandParameterSchemaGenerator: Generates the JSON schema for command parameters.
     /// <summary>
     /// Abstract base class for type-safe Unity commands using Schema and Response types
     /// </summary>

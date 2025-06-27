@@ -8,6 +8,11 @@ using Newtonsoft.Json.Linq;
 
 namespace io.github.hatayama.uMCP
 {
+    // Related classes:
+    // - UnityCommandExecutor: Uses this registry to execute commands.
+    // - IUnityCommand: The interface for all commands stored in this registry.
+    // - AbstractUnityCommand: The base class for most command implementations.
+    // - McpToolAttribute: Attribute used to discover and register commands automatically.
     /// <summary>
     /// Unity MCP command registry class
     /// Supports dynamic command registration, allowing users to add their own commands

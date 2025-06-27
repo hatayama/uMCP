@@ -11,6 +11,10 @@ import {
 import { errorToFile, warnToFile } from './utils/log-to-file.js';
 import { SafeTimer, safeSetInterval, safeSetTimeout } from './utils/safe-timer.js';
 
+// Related classes:
+// - SimpleMcpServer: The main server class that uses this client.
+// - DynamicUnityCommandTool: Uses this client to execute commands in Unity.
+
 /**
  * TCP/IP client for communication with Unity
  */
