@@ -563,7 +563,7 @@ namespace io.github.hatayama.uMCP
         /// Sends a pre-formatted JSON-RPC notification to all connected clients.
         /// </summary>
         /// <param name="notificationJson">The complete JSON-RPC notification string</param>
-        public async Task SendNotificationToClients(string notificationJson)
+        public void SendNotificationToClients(string notificationJson)
         {
             if (connectedClients.IsEmpty)
             {
@@ -577,8 +577,7 @@ namespace io.github.hatayama.uMCP
             }
 
             byte[] notificationData = Encoding.UTF8.GetBytes(notificationJson);
-
-            await SendNotificationData(notificationData);
+            _ = SendNotificationData(notificationData);
         }
 
         /// <summary>

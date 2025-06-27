@@ -82,8 +82,11 @@ crashlytics-build.properties
 # AI
 .cursor
 .claude
+.gemini
 CLAUDE.md
+GEMINI.md
 .mcp.json
+.inspector.mcp.json
 
 # VSCode
 .vscode
