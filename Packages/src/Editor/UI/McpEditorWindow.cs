@@ -64,6 +64,8 @@ namespace io.github.hatayama.uMCP
         private McpConfigService _cursorConfigService;
         private McpConfigService _claudeCodeConfigService;
         private McpConfigService _vscodeConfigService;
+        private McpConfigService _geminiCLIConfigService;
+        private McpConfigService _mcpInspectorConfigService;
         
         [MenuItem("Window/uMCP")]
         public static void ShowWindow()
@@ -79,9 +81,13 @@ namespace io.github.hatayama.uMCP
             McpConfigRepository cursorRepository = new(McpEditorType.Cursor);
             McpConfigRepository claudeCodeRepository = new(McpEditorType.ClaudeCode);
             McpConfigRepository vscodeRepository = new(McpEditorType.VSCode);
+            McpConfigRepository geminiCLIRepository = new(McpEditorType.GeminiCLI);
+            McpConfigRepository mcpInspectorRepository = new(McpEditorType.McpInspector);
             _cursorConfigService = new McpConfigService(cursorRepository, McpEditorType.Cursor);
             _claudeCodeConfigService = new McpConfigService(claudeCodeRepository, McpEditorType.ClaudeCode);
             _vscodeConfigService = new McpConfigService(vscodeRepository, McpEditorType.VSCode);
+            _geminiCLIConfigService = new McpConfigService(geminiCLIRepository, McpEditorType.GeminiCLI);
+            _mcpInspectorConfigService = new McpConfigService(mcpInspectorRepository, McpEditorType.McpInspector);
             
             // Load saved settings
             McpEditorSettingsData settings = McpEditorSettings.GetSettings();
@@ -702,6 +708,8 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.Cursor => _cursorConfigService,
                 McpEditorType.ClaudeCode => _claudeCodeConfigService,
                 McpEditorType.VSCode => _vscodeConfigService,
+                McpEditorType.GeminiCLI => _geminiCLIConfigService,
+                McpEditorType.McpInspector => _mcpInspectorConfigService,
                 _ => throw new ArgumentException($"Unsupported editor type: {editorType}")
             };
         }
@@ -716,6 +724,8 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.Cursor => "Cursor",
                 McpEditorType.ClaudeCode => "Claude Code",
                 McpEditorType.VSCode => "VSCode",
+                McpEditorType.GeminiCLI => "Gemini CLI",
+                McpEditorType.McpInspector => "MCP Inspector",
                 _ => editorType.ToString()
             };
         }

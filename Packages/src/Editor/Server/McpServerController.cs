@@ -326,7 +326,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Send commands changed notification to TypeScript side
         /// </summary>
-        private static async Task SendCommandsChangedNotification()
+        private static void SendCommandsChangedNotification()
         {
             try
             {
@@ -357,7 +357,7 @@ namespace io.github.hatayama.uMCP
                 };
                 
                 string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
-                _ = mcpServer.SendNotificationToClients(mcpNotificationJson);
+                mcpServer.SendNotificationToClients(mcpNotificationJson);
                 
                 McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification sent successfully at {System.DateTime.Now:HH:mm:ss.fff}");
             }
@@ -377,7 +377,7 @@ namespace io.github.hatayama.uMCP
             
             if (IsServerRunning)
             {
-                _ = SendCommandsChangedNotification();
+                SendCommandsChangedNotification();
             }
             else
             {

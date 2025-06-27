@@ -33,6 +33,8 @@ namespace io.github.hatayama.uMCP
         public const string CLIENT_NAME_CURSOR = "Cursor";
         public const string CLIENT_NAME_CLAUDE_CODE = "Claude Code";
         public const string CLIENT_NAME_VSCODE = "VSCode";
+        public const string CLIENT_NAME_GEMINI_CLI = "Gemini CLI";
+        public const string CLIENT_NAME_MCP_INSPECTOR = "MCP Inspector";
         public const string UNKNOWN_CLIENT_NAME = "Unknown Client";
         
         // Process ID constants
@@ -78,6 +80,8 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.Cursor => CLIENT_NAME_CURSOR,
                 McpEditorType.ClaudeCode => CLIENT_NAME_CLAUDE_CODE,
                 McpEditorType.VSCode => CLIENT_NAME_VSCODE,
+                McpEditorType.GeminiCLI => CLIENT_NAME_GEMINI_CLI,
+                McpEditorType.McpInspector => CLIENT_NAME_MCP_INSPECTOR,
                 _ => UNKNOWN_CLIENT_NAME
             };
         }

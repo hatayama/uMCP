@@ -6,13 +6,68 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Class for resolving paths related to Unity MCP.
     /// Single Responsibility Principle: Only responsible for path resolution.
+    /// 
+    /// ## Adding New LLM Tools Support
+    /// 
+    /// When adding support for a new LLM tool, follow these steps to avoid common failures:
+    /// 
+    /// ### 1. Update UnityMcpPathResolver.cs (this file)
+    /// - Add new McpEditorType enum value
+    /// - Add configuration file path constants
+    /// - Add GetXXXConfigPath() method
+    /// - Add GetXXXConfigDirectory() method (if needed)
+    /// - Update GetConfigPath() switch statement
+    /// - Update GetConfigDirectory() switch statement
+    /// 
+    /// ### 2. Update McpConstants.cs
+    /// - Add CLIENT_NAME_XXX constant
+    /// - Update GetClientNameForEditor() switch statement
+    /// 
+    /// ### 3. Update McpEditorWindow.cs
+    /// - Add private McpConfigService field (_xxxConfigService)
+    /// - Initialize the service in OnEnable()
+    /// - Update GetConfigService() switch statement
+    /// - Update GetEditorDisplayName() switch statement
+    /// 
+    /// ### 4. Related Classes to Check
+    /// - McpConfigService: Handles configuration file read/write operations
+    /// - McpConfigRepository: Manages configuration data persistence
+    /// - McpServerConfigFactory: Creates server configuration objects
+    /// - McpEditorSettings: Manages editor-specific settings
+    /// 
+    /// ### 5. Configuration File Format
+    /// All tools use the same JSON structure:
+    /// ```json
+    /// {
+    ///   "mcpServers": {
+    ///     "unity-mcp@{port}": {
+    ///       "command": "node",
+    ///       "args": ["{path_to_server.bundle.js}"],
+    ///       "env": {
+    ///         "UNITY_TCP_PORT": "{port}",
+    ///         "MCP_CLIENT_NAME": "{client_name}"
+    ///       }
+    ///     }
+    ///   }
+    /// }
+    /// ```
+    /// 
+    /// ### 6. Testing Checklist
+    /// - Verify compilation succeeds without errors
+    /// - Test configuration file creation/update
+    /// - Verify client name appears correctly in Unity MCP window
+    /// - Test server start/stop functionality
+    /// - Confirm MCP_CLIENT_NAME environment variable is set correctly
     /// </summary>
     public static class UnityMcpPathResolver
     {
         private const string CURSOR_CONFIG_DIR = ".cursor";
         private const string VSCODE_CONFIG_DIR = ".vscode";
+        private const string GEMINI_CONFIG_DIR = ".gemini";
         private const string MCP_CONFIG_FILE = "mcp.json";
         private const string CLAUDE_CODE_CONFIG_FILE = ".mcp.json";
+        private const string GEMINI_CONFIG_FILE = "settings.json";
+        private const string MCP_INSPECTOR_CONFIG_FILE = ".inspector.mcp.json";
 
         /// <summary>
         /// Gets the path to the project root directory.
@@ -50,6 +105,24 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Gets the path to the Gemini CLI configuration file (.gemini/settings.json).
+        /// </summary>
+        public static string GetGeminiCLIConfigPath()
+        {
+            string projectRoot = GetProjectRoot();
+            return Path.Combine(projectRoot, GEMINI_CONFIG_DIR, GEMINI_CONFIG_FILE);
+        }
+
+        /// <summary>
+        /// Gets the path to the MCP Inspector configuration file (.inspector.mcp.json).
+        /// </summary>
+        public static string GetMcpInspectorConfigPath()
+        {
+            string projectRoot = GetProjectRoot();
+            return Path.Combine(projectRoot, MCP_INSPECTOR_CONFIG_FILE);
+        }
+
+        /// <summary>
         /// Gets the configuration file path for the specified editor.
         /// </summary>
         /// <param name="editorType">The type of editor.</param>
@@ -61,6 +134,8 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.Cursor => GetMcpConfigPath(),
                 McpEditorType.ClaudeCode => GetClaudeCodeConfigPath(),
                 McpEditorType.VSCode => GetVSCodeConfigPath(),
+                McpEditorType.GeminiCLI => GetGeminiCLIConfigPath(),
+                McpEditorType.McpInspector => GetMcpInspectorConfigPath(),
                 _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
             };
         }
@@ -84,10 +159,19 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Gets the path to the .gemini directory.
+        /// </summary>
+        public static string GetGeminiConfigDirectory()
+        {
+            string projectRoot = GetProjectRoot();
+            return Path.Combine(projectRoot, GEMINI_CONFIG_DIR);
+        }
+
+        /// <summary>
         /// Gets the configuration directory for the specified editor (only if it exists).
         /// </summary>
         /// <param name="editorType">The type of editor.</param>
-        /// <returns>The path to the configuration directory (null for Claude Code).</returns>
+        /// <returns>The path to the configuration directory (null for Claude Code and MCP Inspector).</returns>
         public static string GetConfigDirectory(McpEditorType editorType)
         {
             return editorType switch
@@ -95,6 +179,8 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.Cursor => GetCursorConfigDirectory(),
                 McpEditorType.ClaudeCode => null, // Claude Code is placed directly in the project root.
                 McpEditorType.VSCode => GetVSCodeConfigDirectory(),
+                McpEditorType.GeminiCLI => GetGeminiConfigDirectory(),
+                McpEditorType.McpInspector => null, // MCP Inspector is placed directly in the project root.
                 _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
             };
         }
@@ -163,6 +249,8 @@ namespace io.github.hatayama.uMCP
     {
         Cursor,
         ClaudeCode,
-        VSCode
+        VSCode,
+        GeminiCLI,
+        McpInspector
     }
 } 
