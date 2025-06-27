@@ -17,14 +17,6 @@ namespace io.github.hatayama.uMCP
 
         protected override async Task<RunTestsResponse> ExecuteAsync(RunTestsSchema parameters)
         {
-            // Adjust timeout for PlayMode tests if not explicitly set
-            int timeoutSeconds = parameters.TimeoutSeconds;
-            if (parameters.TestMode == TestMode.PlayMode && timeoutSeconds == 60)
-            {
-                // Default PlayMode timeout to 120 seconds
-                timeoutSeconds = 120;
-            }
-
             // Create filter if specified
             TestExecutionFilter filter = null;
             if (parameters.FilterType != TestFilterType.all)
@@ -32,12 +24,20 @@ namespace io.github.hatayama.uMCP
                 filter = CreateFilter(parameters.FilterType.ToString(), parameters.FilterValue);
             }
 
-            // Execute tests using unified PlayModeTestExecuter
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                parameters.TestMode, 
-                filter, 
-                parameters.SaveXml, 
-                timeoutSeconds);
+            // Execute tests using appropriate method
+            SerializableTestResult result;
+            if (parameters.TestMode == TestMode.PlayMode)
+            {
+                result = await PlayModeTestExecuter.ExecutePlayModeTest(
+                    filter, 
+                    parameters.SaveXml);
+            }
+            else
+            {
+                result = await PlayModeTestExecuter.ExecuteEditModeTest(
+                    filter, 
+                    parameters.SaveXml);
+            }
 
             return new RunTestsResponse(
                 success: result.success,

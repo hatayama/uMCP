@@ -1,23 +1,8 @@
 using System.ComponentModel;
+using UnityEditor.TestTools.TestRunner.Api;
 
 namespace io.github.hatayama.uMCP
 {
-    /// <summary>
-    /// Supported test modes
-    /// </summary>
-    public enum TestMode
-    {
-        /// <summary>
-        /// EditMode tests (run in editor, no play mode)
-        /// </summary>
-        EditMode,
-        
-        /// <summary>
-        /// PlayMode tests (run in play mode)
-        /// </summary>
-        PlayMode
-    }
-
     /// <summary>
     /// Supported test filter types
     /// </summary>

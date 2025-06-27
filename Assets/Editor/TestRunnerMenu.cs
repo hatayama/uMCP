@@ -15,11 +15,9 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("Running EditMode tests and saving to XML!");
             
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                TestMode.EditMode, 
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
                 null, 
-                true, 
-                60);
+                true);
                 
             LogTestResult(result);
         }
@@ -29,11 +27,9 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("Running EditMode tests (log only)!");
             
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                TestMode.EditMode, 
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
                 null, 
-                false, 
-                60);
+                false);
                 
             LogTestResult(result);
         }
@@ -43,11 +39,9 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("Running PlayMode tests and saving to XML!");
             
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                TestMode.PlayMode, 
+            SerializableTestResult result = await PlayModeTestExecuter.ExecutePlayModeTest(
                 null, 
-                true, 
-                120);
+                true);
                 
             LogTestResult(result);
         }
@@ -57,11 +51,9 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("Running PlayMode tests (log only)!");
             
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                TestMode.PlayMode, 
+            SerializableTestResult result = await PlayModeTestExecuter.ExecutePlayModeTest(
                 null, 
-                false, 
-                120);
+                false);
                 
             LogTestResult(result);
         }
@@ -83,11 +75,9 @@ namespace io.github.hatayama.uMCP
             Debug.Log("Running only CompileCommandTests!");
             
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.CompileCommandTests");
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                TestMode.EditMode, 
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
                 filter, 
-                false, 
-                60);
+                false);
                 
             LogTestResult(result);
         }
@@ -98,11 +88,9 @@ namespace io.github.hatayama.uMCP
             Debug.Log("Running only GetLogsCommandTests!");
             
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.GetLogsCommandTests");
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                TestMode.EditMode, 
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
                 filter, 
-                false, 
-                60);
+                false);
                 
             LogTestResult(result);
         }
@@ -113,11 +101,9 @@ namespace io.github.hatayama.uMCP
             Debug.Log("Running only MainThreadSwitcherTests!");
             
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("io.github.hatayama.uMCP.MainThreadSwitcherTests");
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                TestMode.EditMode, 
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
                 filter, 
-                false, 
-                60);
+                false);
                 
             LogTestResult(result);
         }
@@ -128,11 +114,9 @@ namespace io.github.hatayama.uMCP
             Debug.Log("Running only SampleEditModeTest!");
             
             TestExecutionFilter filter = TestExecutionFilter.ByClassName("Tests.SampleEditModeTest");
-            SerializableTestResult result = await PlayModeTestExecuter.ExecuteTests(
-                TestMode.EditMode, 
+            SerializableTestResult result = await PlayModeTestExecuter.ExecuteEditModeTest(
                 filter, 
-                false, 
-                60);
+                false);
                 
             LogTestResult(result);
         }
