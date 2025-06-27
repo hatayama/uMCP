@@ -14,10 +14,14 @@ using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
+    // Related classes:
+    // - McpServerController: Manages the lifecycle of this server.
+    // - UnityCommandExecutor: Executes commands received from clients.
+    // - JsonRpcProcessor: Handles JSON-RPC 2.0 message processing.
     /// <summary>
-    /// Immutable connected client information
+    /// Represents a connected client
     /// </summary>
-    public readonly struct ConnectedClient
+    public class ConnectedClient
     {
         public readonly string Endpoint;
         public readonly string ClientName; 

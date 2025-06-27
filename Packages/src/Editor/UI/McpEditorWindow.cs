@@ -8,6 +8,10 @@ using Newtonsoft.Json.Linq;
 
 namespace io.github.hatayama.uMCP
 {
+    // Related classes:
+    // - McpServerController: Manages the server lifecycle.
+    // - McpBridgeServer: The core TCP server implementation.
+    // - McpConfigService: Handles configuration for different IDEs.
     /// <summary>
     /// Editor Window for controlling Unity MCP Server
     /// Displays server status and handles start/stop operations

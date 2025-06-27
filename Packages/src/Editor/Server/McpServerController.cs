@@ -4,6 +4,10 @@ using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
+    // Related classes:
+    // - McpBridgeServer: The TCP server instance that this class manages.
+    // - McpEditorWindow: The UI for starting and stopping the server.
+    // - AssemblyReloadEvents: Used to handle server state across domain reloads.
     /// <summary>
     /// Manages the state of the MCP Server with SessionState and automatically restores it on assembly reload.
     /// </summary>
