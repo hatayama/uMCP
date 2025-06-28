@@ -8,14 +8,16 @@ namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Editor Window for controlling Unity MCP Server - Presenter layer in MVP architecture
-    /// Displays server status and handles start/stop operations
+    /// Coordinates between Model, View, and helper classes for server management
     /// Related classes:
     /// - McpEditorModel: Model layer for state management and business logic
     /// - McpEditorWindowView: View layer for UI rendering
+    /// - McpEditorWindowEventHandler: Event management helper (Unity/Server events)
+    /// - McpServerOperations: Server operations helper (start/stop/validation)
     /// - McpEditorWindowState: State objects (UIState, RuntimeState, DebugState)
-    /// - McpServerController: Manages the server lifecycle
-    /// - McpBridgeServer: The core TCP server implementation
-    /// - McpConfigService: Handles configuration for different IDEs
+    /// - McpConfigServiceFactory: Configuration services factory for different IDEs
+    /// - McpServerController: Core server lifecycle management
+    /// - McpBridgeServer: The actual TCP server implementation
     /// - McpEditorSettings: Persistent settings storage
     /// </summary>
     public class McpEditorWindow : EditorWindow
