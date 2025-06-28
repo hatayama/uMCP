@@ -21,26 +21,14 @@ namespace io.github.hatayama.uMCP
             };
             
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Status:", EditorStyles.boldLabel, GUILayout.MinWidth(40f), GUILayout.ExpandWidth(false));
-            EditorGUILayout.LabelField($"{data.Status}", statusStyle, GUILayout.ExpandWidth(true));
+            EditorGUILayout.LabelField("Status:", EditorStyles.boldLabel, GUILayout.Width(50f));
+            EditorGUILayout.LabelField($"{data.Status}", statusStyle, GUILayout.ExpandWidth(false));
             EditorGUILayout.EndHorizontal();
         }
 
         public void DrawServerControls(ServerControlsData data, Action toggleServerCallback, Action<bool> autoStartCallback, Action<int> portChangeCallback)
         {
             EditorGUILayout.BeginVertical("box");
-            
-            // Auto start checkbox
-            EditorGUILayout.BeginHorizontal();
-            bool newAutoStart = EditorGUILayout.Toggle(data.AutoStartServer, GUILayout.Width(20));
-            EditorGUILayout.LabelField("Auto Start Server", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
-            if (newAutoStart != data.AutoStartServer)
-            {
-                autoStartCallback?.Invoke(newAutoStart);
-            }
-            EditorGUILayout.EndHorizontal();
-            
-            EditorGUILayout.Space();
             
             // Port settings
             EditorGUI.BeginDisabledGroup(data.IsServerRunning);
@@ -74,6 +62,18 @@ namespace io.github.hatayama.uMCP
             
             // Restore original color
             GUI.backgroundColor = originalColor;
+            
+            EditorGUILayout.Space();
+            
+            // Auto start checkbox
+            EditorGUILayout.BeginHorizontal();
+            bool newAutoStart = EditorGUILayout.Toggle(data.AutoStartServer, GUILayout.Width(20));
+            EditorGUILayout.LabelField("Auto Start Server", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
+            if (newAutoStart != data.AutoStartServer)
+            {
+                autoStartCallback?.Invoke(newAutoStart);
+            }
+            EditorGUILayout.EndHorizontal();
             
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space();
