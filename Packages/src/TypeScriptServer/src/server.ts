@@ -92,15 +92,7 @@ class SimpleMcpServer {
         const parameterSchema = commandInfo.parameterSchema;
         const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
         
-        // Skip ping command as we have a dedicated unity-ping tool
-        if (commandName === 'ping') {
-          continue;
-        }
-        
-        // Check if this tool should only be displayed in development mode
-        if (displayDevelopmentOnly && !this.isDevelopment) {
-          continue; // Skip this tool in production mode
-        }
+
         
         const toolName = commandName;
         
@@ -164,22 +156,6 @@ class SimpleMcpServer {
     // Provide tool list
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const tools: Tool[] = [];
-      
-      // Base tools (always available)
-      tools.push({
-        name: 'ping',
-        description: 'Test Unity connection',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            message: {
-              type: 'string',
-              description: 'Message to send to Unity',
-              default: DEFAULT_MESSAGES.UNITY_PING
-            }
-          }
-        }
-      });
       
       // Dynamic Unity command tools
       for (const [toolName, dynamicTool] of this.dynamicTools) {
@@ -256,8 +232,6 @@ class SimpleMcpServer {
         }
         
         switch (name) {
-          case 'ping':
-            return await this.handleUnityPing(args as { message?: string });
           case 'mcp-ping':
             if (this.isDevelopment) {
               return await this.handlePing(args as { message?: string });
@@ -298,61 +272,7 @@ class SimpleMcpServer {
     });
   }
 
-  /**
-   * Handle Unity ping command
-   */
-  private async handleUnityPing(args: { message?: string }): Promise<ToolResponse> {
-    const message = args?.message || DEFAULT_MESSAGES.UNITY_PING;
-    
-    try {
-      const response = await this.unityClient.ping(message);
-      const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
-      
-      // Handle the new BaseCommandResponse format with timing info
-      let responseText = '';
-      if (typeof response === 'object' && response !== null) {
-        const respObj = response as any;
-        
-        responseText = `Message: ${respObj.Message || 'No message'}`;
-        
-        // Add timing information if available
-        if (respObj.StartedAt && respObj.EndedAt && respObj.ExecutionTimeMs !== undefined) {
-          responseText += `
-Started: ${respObj.StartedAt}
-Ended: ${respObj.EndedAt}
-Execution Time: ${respObj.ExecutionTimeMs}ms`;
-        }
-      } else {
-        responseText = String(response);
-      }
-      
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Unity Ping Success!
-Sent: ${message}
-Response: ${responseText}
-Connection: TCP/IP established on port ${port}`
-          }
-        ]
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Unity Ping Failed!
-Error: ${errorMessage}
 
-Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
-          }
-        ],
-        isError: true
-      };
-    }
-  }
 
   /**
    * Handle TypeScript ping command (dev only)

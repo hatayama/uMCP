@@ -225,6 +225,7 @@ namespace io.github.hatayama.uMCP
                 devModeCallback: UpdateEnableDevelopmentMode,
                 mcpLogsCallback: UpdateEnableMcpLogs,
                 commLogsCallback: UpdateEnableCommunicationLogs,
+                commLogsFoldoutCallback: UpdateShowCommunicationLogs,
                 showDebugCallback: () =>
                 {
                     string debugInfo = McpServerController.GetDetailedServerStatus();
@@ -499,6 +500,14 @@ namespace io.github.hatayama.uMCP
         private void UpdateEnableCommunicationLogs(bool enable)
         {
             _model.UpdateEnableCommunicationLogs(enable);
+        }
+
+        /// <summary>
+        /// Update ShowCommunicationLogs setting (foldout state)
+        /// </summary>
+        private void UpdateShowCommunicationLogs(bool show)
+        {
+            _model.UpdateShowCommunicationLogs(show);
         }
 
         /// <summary>
