@@ -51,12 +51,8 @@ namespace io.github.hatayama.uMCP
         private int lastConnectedClientsCount = 0;
         private string lastClientsInfoHash = "";
 
-        // Configuration services
-        private McpConfigService _cursorConfigService;
-        private McpConfigService _claudeCodeConfigService;
-        private McpConfigService _vscodeConfigService;
-        private McpConfigService _geminiCLIConfigService;
-        private McpConfigService _mcpInspectorConfigService;
+        // Configuration services factory
+        private McpConfigServiceFactory _configServiceFactory;
 
         // View layer
         private McpEditorWindowView _view;
@@ -87,22 +83,12 @@ namespace io.github.hatayama.uMCP
             _view = new McpEditorWindowView();
         }
 
-        /// <summary>
-        /// Initialize configuration services for all editor types
+                /// <summary>
+        /// Initialize configuration services factory
         /// </summary>
         private void InitializeConfigurationServices()
         {
-            McpConfigRepository cursorRepository = new(McpEditorType.Cursor);
-            McpConfigRepository claudeCodeRepository = new(McpEditorType.ClaudeCode);
-            McpConfigRepository vscodeRepository = new(McpEditorType.VSCode);
-            McpConfigRepository geminiCLIRepository = new(McpEditorType.GeminiCLI);
-            McpConfigRepository mcpInspectorRepository = new(McpEditorType.McpInspector);
-
-            _cursorConfigService = new McpConfigService(cursorRepository, McpEditorType.Cursor);
-            _claudeCodeConfigService = new McpConfigService(claudeCodeRepository, McpEditorType.ClaudeCode);
-            _vscodeConfigService = new McpConfigService(vscodeRepository, McpEditorType.VSCode);
-            _geminiCLIConfigService = new McpConfigService(geminiCLIRepository, McpEditorType.GeminiCLI);
-            _mcpInspectorConfigService = new McpConfigService(mcpInspectorRepository, McpEditorType.McpInspector);
+            _configServiceFactory = new McpConfigServiceFactory();
         }
 
         /// <summary>
@@ -636,15 +622,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private McpConfigService GetConfigService(McpEditorType editorType)
         {
-            return editorType switch
-            {
-                McpEditorType.Cursor => _cursorConfigService,
-                McpEditorType.ClaudeCode => _claudeCodeConfigService,
-                McpEditorType.VSCode => _vscodeConfigService,
-                McpEditorType.GeminiCLI => _geminiCLIConfigService,
-                McpEditorType.McpInspector => _mcpInspectorConfigService,
-                _ => throw new ArgumentException($"Unsupported editor type: {editorType}")
-            };
+            return _configServiceFactory.GetConfigService(editorType);
         }
     }
 }
