@@ -30,7 +30,7 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.EndVertical();
         }
 
-        public void DrawServerControls(ServerControlsData data, Action startCallback, Action stopCallback, Action<bool> autoStartCallback, Action<int> portChangeCallback)
+        public void DrawServerControls(ServerControlsData data, Action toggleServerCallback, Action<bool> autoStartCallback, Action<int> portChangeCallback)
         {
             EditorGUILayout.BeginVertical("box");
             
@@ -57,24 +57,28 @@ namespace io.github.hatayama.uMCP
             
             EditorGUILayout.Space();
             
-            // Start/Stop buttons
-            EditorGUILayout.BeginHorizontal();
+            // Toggle Server button
+            string buttonText = data.IsServerRunning ? "Stop Server" : "Start Server";
+            Color originalColor = GUI.backgroundColor;
             
-            EditorGUI.BeginDisabledGroup(!data.IsServerRunning);
-            if (GUILayout.Button("Stop Server", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
+            // Change button color based on server state
+            if (data.IsServerRunning)
             {
-                stopCallback?.Invoke();
+                GUI.backgroundColor = new Color(1f, 0.7f, 0.7f); // Light red for stop
             }
-            EditorGUI.EndDisabledGroup();
-            
-            EditorGUI.BeginDisabledGroup(data.IsServerRunning);
-            if (GUILayout.Button("Start Server", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
+            else
             {
-                startCallback?.Invoke();
+                GUI.backgroundColor = new Color(0.7f, 1f, 0.7f); // Light green for start
             }
-            EditorGUI.EndDisabledGroup();
             
-            EditorGUILayout.EndHorizontal();
+            if (GUILayout.Button(buttonText, GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
+            {
+                toggleServerCallback?.Invoke();
+            }
+            
+            // Restore original color
+            GUI.backgroundColor = originalColor;
+            
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space();
         }

@@ -223,8 +223,7 @@ namespace io.github.hatayama.uMCP
             ServerControlsData controlsData = CreateServerControlsData();
             _view.DrawServerControls(
                 data: controlsData,
-                startCallback: StartServer,
-                stopCallback: StopServer,
+                toggleServerCallback: ToggleServer,
                 autoStartCallback: UpdateAutoStartServer,
                 portChangeCallback: UpdateCustomPort);
 
@@ -501,6 +500,21 @@ namespace io.github.hatayama.uMCP
         private void UpdateEnableCommunicationLogs(bool enable)
         {
             _model.UpdateEnableCommunicationLogs(enable);
+        }
+
+        /// <summary>
+        /// Toggle server state (start if stopped, stop if running)
+        /// </summary>
+        private void ToggleServer()
+        {
+            if (McpServerController.IsServerRunning)
+            {
+                StopServer();
+            }
+            else
+            {
+                StartServer();
+            }
         }
     }
 }
