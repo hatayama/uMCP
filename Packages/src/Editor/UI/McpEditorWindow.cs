@@ -31,6 +31,9 @@ namespace io.github.hatayama.uMCP
         
         // Event handler (MVP pattern helper)
         private McpEditorWindowEventHandler _eventHandler;
+        
+        // Server operations handler (MVP pattern helper)
+        private McpServerOperations _serverOperations;
 
         [MenuItem("Window/uMCP")]
         public static void ShowWindow()
@@ -46,6 +49,7 @@ namespace io.github.hatayama.uMCP
             InitializeView();
             InitializeConfigurationServices();
             InitializeEventHandler();
+            InitializeServerOperations();
             LoadSavedSettings();
             RestoreSessionState();
             HandlePostCompileMode();
@@ -82,6 +86,14 @@ namespace io.github.hatayama.uMCP
         {
             _eventHandler = new McpEditorWindowEventHandler(_model, this);
             _eventHandler.Initialize();
+        }
+
+        /// <summary>
+        /// Initialize server operations handler
+        /// </summary>
+        private void InitializeServerOperations()
+        {
+            _serverOperations = new McpServerOperations(_model, _eventHandler);
         }
 
         /// <summary>
@@ -139,7 +151,7 @@ namespace io.github.hatayama.uMCP
                     }
                 }
 
-                StartServerInternal();
+                _serverOperations.StartServerInternal();
             }
         }
 
@@ -359,74 +371,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void StartServer()
         {
-            if (ValidatePortAndStartServer())
+            if (_serverOperations.StartServer())
             {
                 Repaint();
-            }
-        }
-
-        /// <summary>
-        /// Start server (for internal processing)
-        /// </summary>
-        private void StartServerInternal()
-        {
-            ValidatePortAndStartServer();
-        }
-
-        /// <summary>
-        /// Validate port and start server
-        /// </summary>
-        /// <returns>True if successful</returns>
-        private bool ValidatePortAndStartServer()
-        {
-            int currentPort = _model.UI.CustomPort;
-            if (currentPort < McpServerConfig.MIN_PORT_NUMBER || currentPort > McpServerConfig.MAX_PORT_NUMBER)
-            {
-                EditorUtility.DisplayDialog("Port Error", $"Port must be between {McpServerConfig.MIN_PORT_NUMBER} and {McpServerConfig.MAX_PORT_NUMBER}", "OK");
-                return false;
-            }
-
-            // Check if our own server is already running on the same port
-            if (McpServerController.IsServerRunning && McpServerController.ServerPort == currentPort)
-            {
-                // MCP Server is already running
-                return true; // Already running, treat as success
-            }
-
-            // Check if another process is using the port
-            if (McpBridgeServer.IsPortInUse(currentPort))
-            {
-                EditorUtility.DisplayDialog("Port Error",
-                    $"Port {currentPort} is already in use by another process.\nPlease choose a different port number.",
-                    "OK");
-                return false;
-            }
-
-            try
-            {
-                McpServerController.StartServer(currentPort);
-
-                // Refresh server event subscriptions after successful start
-                _eventHandler.RefreshServerEventSubscriptions();
-
-                // Force UI update after server start
-                Repaint();
-
-                return true;
-            }
-            catch (InvalidOperationException ex)
-            {
-                // In case of port in use error
-                EditorUtility.DisplayDialog("Server Start Error", ex.Message, "OK");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                // Other errors
-                EditorUtility.DisplayDialog("Server Start Error",
-                    $"Failed to start server: {ex.Message}",
-                    "OK");
-                return false;
             }
         }
 
@@ -435,7 +382,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void StopServer()
         {
-            McpServerController.StopServer();
+            _serverOperations.StopServer();
             Repaint();
         }
 
