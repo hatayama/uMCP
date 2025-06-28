@@ -28,6 +28,9 @@ namespace io.github.hatayama.uMCP
         
         // Model layer (MVP pattern)
         private McpEditorModel _model;
+        
+        // Event handler (MVP pattern helper)
+        private McpEditorWindowEventHandler _eventHandler;
 
         [MenuItem("Window/uMCP")]
         public static void ShowWindow()
@@ -42,9 +45,9 @@ namespace io.github.hatayama.uMCP
             InitializeModel();
             InitializeView();
             InitializeConfigurationServices();
+            InitializeEventHandler();
             LoadSavedSettings();
             RestoreSessionState();
-            SubscribeToEvents();
             HandlePostCompileMode();
         }
 
@@ -73,6 +76,15 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Initialize event handler
+        /// </summary>
+        private void InitializeEventHandler()
+        {
+            _eventHandler = new McpEditorWindowEventHandler(_model, this);
+            _eventHandler.Initialize();
+        }
+
+        /// <summary>
         /// Load saved settings from preferences
         /// </summary>
         private void LoadSavedSettings()
@@ -88,15 +100,7 @@ namespace io.github.hatayama.uMCP
             _model.LoadFromSessionState();
         }
 
-        /// <summary>
-        /// Subscribe to all necessary events
-        /// </summary>
-        private void SubscribeToEvents()
-        {
-            McpCommunicationLogger.OnLogUpdated += Repaint;
-            SubscribeToServerEvents();
-            EditorApplication.update += OnEditorUpdate;
-        }
+
 
         /// <summary>
         /// Handle post-compile mode initialization and auto-start logic
@@ -114,8 +118,12 @@ namespace io.github.hatayama.uMCP
             // Check if after compilation
             bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
 
-            // Start server if after compilation or Auto Start Server is enabled
-            if ((isAfterCompile || _model.UI.AutoStartServer) && !McpServerController.IsServerRunning)
+            // Determine if server should be started automatically
+            bool shouldStartAutomatically = isAfterCompile || _model.UI.AutoStartServer;
+            bool serverNotRunning = !McpServerController.IsServerRunning;
+            bool shouldStartServer = shouldStartAutomatically && serverNotRunning;
+
+            if (shouldStartServer)
             {
                 if (isAfterCompile)
                 {
@@ -123,16 +131,11 @@ namespace io.github.hatayama.uMCP
 
                     // Use saved port number
                     int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, _model.UI.CustomPort);
-                    if (savedPort != _model.UI.CustomPort)
+                    bool portNeedsUpdate = savedPort != _model.UI.CustomPort;
+                    
+                    if (portNeedsUpdate)
                     {
-                        _model.UpdateUIState(ui => new UIState(
-                            customPort: savedPort,
-                            autoStartServer: ui.AutoStartServer,
-                            showLLMToolSettings: ui.ShowLLMToolSettings,
-                            showConnectedTools: ui.ShowConnectedTools,
-                            selectedEditorType: ui.SelectedEditorType,
-                            mainScrollPosition: ui.MainScrollPosition));
-                        McpEditorSettings.SetCustomPort(savedPort);
+                        _model.UpdateCustomPort(savedPort);
                     }
                 }
 
@@ -142,19 +145,19 @@ namespace io.github.hatayama.uMCP
 
         private void OnDisable()
         {
-            UnsubscribeFromEvents();
+            CleanupEventHandler();
             SaveSessionState();
         }
 
         /// <summary>
-        /// Unsubscribe from all events
+        /// Cleanup event handler
         /// </summary>
-        private void UnsubscribeFromEvents()
+        private void CleanupEventHandler()
         {
-            McpCommunicationLogger.OnLogUpdated -= Repaint;
-            UnsubscribeFromServerEvents();
-            EditorApplication.update -= OnEditorUpdate;
+            _eventHandler?.Cleanup();
         }
+
+
 
         /// <summary>
         /// Save current state to Unity SessionState
@@ -164,119 +167,19 @@ namespace io.github.hatayama.uMCP
             _model.SaveToSessionState();
         }
 
-        /// <summary>
-        /// Subscribe to server events for immediate UI updates
-        /// </summary>
-        private void SubscribeToServerEvents()
-        {
-            // Unsubscribe first to avoid duplicate subscriptions
-            UnsubscribeFromServerEvents();
 
-            McpBridgeServer currentServer = McpServerController.CurrentServer;
-            if (currentServer != null)
-            {
-                currentServer.OnClientConnected += OnClientConnectedHandler;
-                currentServer.OnClientDisconnected += OnClientDisconnectedHandler;
-            }
-        }
 
-        /// <summary>
-        /// Unsubscribe from server events
-        /// </summary>
-        private void UnsubscribeFromServerEvents()
-        {
-            McpBridgeServer currentServer = McpServerController.CurrentServer;
-            if (currentServer != null)
-            {
-                currentServer.OnClientConnected -= OnClientConnectedHandler;
-                currentServer.OnClientDisconnected -= OnClientDisconnectedHandler;
-            }
-        }
 
-        /// <summary>
-        /// Handle client connection event - force UI repaint for immediate update
-        /// </summary>
-        private void OnClientConnectedHandler(string clientEndpoint)
-        {
-            // Mark that repaint is needed since events are called from background thread
-            _model.RequestRepaint();
 
-            // Exit post-compile mode when client connects
-            if (_model.Runtime.IsPostCompileMode)
-            {
-                _model.DisablePostCompileMode();
-            }
-        }
 
-        /// <summary>
-        /// Handle client disconnection event - force UI repaint for immediate update
-        /// </summary>
-        private void OnClientDisconnectedHandler(string clientEndpoint)
-        {
-            // Mark that repaint is needed since events are called from background thread
-            _model.RequestRepaint();
-        }
 
-        /// <summary>
-        /// Called from EditorApplication.update - handles UI refresh even when Unity is not focused
-        /// </summary>
-        private void OnEditorUpdate()
-        {
-            // Always check for server state changes
-            CheckServerStateChanges();
 
-            // In post-compile mode, always repaint for immediate updates
-            if (_model.Runtime.IsPostCompileMode)
-            {
-                Repaint();
-                return;
-            }
 
-            // Normal mode: repaint only when needed
-            if (_model.Runtime.NeedsRepaint)
-            {
-                _model.ClearRepaintRequest();
-                Repaint();
-            }
-        }
 
-        /// <summary>
-        /// Check if server state has changed and mark repaint if needed
-        /// </summary>
-        private void CheckServerStateChanges()
-        {
-            (bool isRunning, int port, bool wasRestored) = McpServerController.GetServerStatus();
-            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
-            int connectedCount = connectedClients?.Count ?? 0;
 
-            // Generate hash of client information to detect changes in client names
-            string clientsInfoHash = GenerateClientsInfoHash(connectedClients);
 
-            // Check if any server state has changed
-            if (isRunning != _model.Runtime.LastServerRunning ||
-                port != _model.Runtime.LastServerPort ||
-                connectedCount != _model.Runtime.LastConnectedClientsCount ||
-                clientsInfoHash != _model.Runtime.LastClientsInfoHash)
-            {
-                _model.UpdateServerStateTracking(isRunning, port, connectedCount, clientsInfoHash);
-                _model.RequestRepaint();
-            }
-        }
 
-        /// <summary>
-        /// Generate hash string from client information to detect changes
-        /// </summary>
-        private string GenerateClientsInfoHash(IReadOnlyCollection<ConnectedClient> clients)
-        {
-            if (clients == null || clients.Count == 0)
-            {
-                return "empty";
-            }
 
-            // Create a hash based on endpoint, client name, and process ID for unique identification
-            var info = clients.Select(c => $"{c.Endpoint}:{c.ClientName}:{c.ProcessId}").OrderBy(s => s);
-            return string.Join("|", info);
-        }
 
         /// <summary>
         /// Called when the window gets focus - update UI to reflect current state
@@ -353,20 +256,16 @@ namespace io.github.hatayama.uMCP
         private void SyncPortSettings()
         {
             // Synchronize if server is running and UI port setting differs from actual server port
-            if (McpServerController.IsServerRunning)
+            bool serverIsRunning = McpServerController.IsServerRunning;
+            
+            if (serverIsRunning)
             {
                 int actualServerPort = McpServerController.ServerPort;
-                if (_model.UI.CustomPort != actualServerPort)
+                bool portMismatch = _model.UI.CustomPort != actualServerPort;
+                
+                if (portMismatch)
                 {
-                    _model.UpdateUIState(ui => new UIState(
-                        customPort: actualServerPort,
-                        autoStartServer: ui.AutoStartServer,
-                        showLLMToolSettings: ui.ShowLLMToolSettings,
-                        showConnectedTools: ui.ShowConnectedTools,
-                        selectedEditorType: ui.SelectedEditorType,
-                        mainScrollPosition: ui.MainScrollPosition));
-                    // Update configuration file as well
-                    McpEditorSettings.SetCustomPort(actualServerPort);
+                    _model.UpdateCustomPort(actualServerPort);
                 }
             }
         }
@@ -507,8 +406,8 @@ namespace io.github.hatayama.uMCP
             {
                 McpServerController.StartServer(currentPort);
 
-                // Subscribe to new server events after successful start
-                SubscribeToServerEvents();
+                // Refresh server event subscriptions after successful start
+                _eventHandler.RefreshServerEventSubscriptions();
 
                 // Force UI update after server start
                 Repaint();
