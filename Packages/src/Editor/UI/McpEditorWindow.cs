@@ -6,56 +6,28 @@ using System.Linq;
 
 namespace io.github.hatayama.uMCP
 {
-    // Related classes:
-    // - McpServerController: Manages the server lifecycle.
-    // - McpBridgeServer: The core TCP server implementation.
-    // - McpConfigService: Handles configuration for different IDEs.
     /// <summary>
-    /// Editor Window for controlling Unity MCP Server
+    /// Editor Window for controlling Unity MCP Server - Presenter layer in MVP architecture
     /// Displays server status and handles start/stop operations
+    /// Related classes:
+    /// - McpEditorModel: Model layer for state management and business logic
+    /// - McpEditorWindowView: View layer for UI rendering
+    /// - McpEditorWindowState: State objects (UIState, RuntimeState, DebugState)
+    /// - McpServerController: Manages the server lifecycle
+    /// - McpBridgeServer: The core TCP server implementation
+    /// - McpConfigService: Handles configuration for different IDEs
+    /// - McpEditorSettings: Persistent settings storage
     /// </summary>
     public class McpEditorWindow : EditorWindow
     {
-        // UI state
-        private int customPort = McpServerConfig.DEFAULT_PORT;
-        private bool autoStartServer = false;
-        private bool showLLMToolSettings = true;
-        private bool showConnectedTools = true;
-#if UMCP_DEBUG
-        private bool showDeveloperTools = false;
-        private bool enableCommunicationLogs = false;
-        private bool showCommunicationLogs = false;
-        private bool enableMcpLogs = false;
-        private bool enableDevelopmentMode = false;
-        private Vector2 communicationLogScrollPosition;
-        private float communicationLogHeight = McpUIConstants.DEFAULT_COMMUNICATION_LOG_HEIGHT; // Height of resizable communication log area
-#endif
-
-        // UI state for editor selection
-        private McpEditorType selectedEditorType = McpEditorType.Cursor;
-
-        // Manage scroll positions for each log entry
-        private Dictionary<string, Vector2> requestScrollPositions = new();
-        private Dictionary<string, Vector2> responseScrollPositions = new();
-
-        // Scroll position for entire window
-        private Vector2 mainScrollPosition;
-
-        // UI update management
-        private bool needsRepaint = false;
-        private bool isPostCompileMode = false; // True after compilation, false when clients connect
-
-        // Server state tracking for change detection
-        private bool lastServerRunning = false;
-        private int lastServerPort = 0;
-        private int lastConnectedClientsCount = 0;
-        private string lastClientsInfoHash = "";
-
         // Configuration services factory
         private McpConfigServiceFactory _configServiceFactory;
-
+        
         // View layer
         private McpEditorWindowView _view;
+        
+        // Model layer (MVP pattern)
+        private McpEditorModel _model;
 
         [MenuItem("Window/uMCP")]
         public static void ShowWindow()
@@ -67,12 +39,21 @@ namespace io.github.hatayama.uMCP
 
         private void OnEnable()
         {
+            InitializeModel();
             InitializeView();
             InitializeConfigurationServices();
             LoadSavedSettings();
             RestoreSessionState();
             SubscribeToEvents();
             HandlePostCompileMode();
+        }
+
+        /// <summary>
+        /// Initialize model layer
+        /// </summary>
+        private void InitializeModel()
+        {
+            _model = new McpEditorModel();
         }
 
         /// <summary>
@@ -96,19 +77,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void LoadSavedSettings()
         {
-            McpEditorSettingsData settings = McpEditorSettings.GetSettings();
-            customPort = settings.customPort;
-            autoStartServer = settings.autoStartServer;
-
-#if UMCP_DEBUG
-            showDeveloperTools = settings.showDeveloperTools;
-            enableMcpLogs = settings.enableMcpLogs;
-            enableCommunicationLogs = settings.enableCommunicationLogs;
-            enableDevelopmentMode = settings.enableDevelopmentMode;
-
-            // Synchronize McpLogger settings
-            McpLogger.EnableDebugLog = enableMcpLogs;
-#endif
+            _model.LoadFromSettings();
         }
 
         /// <summary>
@@ -116,11 +85,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void RestoreSessionState()
         {
-            selectedEditorType = (McpEditorType)SessionState.GetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)McpEditorType.Cursor);
-
-#if UMCP_DEBUG
-            communicationLogHeight = SessionState.GetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, McpUIConstants.DEFAULT_COMMUNICATION_LOG_HEIGHT);
-#endif
+            _model.LoadFromSessionState();
         }
 
         /// <summary>
@@ -139,8 +104,7 @@ namespace io.github.hatayama.uMCP
         private void HandlePostCompileMode()
         {
             // Enable post-compile mode after domain reload
-            isPostCompileMode = true;
-            needsRepaint = true;
+            _model.EnablePostCompileMode();
 
             // Clear reconnecting UI flag on domain reload to ensure proper state
             SessionState.SetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
@@ -151,18 +115,24 @@ namespace io.github.hatayama.uMCP
             bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
 
             // Start server if after compilation or Auto Start Server is enabled
-            if ((isAfterCompile || autoStartServer) && !McpServerController.IsServerRunning)
+            if ((isAfterCompile || _model.UI.AutoStartServer) && !McpServerController.IsServerRunning)
             {
                 if (isAfterCompile)
                 {
                     SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
 
                     // Use saved port number
-                    int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, customPort);
-                    if (savedPort != customPort)
+                    int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, _model.UI.CustomPort);
+                    if (savedPort != _model.UI.CustomPort)
                     {
-                        customPort = savedPort;
-                        McpEditorSettings.SetCustomPort(customPort);
+                        _model.UpdateUIState(ui => new UIState(
+                            customPort: savedPort,
+                            autoStartServer: ui.AutoStartServer,
+                            showLLMToolSettings: ui.ShowLLMToolSettings,
+                            showConnectedTools: ui.ShowConnectedTools,
+                            selectedEditorType: ui.SelectedEditorType,
+                            mainScrollPosition: ui.MainScrollPosition));
+                        McpEditorSettings.SetCustomPort(savedPort);
                     }
                 }
 
@@ -191,7 +161,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void SaveSessionState()
         {
-            SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+            _model.SaveToSessionState();
         }
 
         /// <summary>
@@ -229,12 +199,12 @@ namespace io.github.hatayama.uMCP
         private void OnClientConnectedHandler(string clientEndpoint)
         {
             // Mark that repaint is needed since events are called from background thread
-            needsRepaint = true;
+            _model.RequestRepaint();
 
             // Exit post-compile mode when client connects
-            if (isPostCompileMode)
+            if (_model.Runtime.IsPostCompileMode)
             {
-                isPostCompileMode = false;
+                _model.DisablePostCompileMode();
             }
         }
 
@@ -244,7 +214,7 @@ namespace io.github.hatayama.uMCP
         private void OnClientDisconnectedHandler(string clientEndpoint)
         {
             // Mark that repaint is needed since events are called from background thread
-            needsRepaint = true;
+            _model.RequestRepaint();
         }
 
         /// <summary>
@@ -256,16 +226,16 @@ namespace io.github.hatayama.uMCP
             CheckServerStateChanges();
 
             // In post-compile mode, always repaint for immediate updates
-            if (isPostCompileMode)
+            if (_model.Runtime.IsPostCompileMode)
             {
                 Repaint();
                 return;
             }
 
             // Normal mode: repaint only when needed
-            if (needsRepaint)
+            if (_model.Runtime.NeedsRepaint)
             {
-                needsRepaint = false;
+                _model.ClearRepaintRequest();
                 Repaint();
             }
         }
@@ -283,16 +253,13 @@ namespace io.github.hatayama.uMCP
             string clientsInfoHash = GenerateClientsInfoHash(connectedClients);
 
             // Check if any server state has changed
-            if (isRunning != lastServerRunning ||
-                port != lastServerPort ||
-                connectedCount != lastConnectedClientsCount ||
-                clientsInfoHash != lastClientsInfoHash)
+            if (isRunning != _model.Runtime.LastServerRunning ||
+                port != _model.Runtime.LastServerPort ||
+                connectedCount != _model.Runtime.LastConnectedClientsCount ||
+                clientsInfoHash != _model.Runtime.LastClientsInfoHash)
             {
-                lastServerRunning = isRunning;
-                lastServerPort = port;
-                lastConnectedClientsCount = connectedCount;
-                lastClientsInfoHash = clientsInfoHash;
-                needsRepaint = true;
+                _model.UpdateServerStateTracking(isRunning, port, connectedCount, clientsInfoHash);
+                _model.RequestRepaint();
             }
         }
 
@@ -326,7 +293,17 @@ namespace io.github.hatayama.uMCP
             SyncPortSettings();
 
             // Make entire window scrollable
-            mainScrollPosition = EditorGUILayout.BeginScrollView(mainScrollPosition);
+            Vector2 newScrollPosition = EditorGUILayout.BeginScrollView(_model.UI.MainScrollPosition);
+            if (newScrollPosition != _model.UI.MainScrollPosition)
+            {
+                _model.UpdateUIState(ui => new UIState(
+                    customPort: ui.CustomPort,
+                    autoStartServer: ui.AutoStartServer,
+                    showLLMToolSettings: ui.ShowLLMToolSettings,
+                    showConnectedTools: ui.ShowConnectedTools,
+                    selectedEditorType: ui.SelectedEditorType,
+                    mainScrollPosition: newScrollPosition));
+            }
 
             // Use view layer for rendering
             ServerStatusData statusData = CreateServerStatusData();
@@ -339,30 +316,66 @@ namespace io.github.hatayama.uMCP
                 stopCallback: StopServer,
                 autoStartCallback: (autoStart) =>
                 {
-                    autoStartServer = autoStart;
-                    McpEditorSettings.SetAutoStartServer(autoStartServer);
+                    _model.UpdateUIState(ui => new UIState(
+                        customPort: ui.CustomPort,
+                        autoStartServer: autoStart,
+                        showLLMToolSettings: ui.ShowLLMToolSettings,
+                        showConnectedTools: ui.ShowConnectedTools,
+                        selectedEditorType: ui.SelectedEditorType,
+                        mainScrollPosition: ui.MainScrollPosition));
+                    McpEditorSettings.SetAutoStartServer(autoStart);
                 },
                 portChangeCallback: (port) =>
                 {
-                    customPort = port;
-                    McpEditorSettings.SetCustomPort(customPort);
+                    _model.UpdateUIState(ui => new UIState(
+                        customPort: port,
+                        autoStartServer: ui.AutoStartServer,
+                        showLLMToolSettings: ui.ShowLLMToolSettings,
+                        showConnectedTools: ui.ShowConnectedTools,
+                        selectedEditorType: ui.SelectedEditorType,
+                        mainScrollPosition: ui.MainScrollPosition));
+                    McpEditorSettings.SetCustomPort(port);
                 });
 
             ConnectedToolsData toolsData = CreateConnectedToolsData();
             _view.DrawConnectedToolsSection(
                 data: toolsData,
-                toggleFoldoutCallback: (show) => showConnectedTools = show);
+                toggleFoldoutCallback: (show) => 
+                {
+                    _model.UpdateUIState(ui => new UIState(
+                        customPort: ui.CustomPort,
+                        autoStartServer: ui.AutoStartServer,
+                        showLLMToolSettings: ui.ShowLLMToolSettings,
+                        showConnectedTools: show,
+                        selectedEditorType: ui.SelectedEditorType,
+                        mainScrollPosition: ui.MainScrollPosition));
+                });
 
             EditorConfigData configData = CreateEditorConfigData();
             _view.DrawEditorConfigSection(
                 data: configData,
                 editorChangeCallback: (type) =>
                 {
-                    selectedEditorType = type;
-                    SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+                    _model.UpdateUIState(ui => new UIState(
+                        customPort: ui.CustomPort,
+                        autoStartServer: ui.AutoStartServer,
+                        showLLMToolSettings: ui.ShowLLMToolSettings,
+                        showConnectedTools: ui.ShowConnectedTools,
+                        selectedEditorType: type,
+                        mainScrollPosition: ui.MainScrollPosition));
+                    SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)type);
                 },
                 configureCallback: (editor) => ConfigureEditor(),
-                foldoutCallback: (show) => showLLMToolSettings = show);
+                foldoutCallback: (show) => 
+                {
+                    _model.UpdateUIState(ui => new UIState(
+                        customPort: ui.CustomPort,
+                        autoStartServer: ui.AutoStartServer,
+                        showLLMToolSettings: show,
+                        showConnectedTools: ui.ShowConnectedTools,
+                        selectedEditorType: ui.SelectedEditorType,
+                        mainScrollPosition: ui.MainScrollPosition));
+                });
 
 #if UMCP_DEBUG
             DeveloperToolsData devToolsData = CreateDeveloperToolsData();
@@ -370,24 +383,60 @@ namespace io.github.hatayama.uMCP
                 data: devToolsData,
                 foldoutCallback: (show) =>
                 {
-                    showDeveloperTools = show;
-                    McpEditorSettings.SetShowDeveloperTools(showDeveloperTools);
+                    _model.UpdateDebugState(debug => new DebugState(
+                        showDeveloperTools: show,
+                        enableCommunicationLogs: debug.EnableCommunicationLogs,
+                        showCommunicationLogs: debug.ShowCommunicationLogs,
+                        enableMcpLogs: debug.EnableMcpLogs,
+                        enableDevelopmentMode: debug.EnableDevelopmentMode,
+                        communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                        communicationLogHeight: debug.CommunicationLogHeight,
+                        requestScrollPositions: debug.RequestScrollPositions,
+                        responseScrollPositions: debug.ResponseScrollPositions));
+                    McpEditorSettings.SetShowDeveloperTools(show);
                 },
                 devModeCallback: (enable) =>
                 {
-                    enableDevelopmentMode = enable;
-                    McpEditorSettings.SetEnableDevelopmentMode(enableDevelopmentMode);
+                    _model.UpdateDebugState(debug => new DebugState(
+                        showDeveloperTools: debug.ShowDeveloperTools,
+                        enableCommunicationLogs: debug.EnableCommunicationLogs,
+                        showCommunicationLogs: debug.ShowCommunicationLogs,
+                        enableMcpLogs: debug.EnableMcpLogs,
+                        enableDevelopmentMode: enable,
+                        communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                        communicationLogHeight: debug.CommunicationLogHeight,
+                        requestScrollPositions: debug.RequestScrollPositions,
+                        responseScrollPositions: debug.ResponseScrollPositions));
+                    McpEditorSettings.SetEnableDevelopmentMode(enable);
                 },
                 mcpLogsCallback: (enable) =>
                 {
-                    enableMcpLogs = enable;
-                    McpEditorSettings.SetEnableMcpLogs(enableMcpLogs);
+                    _model.UpdateDebugState(debug => new DebugState(
+                        showDeveloperTools: debug.ShowDeveloperTools,
+                        enableCommunicationLogs: debug.EnableCommunicationLogs,
+                        showCommunicationLogs: debug.ShowCommunicationLogs,
+                        enableMcpLogs: enable,
+                        enableDevelopmentMode: debug.EnableDevelopmentMode,
+                        communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                        communicationLogHeight: debug.CommunicationLogHeight,
+                        requestScrollPositions: debug.RequestScrollPositions,
+                        responseScrollPositions: debug.ResponseScrollPositions));
+                    McpEditorSettings.SetEnableMcpLogs(enable);
                 },
                 commLogsCallback: (enable) =>
                 {
-                    enableCommunicationLogs = enable;
-                    McpEditorSettings.SetEnableCommunicationLogs(enableCommunicationLogs);
-                    if (!enableCommunicationLogs)
+                    _model.UpdateDebugState(debug => new DebugState(
+                        showDeveloperTools: debug.ShowDeveloperTools,
+                        enableCommunicationLogs: enable,
+                        showCommunicationLogs: debug.ShowCommunicationLogs,
+                        enableMcpLogs: debug.EnableMcpLogs,
+                        enableDevelopmentMode: debug.EnableDevelopmentMode,
+                        communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                        communicationLogHeight: debug.CommunicationLogHeight,
+                        requestScrollPositions: debug.RequestScrollPositions,
+                        responseScrollPositions: debug.ResponseScrollPositions));
+                    McpEditorSettings.SetEnableCommunicationLogs(enable);
+                    if (!enable)
                     {
                         McpCommunicationLogger.ClearLogs();
                     }
@@ -417,11 +466,17 @@ namespace io.github.hatayama.uMCP
             if (McpServerController.IsServerRunning)
             {
                 int actualServerPort = McpServerController.ServerPort;
-                if (customPort != actualServerPort)
+                if (_model.UI.CustomPort != actualServerPort)
                 {
-                    customPort = actualServerPort;
+                    _model.UpdateUIState(ui => new UIState(
+                        customPort: actualServerPort,
+                        autoStartServer: ui.AutoStartServer,
+                        showLLMToolSettings: ui.ShowLLMToolSettings,
+                        showConnectedTools: ui.ShowConnectedTools,
+                        selectedEditorType: ui.SelectedEditorType,
+                        mainScrollPosition: ui.MainScrollPosition));
                     // Update configuration file as well
-                    McpEditorSettings.SetCustomPort(customPort);
+                    McpEditorSettings.SetCustomPort(actualServerPort);
                 }
             }
         }
@@ -444,7 +499,7 @@ namespace io.github.hatayama.uMCP
         private ServerControlsData CreateServerControlsData()
         {
             bool isRunning = McpServerController.IsServerRunning;
-            return new ServerControlsData(customPort, autoStartServer, isRunning, !isRunning);
+            return new ServerControlsData(_model.UI.CustomPort, _model.UI.AutoStartServer, isRunning, !isRunning);
         }
 
         /// <summary>
@@ -456,7 +511,7 @@ namespace io.github.hatayama.uMCP
             bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
             var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
 
-            return new ConnectedToolsData(connectedClients, showConnectedTools, isServerRunning, showReconnectingUI);
+            return new ConnectedToolsData(connectedClients, _model.UI.ShowConnectedTools, isServerRunning, showReconnectingUI);
         }
 
         /// <summary>
@@ -467,7 +522,7 @@ namespace io.github.hatayama.uMCP
             bool isServerRunning = McpServerController.IsServerRunning;
             int currentPort = McpServerController.ServerPort;
 
-            return new EditorConfigData(selectedEditorType, showLLMToolSettings, isServerRunning, currentPort);
+            return new EditorConfigData(_model.UI.SelectedEditorType, _model.UI.ShowLLMToolSettings, isServerRunning, currentPort);
         }
 
         /// <summary>
@@ -475,13 +530,13 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void ConfigureEditor()
         {
-            McpConfigService configService = GetConfigService(selectedEditorType);
+            McpConfigService configService = GetConfigService(_model.UI.SelectedEditorType);
             bool isServerRunning = McpServerController.IsServerRunning;
-            int portToUse = isServerRunning ? McpServerController.ServerPort : customPort;
+            int portToUse = isServerRunning ? McpServerController.ServerPort : _model.UI.CustomPort;
 
             configService.AutoConfigure(portToUse);
 #if UMCP_DEBUG
-            configService.UpdateDevelopmentSettings(portToUse, enableDevelopmentMode, enableMcpLogs);
+            configService.UpdateDevelopmentSettings(portToUse, _model.Debug.EnableDevelopmentMode, _model.Debug.EnableMcpLogs);
 #endif
             Repaint();
         }
@@ -495,16 +550,16 @@ namespace io.github.hatayama.uMCP
             IReadOnlyList<McpCommunicationLogEntry> logs = McpCommunicationLogger.GetAllLogs();
 
             return new DeveloperToolsData(
-                showDeveloperTools,
-                enableMcpLogs,
-                enableCommunicationLogs,
-                enableDevelopmentMode,
-                showCommunicationLogs,
+                _model.Debug.ShowDeveloperTools,
+                _model.Debug.EnableMcpLogs,
+                _model.Debug.EnableCommunicationLogs,
+                _model.Debug.EnableDevelopmentMode,
+                _model.Debug.ShowCommunicationLogs,
                 logs,
-                communicationLogScrollPosition,
-                communicationLogHeight,
-                requestScrollPositions,
-                responseScrollPositions
+                _model.Debug.CommunicationLogScrollPosition,
+                _model.Debug.CommunicationLogHeight,
+                _model.Debug.RequestScrollPositions,
+                _model.Debug.ResponseScrollPositions
             );
         }
 #endif
@@ -535,31 +590,32 @@ namespace io.github.hatayama.uMCP
         /// <returns>True if successful</returns>
         private bool ValidatePortAndStartServer()
         {
-            if (customPort < McpServerConfig.MIN_PORT_NUMBER || customPort > McpServerConfig.MAX_PORT_NUMBER)
+            int currentPort = _model.UI.CustomPort;
+            if (currentPort < McpServerConfig.MIN_PORT_NUMBER || currentPort > McpServerConfig.MAX_PORT_NUMBER)
             {
                 EditorUtility.DisplayDialog("Port Error", $"Port must be between {McpServerConfig.MIN_PORT_NUMBER} and {McpServerConfig.MAX_PORT_NUMBER}", "OK");
                 return false;
             }
 
             // Check if our own server is already running on the same port
-            if (McpServerController.IsServerRunning && McpServerController.ServerPort == customPort)
+            if (McpServerController.IsServerRunning && McpServerController.ServerPort == currentPort)
             {
                 // MCP Server is already running
                 return true; // Already running, treat as success
             }
 
             // Check if another process is using the port
-            if (McpBridgeServer.IsPortInUse(customPort))
+            if (McpBridgeServer.IsPortInUse(currentPort))
             {
                 EditorUtility.DisplayDialog("Port Error",
-                    $"Port {customPort} is already in use by another process.\nPlease choose a different port number.",
+                    $"Port {currentPort} is already in use by another process.\nPlease choose a different port number.",
                     "OK");
                 return false;
             }
 
             try
             {
-                McpServerController.StartServer(customPort);
+                McpServerController.StartServer(currentPort);
 
                 // Subscribe to new server events after successful start
                 SubscribeToServerEvents();
