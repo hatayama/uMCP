@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System;
-using System.Linq;
 
 namespace io.github.hatayama.uMCP
 {
@@ -24,16 +23,16 @@ namespace io.github.hatayama.uMCP
     {
         // Configuration services factory
         private McpConfigServiceFactory _configServiceFactory;
-        
+
         // View layer
         private McpEditorWindowView _view;
-        
+
         // Model layer (MVP pattern)
         private McpEditorModel _model;
-        
+
         // Event handler (MVP pattern helper)
         private McpEditorWindowEventHandler _eventHandler;
-        
+
         // Server operations handler (MVP pattern helper)
         private McpServerOperations _serverOperations;
 
@@ -41,7 +40,6 @@ namespace io.github.hatayama.uMCP
         public static void ShowWindow()
         {
             McpEditorWindow window = GetWindow<McpEditorWindow>(McpConstants.PROJECT_NAME);
-            window.minSize = new Vector2(McpUIConstants.MIN_WINDOW_WIDTH, McpUIConstants.MIN_WINDOW_HEIGHT);
             window.Show();
         }
 
@@ -73,7 +71,7 @@ namespace io.github.hatayama.uMCP
             _view = new McpEditorWindowView();
         }
 
-                /// <summary>
+        /// <summary>
         /// Initialize configuration services factory
         /// </summary>
         private void InitializeConfigurationServices()
@@ -114,8 +112,6 @@ namespace io.github.hatayama.uMCP
             _model.LoadFromSessionState();
         }
 
-
-
         /// <summary>
         /// Handle post-compile mode initialization and auto-start logic
         /// </summary>
@@ -126,8 +122,6 @@ namespace io.github.hatayama.uMCP
 
             // Clear reconnecting UI flag on domain reload to ensure proper state
             SessionState.SetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
-
-            UnityEngine.Debug.Log("[McpEditorWindow] Post-compile mode enabled");
 
             // Check if after compilation
             bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
@@ -146,7 +140,7 @@ namespace io.github.hatayama.uMCP
                     // Use saved port number
                     int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, _model.UI.CustomPort);
                     bool portNeedsUpdate = savedPort != _model.UI.CustomPort;
-                    
+
                     if (portNeedsUpdate)
                     {
                         _model.UpdateCustomPort(savedPort);
@@ -171,8 +165,6 @@ namespace io.github.hatayama.uMCP
             _eventHandler?.Cleanup();
         }
 
-
-
         /// <summary>
         /// Save current state to Unity SessionState
         /// </summary>
@@ -180,20 +172,6 @@ namespace io.github.hatayama.uMCP
         {
             _model.SaveToSessionState();
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         /// <summary>
         /// Called when the window gets focus - update UI to reflect current state
@@ -219,19 +197,19 @@ namespace io.github.hatayama.uMCP
             // Use view layer for rendering
             ServerStatusData statusData = CreateServerStatusData();
             _view.DrawServerStatus(statusData);
-
+            
             ServerControlsData controlsData = CreateServerControlsData();
             _view.DrawServerControls(
                 data: controlsData,
                 toggleServerCallback: ToggleServer,
                 autoStartCallback: UpdateAutoStartServer,
                 portChangeCallback: UpdateCustomPort);
-
+            
             ConnectedToolsData toolsData = CreateConnectedToolsData();
             _view.DrawConnectedToolsSection(
                 data: toolsData,
                 toggleFoldoutCallback: UpdateShowConnectedTools);
-
+            
             EditorConfigData configData = CreateEditorConfigData();
             _view.DrawEditorConfigSection(
                 data: configData,
@@ -270,12 +248,12 @@ namespace io.github.hatayama.uMCP
         {
             // Synchronize if server is running and UI port setting differs from actual server port
             bool serverIsRunning = McpServerController.IsServerRunning;
-            
+
             if (serverIsRunning)
             {
                 int actualServerPort = McpServerController.ServerPort;
                 bool portMismatch = _model.UI.CustomPort != actualServerPort;
-                
+
                 if (portMismatch)
                 {
                     _model.UpdateCustomPort(actualServerPort);
@@ -419,7 +397,7 @@ namespace io.github.hatayama.uMCP
         }
 
         // UIState update helper methods for callback unification
-        
+
         /// <summary>
         /// Update AutoStartServer setting with persistence
         /// </summary>
