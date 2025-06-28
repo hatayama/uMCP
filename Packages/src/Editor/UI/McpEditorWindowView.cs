@@ -14,8 +14,6 @@ namespace io.github.hatayama.uMCP
     {
         public void DrawServerStatus(ServerStatusData data)
         {
-            EditorGUILayout.BeginVertical("box");
-            
             GUIStyle statusStyle = new GUIStyle(EditorStyles.label)
             {
                 normal = { textColor = data.StatusColor },
@@ -23,11 +21,9 @@ namespace io.github.hatayama.uMCP
             };
             
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Status:", EditorStyles.boldLabel, GUILayout.MinWidth(50f), GUILayout.ExpandWidth(false));
-            EditorGUILayout.LabelField($"{data.Status}", statusStyle, GUILayout.MinWidth(60f), GUILayout.ExpandWidth(false));
-            EditorGUILayout.LabelField($"Port: {data.Port}", GUILayout.MinWidth(70f), GUILayout.ExpandWidth(true));
+            EditorGUILayout.LabelField("Status:", EditorStyles.boldLabel, GUILayout.MinWidth(40f), GUILayout.ExpandWidth(false));
+            EditorGUILayout.LabelField($"{data.Status}", statusStyle, GUILayout.ExpandWidth(true));
             EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndVertical();
         }
 
         public void DrawServerControls(ServerControlsData data, Action toggleServerCallback, Action<bool> autoStartCallback, Action<int> portChangeCallback)
@@ -36,8 +32,8 @@ namespace io.github.hatayama.uMCP
             
             // Auto start checkbox
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Auto Start Server", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
             bool newAutoStart = EditorGUILayout.Toggle(data.AutoStartServer, GUILayout.Width(20));
+            EditorGUILayout.LabelField("Auto Start Server", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
             if (newAutoStart != data.AutoStartServer)
             {
                 autoStartCallback?.Invoke(newAutoStart);
@@ -117,17 +113,61 @@ namespace io.github.hatayama.uMCP
             {
                 EditorGUILayout.Space();
                 
-                McpEditorType newSelectedEditor = (McpEditorType)EditorGUILayout.EnumPopup("Target:", data.SelectedEditor);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Target:", GUILayout.Width(50f));
+                McpEditorType newSelectedEditor = (McpEditorType)EditorGUILayout.EnumPopup(data.SelectedEditor, GUILayout.ExpandWidth(true));
+                EditorGUILayout.EndHorizontal();
+                
                 if (newSelectedEditor != data.SelectedEditor)
                 {
                     editorChangeCallback?.Invoke(newSelectedEditor);
                 }
                 
+                EditorGUILayout.Space();
+                
                 string editorName = GetEditorDisplayName(data.SelectedEditor);
-                string buttonText = data.IsServerRunning ? $"Auto-configure {editorName} settings (Port {data.CurrentPort})" : $"Auto-configure {editorName} settings";
-                if (GUILayout.Button(buttonText))
+                
+                // Display configuration error if any
+                if (!string.IsNullOrEmpty(data.ConfigurationError))
+                {
+                    EditorGUILayout.HelpBox($"Error loading {editorName} configuration: {data.ConfigurationError}", MessageType.Error);
+                }
+                else if (data.IsConfigured)
+                {
+                    // Check for port mismatch
+                    if (data.HasPortMismatch)
+                    {
+                        EditorGUILayout.HelpBox($"Warning: {editorName} settings port number may not match current server port ({data.CurrentPort}).", MessageType.Warning);
+                        
+                        if (GUILayout.Button($"Update {editorName} settings to port {data.CurrentPort}"))
+                        {
+                            configureCallback?.Invoke(editorName);
+                        }
+                        
+                        EditorGUILayout.Space();
+                    }
+                    
+                    EditorGUILayout.HelpBox($"{editorName} settings are already configured.", MessageType.Info);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox($"{editorName} settings not found. Please run auto-configuration.", MessageType.Warning);
+                }
+                
+                EditorGUILayout.Space();
+                
+                string buttonText = data.IsServerRunning ? $"Configure {editorName}\n(Port {data.CurrentPort})" : $"Configure {editorName}";
+                if (GUILayout.Button(buttonText, GUILayout.Height(data.IsServerRunning ? 40f : 25f)))
                 {
                     configureCallback?.Invoke(editorName);
+                }
+                
+                EditorGUILayout.Space();
+                
+                // Open settings file button
+                if (GUILayout.Button($"Open {editorName} Settings File"))
+                {
+                    OpenConfigurationFile(data.SelectedEditor);
                 }
             }
             
@@ -199,6 +239,35 @@ namespace io.github.hatayama.uMCP
             };
         }
 
+        /// <summary>
+        /// Open configuration file for the specified editor type
+        /// </summary>
+        private void OpenConfigurationFile(McpEditorType editorType)
+        {
+            try
+            {
+                string configPath = UnityMcpPathResolver.GetConfigPath(editorType);
+                if (System.IO.File.Exists(configPath))
+                {
+                    UnityEditor.EditorUtility.OpenWithDefaultApp(configPath);
+                }
+                else
+                {
+                    UnityEditor.EditorUtility.DisplayDialog(
+                        "Configuration File Not Found",
+                        $"Configuration file for {GetEditorDisplayName(editorType)} not found at:\n{configPath}\n\nPlease run 'Configure {GetEditorDisplayName(editorType)}' first to create the configuration file.",
+                        "OK");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                UnityEditor.EditorUtility.DisplayDialog(
+                    "Error Opening Configuration File",
+                    $"Failed to open configuration file: {ex.Message}",
+                    "OK");
+            }
+        }
+
 #if UMCP_DEBUG
         public void DrawDeveloperTools(DeveloperToolsData data, Action<bool> foldoutCallback, Action<bool> devModeCallback, Action<bool> mcpLogsCallback, Action<bool> commLogsCallback, Action showDebugCallback, Action notifyChangesCallback, Action rebuildCallback)
         {
@@ -218,8 +287,8 @@ namespace io.github.hatayama.uMCP
                 EditorGUILayout.LabelField("TypeScript Server Settings", EditorStyles.boldLabel);
                 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable Development Mode", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 bool newEnableDevelopmentMode = EditorGUILayout.Toggle(data.EnableDevelopmentMode, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Enable Development Mode", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 if (newEnableDevelopmentMode != data.EnableDevelopmentMode)
                 {
                     devModeCallback?.Invoke(newEnableDevelopmentMode);
@@ -237,8 +306,8 @@ namespace io.github.hatayama.uMCP
                 
                 // Log control toggle
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable MCP Logs", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 bool newEnableMcpLogs = EditorGUILayout.Toggle(data.EnableMcpLogs, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Enable MCP Logs", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 if (newEnableMcpLogs != data.EnableMcpLogs)
                 {
                     mcpLogsCallback?.Invoke(newEnableMcpLogs);
@@ -247,8 +316,8 @@ namespace io.github.hatayama.uMCP
                 
                 // Communication logs toggle
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable Communication Logs", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 bool newEnableCommunicationLogs = EditorGUILayout.Toggle(data.EnableCommunicationLogs, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Enable Communication Logs", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 if (newEnableCommunicationLogs != data.EnableCommunicationLogs)
                 {
                     commLogsCallback?.Invoke(newEnableCommunicationLogs);

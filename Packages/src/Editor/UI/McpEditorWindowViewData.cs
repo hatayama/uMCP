@@ -62,13 +62,19 @@ namespace io.github.hatayama.uMCP
         public readonly bool ShowFoldout;
         public readonly bool IsServerRunning;
         public readonly int CurrentPort;
+        public readonly bool IsConfigured;
+        public readonly bool HasPortMismatch;
+        public readonly string ConfigurationError;
 
-        public EditorConfigData(McpEditorType selectedEditor, bool showFoldout, bool isServerRunning, int currentPort)
+        public EditorConfigData(McpEditorType selectedEditor, bool showFoldout, bool isServerRunning, int currentPort, bool isConfigured = false, bool hasPortMismatch = false, string configurationError = null)
         {
             SelectedEditor = selectedEditor;
             ShowFoldout = showFoldout;
             IsServerRunning = isServerRunning;
             CurrentPort = currentPort;
+            IsConfigured = isConfigured;
+            HasPortMismatch = hasPortMismatch;
+            ConfigurationError = configurationError;
         }
     }
 

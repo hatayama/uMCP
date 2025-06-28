@@ -301,8 +301,29 @@ namespace io.github.hatayama.uMCP
         {
             bool isServerRunning = McpServerController.IsServerRunning;
             int currentPort = McpServerController.ServerPort;
+            
+            // Check configuration status
+            bool isConfigured = false;
+            bool hasPortMismatch = false;
+            string configurationError = null;
+            
+            try
+            {
+                McpConfigService configService = GetConfigService(_model.UI.SelectedEditorType);
+                isConfigured = configService.IsConfigured();
+                
+                // Check for port mismatch if configured and server is running
+                if (isConfigured && isServerRunning)
+                {
+                    hasPortMismatch = currentPort != _model.UI.CustomPort;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                configurationError = ex.Message;
+            }
 
-            return new EditorConfigData(_model.UI.SelectedEditorType, _model.UI.ShowLLMToolSettings, isServerRunning, currentPort);
+            return new EditorConfigData(_model.UI.SelectedEditorType, _model.UI.ShowLLMToolSettings, isServerRunning, currentPort, isConfigured, hasPortMismatch, configurationError);
         }
 
         /// <summary>
