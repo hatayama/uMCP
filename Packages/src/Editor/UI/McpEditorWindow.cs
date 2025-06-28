@@ -67,6 +67,9 @@ namespace io.github.hatayama.uMCP
         private McpConfigService _geminiCLIConfigService;
         private McpConfigService _mcpInspectorConfigService;
         
+        // View layer
+        private McpEditorWindowView _view;
+        
         [MenuItem("Window/uMCP")]
         public static void ShowWindow()
         {
@@ -77,6 +80,9 @@ namespace io.github.hatayama.uMCP
 
         private void OnEnable()
         {
+            // Initialize view
+            _view = new McpEditorWindowView();
+            
             // Initialize configuration services
             McpConfigRepository cursorRepository = new(McpEditorType.Cursor);
             McpConfigRepository claudeCodeRepository = new(McpEditorType.ClaudeCode);
@@ -307,12 +313,72 @@ namespace io.github.hatayama.uMCP
             // Make entire window scrollable
             mainScrollPosition = EditorGUILayout.BeginScrollView(mainScrollPosition);
             
-            DrawServerStatus();
-            DrawServerControls();
-            DrawConnectedToolsSection();
-            DrawEditorConfigSection();
+            // Use view layer for rendering
+            ServerStatusData statusData = CreateServerStatusData();
+            _view.DrawServerStatus(statusData);
+            
+            ServerControlsData controlsData = CreateServerControlsData();
+            _view.DrawServerControls(
+                data: controlsData, 
+                startCallback: StartServer, 
+                stopCallback: StopServer, 
+                autoStartCallback: (autoStart) => {
+                    autoStartServer = autoStart;
+                    McpEditorSettings.SetAutoStartServer(autoStartServer);
+                },
+                portChangeCallback: (port) => {
+                    customPort = port;
+                    McpEditorSettings.SetCustomPort(customPort);
+                });
+            
+            ConnectedToolsData toolsData = CreateConnectedToolsData();
+            _view.DrawConnectedToolsSection(
+                data: toolsData, 
+                toggleFoldoutCallback: (show) => showConnectedTools = show);
+            
+            EditorConfigData configData = CreateEditorConfigData();
+            _view.DrawEditorConfigSection(
+                data: configData, 
+                editorChangeCallback: (type) => {
+                    selectedEditorType = type;
+                    SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
+                },
+                configureCallback: (editor) => ConfigureEditor(editor),
+                foldoutCallback: (show) => showLLMToolSettings = show);
+            
 #if UMCP_DEBUG
-            DrawDeveloperTools();
+            DeveloperToolsData devToolsData = CreateDeveloperToolsData();
+            _view.DrawDeveloperTools(
+                data: devToolsData,
+                foldoutCallback: (show) => {
+                    showDeveloperTools = show;
+                    McpEditorSettings.SetShowDeveloperTools(showDeveloperTools);
+                },
+                devModeCallback: (enable) => {
+                    enableDevelopmentMode = enable;
+                    McpEditorSettings.SetEnableDevelopmentMode(enableDevelopmentMode);
+                },
+                mcpLogsCallback: (enable) => {
+                    enableMcpLogs = enable;
+                    McpEditorSettings.SetEnableMcpLogs(enableMcpLogs);
+                },
+                commLogsCallback: (enable) => {
+                    enableCommunicationLogs = enable;
+                    McpEditorSettings.SetEnableCommunicationLogs(enableCommunicationLogs);
+                    if (!enableCommunicationLogs)
+                    {
+                        McpCommunicationLogger.ClearLogs();
+                    }
+                },
+                showDebugCallback: () => {
+                    string debugInfo = McpServerController.GetDetailedServerStatus();
+                    Debug.Log($"MCP Server Debug Info:\n{debugInfo}");
+                },
+                notifyChangesCallback: () => NotifyCommandChanges(),
+                rebuildCallback: () => {
+                    // TypeScript rebuild functionality moved to View layer
+                    Debug.Log("TypeScript rebuild not implemented in this version");
+                });
 #endif
             
             EditorGUILayout.EndScrollView();
@@ -337,91 +403,89 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Draw server status section
+        /// Create server status data for view rendering
         /// </summary>
-        private void DrawServerStatus()
+        private ServerStatusData CreateServerStatusData()
         {
-            EditorGUILayout.BeginVertical("box");
-            
-            // Status display
             (bool isRunning, int port, bool wasRestored) = McpServerController.GetServerStatus();
             string status = isRunning ? "Running" : "Stopped";
             Color statusColor = isRunning ? Color.green : Color.red;
             
-            GUIStyle statusStyle = new GUIStyle(EditorStyles.label)
-            {
-                normal = { textColor = statusColor },
-                fontStyle = FontStyle.Bold
-            };
-            
-            // Display Server Status, Status, and Port all horizontally
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Server Status:", EditorStyles.boldLabel, GUILayout.Width(McpUIConstants.LABEL_WIDTH_SERVER_STATUS));
-            EditorGUILayout.LabelField($"{status}", statusStyle, GUILayout.Width(McpUIConstants.LABEL_WIDTH_STATUS));
-            EditorGUILayout.LabelField($"Port: {port}");
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndVertical();
+            return new ServerStatusData(isRunning, port, status, statusColor);
         }
 
         /// <summary>
-        /// Draw server control section
+        /// Create server controls data for view rendering
         /// </summary>
-        private void DrawServerControls()
+        private ServerControlsData CreateServerControlsData()
         {
-            EditorGUILayout.BeginVertical("box");
-            
-            // Auto start checkbox
-            EditorGUI.BeginChangeCheck();
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Auto Start Server", GUILayout.Width(200));
-            bool newAutoStart = EditorGUILayout.Toggle(autoStartServer, GUILayout.Width(20));
-            EditorGUILayout.EndHorizontal();
-            if (EditorGUI.EndChangeCheck())
-            {
-                autoStartServer = newAutoStart;
-                McpEditorSettings.SetAutoStartServer(autoStartServer);
-            }
-            
-            EditorGUILayout.Space();
-            
-            // Port settings
             bool isRunning = McpServerController.IsServerRunning;
-            EditorGUI.BeginDisabledGroup(isRunning);
-            
-            EditorGUI.BeginChangeCheck();
-            int newPort = EditorGUILayout.IntField("Port:", customPort);
-            if (EditorGUI.EndChangeCheck())
-            {
-                customPort = newPort;
-                // Save immediately when port number is changed
-                McpEditorSettings.SetCustomPort(customPort);
-            }
-            
-            EditorGUI.EndDisabledGroup();
-            
-            EditorGUILayout.Space();
-            
-            // Start/Stop buttons
-            EditorGUILayout.BeginHorizontal();
-            
-            EditorGUI.BeginDisabledGroup(!isRunning);
-            if (GUILayout.Button("Stop Server", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
-            {
-                StopServer();
-            }
-            EditorGUI.EndDisabledGroup();
-            
-            EditorGUI.BeginDisabledGroup(isRunning);
-            if (GUILayout.Button("Start Server", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
-            {
-                StartServer();
-            }
-            EditorGUI.EndDisabledGroup();
-            
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.Space();
+            return new ServerControlsData(customPort, autoStartServer, isRunning, !isRunning);
         }
+
+        /// <summary>
+        /// Create connected tools data for view rendering
+        /// </summary>
+        private ConnectedToolsData CreateConnectedToolsData()
+        {
+            bool isServerRunning = McpServerController.IsServerRunning;
+            bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            
+            return new ConnectedToolsData(connectedClients, showConnectedTools, isServerRunning, showReconnectingUI);
+        }
+
+        /// <summary>
+        /// Create editor config data for view rendering
+        /// </summary>
+        private EditorConfigData CreateEditorConfigData()
+        {
+            bool isServerRunning = McpServerController.IsServerRunning;
+            int currentPort = McpServerController.ServerPort;
+            
+            return new EditorConfigData(selectedEditorType, showLLMToolSettings, isServerRunning, currentPort);
+        }
+
+        /// <summary>
+        /// Configure editor settings
+        /// </summary>
+        private void ConfigureEditor(string editorName)
+        {
+            McpConfigService configService = GetConfigService(selectedEditorType);
+            bool isServerRunning = McpServerController.IsServerRunning;
+            int portToUse = isServerRunning ? McpServerController.ServerPort : customPort;
+            
+            configService.AutoConfigure(portToUse);
+#if UMCP_DEBUG
+            configService.UpdateDevelopmentSettings(portToUse, enableDevelopmentMode, enableMcpLogs);
+#endif
+            Repaint();
+        }
+
+#if UMCP_DEBUG
+        /// <summary>
+        /// Create developer tools data for view rendering
+        /// </summary>
+        private DeveloperToolsData CreateDeveloperToolsData()
+        {
+            IReadOnlyList<McpCommunicationLogEntry> logs = McpCommunicationLogger.GetAllLogs();
+            
+            return new DeveloperToolsData(
+                showDeveloperTools, 
+                enableMcpLogs, 
+                enableCommunicationLogs, 
+                enableDevelopmentMode, 
+                showCommunicationLogs, 
+                logs, 
+                communicationLogScrollPosition, 
+                communicationLogHeight, 
+                requestScrollPositions, 
+                responseScrollPositions
+            );
+        }
+#endif
+
+
 
         /// <summary>
         /// Start server (for user operations)
@@ -533,9 +597,6 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Draw connected LLM tools section
-        /// </summary>
-        /// <summary>
         /// Connection display states for UI logic separation
         /// </summary>
         private enum ConnectionDisplayState
@@ -544,158 +605,6 @@ namespace io.github.hatayama.uMCP
             Reconnecting,
             HasConnectedClients,
             NoConnectedClients
-        }
-        
-        private void DrawConnectedToolsSection()
-        {
-            EditorGUILayout.BeginVertical("box");
-            
-            showConnectedTools = EditorGUILayout.Foldout(showConnectedTools, McpUIConstants.CONNECTED_TOOLS_FOLDOUT_TEXT, true);
-            
-            if (showConnectedTools)
-            {
-                EditorGUILayout.Space();
-                DrawConnectionStatus();
-            }
-            
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.Space();
-        }
-        
-        private void DrawConnectionStatus()
-        {
-            ConnectionDisplayState state = GetConnectionDisplayState();
-            DrawConnectionStatusUI(state);
-        }
-        
-        private ConnectionDisplayState GetConnectionDisplayState()
-        {
-            // Check if explicitly showing reconnecting UI
-            bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
-            
-            if (showReconnectingUI)
-            {
-                return ConnectionDisplayState.Reconnecting;
-            }
-            
-            // Check server status
-            if (!McpServerController.IsServerRunning)
-            {
-                return ConnectionDisplayState.ServerNotRunning;
-            }
-            
-            // Check connected clients
-            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
-            if (connectedClients != null && connectedClients.Count > 0)
-            {
-                // Clear reconnecting flag when clients are actually connected
-                McpServerController.ClearReconnectingFlag();
-                return ConnectionDisplayState.HasConnectedClients;
-            }
-            
-            return ConnectionDisplayState.NoConnectedClients;
-        }
-        
-        private void DrawConnectionStatusUI(ConnectionDisplayState state)
-        {
-            switch (state)
-            {
-                case ConnectionDisplayState.ServerNotRunning:
-                    EditorGUILayout.HelpBox("Server is not running. Start the server to see connected tools.", MessageType.Warning);
-                    break;
-                    
-                case ConnectionDisplayState.Reconnecting:
-                    EditorGUILayout.HelpBox(McpUIConstants.RECONNECTING_MESSAGE, MessageType.Info);
-                    break;
-                    
-                case ConnectionDisplayState.HasConnectedClients:
-                    DrawConnectedClientsList();
-                    break;
-                    
-                case ConnectionDisplayState.NoConnectedClients:
-                    EditorGUILayout.HelpBox("No LLM tools currently connected.", MessageType.Info);
-                    break;
-            }
-        }
-        
-        private void DrawConnectedClientsList()
-        {
-            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
-            if (connectedClients == null) return;
-            
-            foreach (ConnectedClient client in connectedClients)
-            {
-                DrawConnectedClientItem(client);
-            }
-        }
-
-        /// <summary>
-        /// Draw individual connected client item with improved UI/UX
-        /// </summary>
-        private void DrawConnectedClientItem(ConnectedClient client)
-        {
-            // Box grouping for visual separation
-            EditorGUILayout.BeginVertical("box");
-            
-            // Single line with client name and endpoint/PID information
-            EditorGUILayout.BeginHorizontal();
-            
-            // Client icon and name
-            EditorGUILayout.LabelField(McpUIConstants.CLIENT_ICON + client.ClientName, new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
-            
-            // Flexible space
-            GUILayout.FlexibleSpace();
-            
-            // Endpoint with PID information
-            GUIStyle endpointStyle = new GUIStyle(EditorStyles.miniLabel);
-            endpointStyle.normal.textColor = Color.gray;
-            string pidInfo = client.ProcessId > McpConstants.UNKNOWN_PROCESS_ID ? $" (PID: {client.ProcessId})" : "";
-            EditorGUILayout.LabelField(McpUIConstants.ENDPOINT_ARROW + client.Endpoint + pidInfo, endpointStyle);
-            
-            EditorGUILayout.EndHorizontal();
-            
-            EditorGUILayout.EndVertical();
-            
-            // Add small space between client items
-            EditorGUILayout.Space(McpUIConstants.CLIENT_ITEM_SPACING);
-        }
-
-        /// <summary>
-        /// Draw editor configuration section
-        /// </summary>
-        private void DrawEditorConfigSection()
-        {
-            EditorGUILayout.BeginVertical("box");
-            
-            // Foldout header
-            showLLMToolSettings = EditorGUILayout.Foldout(showLLMToolSettings, "LLM Tool Settings", true);
-            
-            // Show content only when expanded
-            if (showLLMToolSettings)
-            {
-                EditorGUILayout.Space();
-                
-                // Editor selection dropdown
-                EditorGUI.BeginChangeCheck();
-                selectedEditorType = (McpEditorType)EditorGUILayout.EnumPopup("Target:", selectedEditorType);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    // Save to session when selection changes
-                    SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)selectedEditorType);
-                }
-                
-                bool isServerRunning = McpServerController.IsServerRunning;
-                int currentServerPort = McpServerController.ServerPort;
-                
-                // Display only the selected editor's configuration
-                McpConfigService configService = GetConfigService(selectedEditorType);
-                string editorName = GetEditorDisplayName(selectedEditorType);
-                
-                DrawConfigurationSection(editorName, configService, isServerRunning, currentServerPort);
-            }
-            
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.Space();
         }
 
         /// <summary>
@@ -792,456 +701,6 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        
-#if UMCP_DEBUG
-        /// <summary>
-        /// Draw developer tools section
-        /// </summary>
-        private void DrawDeveloperTools()
-        {
-            EditorGUILayout.BeginVertical("box");
-            
-            // Toggle header
-            EditorGUI.BeginChangeCheck();
-            showDeveloperTools = EditorGUILayout.Foldout(showDeveloperTools, "Developer Tools", true);
-            if (EditorGUI.EndChangeCheck())
-            {
-                McpEditorSettings.SetShowDeveloperTools(showDeveloperTools);
-            }
-            
-            // Developer Tools content (display only when expanded)
-            if (showDeveloperTools)
-            {
-                EditorGUILayout.Space();
-                
-                // TypeScript Development Mode settings
-                EditorGUILayout.LabelField("TypeScript Server Settings", EditorStyles.boldLabel);
-                
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable Development Mode", GUILayout.Width(200));
-                bool newEnableDevelopmentMode = EditorGUILayout.Toggle(enableDevelopmentMode, GUILayout.Width(20));
-                EditorGUILayout.EndHorizontal();
-                if (EditorGUI.EndChangeCheck())
-                {
-                    enableDevelopmentMode = newEnableDevelopmentMode;
-                    McpEditorSettings.SetEnableDevelopmentMode(enableDevelopmentMode);
-                    
-                    // Update mcp.json immediately
-                    UpdateMcpConfigForDevelopmentSettings();
-                }
-                
-                EditorGUILayout.HelpBox(
-                    enableDevelopmentMode 
-                        ? "Development Mode: Debug tools (mcp-ping, get-unity-commands) will be available in Cursor"
-                        : "Production Mode: Only essential tools will be available in Cursor",
-                    enableDevelopmentMode ? MessageType.Info : MessageType.Warning
-                );
-                
-                EditorGUILayout.Space();
-                
-                // Log control toggle
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable MCP Logs", GUILayout.Width(200));
-                bool newEnableMcpLogs = EditorGUILayout.Toggle(enableMcpLogs, GUILayout.Width(20));
-                EditorGUILayout.EndHorizontal();
-                if (EditorGUI.EndChangeCheck())
-                {
-                    enableMcpLogs = newEnableMcpLogs;
-                    McpEditorSettings.SetEnableMcpLogs(enableMcpLogs);
-                    
-                    // Update mcp.json immediately
-                    UpdateMcpConfigForDevelopmentSettings();
-                }
-                
-                // Communication logs toggle
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable Communication Logs", GUILayout.Width(200));
-                bool newEnableCommunicationLogs = EditorGUILayout.Toggle(enableCommunicationLogs, GUILayout.Width(20));
-                EditorGUILayout.EndHorizontal();
-                if (EditorGUI.EndChangeCheck())
-                {
-                    enableCommunicationLogs = newEnableCommunicationLogs;
-                    McpEditorSettings.SetEnableCommunicationLogs(enableCommunicationLogs);
-                    
-                    // Clear logs when communication logs are disabled
-                    if (!enableCommunicationLogs)
-                    {
-                        McpCommunicationLogger.ClearLogs();
-                    }
-                }
-                
-                EditorGUILayout.Space();
-                
-                // Communication logs section (only when enabled)
-                if (enableCommunicationLogs)
-                {
-                    DrawCommunicationLogs();
-                    EditorGUILayout.Space();
-                }
-                
-                // Debug information display button
-                if (GUILayout.Button("Show Debug Info"))
-                {
-                    string debugInfo = McpServerController.GetDetailedServerStatus();
-                    Debug.Log($"MCP Server Debug Info:\n{debugInfo}");
-                }
-                
-                EditorGUILayout.Space();
-                
-                // Command notification button
-                bool isServerRunning = McpServerController.IsServerRunning;
-                EditorGUI.BeginDisabledGroup(!isServerRunning);
-                if (GUILayout.Button("Notify Command Changes to LLM Tools", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_MEDIUM)))
-                {
-                    NotifyCommandChanges();
-                }
-                EditorGUI.EndDisabledGroup();
-                
-                if (!isServerRunning)
-                {
-                    EditorGUILayout.HelpBox("Server must be running to notify command changes", MessageType.Info);
-                }
-                
-                EditorGUILayout.Space();
-                
-                // TypeScript build button
-                if (GUILayout.Button("Rebuild TypeScript Server", GUILayout.Height(McpUIConstants.BUTTON_HEIGHT_LARGE)))
-                {
-                    RebuildTypeScriptServer();
-                }
-            }
-            
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.Space();
-        }
 
-        /// <summary>
-        /// Rebuild TypeScript server
-        /// </summary>
-        private void RebuildTypeScriptServer()
-        {
-            // Create TypeScriptBuilder when needed
-            TypeScriptBuilder builder = new TypeScriptBuilder();
-            
-            builder.BuildTypeScriptServer((success, output, error) => {
-                if (success)
-                {
-                    // Auto-restart if server is running
-                    if (McpServerController.IsServerRunning)
-                    {
-                        Debug.Log("Restarting server with new build...");
-                        McpServerController.StopServer();
-                        
-                        // Wait a bit before restarting (wait for server to completely stop)
-                        EditorApplication.delayCall += () => {
-                            McpServerController.StartServer(customPort);
-                            Debug.Log("Server restarted with updated TypeScript build!");
-                            Repaint(); // Update UI
-                        };
-                    }
-                    else
-                    {
-                        Debug.Log("Server is not running. Start the server manually to use the updated build.");
-                    }
-                }
-                // Error handling is performed within TypeScriptBuilder
-            });
-        }
-
-        /// <summary>
-        /// Draw communication logs section
-        /// </summary>
-        private void DrawCommunicationLogs()
-        {
-            // Early return if communication logs are disabled
-            if (!enableCommunicationLogs)
-            {
-                return;
-            }
-            
-            EditorGUILayout.BeginVertical("box");
-            
-            // Header and clear button
-            EditorGUILayout.BeginHorizontal();
-            showCommunicationLogs = EditorGUILayout.Foldout(showCommunicationLogs, "Communication Logs", true);
-            
-            if (showCommunicationLogs)
-            {
-                if (GUILayout.Button("Clear", GUILayout.Width(McpUIConstants.BUTTON_WIDTH_CLEAR)))
-                {
-                    McpCommunicationLogger.ClearLogs();
-                }
-            }
-            
-            EditorGUILayout.EndHorizontal();
-            
-            if (showCommunicationLogs)
-            {
-                EditorGUILayout.Space();
-                
-                IReadOnlyList<McpCommunicationLogEntry> logs = McpCommunicationLogger.GetAllLogs();
-                if (logs.Count == 0)
-                {
-                    EditorGUILayout.HelpBox("No communication logs yet", MessageType.Info);
-                }
-                else
-                {
-                    // Scroll view (resizable)
-                    communicationLogScrollPosition = EditorGUILayout.BeginScrollView(
-                        communicationLogScrollPosition, 
-                        GUILayout.Height(communicationLogHeight)
-                    );
-                    
-                    // Display up to maximum logs (from latest)
-                    int displayCount = Mathf.Min(logs.Count, McpUIConstants.MAX_COMMUNICATION_LOG_ENTRIES);
-                    int startIndex = logs.Count - 1;
-                    int endIndex = logs.Count - displayCount;
-                    
-                    for (int i = startIndex; i >= endIndex; i--)
-                    {
-                        McpCommunicationLogEntry log = logs[i];
-                        DrawLogEntry(log);
-                        EditorGUILayout.Space(5);
-                    }
-                    
-                    EditorGUILayout.EndScrollView();
-                    
-                    // Resize handle
-                    DrawCommunicationLogResizeHandle();
-                }
-            }
-            
-            EditorGUILayout.EndVertical();
-        }
-        
-        /// <summary>
-        /// Draw individual log entry
-        /// </summary>
-        private void DrawLogEntry(McpCommunicationLogEntry log)
-        {
-            EditorGUILayout.BeginVertical("box");
-            
-            // Header (clickable toggle)
-            string toggleSymbol = log.IsExpanded ? "▼" : "▶";
-            string headerText = $"{toggleSymbol} {log.HeaderText}";
-            
-            GUIStyle headerStyle = new GUIStyle(EditorStyles.label);
-            headerStyle.fontStyle = FontStyle.Bold;
-            if (log.IsError)
-            {
-                headerStyle.normal.textColor = Color.red;
-            }
-            
-            Rect headerRect = GUILayoutUtility.GetRect(new GUIContent(headerText), headerStyle);
-            if (GUI.Button(headerRect, headerText, headerStyle))
-            {
-                log.IsExpanded = !log.IsExpanded;
-            }
-            
-            // Content (only when expanded)
-            if (log.IsExpanded)
-            {
-                EditorGUILayout.Space();
-                
-                // Request
-                EditorGUILayout.LabelField("Request:", EditorStyles.boldLabel);
-                EditorGUILayout.BeginVertical("box");
-                string formattedRequest = FormatJson(log.Request);
-                string requestKey = $"{log.CommandName}_{log.Timestamp:HHmmss}_request";
-                DrawJsonContentWithScroll(formattedRequest, requestKey, requestScrollPositions);
-                EditorGUILayout.EndVertical();
-                
-                EditorGUILayout.Space();
-                
-                // Response
-                EditorGUILayout.LabelField("Response:", EditorStyles.boldLabel);
-                EditorGUILayout.BeginVertical("box");
-                string formattedResponse = FormatJson(log.Response);
-                string responseKey = $"{log.CommandName}_{log.Timestamp:HHmmss}_response";
-                DrawJsonContentWithScroll(formattedResponse, responseKey, responseScrollPositions);
-                EditorGUILayout.EndVertical();
-            }
-            
-            EditorGUILayout.EndVertical();
-        }
-        
-        /// <summary>
-        /// Format JSON
-        /// </summary>
-        private string FormatJson(string json)
-        {
-            try
-            {
-                JObject parsed = JObject.Parse(json);
-                return parsed.ToString(Formatting.Indented);
-            }
-            catch
-            {
-                return json; // Return as-is if cannot parse
-            }
-        }
-
-        /// <summary>
-        /// Draw JSON content with appropriate height
-        /// </summary>
-        private void DrawJsonContent(string jsonContent)
-        {
-            GUIStyle textAreaStyle = new GUIStyle(EditorStyles.textArea);
-            textAreaStyle.wordWrap = true;
-            
-            // Calculate number of lines in content and set appropriate height
-            string[] lines = jsonContent.Split('\n');
-            int lineCount = lines.Length;
-            float lineHeight = EditorGUIUtility.singleLineHeight;
-            float contentHeight = Mathf.Max(McpUIConstants.JSON_CONTENT_MIN_HEIGHT, Mathf.Min(lineCount * lineHeight + 20f, McpUIConstants.JSON_CONTENT_MAX_HEIGHT)); // Minimum 80px, maximum 200px
-            
-            // Display with regular SelectableLabel (scrolling handled by outer communication log)
-            EditorGUILayout.SelectableLabel(jsonContent, textAreaStyle, GUILayout.Height(contentHeight));
-        }
-
-        /// <summary>
-        /// Draw JSON content in scrollable area
-        /// </summary>
-        private void DrawJsonContentWithScroll(string jsonContent, string scrollKey, Dictionary<string, Vector2> scrollPositions)
-        {
-            GUIStyle textAreaStyle = new GUIStyle(EditorStyles.textArea);
-            textAreaStyle.wordWrap = true;
-            
-            // Calculate number of lines in content
-            string[] lines = jsonContent.Split('\n');
-            int lineCount = lines.Length;
-            float lineHeight = EditorGUIUtility.singleLineHeight;
-            
-            // Create scrollable area with fixed height
-            float fixedHeight = McpUIConstants.JSON_SCROLL_FIXED_HEIGHT;
-            
-            // Calculate actual content height (ensure sufficient margin)
-            float contentHeight = lineCount * lineHeight + McpUIConstants.JSON_CONTENT_PADDING; // Top/bottom padding + generous margin
-            
-            // Get scroll position (initialize if not exists)
-            if (!scrollPositions.ContainsKey(scrollKey))
-            {
-                scrollPositions[scrollKey] = Vector2.zero;
-            }
-            
-            // Create scroll view
-            scrollPositions[scrollKey] = EditorGUILayout.BeginScrollView(
-                scrollPositions[scrollKey], 
-                GUILayout.Height(fixedHeight)
-            );
-            
-            // Display JSON content (ensure sufficient height)
-            EditorGUILayout.SelectableLabel(jsonContent, textAreaStyle, GUILayout.Height(contentHeight));
-            
-            EditorGUILayout.EndScrollView();
-        }
-
-        /// <summary>
-        /// Draw resize handle for communication log area
-        /// </summary>
-        private void DrawCommunicationLogResizeHandle()
-        {
-            // Get resize handle area (increase height for better visibility)
-            Rect handleRect = GUILayoutUtility.GetRect(0, McpUIConstants.RESIZE_HANDLE_HEIGHT, GUILayout.ExpandWidth(true));
-            
-            // Change mouse cursor to resize cursor
-            EditorGUIUtility.AddCursorRect(handleRect, MouseCursor.ResizeVertical);
-            
-            // Draw resize handle appearance (more visible)
-            if (Event.current.type == EventType.Repaint)
-            {
-                Color originalColor = GUI.color;
-                
-                // Make background slightly darker
-                GUI.color = new Color(McpUIConstants.RESIZE_HANDLE_BACKGROUND_ALPHA, McpUIConstants.RESIZE_HANDLE_BACKGROUND_ALPHA, McpUIConstants.RESIZE_HANDLE_BACKGROUND_ALPHA, McpUIConstants.RESIZE_HANDLE_BACKGROUND_ALPHA);
-                GUI.DrawTexture(handleRect, EditorGUIUtility.whiteTexture);
-                
-                // Draw three dots in center to look like a handle
-                GUI.color = new Color(McpUIConstants.RESIZE_HANDLE_DOT_BRIGHTNESS, McpUIConstants.RESIZE_HANDLE_DOT_BRIGHTNESS, McpUIConstants.RESIZE_HANDLE_DOT_BRIGHTNESS, McpUIConstants.RESIZE_HANDLE_DOT_ALPHA);
-                float centerX = handleRect.x + handleRect.width * 0.5f;
-                float centerY = handleRect.y + handleRect.height * 0.5f;
-                
-                // Draw three dots
-                for (int i = -1; i <= 1; i++)
-                {
-                    Rect dotRect = new Rect(centerX + i * McpUIConstants.DOT_SPACING - 1, centerY - 1, McpUIConstants.DOT_SIZE, McpUIConstants.DOT_SIZE);
-                    GUI.DrawTexture(dotRect, EditorGUIUtility.whiteTexture);
-                }
-                
-                GUI.color = originalColor;
-            }
-            
-            // Handle mouse events
-            if (Event.current.type == EventType.MouseDown && handleRect.Contains(Event.current.mousePosition))
-            {
-                isResizingCommunicationLog = true;
-                Event.current.Use();
-            }
-            
-            if (isResizingCommunicationLog)
-            {
-                if (Event.current.type == EventType.MouseDrag)
-                {
-                    // Adjust height according to drag amount
-                    communicationLogHeight += Event.current.delta.y;
-                    
-                    // Limit minimum and maximum height
-                    communicationLogHeight = Mathf.Clamp(communicationLogHeight, McpUIConstants.MIN_COMMUNICATION_LOG_HEIGHT, McpUIConstants.MAX_COMMUNICATION_LOG_HEIGHT);
-                    
-                    // Save to SessionState
-                    SessionState.SetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, communicationLogHeight);
-                    
-                    Event.current.Use();
-                    Repaint();
-                }
-                else if (Event.current.type == EventType.MouseUp)
-                {
-                    isResizingCommunicationLog = false;
-                    Event.current.Use();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Update MCP configuration for development mode and MCP logs
-        /// </summary>
-        private void UpdateMcpConfigForDevelopmentSettings()
-        {
-            try
-            {
-                // Get configuration service for selected editor type
-                McpConfigService configService = GetConfigService(selectedEditorType);
-                string editorDisplayName = GetEditorDisplayName(selectedEditorType);
-                
-                // Get current port
-                int portToUse = McpServerController.IsServerRunning ? McpServerController.ServerPort : customPort;
-                
-                // Update development mode and MCP logs environment variables (preserve other settings)
-                configService.UpdateDevelopmentSettings(portToUse, enableDevelopmentMode, enableMcpLogs);
-                
-                // Updated editor settings
-                
-                // Log configuration file path for debugging
-                string configPath = UnityMcpPathResolver.GetConfigPath(selectedEditorType);
-                // Configuration file partially updated
-                
-                // Log update confirmation instead of showing dialog
-                string modeText = enableDevelopmentMode ? "Development Mode (debug tools enabled)" : "Production Mode (debug tools disabled)";
-                string logsText = enableMcpLogs ? "MCP logs enabled" : "MCP logs disabled";
-                // Configuration updated successfully
-            }
-            catch (System.Exception ex)
-            {
-                string editorDisplayName = GetEditorDisplayName(selectedEditorType);
-                EditorUtility.DisplayDialog("Configuration Error", 
-                    $"Failed to update {editorDisplayName} development settings: {ex.Message}", 
-                    "OK");
-                McpLogger.LogError($"Failed to update {editorDisplayName} development settings: {ex.Message}");
-            }
-        }
-#endif
     }
 } 
