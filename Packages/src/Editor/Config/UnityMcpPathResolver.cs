@@ -4,6 +4,18 @@ using UnityEngine;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
+    /// Supported editor types.
+    /// </summary>
+    public enum McpEditorType
+    {
+        Cursor,
+        ClaudeCode,
+        VSCode,
+        GeminiCLI,
+        McpInspector
+    }
+
+    /// <summary>
     /// Class for resolving paths related to Unity MCP.
     /// Single Responsibility Principle: Only responsible for path resolution.
     /// 
@@ -23,15 +35,14 @@ namespace io.github.hatayama.uMCP
     /// - Add CLIENT_NAME_XXX constant
     /// - Update GetClientNameForEditor() switch statement
     /// 
-    /// ### 3. Update McpEditorWindow.cs
-    /// - Add private McpConfigService field (_xxxConfigService)
-    /// - Initialize the service in OnEnable()
-    /// - Update GetConfigService() switch statement
-    /// - Update GetEditorDisplayName() switch statement
+    /// ### 3. No changes needed in McpConfigServiceFactory.cs
+    /// - Factory automatically detects and creates services for all enum values
+    /// - New editor types are handled automatically via Enum.GetValues()
     /// 
     /// ### 4. Related Classes to Check
     /// - McpConfigService: Handles configuration file read/write operations
     /// - McpConfigRepository: Manages configuration data persistence
+    /// - McpConfigServiceFactory: Creates and manages configuration service instances
     /// - McpServerConfigFactory: Creates server configuration objects
     /// - McpEditorSettings: Manages editor-specific settings
     /// 
@@ -58,6 +69,7 @@ namespace io.github.hatayama.uMCP
     /// - Verify client name appears correctly in Unity MCP window
     /// - Test server start/stop functionality
     /// - Confirm MCP_CLIENT_NAME environment variable is set correctly
+    /// - Verify factory automatically creates service for new editor type
     /// </summary>
     public static class UnityMcpPathResolver
     {
@@ -240,17 +252,5 @@ namespace io.github.hatayama.uMCP
             
             return localPath;
         }
-    }
-
-    /// <summary>
-    /// Supported editor types.
-    /// </summary>
-    public enum McpEditorType
-    {
-        Cursor,
-        ClaudeCode,
-        VSCode,
-        GeminiCLI,
-        McpInspector
     }
 } 

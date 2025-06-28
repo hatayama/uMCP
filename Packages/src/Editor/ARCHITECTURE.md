@@ -40,9 +40,39 @@ This design eliminates inconsistencies between the server and client and provide
     - `McpConfigRepository`: Handles file I/O for configuration.
     - `McpConfigService`: Implements the business logic for configuration.
     - `JsonRpcProcessor`: Deals exclusively with parsing and formatting JSON-RPC 2.0 messages.
-- **Open/Closed Principle (OCP)**: The system is open for extension but closed for modification. The Command Pattern is the prime example; new commands can be added without altering the core execution logic.
+    - **UI Layer Examples**:
+        - `McpEditorModel`: Manages application state and business logic only.
+        - `McpEditorWindowView`: Handles UI rendering only.
+        - `McpEditorWindowEventHandler`: Manages Unity Editor events only.
+        - `McpServerOperations`: Handles server operations only.
+- **Open/Closed Principle (OCP)**: The system is open for extension but closed for modification. The Command Pattern is the prime example; new commands can be added without altering the core execution logic. The MVP + Helper pattern also demonstrates this principle - new functionality can be added by creating new helper classes without modifying existing components.
 
-### 2.4. Resilience to Domain Reloads
+### 2.4. MVP + Helper Pattern for UI Architecture
+The UI layer implements a sophisticated **MVP (Model-View-Presenter) + Helper Pattern** that evolved from a monolithic 1247-line class into a well-structured, maintainable architecture.
+
+#### Pattern Components
+- **Model (`McpEditorModel`)**: Contains all application state, configuration data, and business logic. Provides methods for state updates while maintaining encapsulation. Handles persistence through Unity's `SessionState` and `EditorPrefs`.
+- **View (`McpEditorWindowView`)**: Pure UI rendering component with no business logic. Receives all necessary data through `McpEditorWindowViewData` transfer objects.
+- **Presenter (`McpEditorWindow`)**: Coordinates between Model and View, handles Unity-specific lifecycle events, and delegates complex operations to specialized helper classes.
+- **Helper Classes**: Specialized components that handle specific aspects of functionality:
+  - Event management (`McpEditorWindowEventHandler`)
+  - Server operations (`McpServerOperations`)
+  - Configuration services (`McpConfigServiceFactory`)
+
+#### Benefits of This Architecture
+1. **Separation of Concerns**: Each component has a single, clear responsibility
+2. **Testability**: Helper classes can be unit tested independently from Unity Editor context
+3. **Maintainability**: Complex logic is broken down into manageable, focused components
+4. **Extensibility**: New features can be added through new helper classes without modifying existing code
+5. **Reduced Cognitive Load**: Developers can focus on one aspect of functionality at a time
+
+#### Implementation Guidelines
+- **State Management**: All state changes go through the Model layer
+- **UI Updates**: View receives data through transfer objects, never directly accesses Model
+- **Complex Operations**: Delegate to appropriate helper classes rather than implementing in Presenter
+- **Event Handling**: Isolate all Unity Editor event management in dedicated EventHandler
+
+### 2.5. Resilience to Domain Reloads
 A significant challenge in the Unity Editor is the "domain reload," which resets the application's state. The architecture handles this gracefully:
 - **`McpServerController`**: Uses `[InitializeOnLoad]` to hook into Editor lifecycle events.
 - **`AssemblyReloadEvents`**: Before a reload, `OnBeforeAssemblyReload` is used to save the server's running state (port, status) into `SessionState`.
@@ -70,9 +100,26 @@ This is the heart of the command processing logic.
 - **`UnityApiHandler.cs`**: The entry point for API calls. It receives the method name and parameters from the `JsonRpcProcessor` and uses the `UnityCommandRegistry` to execute the appropriate command.
 
 ### `/UI`
-Contains the code for the user-facing Editor Window.
-- **`McpEditorWindow.cs`**: The main GUI window (`Window > uMCP`). It allows the user to see the server status, start/stop the server, change the port, and configure settings for different LLM tools. It interacts primarily with `McpServerController` and `McpConfigService`.
+Contains the code for the user-facing Editor Window, implemented using the **MVP (Model-View-Presenter) + Helper Pattern**.
+
+#### Core MVP Components
+- **`McpEditorWindow.cs`**: The **Presenter** layer (503 lines). Acts as the coordinator between the Model and View, handling Unity-specific lifecycle events and user interactions. Delegates complex operations to specialized helper classes.
+- **`McpEditorModel.cs`**: The **Model** layer (470 lines). Manages all application state, persistence, and business logic. Contains UI state, server configuration, and provides methods for state updates with proper encapsulation.
+- **`McpEditorWindowView.cs`**: The **View** layer. Handles pure UI rendering logic, completely separated from business logic. Receives data through `McpEditorWindowViewData` and renders the interface.
+- **`McpEditorWindowViewData.cs`**: Data transfer object that carries all necessary information from the Model to the View, ensuring clean separation of concerns.
+
+#### Specialized Helper Classes
+- **`McpEditorWindowEventHandler.cs`**: Manages Unity Editor events (194 lines). Handles `EditorApplication.update`, `McpCommunicationLogger.OnLogUpdated`, server connection events, and state change detection. Completely isolates event management logic from the main window.
+- **`McpServerOperations.cs`**: Handles complex server operations (131 lines). Contains server validation, starting, and stopping logic. Supports both user-interactive and internal operation modes with comprehensive error handling.
 - **`McpCommunicationLog.cs`**: Manages the in-memory and `SessionState`-backed log of requests and responses displayed in the "Developer Tools" section of the window.
+
+#### Architectural Benefits
+This MVP + Helper pattern provides:
+- **Single Responsibility**: Each class has one clear, focused responsibility
+- **Testability**: Helper classes can be unit tested independently
+- **Maintainability**: Complex logic is separated into specialized, manageable components
+- **Extensibility**: New features can be added by creating new helper classes without modifying existing code
+- **Reduced Complexity**: The main Presenter went from 1247 lines to 503 lines (59% reduction) through proper responsibility distribution
 
 ### `/Config`
 Manages the creation and modification of `mcp.json` configuration files.
@@ -109,3 +156,18 @@ Contains low-level, general-purpose helper classes.
 9.  The command performs its logic (e.g., calling `CompileController` or `PlayModeTestExecuter`).
 10. The command returns a strongly-typed `*Response` object.
 11. The response bubbles back up to `JsonRpcProcessor`, which serializes it into a JSON string and sends it back to the client via `McpBridgeServer`.
+
+### UI Interaction Flow (MVP + Helper Pattern)
+1.  **User Interaction**: User interacts with the Unity Editor window (button clicks, field changes, etc.).
+2.  **Presenter Processing**: `McpEditorWindow` (Presenter) receives the Unity Editor event.
+3.  **State Update**: Presenter calls appropriate method on `McpEditorModel` to update application state.
+4.  **Complex Operations**: For complex operations (server start/stop, validation), Presenter delegates to specialized helper classes:
+    - `McpServerOperations` for server-related operations
+    - `McpEditorWindowEventHandler` for event management
+    - `McpConfigServiceFactory` for configuration operations
+5.  **View Data Preparation**: Model state is packaged into `McpEditorWindowViewData` transfer objects.
+6.  **UI Rendering**: `McpEditorWindowView` receives the transfer objects and renders the interface.
+7.  **Event Propagation**: `McpEditorWindowEventHandler` manages Unity Editor events and updates the Model accordingly.
+8.  **Persistence**: Model automatically handles state persistence through Unity's `SessionState` and `EditorPrefs`.
+
+This workflow ensures clean separation of concerns while maintaining responsiveness and proper state management throughout the application lifecycle.
