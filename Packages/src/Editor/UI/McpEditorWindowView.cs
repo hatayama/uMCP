@@ -23,9 +23,9 @@ namespace io.github.hatayama.uMCP
             };
             
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Server Status:", EditorStyles.boldLabel, GUILayout.Width(McpUIConstants.LABEL_WIDTH_SERVER_STATUS));
-            EditorGUILayout.LabelField($"{data.Status}", statusStyle, GUILayout.Width(McpUIConstants.LABEL_WIDTH_STATUS));
-            EditorGUILayout.LabelField($"Port: {data.Port}");
+            EditorGUILayout.LabelField("Status:", EditorStyles.boldLabel, GUILayout.MinWidth(50f), GUILayout.ExpandWidth(false));
+            EditorGUILayout.LabelField($"{data.Status}", statusStyle, GUILayout.MinWidth(60f), GUILayout.ExpandWidth(false));
+            EditorGUILayout.LabelField($"Port: {data.Port}", GUILayout.MinWidth(70f), GUILayout.ExpandWidth(true));
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
         }
@@ -36,7 +36,7 @@ namespace io.github.hatayama.uMCP
             
             // Auto start checkbox
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Auto Start Server", GUILayout.Width(200));
+            EditorGUILayout.LabelField("Auto Start Server", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
             bool newAutoStart = EditorGUILayout.Toggle(data.AutoStartServer, GUILayout.Width(20));
             if (newAutoStart != data.AutoStartServer)
             {
@@ -168,15 +168,17 @@ namespace io.github.hatayama.uMCP
             
             EditorGUILayout.BeginHorizontal();
             
-            EditorGUILayout.LabelField(McpUIConstants.CLIENT_ICON + client.ClientName, new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
+            EditorGUILayout.LabelField(McpUIConstants.CLIENT_ICON + client.ClientName, new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold }, GUILayout.ExpandWidth(true));
             
-            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
             
+            // Display endpoint information on a separate line to prevent horizontal overflow
+            EditorGUILayout.BeginHorizontal();
             GUIStyle endpointStyle = new GUIStyle(EditorStyles.miniLabel);
             endpointStyle.normal.textColor = Color.gray;
+            endpointStyle.wordWrap = true;
             string pidInfo = client.ProcessId > McpConstants.UNKNOWN_PROCESS_ID ? $" (PID: {client.ProcessId})" : "";
-            EditorGUILayout.LabelField(McpUIConstants.ENDPOINT_ARROW + client.Endpoint + pidInfo, endpointStyle);
-            
+            EditorGUILayout.LabelField(McpUIConstants.ENDPOINT_ARROW + client.Endpoint + pidInfo, endpointStyle, GUILayout.ExpandWidth(true));
             EditorGUILayout.EndHorizontal();
             
             EditorGUILayout.EndVertical();
@@ -216,7 +218,7 @@ namespace io.github.hatayama.uMCP
                 EditorGUILayout.LabelField("TypeScript Server Settings", EditorStyles.boldLabel);
                 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable Development Mode", GUILayout.Width(200));
+                EditorGUILayout.LabelField("Enable Development Mode", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 bool newEnableDevelopmentMode = EditorGUILayout.Toggle(data.EnableDevelopmentMode, GUILayout.Width(20));
                 if (newEnableDevelopmentMode != data.EnableDevelopmentMode)
                 {
@@ -235,7 +237,7 @@ namespace io.github.hatayama.uMCP
                 
                 // Log control toggle
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable MCP Logs", GUILayout.Width(200));
+                EditorGUILayout.LabelField("Enable MCP Logs", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 bool newEnableMcpLogs = EditorGUILayout.Toggle(data.EnableMcpLogs, GUILayout.Width(20));
                 if (newEnableMcpLogs != data.EnableMcpLogs)
                 {
@@ -245,7 +247,7 @@ namespace io.github.hatayama.uMCP
                 
                 // Communication logs toggle
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Enable Communication Logs", GUILayout.Width(200));
+                EditorGUILayout.LabelField("Enable Communication Logs", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 bool newEnableCommunicationLogs = EditorGUILayout.Toggle(data.EnableCommunicationLogs, GUILayout.Width(20));
                 if (newEnableCommunicationLogs != data.EnableCommunicationLogs)
                 {
