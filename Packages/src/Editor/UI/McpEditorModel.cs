@@ -225,6 +225,95 @@ namespace io.github.hatayama.uMCP
                 lastClientsInfoHash: clientsHash));
         }
 
+        // UIState-specific update methods with persistence
+
+        /// <summary>
+        /// Update AutoStartServer setting with persistence
+        /// </summary>
+        public void UpdateAutoStartServer(bool autoStart)
+        {
+            UpdateUIState(ui => new UIState(
+                customPort: ui.CustomPort,
+                autoStartServer: autoStart,
+                showLLMToolSettings: ui.ShowLLMToolSettings,
+                showConnectedTools: ui.ShowConnectedTools,
+                selectedEditorType: ui.SelectedEditorType,
+                mainScrollPosition: ui.MainScrollPosition));
+            McpEditorSettings.SetAutoStartServer(autoStart);
+        }
+
+        /// <summary>
+        /// Update CustomPort setting with persistence
+        /// </summary>
+        public void UpdateCustomPort(int port)
+        {
+            UpdateUIState(ui => new UIState(
+                customPort: port,
+                autoStartServer: ui.AutoStartServer,
+                showLLMToolSettings: ui.ShowLLMToolSettings,
+                showConnectedTools: ui.ShowConnectedTools,
+                selectedEditorType: ui.SelectedEditorType,
+                mainScrollPosition: ui.MainScrollPosition));
+            McpEditorSettings.SetCustomPort(port);
+        }
+
+        /// <summary>
+        /// Update ShowConnectedTools setting
+        /// </summary>
+        public void UpdateShowConnectedTools(bool show)
+        {
+            UpdateUIState(ui => new UIState(
+                customPort: ui.CustomPort,
+                autoStartServer: ui.AutoStartServer,
+                showLLMToolSettings: ui.ShowLLMToolSettings,
+                showConnectedTools: show,
+                selectedEditorType: ui.SelectedEditorType,
+                mainScrollPosition: ui.MainScrollPosition));
+        }
+
+        /// <summary>
+        /// Update ShowLLMToolSettings setting
+        /// </summary>
+        public void UpdateShowLLMToolSettings(bool show)
+        {
+            UpdateUIState(ui => new UIState(
+                customPort: ui.CustomPort,
+                autoStartServer: ui.AutoStartServer,
+                showLLMToolSettings: show,
+                showConnectedTools: ui.ShowConnectedTools,
+                selectedEditorType: ui.SelectedEditorType,
+                mainScrollPosition: ui.MainScrollPosition));
+        }
+
+        /// <summary>
+        /// Update SelectedEditorType setting with persistence
+        /// </summary>
+        public void UpdateSelectedEditorType(McpEditorType type)
+        {
+            UpdateUIState(ui => new UIState(
+                customPort: ui.CustomPort,
+                autoStartServer: ui.AutoStartServer,
+                showLLMToolSettings: ui.ShowLLMToolSettings,
+                showConnectedTools: ui.ShowConnectedTools,
+                selectedEditorType: type,
+                mainScrollPosition: ui.MainScrollPosition));
+            SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)type);
+        }
+
+        /// <summary>
+        /// Update MainScrollPosition setting
+        /// </summary>
+        public void UpdateMainScrollPosition(Vector2 position)
+        {
+            UpdateUIState(ui => new UIState(
+                customPort: ui.CustomPort,
+                autoStartServer: ui.AutoStartServer,
+                showLLMToolSettings: ui.ShowLLMToolSettings,
+                showConnectedTools: ui.ShowConnectedTools,
+                selectedEditorType: ui.SelectedEditorType,
+                mainScrollPosition: position));
+        }
+
 #if UMCP_DEBUG
         /// <summary>
         /// Update communication log scroll position
@@ -298,6 +387,84 @@ namespace io.github.hatayama.uMCP
                 communicationLogHeight: debug.CommunicationLogHeight,
                 requestScrollPositions: debug.RequestScrollPositions,
                 responseScrollPositions: newResponseScrollPositions));
+        }
+
+        // DebugState-specific update methods with persistence
+
+        /// <summary>
+        /// Update ShowDeveloperTools setting with persistence
+        /// </summary>
+        public void UpdateShowDeveloperTools(bool show)
+        {
+            UpdateDebugState(debug => new DebugState(
+                showDeveloperTools: show,
+                enableCommunicationLogs: debug.EnableCommunicationLogs,
+                showCommunicationLogs: debug.ShowCommunicationLogs,
+                enableMcpLogs: debug.EnableMcpLogs,
+                enableDevelopmentMode: debug.EnableDevelopmentMode,
+                communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                communicationLogHeight: debug.CommunicationLogHeight,
+                requestScrollPositions: debug.RequestScrollPositions,
+                responseScrollPositions: debug.ResponseScrollPositions));
+            McpEditorSettings.SetShowDeveloperTools(show);
+        }
+
+        /// <summary>
+        /// Update EnableDevelopmentMode setting with persistence
+        /// </summary>
+        public void UpdateEnableDevelopmentMode(bool enable)
+        {
+            UpdateDebugState(debug => new DebugState(
+                showDeveloperTools: debug.ShowDeveloperTools,
+                enableCommunicationLogs: debug.EnableCommunicationLogs,
+                showCommunicationLogs: debug.ShowCommunicationLogs,
+                enableMcpLogs: debug.EnableMcpLogs,
+                enableDevelopmentMode: enable,
+                communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                communicationLogHeight: debug.CommunicationLogHeight,
+                requestScrollPositions: debug.RequestScrollPositions,
+                responseScrollPositions: debug.ResponseScrollPositions));
+            McpEditorSettings.SetEnableDevelopmentMode(enable);
+        }
+
+        /// <summary>
+        /// Update EnableMcpLogs setting with persistence
+        /// </summary>
+        public void UpdateEnableMcpLogs(bool enable)
+        {
+            UpdateDebugState(debug => new DebugState(
+                showDeveloperTools: debug.ShowDeveloperTools,
+                enableCommunicationLogs: debug.EnableCommunicationLogs,
+                showCommunicationLogs: debug.ShowCommunicationLogs,
+                enableMcpLogs: enable,
+                enableDevelopmentMode: debug.EnableDevelopmentMode,
+                communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                communicationLogHeight: debug.CommunicationLogHeight,
+                requestScrollPositions: debug.RequestScrollPositions,
+                responseScrollPositions: debug.ResponseScrollPositions));
+            McpEditorSettings.SetEnableMcpLogs(enable);
+        }
+
+        /// <summary>
+        /// Update EnableCommunicationLogs setting with persistence and log clearing
+        /// </summary>
+        public void UpdateEnableCommunicationLogs(bool enable)
+        {
+            UpdateDebugState(debug => new DebugState(
+                showDeveloperTools: debug.ShowDeveloperTools,
+                enableCommunicationLogs: enable,
+                showCommunicationLogs: debug.ShowCommunicationLogs,
+                enableMcpLogs: debug.EnableMcpLogs,
+                enableDevelopmentMode: debug.EnableDevelopmentMode,
+                communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                communicationLogHeight: debug.CommunicationLogHeight,
+                requestScrollPositions: debug.RequestScrollPositions,
+                responseScrollPositions: debug.ResponseScrollPositions));
+            McpEditorSettings.SetEnableCommunicationLogs(enable);
+            if (!enable)
+            {
+                McpCommunicationLogger.ClearLogs();
+            }
         }
 #endif
     }

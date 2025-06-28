@@ -296,13 +296,7 @@ namespace io.github.hatayama.uMCP
             Vector2 newScrollPosition = EditorGUILayout.BeginScrollView(_model.UI.MainScrollPosition);
             if (newScrollPosition != _model.UI.MainScrollPosition)
             {
-                _model.UpdateUIState(ui => new UIState(
-                    customPort: ui.CustomPort,
-                    autoStartServer: ui.AutoStartServer,
-                    showLLMToolSettings: ui.ShowLLMToolSettings,
-                    showConnectedTools: ui.ShowConnectedTools,
-                    selectedEditorType: ui.SelectedEditorType,
-                    mainScrollPosition: newScrollPosition));
+                UpdateMainScrollPosition(newScrollPosition);
             }
 
             // Use view layer for rendering
@@ -314,133 +308,29 @@ namespace io.github.hatayama.uMCP
                 data: controlsData,
                 startCallback: StartServer,
                 stopCallback: StopServer,
-                autoStartCallback: (autoStart) =>
-                {
-                    _model.UpdateUIState(ui => new UIState(
-                        customPort: ui.CustomPort,
-                        autoStartServer: autoStart,
-                        showLLMToolSettings: ui.ShowLLMToolSettings,
-                        showConnectedTools: ui.ShowConnectedTools,
-                        selectedEditorType: ui.SelectedEditorType,
-                        mainScrollPosition: ui.MainScrollPosition));
-                    McpEditorSettings.SetAutoStartServer(autoStart);
-                },
-                portChangeCallback: (port) =>
-                {
-                    _model.UpdateUIState(ui => new UIState(
-                        customPort: port,
-                        autoStartServer: ui.AutoStartServer,
-                        showLLMToolSettings: ui.ShowLLMToolSettings,
-                        showConnectedTools: ui.ShowConnectedTools,
-                        selectedEditorType: ui.SelectedEditorType,
-                        mainScrollPosition: ui.MainScrollPosition));
-                    McpEditorSettings.SetCustomPort(port);
-                });
+                autoStartCallback: UpdateAutoStartServer,
+                portChangeCallback: UpdateCustomPort);
 
             ConnectedToolsData toolsData = CreateConnectedToolsData();
             _view.DrawConnectedToolsSection(
                 data: toolsData,
-                toggleFoldoutCallback: (show) => 
-                {
-                    _model.UpdateUIState(ui => new UIState(
-                        customPort: ui.CustomPort,
-                        autoStartServer: ui.AutoStartServer,
-                        showLLMToolSettings: ui.ShowLLMToolSettings,
-                        showConnectedTools: show,
-                        selectedEditorType: ui.SelectedEditorType,
-                        mainScrollPosition: ui.MainScrollPosition));
-                });
+                toggleFoldoutCallback: UpdateShowConnectedTools);
 
             EditorConfigData configData = CreateEditorConfigData();
             _view.DrawEditorConfigSection(
                 data: configData,
-                editorChangeCallback: (type) =>
-                {
-                    _model.UpdateUIState(ui => new UIState(
-                        customPort: ui.CustomPort,
-                        autoStartServer: ui.AutoStartServer,
-                        showLLMToolSettings: ui.ShowLLMToolSettings,
-                        showConnectedTools: ui.ShowConnectedTools,
-                        selectedEditorType: type,
-                        mainScrollPosition: ui.MainScrollPosition));
-                    SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)type);
-                },
+                editorChangeCallback: UpdateSelectedEditorType,
                 configureCallback: (editor) => ConfigureEditor(),
-                foldoutCallback: (show) => 
-                {
-                    _model.UpdateUIState(ui => new UIState(
-                        customPort: ui.CustomPort,
-                        autoStartServer: ui.AutoStartServer,
-                        showLLMToolSettings: show,
-                        showConnectedTools: ui.ShowConnectedTools,
-                        selectedEditorType: ui.SelectedEditorType,
-                        mainScrollPosition: ui.MainScrollPosition));
-                });
+                foldoutCallback: UpdateShowLLMToolSettings);
 
 #if UMCP_DEBUG
             DeveloperToolsData devToolsData = CreateDeveloperToolsData();
             _view.DrawDeveloperTools(
                 data: devToolsData,
-                foldoutCallback: (show) =>
-                {
-                    _model.UpdateDebugState(debug => new DebugState(
-                        showDeveloperTools: show,
-                        enableCommunicationLogs: debug.EnableCommunicationLogs,
-                        showCommunicationLogs: debug.ShowCommunicationLogs,
-                        enableMcpLogs: debug.EnableMcpLogs,
-                        enableDevelopmentMode: debug.EnableDevelopmentMode,
-                        communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
-                        communicationLogHeight: debug.CommunicationLogHeight,
-                        requestScrollPositions: debug.RequestScrollPositions,
-                        responseScrollPositions: debug.ResponseScrollPositions));
-                    McpEditorSettings.SetShowDeveloperTools(show);
-                },
-                devModeCallback: (enable) =>
-                {
-                    _model.UpdateDebugState(debug => new DebugState(
-                        showDeveloperTools: debug.ShowDeveloperTools,
-                        enableCommunicationLogs: debug.EnableCommunicationLogs,
-                        showCommunicationLogs: debug.ShowCommunicationLogs,
-                        enableMcpLogs: debug.EnableMcpLogs,
-                        enableDevelopmentMode: enable,
-                        communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
-                        communicationLogHeight: debug.CommunicationLogHeight,
-                        requestScrollPositions: debug.RequestScrollPositions,
-                        responseScrollPositions: debug.ResponseScrollPositions));
-                    McpEditorSettings.SetEnableDevelopmentMode(enable);
-                },
-                mcpLogsCallback: (enable) =>
-                {
-                    _model.UpdateDebugState(debug => new DebugState(
-                        showDeveloperTools: debug.ShowDeveloperTools,
-                        enableCommunicationLogs: debug.EnableCommunicationLogs,
-                        showCommunicationLogs: debug.ShowCommunicationLogs,
-                        enableMcpLogs: enable,
-                        enableDevelopmentMode: debug.EnableDevelopmentMode,
-                        communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
-                        communicationLogHeight: debug.CommunicationLogHeight,
-                        requestScrollPositions: debug.RequestScrollPositions,
-                        responseScrollPositions: debug.ResponseScrollPositions));
-                    McpEditorSettings.SetEnableMcpLogs(enable);
-                },
-                commLogsCallback: (enable) =>
-                {
-                    _model.UpdateDebugState(debug => new DebugState(
-                        showDeveloperTools: debug.ShowDeveloperTools,
-                        enableCommunicationLogs: enable,
-                        showCommunicationLogs: debug.ShowCommunicationLogs,
-                        enableMcpLogs: debug.EnableMcpLogs,
-                        enableDevelopmentMode: debug.EnableDevelopmentMode,
-                        communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
-                        communicationLogHeight: debug.CommunicationLogHeight,
-                        requestScrollPositions: debug.RequestScrollPositions,
-                        responseScrollPositions: debug.ResponseScrollPositions));
-                    McpEditorSettings.SetEnableCommunicationLogs(enable);
-                    if (!enable)
-                    {
-                        McpCommunicationLogger.ClearLogs();
-                    }
-                },
+                foldoutCallback: UpdateShowDeveloperTools,
+                devModeCallback: UpdateEnableDevelopmentMode,
+                mcpLogsCallback: UpdateEnableMcpLogs,
+                commLogsCallback: UpdateEnableCommunicationLogs,
                 showDebugCallback: () =>
                 {
                     string debugInfo = McpServerController.GetDetailedServerStatus();
@@ -679,6 +569,90 @@ namespace io.github.hatayama.uMCP
         private McpConfigService GetConfigService(McpEditorType editorType)
         {
             return _configServiceFactory.GetConfigService(editorType);
+        }
+
+        // UIState update helper methods for callback unification
+        
+        /// <summary>
+        /// Update AutoStartServer setting with persistence
+        /// </summary>
+        private void UpdateAutoStartServer(bool autoStart)
+        {
+            _model.UpdateAutoStartServer(autoStart);
+        }
+
+        /// <summary>
+        /// Update CustomPort setting with persistence
+        /// </summary>
+        private void UpdateCustomPort(int port)
+        {
+            _model.UpdateCustomPort(port);
+        }
+
+        /// <summary>
+        /// Update ShowConnectedTools setting
+        /// </summary>
+        private void UpdateShowConnectedTools(bool show)
+        {
+            _model.UpdateShowConnectedTools(show);
+        }
+
+        /// <summary>
+        /// Update ShowLLMToolSettings setting
+        /// </summary>
+        private void UpdateShowLLMToolSettings(bool show)
+        {
+            _model.UpdateShowLLMToolSettings(show);
+        }
+
+        /// <summary>
+        /// Update SelectedEditorType setting with persistence
+        /// </summary>
+        private void UpdateSelectedEditorType(McpEditorType type)
+        {
+            _model.UpdateSelectedEditorType(type);
+        }
+
+        /// <summary>
+        /// Update MainScrollPosition setting
+        /// </summary>
+        private void UpdateMainScrollPosition(Vector2 position)
+        {
+            _model.UpdateMainScrollPosition(position);
+        }
+
+        // DebugState update helper methods for callback unification
+
+        /// <summary>
+        /// Update ShowDeveloperTools setting with persistence
+        /// </summary>
+        private void UpdateShowDeveloperTools(bool show)
+        {
+            _model.UpdateShowDeveloperTools(show);
+        }
+
+        /// <summary>
+        /// Update EnableDevelopmentMode setting with persistence
+        /// </summary>
+        private void UpdateEnableDevelopmentMode(bool enable)
+        {
+            _model.UpdateEnableDevelopmentMode(enable);
+        }
+
+        /// <summary>
+        /// Update EnableMcpLogs setting with persistence
+        /// </summary>
+        private void UpdateEnableMcpLogs(bool enable)
+        {
+            _model.UpdateEnableMcpLogs(enable);
+        }
+
+        /// <summary>
+        /// Update EnableCommunicationLogs setting with persistence and log clearing
+        /// </summary>
+        private void UpdateEnableCommunicationLogs(bool enable)
+        {
+            _model.UpdateEnableCommunicationLogs(enable);
         }
     }
 }
