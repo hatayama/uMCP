@@ -104,6 +104,21 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void OnClientConnected(string clientEndpoint)
         {
+            // Enhanced logging for debugging client connection
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            int totalCount = connectedClients?.Count ?? 0;
+            
+            McpLogger.LogInfo($"[CLIENT_CONNECT] Client connected: {clientEndpoint}");
+            McpLogger.LogInfo($"[CLIENT_CONNECT] Total clients: {totalCount}");
+            
+            if (connectedClients != null && connectedClients.Count > 0)
+            {
+                foreach (var client in connectedClients)
+                {
+                    McpLogger.LogInfo($"[CLIENT_CONNECT] Connected: {client.ClientName} ({client.Endpoint}, PID: {client.ProcessId})");
+                }
+            }
+            
             // Mark that repaint is needed since events are called from background thread
             _model.RequestRepaint();
 
@@ -119,6 +134,21 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private void OnClientDisconnected(string clientEndpoint)
         {
+            // Enhanced logging for debugging client disconnection issues
+            var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            int remainingCount = connectedClients?.Count ?? 0;
+            
+            McpLogger.LogInfo($"[CLIENT_DISCONNECT] Client disconnected: {clientEndpoint}");
+            McpLogger.LogInfo($"[CLIENT_DISCONNECT] Remaining clients: {remainingCount}");
+            
+            if (connectedClients != null && connectedClients.Count > 0)
+            {
+                foreach (var client in connectedClients)
+                {
+                    McpLogger.LogInfo($"[CLIENT_DISCONNECT] Still connected: {client.ClientName} ({client.Endpoint}, PID: {client.ProcessId})");
+                }
+            }
+            
             // Mark that repaint is needed since events are called from background thread
             _model.RequestRepaint();
         }

@@ -104,6 +104,14 @@ namespace io.github.hatayama.uMCP
         public event Action<string> OnError;
 
         /// <summary>
+        /// Generate unique client key using ProcessID and Endpoint
+        /// </summary>
+        private string GenerateClientKey(string endpoint, int processId)
+        {
+            return $"{processId}_{endpoint}";
+        }
+
+        /// <summary>
         /// Get list of connected clients
         /// </summary>
         public IReadOnlyCollection<ConnectedClient> GetConnectedClients()
@@ -116,11 +124,16 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public void UpdateClientName(string clientEndpoint, string clientName)
         {
-            if (connectedClients.TryGetValue(clientEndpoint, out ConnectedClient existingClient))
+            // Find client by endpoint (backward compatibility)
+            ConnectedClient targetClient = connectedClients.Values
+                .FirstOrDefault(c => c.Endpoint == clientEndpoint);
+                
+            if (targetClient != null)
             {
-                ConnectedClient updatedClient = existingClient.WithClientName(clientName);
-                connectedClients.TryUpdate(clientEndpoint, updatedClient, existingClient);
-                McpLogger.LogInfo($"Updated client name for {clientEndpoint}: {clientName}");
+                string clientKey = GenerateClientKey(targetClient.Endpoint, targetClient.ProcessId);
+                ConnectedClient updatedClient = targetClient.WithClientName(clientName);
+                connectedClients.TryUpdate(clientKey, updatedClient, targetClient);
+                McpLogger.LogInfo($"Updated client name for {clientEndpoint} (PID: {targetClient.ProcessId}): {clientName}");
             }
             else
             {
@@ -455,7 +468,7 @@ namespace io.github.hatayama.uMCP
                     
                     // Add client to connected clients for notification broadcasting
                     ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream, processId);
-                    bool addResult = connectedClients.TryAdd(clientEndpoint, connectedClient);
+                    bool addResult = connectedClients.TryAdd(GenerateClientKey(clientEndpoint, processId), connectedClient);
                     
                     McpLogger.LogInfo($"All connected clients: {string.Join(", ", connectedClients.Keys)}");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
@@ -520,15 +533,24 @@ namespace io.github.hatayama.uMCP
             {
                 
                 // Remove client from connected clients list
-                bool removeResult = connectedClients.TryRemove(clientEndpoint, out ConnectedClient removedClient);
+                // Find client by endpoint to get the correct key
+                ConnectedClient clientToRemove = connectedClients.Values
+                    .FirstOrDefault(c => c.Endpoint == clientEndpoint);
+                    
+                bool removeResult = false;
+                if (clientToRemove != null)
+                {
+                    string clientKey = GenerateClientKey(clientToRemove.Endpoint, clientToRemove.ProcessId);
+                    removeResult = connectedClients.TryRemove(clientKey, out ConnectedClient removedClient);
+                }
                 
                 if (removeResult)
                 {
-                    McpLogger.LogInfo($"Successfully removed client {clientEndpoint}. Remaining clients: {string.Join(", ", connectedClients.Keys)}");
+                    McpLogger.LogInfo($"Successfully removed client {clientEndpoint} (PID: {clientToRemove.ProcessId}). Remaining clients: {connectedClients.Count}");
                 }
                 else
                 {
-                    McpLogger.LogWarning($"Failed to remove client {clientEndpoint}. Current clients: {string.Join(", ", connectedClients.Keys)}");
+                    McpLogger.LogWarning($"Failed to remove client {clientEndpoint}. Current clients: {connectedClients.Count}");
                 }
                 
                 
@@ -610,7 +632,10 @@ namespace io.github.hatayama.uMCP
             // Remove disconnected clients
             foreach (string clientKey in clientsToRemove)
             {
-                connectedClients.TryRemove(clientKey, out _);
+                if (connectedClients.TryRemove(clientKey, out ConnectedClient removedClient))
+                {
+                    McpLogger.LogInfo($"Removed disconnected client {removedClient.Endpoint} (PID: {removedClient.ProcessId})");
+                }
             }
         }
 
