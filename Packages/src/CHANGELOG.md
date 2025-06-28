@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.12.1](https://github.com/hatayama/uMCP/compare/v0.12.0...v0.12.1) (2025-06-28)
+
+
+### Bug Fixes
+
+* display bug in connected server ([#82](https://github.com/hatayama/uMCP/issues/82)) ([0e43825](https://github.com/hatayama/uMCP/commit/0e43825f3ce3cc7ae8d7d5d98e4d57c0c3f760a4))
+* window width ([#80](https://github.com/hatayama/uMCP/issues/80)) ([001fc46](https://github.com/hatayama/uMCP/commit/001fc467bfd02da4c71a8e05164d5c83eed30445))
+
 ## [0.12.0](https://github.com/hatayama/uMCP/compare/v0.11.0...v0.12.0) (2025-06-27)
 
 
