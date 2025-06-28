@@ -11,13 +11,7 @@ namespace io.github.hatayama.uMCP
         public string[] Commands { get; set; }
     }
 
-    /// <summary>
-    /// Response for getCommandDetails meta command
-    /// </summary>
-    public class GetCommandDetailsResponse : BaseCommandResponse
-    {
-        public CommandInfo[] Commands { get; set; }
-    }
+
 
     /// <summary>
     /// Class specialized in handling Unity API calls
@@ -45,10 +39,6 @@ namespace io.github.hatayama.uMCP
             {
                 return await HandleGetAvailableCommands(paramsToken);
             }
-            if (commandName == "getCommandDetails")
-            {
-                return await HandleGetCommandDetails(paramsToken);
-            }
 
             return await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
         }
@@ -68,19 +58,6 @@ namespace io.github.hatayama.uMCP
             return Task.FromResult(response);
         }
 
-        /// <summary>
-        /// Get detailed command information
-        /// </summary>
-        private static Task<GetCommandDetailsResponse> HandleGetCommandDetails(JToken request)
-        {
-            UnityCommandRegistry registry = CustomCommandManager.GetRegistry();
-            CommandInfo[] commands = registry.GetRegisteredCommands();
-            
-            GetCommandDetailsResponse response = new GetCommandDetailsResponse
-            {
-                Commands = commands
-            };
-            return Task.FromResult(response);
-        }
+
     }
 } 

@@ -269,7 +269,7 @@ namespace io.github.hatayama.uMCP
         }
 
 #if UMCP_DEBUG
-        public void DrawDeveloperTools(DeveloperToolsData data, Action<bool> foldoutCallback, Action<bool> devModeCallback, Action<bool> mcpLogsCallback, Action<bool> commLogsCallback, Action showDebugCallback, Action notifyChangesCallback, Action rebuildCallback)
+        public void DrawDeveloperTools(DeveloperToolsData data, Action<bool> foldoutCallback, Action<bool> devModeCallback, Action<bool> mcpLogsCallback, Action<bool> commLogsCallback, Action<bool> commLogsFoldoutCallback, Action showDebugCallback, Action notifyChangesCallback, Action rebuildCallback)
         {
             EditorGUILayout.BeginVertical("box");
             
@@ -329,7 +329,7 @@ namespace io.github.hatayama.uMCP
                 // Communication logs section (only when enabled)
                 if (data.EnableCommunicationLogs)
                 {
-                    DrawCommunicationLogs(data);
+                    DrawCommunicationLogs(data, commLogsFoldoutCallback);
                     EditorGUILayout.Space();
                 }
                 
@@ -368,12 +368,16 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.Space();
         }
 
-        private void DrawCommunicationLogs(DeveloperToolsData data)
+        private void DrawCommunicationLogs(DeveloperToolsData data, Action<bool> foldoutCallback)
         {
             EditorGUILayout.BeginVertical("box");
             
             EditorGUILayout.BeginHorizontal();
             bool showCommLogs = EditorGUILayout.Foldout(data.ShowCommunicationLogs, "Communication Logs", true);
+            if (showCommLogs != data.ShowCommunicationLogs)
+            {
+                foldoutCallback?.Invoke(showCommLogs);
+            }
             
             if (showCommLogs)
             {

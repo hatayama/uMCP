@@ -466,6 +466,23 @@ namespace io.github.hatayama.uMCP
                 McpCommunicationLogger.ClearLogs();
             }
         }
+
+        /// <summary>
+        /// Update ShowCommunicationLogs setting (foldout state)
+        /// </summary>
+        public void UpdateShowCommunicationLogs(bool show)
+        {
+            UpdateDebugState(debug => new DebugState(
+                showDeveloperTools: debug.ShowDeveloperTools,
+                enableCommunicationLogs: debug.EnableCommunicationLogs,
+                showCommunicationLogs: show,
+                enableMcpLogs: debug.EnableMcpLogs,
+                enableDevelopmentMode: debug.EnableDevelopmentMode,
+                communicationLogScrollPosition: debug.CommunicationLogScrollPosition,
+                communicationLogHeight: debug.CommunicationLogHeight,
+                requestScrollPositions: debug.RequestScrollPositions,
+                responseScrollPositions: debug.ResponseScrollPositions));
+        }
 #endif
     }
 } 
