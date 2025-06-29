@@ -28,8 +28,8 @@ namespace io.github.hatayama.uMCP
 
             foreach (PropertyInfo property in dtoType.GetProperties())
             {
-                // Skip properties without public setters
-                if (!property.CanWrite || property.SetMethod?.IsPublic != true)
+                // Skip properties that are not readable or are inherited from BaseCommandSchema (handled separately)
+                if (!property.CanRead || property.DeclaringType == typeof(BaseCommandSchema))
                     continue;
 
                 // Get JSON property name (fallback to property name)

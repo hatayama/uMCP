@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using UnityEditor.TestTools.TestRunner.Api;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
@@ -52,6 +53,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Create RunTestsSchema with all parameters
         /// </summary>
+        [JsonConstructor]
         public RunTestsSchema(TestMode testMode = TestMode.EditMode, TestFilterType filterType = TestFilterType.all, string filterValue = "", bool saveXml = false, int timeoutSeconds = 30)
             : base(timeoutSeconds)
         {
