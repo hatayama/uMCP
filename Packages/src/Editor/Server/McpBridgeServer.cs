@@ -38,9 +38,19 @@ namespace io.github.hatayama.uMCP
             ConnectedAt = DateTime.Now;
         }
         
+        // Private constructor for WithClientName to preserve ConnectedAt
+        private ConnectedClient(string endpoint, NetworkStream stream, int processId, string clientName, DateTime connectedAt)
+        {
+            Endpoint = endpoint;
+            Stream = stream;
+            ProcessId = processId;
+            ClientName = clientName;
+            ConnectedAt = connectedAt;
+        }
+        
         public ConnectedClient WithClientName(string clientName)
         {
-            return new ConnectedClient(Endpoint, Stream, ProcessId, clientName);
+            return new ConnectedClient(Endpoint, Stream, ProcessId, clientName, ConnectedAt);
         }
     }
 
@@ -132,12 +142,14 @@ namespace io.github.hatayama.uMCP
             {
                 string clientKey = GenerateClientKey(targetClient.Endpoint, targetClient.ProcessId);
                 ConnectedClient updatedClient = targetClient.WithClientName(clientName);
-                connectedClients.TryUpdate(clientKey, updatedClient, targetClient);
-                McpLogger.LogInfo($"Updated client name for {clientEndpoint} (PID: {targetClient.ProcessId}): {clientName}");
+                bool updateResult = connectedClients.TryUpdate(clientKey, updatedClient, targetClient);
+                
+                McpLogger.LogInfo($"[UpdateClientName] {clientEndpoint} (PID: {targetClient.ProcessId}): '{targetClient.ClientName}' → '{clientName}' (Success: {updateResult})");
+                McpLogger.LogInfo($"[UpdateClientName] ConnectedAt preserved: {updatedClient.ConnectedAt:HH:mm:ss.fff}");
             }
             else
             {
-                McpLogger.LogWarning($"Client not found for endpoint: {clientEndpoint}");
+                McpLogger.LogWarning($"[UpdateClientName] Client not found for endpoint: {clientEndpoint}");
             }
         }
 
@@ -498,8 +510,8 @@ namespace io.github.hatayama.uMCP
                         {
                             if (string.IsNullOrWhiteSpace(requestJson)) continue;
                             
-                            // JSON-RPC processing and response sending.
-                            string responseJson = await JsonRpcProcessor.ProcessRequest(requestJson);
+                            // JSON-RPC processing and response sending with client context.
+                            string responseJson = await JsonRpcProcessor.ProcessRequest(requestJson, clientEndpoint, processId);
                             
                             // Only send response if it's not null (notifications return null)
                             if (!string.IsNullOrEmpty(responseJson))
@@ -516,10 +528,17 @@ namespace io.github.hatayama.uMCP
                 // Treat as normal behavior if a domain reload is in progress.
                 // No need to log thread aborts during domain reload
             }
+            catch (OperationCanceledException)
+            {
+                // Normal cancellation during server shutdown or domain reload
+                // No logging needed as this is expected behavior during Unity Editor operations
+            }
             catch (IOException ex)
             {
                 // I/O errors are usually normal disconnections - only log warnings for unexpected errors
-                if (!ex.Message.Contains("Connection reset by peer") && !ex.Message.Contains("socket has been shut down"))
+                if (!ex.Message.Contains("Connection reset by peer") && 
+                    !ex.Message.Contains("socket has been shut down") &&
+                    !ex.Message.Contains("Operation aborted"))
                 {
                     McpLogger.LogWarning($"I/O error with client {clientEndpoint}: {ex.Message}");
                 }
@@ -542,15 +561,21 @@ namespace io.github.hatayama.uMCP
                 {
                     string clientKey = GenerateClientKey(clientToRemove.Endpoint, clientToRemove.ProcessId);
                     removeResult = connectedClients.TryRemove(clientKey, out ConnectedClient removedClient);
-                }
-                
-                if (removeResult)
-                {
-                    McpLogger.LogInfo($"Successfully removed client {clientEndpoint} (PID: {clientToRemove.ProcessId}). Remaining clients: {connectedClients.Count}");
+                    
+                    if (removeResult)
+                    {
+                        McpLogger.LogInfo($"Successfully removed client {clientEndpoint} (PID: {clientToRemove.ProcessId}). Remaining clients: {connectedClients.Count}");
+                    }
+                    else
+                    {
+                        // Only log warning if client was expected to be in the collection
+                        McpLogger.LogInfo($"Client {clientEndpoint} (PID: {clientToRemove.ProcessId}) was already removed. Remaining clients: {connectedClients.Count}");
+                    }
                 }
                 else
                 {
-                    McpLogger.LogWarning($"Failed to remove client {clientEndpoint}. Current clients: {connectedClients.Count}");
+                    // Client not found in collection - might have been removed concurrently
+                    McpLogger.LogInfo($"Client {clientEndpoint} not found in connected clients list. Current clients: {connectedClients.Count}");
                 }
                 
                 
