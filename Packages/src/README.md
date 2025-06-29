@@ -1,7 +1,8 @@
-[日本語](README_ja.md)
+[日本語](/Packages/src/README_ja.md)
 
 [![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hatayama/uMCP)
 
 # uMCP
 
