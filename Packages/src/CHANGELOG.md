@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.13.0](https://github.com/hatayama/uMCP/compare/v0.12.1...v0.13.0) (2025-06-29)
+
+
+### Features
+
+* add console clear tool ([#86](https://github.com/hatayama/uMCP/issues/86)) ([31f5d95](https://github.com/hatayama/uMCP/commit/31f5d95a405daaf93d0ef20140b8432ce7d79d9c))
+* add unity search ([#84](https://github.com/hatayama/uMCP/issues/84)) ([ee14823](https://github.com/hatayama/uMCP/commit/ee14823c8a6d267ff6823a5521e58697e9e4c340))
+
 ## [0.12.1](https://github.com/hatayama/uMCP/compare/v0.12.0...v0.12.1) (2025-06-28)
 
 
