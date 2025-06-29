@@ -6198,8 +6198,6 @@ var package_default = {
   type: "module",
   scripts: {
     build: "npm run build:bundle",
-    "build:tsc": "tsc",
-    "build:webpack": "webpack --mode production",
     "build:bundle": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
     "build:production": "UMCP_PRODUCTION=true NODE_ENV=production esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
     dev: "NODE_ENV=development npm run build:bundle && NODE_ENV=development node dist/server.bundle.js",
@@ -6213,10 +6211,15 @@ var package_default = {
     "test:watch": "jest --watch",
     validate: "npm run test:integration && echo 'Integration tests passed - safe to deploy'",
     deploy: "npm run validate && npm run build",
-    "debug:compile": "node debug/compile-check.js",
-    "debug:logs": "node debug/logs-fetch.js",
-    "debug:connection": "node debug/connection-check.js",
-    "debug:all-logs": "node debug/all-logs-fetch.js",
+    "debug:compile": "tsx debug/compile-check.ts",
+    "debug:logs": "tsx debug/logs-fetch.ts",
+    "debug:connection": "tsx debug/connection-check.ts",
+    "debug:all-logs": "tsx debug/all-logs-fetch.ts",
+    "debug:compile-detailed": "tsx debug/compile-detailed.ts",
+    "debug:connection-survival": "tsx debug/connection-survival.ts",
+    "debug:domain-reload-timing": "tsx debug/domain-reload-timing.ts",
+    "debug:event-test": "tsx debug/event-test.ts",
+    "debug:notification-test": "tsx debug/notification-test.ts",
     prepublishOnly: "npm run build",
     postinstall: "npm run build"
   },
@@ -6238,11 +6241,8 @@ var package_default = {
     esbuild: "^0.24.0",
     jest: "^30.0.0",
     "ts-jest": "^29.4.0",
-    "ts-loader": "9.5.2",
     tsx: "4.20.3",
-    typescript: "5.8.3",
-    webpack: "5.99.9",
-    "webpack-cli": "5.1.4"
+    typescript: "5.8.3"
   }
 };
 
