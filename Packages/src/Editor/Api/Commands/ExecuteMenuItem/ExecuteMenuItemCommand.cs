@@ -16,14 +16,11 @@ namespace io.github.hatayama.uMCP
         public override string CommandName => "executemenuitem";
         public override string Description => "Execute Unity MenuItem by path";
 
-        protected override async Task<ExecuteMenuItemResponse> ExecuteAsync(ExecuteMenuItemSchema parameters)
+        protected override Task<ExecuteMenuItemResponse> ExecuteAsync(ExecuteMenuItemSchema parameters)
         {
             // Type-safe parameter access
             string menuItemPath = parameters.MenuItemPath;
             bool useReflectionFallback = parameters.UseReflectionFallback;
-            
-            // Switch to the main thread for Unity API access
-            await MainThreadSwitcher.SwitchToMainThread();
             
             ExecuteMenuItemResponse response = new ExecuteMenuItemResponse
             {
@@ -36,7 +33,7 @@ namespace io.github.hatayama.uMCP
                 response.Success = false;
                 response.ErrorMessage = "MenuItemPath cannot be empty";
                 response.MenuItemFound = false;
-                return response;
+                return Task.FromResult(response);
             }
             
             // First, try using EditorApplication.ExecuteMenuItem
@@ -57,7 +54,7 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
-            return response;
+            return Task.FromResult(response);
         }
 
         /// <summary>

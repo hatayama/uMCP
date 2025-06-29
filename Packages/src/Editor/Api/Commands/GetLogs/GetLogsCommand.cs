@@ -16,16 +16,13 @@ namespace io.github.hatayama.uMCP
 
 
 
-        protected override async Task<GetLogsResponse> ExecuteAsync(GetLogsSchema parameters)
+        protected override Task<GetLogsResponse> ExecuteAsync(GetLogsSchema parameters)
         {
             // Type-safe parameter access - no more string parsing!
             McpLogType logType = parameters.LogType;
             int maxCount = parameters.MaxCount;
             string searchText = parameters.SearchText;
             bool includeStackTrace = parameters.IncludeStackTrace;
-            
-            // Switch to the main thread using MainThreadSwitcher.
-            await MainThreadSwitcher.SwitchToMainThread();
             
             // Convert enum to string for LogGetter
             string logTypeString = logType.ToString();
@@ -72,7 +69,7 @@ namespace io.github.hatayama.uMCP
                 logs: logs
             );
             
-            return response;
+            return Task.FromResult(response);
         }
     }
 } 

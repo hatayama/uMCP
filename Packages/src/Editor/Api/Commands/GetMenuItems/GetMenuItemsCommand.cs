@@ -13,18 +13,15 @@ namespace io.github.hatayama.uMCP
     public class GetMenuItemsCommand : AbstractUnityCommand<GetMenuItemsSchema, GetMenuItemsResponse>
     {
         public override string CommandName => "getmenuitems";
-        public override string Description => "Retrieve Unity MenuItems with filtering options";
+        public override string Description => "Retrieve Unity MenuItems with detailed metadata for programmatic execution. Unlike Unity Search menu provider, this provides implementation details (method names, assemblies, execution compatibility) needed for automation and debugging.";
 
-        protected override async Task<GetMenuItemsResponse> ExecuteAsync(GetMenuItemsSchema parameters)
+        protected override Task<GetMenuItemsResponse> ExecuteAsync(GetMenuItemsSchema parameters)
         {
             // Type-safe parameter access
             string filterText = parameters.FilterText;
             MenuItemFilterType filterType = parameters.FilterType;
             bool includeValidation = parameters.IncludeValidation;
             int maxCount = parameters.MaxCount;
-            
-            // Switch to the main thread for Unity API access
-            await MainThreadSwitcher.SwitchToMainThread();
             
             // Discover all MenuItems using the service
             List<MenuItemInfo> allMenuItems = MenuItemDiscoveryService.DiscoverAllMenuItems();
@@ -48,7 +45,7 @@ namespace io.github.hatayama.uMCP
                 AppliedFilterType = filterType.ToString()
             };
             
-            return response;
+            return Task.FromResult(response);
         }
 
         /// <summary>

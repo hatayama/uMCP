@@ -29,6 +29,9 @@ namespace io.github.hatayama.uMCP
 
         /// <summary>
         /// Execute command with type-safe Schema parameters
+        /// Note: This method is called from the main thread context. 
+        /// MainThreadSwitcher.SwitchToMainThread() is already handled by the upper layer (JsonRpcProcessor),
+        /// so individual commands do not need to call it again.
         /// </summary>
         /// <param name="parameters">Strongly typed parameters</param>
         /// <returns>Strongly typed command execution result</returns>
