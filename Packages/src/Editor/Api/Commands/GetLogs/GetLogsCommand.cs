@@ -16,7 +16,7 @@ namespace io.github.hatayama.uMCP
 
 
 
-        protected override async Task<GetLogsResponse> ExecuteAsync(GetLogsSchema parameters)
+        protected override Task<GetLogsResponse> ExecuteAsync(GetLogsSchema parameters)
         {
             // Type-safe parameter access - no more string parsing!
             McpLogType logType = parameters.LogType;
@@ -69,7 +69,7 @@ namespace io.github.hatayama.uMCP
                 logs: logs
             );
             
-            return response;
+            return Task.FromResult(response);
         }
     }
 } 

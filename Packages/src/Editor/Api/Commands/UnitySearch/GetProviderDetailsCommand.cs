@@ -31,7 +31,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="parameters">Command parameters</param>
         /// <returns>Provider details response</returns>
-        protected override async Task<GetProviderDetailsResponse> ExecuteAsync(GetProviderDetailsSchema parameters)
+        protected override Task<GetProviderDetailsResponse> ExecuteAsync(GetProviderDetailsSchema parameters)
         {
             ProviderInfo[] providers;
             string appliedFilter;
@@ -43,7 +43,7 @@ namespace io.github.hatayama.uMCP
                 ProviderInfo provider = UnitySearchService.GetProviderDetails(parameters.ProviderId);
                 if (provider == null)
                 {
-                    return new GetProviderDetailsResponse($"Provider '{parameters.ProviderId}' not found");
+                    return Task.FromResult(new GetProviderDetailsResponse($"Provider '{parameters.ProviderId}' not found"));
                 }
                 providers = new[] { provider };
                 appliedFilter = parameters.ProviderId;
@@ -81,7 +81,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogDebug($"GetProviderDetails completed: Found {providers.Length} providers" +
                              $" (filter: {appliedFilter}, sorted: {parameters.SortByPriority})");
 
-            return new GetProviderDetailsResponse(providers, appliedFilter, parameters.SortByPriority);
+            return Task.FromResult(new GetProviderDetailsResponse(providers, appliedFilter, parameters.SortByPriority));
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace io.github.hatayama.uMCP
         public override string CommandName => "getmenuitems";
         public override string Description => "Retrieve Unity MenuItems with detailed metadata for programmatic execution. Unlike Unity Search menu provider, this provides implementation details (method names, assemblies, execution compatibility) needed for automation and debugging.";
 
-        protected override async Task<GetMenuItemsResponse> ExecuteAsync(GetMenuItemsSchema parameters)
+        protected override Task<GetMenuItemsResponse> ExecuteAsync(GetMenuItemsSchema parameters)
         {
             // Type-safe parameter access
             string filterText = parameters.FilterText;
@@ -45,7 +45,7 @@ namespace io.github.hatayama.uMCP
                 AppliedFilterType = filterType.ToString()
             };
             
-            return response;
+            return Task.FromResult(response);
         }
 
         /// <summary>
