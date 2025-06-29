@@ -78,18 +78,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>The client name</returns>
         public static string GetClientNameForEditor(McpEditorType editorType)
         {
-            return editorType switch
-            {
-                McpEditorType.Cursor => CLIENT_NAME_CURSOR,
-                McpEditorType.ClaudeCode => CLIENT_NAME_CLAUDE_CODE,
-                McpEditorType.VSCode => CLIENT_NAME_VSCODE,
-                McpEditorType.GeminiCLI => CLIENT_NAME_GEMINI_CLI,
-                McpEditorType.Windsurf => CLIENT_NAME_WINDSURF,
-#if UMCP_DEBUG
-                McpEditorType.McpInspector => CLIENT_NAME_MCP_INSPECTOR,
-#endif
-                _ => UNKNOWN_CLIENT_NAME
-            };
+            return EditorConfigProvider.GetClientName(editorType);
         }
     }
 } 

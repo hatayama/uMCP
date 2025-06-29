@@ -169,18 +169,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>The path to the configuration file.</returns>
         public static string GetConfigPath(McpEditorType editorType)
         {
-            return editorType switch
-            {
-                McpEditorType.Cursor => GetMcpConfigPath(),
-                McpEditorType.ClaudeCode => GetClaudeCodeConfigPath(),
-                McpEditorType.VSCode => GetVSCodeConfigPath(),
-                McpEditorType.GeminiCLI => GetGeminiCLIConfigPath(),
-                McpEditorType.Windsurf => GetWindsurfConfigPath(),
-#if UMCP_DEBUG
-                McpEditorType.McpInspector => GetMcpInspectorConfigPath(),
-#endif
-                _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
-            };
+            return EditorConfigProvider.GetConfigPath(editorType);
         }
 
         /// <summary>
@@ -226,18 +215,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>The path to the configuration directory (null for Claude Code and MCP Inspector).</returns>
         public static string GetConfigDirectory(McpEditorType editorType)
         {
-            return editorType switch
-            {
-                McpEditorType.Cursor => GetCursorConfigDirectory(),
-                McpEditorType.ClaudeCode => null, // Claude Code is placed directly in the project root.
-                McpEditorType.VSCode => GetVSCodeConfigDirectory(),
-                McpEditorType.GeminiCLI => GetGeminiConfigDirectory(),
-                McpEditorType.Windsurf => GetWindsurfConfigDirectory(),
-#if UMCP_DEBUG
-                McpEditorType.McpInspector => null, // MCP Inspector is placed directly in the project root.
-#endif
-                _ => throw new System.ArgumentException($"Unsupported editor type: {editorType}")
-            };
+            return EditorConfigProvider.GetConfigDirectory(editorType);
         }
 
         /// <summary>
