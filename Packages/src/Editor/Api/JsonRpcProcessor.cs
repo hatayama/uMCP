@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -6,10 +7,53 @@ using Newtonsoft.Json.Linq;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
+    /// Current client context for JSON-RPC processing
+    /// </summary>
+    public class ClientExecutionContext
+    {
+        public string Endpoint { get; }
+        public int ProcessId { get; }
+        
+        public ClientExecutionContext(string endpoint, int processId)
+        {
+            Endpoint = endpoint;
+            ProcessId = processId;
+        }
+    }
+
+    /// <summary>
     /// Class specialized in handling JSON-RPC 2.0 processing
     /// </summary>
     public static class JsonRpcProcessor
     {
+        /// <summary>
+        /// Current client context for async operations
+        /// </summary>
+        private static readonly AsyncLocal<ClientExecutionContext> _currentClientContext = new AsyncLocal<ClientExecutionContext>();
+        
+        /// <summary>
+        /// Get current client context (ProcessID and Endpoint)
+        /// </summary>
+        public static ClientExecutionContext CurrentClientContext => _currentClientContext.Value;
+        
+        /// <summary>
+        /// Process JSON-RPC request and generate response with client context
+        /// </summary>
+        public static async Task<string> ProcessRequest(string jsonRequest, string clientEndpoint, int processId)
+        {
+            var context = new ClientExecutionContext(clientEndpoint, processId);
+            _currentClientContext.Value = context;
+            
+            try
+            {
+                return await ProcessRequest(jsonRequest);
+            }
+            finally
+            {
+                _currentClientContext.Value = null;
+            }
+        }
+        
         /// <summary>
         /// Process JSON-RPC request and generate response
         /// </summary>
