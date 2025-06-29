@@ -50,6 +50,17 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Clears the Unity Editor Console (Universal API)
+        /// Unity does not provide a public API for clearing the Editor Console Window,
+        /// so we use reflection-based implementation for all Unity versions
+        /// Note: Debug.ClearDeveloperConsole() is for runtime developer console, not Editor Console
+        /// </summary>
+        public static void ClearConsole()
+        {
+            GenelicConsoleWindowUtility.ClearConsole();
+        }
+
+        /// <summary>
         /// Gets Unity version info for debugging
         /// </summary>
         /// <returns>Unity version and API info</returns>
