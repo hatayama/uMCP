@@ -5521,8 +5521,36 @@ var POLLING = {
 // src/utils/log-to-file.ts
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
-var logDir = path.join(os.homedir(), ".claude", "umcp-logs");
+var findProjectRoot = () => {
+  let currentDir = __dirname;
+  let searchDepth = 0;
+  const maxSearchDepth = 10;
+  while (searchDepth < maxSearchDepth) {
+    const parentDir = path.dirname(currentDir);
+    if (currentDir === parentDir) {
+      break;
+    }
+    const unityIndicators = [
+      "ProjectSettings",
+      "Assets",
+      "Packages"
+    ];
+    const hasUnityFiles = unityIndicators.every((indicator) => {
+      try {
+        return fs.existsSync(path.join(currentDir, indicator));
+      } catch {
+        return false;
+      }
+    });
+    if (hasUnityFiles) {
+      return currentDir;
+    }
+    currentDir = parentDir;
+    searchDepth++;
+  }
+  return process.cwd();
+};
+var logDir = path.join(findProjectRoot(), "UmcpLogs");
 var timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").split("T");
 var dateStr = timestamp[0];
 var timeStr = timestamp[1].split(".")[0];

@@ -10,7 +10,7 @@
  * logging is the safest approach for debugging MCP servers.
  * 
  * Where are logs written?
- * Logs are written to: ~/.claude/umcp-logs/mcp-debug-YYYY-MM-DD_HH-MM-SS.log
+ * Logs are written to: {project_root}/UmcpLogs/mcp-debug-YYYY-MM-DD_HH-MM-SS.log
  * - Each server session creates a new timestamped log file
  * - Directory is created automatically on first log write
  * - Logs are only written when MCP_DEBUG environment variable is set
@@ -30,7 +30,48 @@ import * as path from 'path';
 import * as os from 'os';
 
 // Create log file path with timestamp
-const logDir = path.join(os.homedir(), '.claude', 'umcp-logs');
+// Find project root by looking for specific Unity project files
+const findProjectRoot = (): string => {
+  let currentDir = __dirname;
+  let searchDepth = 0;
+  const maxSearchDepth = 10; // Prevent infinite loops
+  
+  while (searchDepth < maxSearchDepth) {
+    const parentDir = path.dirname(currentDir);
+    
+    // Check if we've reached the root directory
+    if (currentDir === parentDir) {
+      break;
+    }
+    
+    // Check for Unity project indicators
+    const unityIndicators = [
+      'ProjectSettings',
+      'Assets', 
+      'Packages'
+    ];
+    
+    const hasUnityFiles = unityIndicators.every(indicator => {
+      try {
+        return fs.existsSync(path.join(currentDir, indicator));
+      } catch {
+        return false;
+      }
+    });
+    
+    if (hasUnityFiles) {
+      return currentDir;
+    }
+    
+    currentDir = parentDir;
+    searchDepth++;
+  }
+  
+  // Fallback to current working directory if project root not found
+  return process.cwd();
+};
+
+const logDir = path.join(findProjectRoot(), 'UmcpLogs');
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
 const dateStr = timestamp[0]; // YYYY-MM-DD
 const timeStr = timestamp[1].split('.')[0]; // HH-MM-SS
