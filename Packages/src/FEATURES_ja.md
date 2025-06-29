@@ -21,7 +21,7 @@
 
 ## 🛠️ Unity コアコマンド
 
-### 1. unity.compile
+### 1. compile
 - **説明**: AssetDatabase.Refresh()を実行後、コンパイルを行います。詳細なタイミング情報付きでコンパイル結果を返します。
 - **パラメータ**: 
   - `ForceRecompile` (boolean): 強制再コンパイルを実行するかどうか（デフォルト: false）
@@ -40,7 +40,7 @@
     - `Line` (number): 警告が発生した行番号
   - `Message` (string): 追加情報のためのオプションメッセージ
 
-### 2. unity.getLogs
+### 2. getlogs
 - **説明**: フィルタリングおよび検索機能付きでUnityコンソールからログ情報を取得します
 - **パラメータ**: 
   - `LogType` (enum): フィルタするログタイプ - "Error", "Warning", "Log", "All"（デフォルト: "All"）
@@ -60,13 +60,14 @@
     - `StackTrace` (string): スタックトレース（IncludeStackTraceがtrueの場合）
     - `File` (string): ログが発生したファイル名
 
-### 3. unity.runTests
+### 3. runtests
 - **説明**: Unity Test Runnerを実行し、包括的なレポート付きでテスト結果を取得します
 - **パラメータ**: 
   - `FilterType` (enum): テストフィルタのタイプ - "all", "fullclassname"（デフォルト: "all"）
   - `FilterValue` (string): フィルタ値（FilterTypeがall以外の場合に指定）（デフォルト: ""）
     - `fullclassname`: 完全クラス名（例：io.github.hatayama.uMCP.CompileCommandTests）
   - `TestMode` (enum): テストモード - "EditMode", "PlayMode"（デフォルト: "EditMode"）
+    - ⚠️ **PlayMode注意**: PlayModeテスト実行時は、一時的にdomain reloadが無効化されます
   - `SaveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）
     - XMLファイルは `TestResults/` フォルダに保存されます（プロジェクトルート）
     - **推奨**: `.gitignore` に `TestResults/` を追加してバージョン管理から除外してください
@@ -80,7 +81,7 @@
   - `SkippedCount` (number): スキップされたテストの数
   - `XmlPath` (string): XML結果ファイルのパス（SaveXmlがtrueの場合）
 
-### 4. unity.clearConsole
+### 4. clearconsole
 - **説明**: クリーンな開発ワークフローのためにUnityコンソールログをクリアします
 - **パラメータ**: 
   - `AddConfirmationMessage` (boolean): クリア後に確認ログメッセージを追加するかどうか（デフォルト: true）
@@ -98,7 +99,7 @@
 
 ## 🔍 Unity 検索・発見コマンド
 
-### 5. unity.unitySearch
+### 5. unitysearch
 - **説明**: Unity Search APIを使用してUnityプロジェクトを検索し、包括的なフィルタリングとエクスポートオプションを提供します
 - **パラメータ**: 
   - `SearchQuery` (string): 検索クエリ文字列（Unity Search構文をサポート）（デフォルト: ""）
@@ -130,7 +131,7 @@
   - `SavedFileFormat` (string): 保存された結果のファイル形式
   - `SaveToFileReason` (string): 結果がファイルに保存された理由
 
-### 6. unity.getProviderDetails
+### 6. getproviderdetails
 - **説明**: 表示名、説明、アクティブ状態、機能を含むUnity Searchプロバイダーの詳細情報を取得します
 - **パラメータ**: 
   - `ProviderId` (string): 詳細を取得する特定のプロバイダーID（空 = すべてのプロバイダー）（デフォルト: ""）
@@ -148,7 +149,7 @@
   - `AppliedFilter` (string): 適用されたフィルタ（特定のプロバイダーIDまたは"all"）
   - `SortedByPriority` (boolean): 結果が優先度でソートされているかどうか
 
-### 7. unity.getMenuItems
+### 7. getmenuitems
 - **説明**: プログラム実行のための詳細なメタデータ付きでUnity MenuItemsを取得します。Unity Searchのメニュープロバイダーとは異なり、自動化とデバッグに必要な実装詳細（メソッド名、アセンブリ、実行互換性）を提供します
 - **パラメータ**: 
   - `FilterText` (string): MenuItemパスをフィルタするテキスト（すべてのアイテムの場合は空）（デフォルト: ""）
@@ -162,7 +163,7 @@
   - `AppliedFilter` (string): 適用されたフィルタテキスト
   - `AppliedFilterType` (string): 適用されたフィルタタイプ
 
-### 8. unity.executeMenuItem
+### 8. executemenuitem
 - **説明**: パスによってUnity MenuItemを実行します
 - **パラメータ**: 
   - `MenuItemPath` (string): 実行するメニューアイテムパス（例: "GameObject/Create Empty"）（デフォルト: ""）
@@ -174,43 +175,6 @@
   - `ErrorMessage` (string): 実行が失敗した場合のエラーメッセージ
   - `Details` (string): 実行に関する追加情報
   - `MenuItemFound` (boolean): メニューアイテムがシステムで見つかったかどうか
-
----
-
-## 🔧 開発・デバッグコマンド
-
-### 9. unity.ping（開発専用）
-- **説明**: Unity側への接続テスト
-- **パラメータ**: 
-  - `Message` (string): Unity側に送信するメッセージ（デフォルト: "Hello from TypeScript MCP Server"）
-- **レスポンス**: 
-  - `Message` (string): Unity側からの応答メッセージ
-- **注意**:
-  - パフォーマンス監視のための詳細な実行タイミングを提供
-  - 動的タイムアウト設定をサポート
-  - 接続情報付きのフォーマットされたレスポンスを表示
-  - 開発モードでのみ表示
-
-### 10. unity.getCommandDetails（開発専用）
-- **説明**: 登録されたすべてのUnity MCPコマンドの詳細情報を取得します
-- **パラメータ**: 
-  - `IncludeDevelopmentOnly` (boolean): 結果に開発専用コマンドを含めるかどうか（デフォルト: false）
-- **レスポンス**: 
-  - `Commands` (array): 詳細なコマンド情報の配列
-- **注意**:
-  - 開発モードでのみ表示
-  - デバッグと開発に有用
-
-### 11. unity.setClientName（開発専用）
-- **説明**: Unity MCPサーバーでの識別のためにクライアント名を登録します
-- **パラメータ**: 
-  - `ClientName` (string): MCPクライアントツールの名前（デフォルト: "Unknown Client"）
-- **レスポンス**: 
-  - `Message` (string): 成功ステータスメッセージ
-  - `ClientName` (string): 登録されたクライアント名
-- **注意**:
-  - 開発モードでのみ表示
-  - TypeScriptクライアントが自身を識別するために内部的に使用
 
 ---
 
@@ -264,15 +228,15 @@ public class MyCustomSchema : BaseCommandSchema
     [Description("パラメータの説明")]
     public string MyParameter { get; set; } = "default_value";
     
-    [Description("操作タイプを選択")]
-    public MyOperationType OperationType { get; set; } = MyOperationType.Process;
+    [Description("Enumパラメータの例")]
+    public MyEnum EnumParameter { get; set; } = MyEnum.Option1;
 }
 
-public enum MyOperationType
+public enum MyEnum
 {
-    Process,
-    Validate,
-    Export
+    Option1,
+    Option2,
+    Option3
 }
 ```
 
@@ -307,19 +271,19 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
     {
         // 型安全なパラメータアクセス
         string param = parameters.MyParameter;
-        MyOperationType operation = parameters.OperationType;
+        MyEnum enumValue = parameters.EnumParameter;
         
         // カスタムロジックをここに実装
-        string result = ProcessCustomLogic(param, operation);
+        string result = ProcessCustomLogic(param, enumValue);
         bool success = !string.IsNullOrEmpty(result);
         
         return Task.FromResult(new MyCustomResponse(result, success));
     }
     
-    private string ProcessCustomLogic(string input, MyOperationType operation)
+    private string ProcessCustomLogic(string input, MyEnum enumValue)
     {
         // カスタムロジックを実装
-        return $"Processed '{input}' with operation '{operation}'";
+        return $"Processed '{input}' with enum '{enumValue}'";
     }
 }
 ```
@@ -341,7 +305,7 @@ public class MyManualCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
     protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
     {
         // 方法1と同じ実装
-        string result = ProcessCustomLogic(parameters.MyParameter, parameters.OperationType);
+        string result = ProcessCustomLogic(parameters.MyParameter, parameters.EnumParameter);
         return Task.FromResult(new MyCustomResponse(result, true));
     }
 }

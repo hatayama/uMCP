@@ -10,20 +10,34 @@ Model Context Protocolを使用してUnity EditorをLLMツールに接続しま�
 # コンセプト
 
 AIによるコーディング時、Unityをコンパイルさせたり、logを取得する部分は人間がやる必要があります。それを可能な限り少なくするというコンセプトで作られました。
-uMCPを使えば、AIが人間にたよらずに自走してくれるでしょう。
-
+uMCPを使えば、AIが人間の操作に頼らずに長時間自走してくれるでしょう。
 
 ## ✨ 機能
 
-uMCPは11個のUnity MCPコマンドを提供し、コンパイル、ログ取得、テスト実行、Unity Search、MenuItems操作など包括的な機能を提供します。
+uMCPは8個のUnity MCPコマンドを提供し、コンパイル、ログ取得、テスト実行、Unity Search、MenuItems操作など包括的な機能を提供します。
+
+### 主要機能
+現在 下記8個のコマンドが使えます。
+**Unity基本コマンド**:
+- リフレッシュ & コンパイル（compile）- コンパイル結果を返却します
+- ログ取得（getlogs）- logtype、文字列、取得件数などでのフィルタリング機能を備えています
+- テスト実行（runtests）- テスト結果をxmlで書き出し、書き出したpathを伝えます
+- コンソールクリア（clearconsole）
+
+**Unity検索・発見機能**:
+- Unity Search API実行（unitysearch）
+- Unity Searchプロバイダー詳細取得（getproviderdetails）
+- MenuItems取得（getmenuitems）
+- MenuItems実行（executemenuitem）- AIがテストコードを作成し、実行させるのに便利です
 
 **📖 詳細な機能仕様については [FEATURES_ja.md](FEATURES_ja.md) をご覧ください**
 
-### 主要機能
-- **Core Unity Commands**: コンパイル、ログ取得、テスト実行、コンソールクリア
-- **Unity Search & Discovery**: Unity Search API、プロバイダー詳細、MenuItems操作
-- **Development & Debugging**: 接続テスト、コマンド詳細取得、クライアント名登録
-- **Advanced Features**: 型安全パラメータ、自動タイミング測定、動的タイムアウト、リアルタイムツール発見
+**高度な機能**:
+- 型安全パラメータ
+- 自動タイミング測定
+- 動的タイムアウト
+- リアルタイムツール発見
+- ファイルエクスポートシステム
 
 ## 使用方法
 1. Window > uMCPを選択します。専用ウィンドウが開くので、「Start Server」ボタンを押してください。

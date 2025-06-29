@@ -21,7 +21,7 @@ All commands automatically include the following timing information:
 
 ## 🛠️ Core Unity Commands
 
-### 1. unity.compile
+### 1. compile
 - **Description**: Executes Unity project compilation with detailed timing information after AssetDatabase.Refresh()
 - **Parameters**: 
   - `ForceRecompile` (boolean): Whether to perform forced recompilation (default: false)
@@ -40,7 +40,7 @@ All commands automatically include the following timing information:
     - `Line` (number): Line number where warning occurred
   - `Message` (string): Optional message for additional information
 
-### 2. unity.getLogs
+### 2. getlogs
 - **Description**: Retrieves log information from Unity console with filtering and search capabilities
 - **Parameters**: 
   - `LogType` (enum): Log type to filter - "Error", "Warning", "Log", "All" (default: "All")
@@ -60,13 +60,14 @@ All commands automatically include the following timing information:
     - `StackTrace` (string): Stack trace (if IncludeStackTrace is true)
     - `File` (string): File name where log occurred
 
-### 3. unity.runTests
+### 3. runtests
 - **Description**: Executes Unity Test Runner and retrieves test results with comprehensive reporting
 - **Parameters**: 
   - `FilterType` (enum): Type of test filter - "all", "fullclassname" (default: "all")
   - `FilterValue` (string): Filter value (specify when FilterType is other than all) (default: "")
     - `fullclassname`: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)
   - `TestMode` (enum): Test mode - "EditMode", "PlayMode" (default: "EditMode")
+    - ⚠️ **PlayMode Warning**: During PlayMode test execution, domain reload is temporarily disabled
   - `SaveXml` (boolean): Whether to save test results as XML file (default: false)
     - XML files are saved to `TestResults/` folder (project root)
     - **Recommendation**: Add `TestResults/` to `.gitignore` to exclude from version control
@@ -80,7 +81,7 @@ All commands automatically include the following timing information:
   - `SkippedCount` (number): Number of skipped tests
   - `XmlPath` (string): XML result file path (if SaveXml is true)
 
-### 4. unity.clearConsole
+### 4. clearconsole
 - **Description**: Clears Unity console logs for clean development workflow
 - **Parameters**: 
   - `AddConfirmationMessage` (boolean): Whether to add a confirmation log message after clearing (default: true)
@@ -98,7 +99,7 @@ All commands automatically include the following timing information:
 
 ## 🔍 Unity Search & Discovery Commands
 
-### 5. unity.unitySearch
+### 5. unitysearch
 - **Description**: Search Unity project using Unity Search API with comprehensive filtering and export options
 - **Parameters**: 
   - `SearchQuery` (string): Search query string (supports Unity Search syntax) (default: "")
@@ -130,7 +131,7 @@ All commands automatically include the following timing information:
   - `SavedFileFormat` (string): File format of saved results
   - `SaveToFileReason` (string): Reason why results were saved to file
 
-### 6. unity.getProviderDetails
+### 6. getproviderdetails
 - **Description**: Get detailed information about Unity Search providers including display names, descriptions, active status, and capabilities
 - **Parameters**: 
   - `ProviderId` (string): Specific provider ID to get details for (empty = all providers) (default: "")
@@ -148,7 +149,7 @@ All commands automatically include the following timing information:
   - `AppliedFilter` (string): Filter applied (specific provider ID or "all")
   - `SortedByPriority` (boolean): Whether results are sorted by priority
 
-### 7. unity.getMenuItems
+### 7. getmenuitems
 - **Description**: Retrieve Unity MenuItems with detailed metadata for programmatic execution. Unlike Unity Search menu provider, this provides implementation details (method names, assemblies, execution compatibility) needed for automation and debugging
 - **Parameters**: 
   - `FilterText` (string): Text to filter MenuItem paths (empty for all items) (default: "")
@@ -162,7 +163,7 @@ All commands automatically include the following timing information:
   - `AppliedFilter` (string): The filter text that was applied
   - `AppliedFilterType` (string): The filter type that was applied
 
-### 8. unity.executeMenuItem
+### 8. executemenuitem
 - **Description**: Execute Unity MenuItem by path
 - **Parameters**: 
   - `MenuItemPath` (string): The menu item path to execute (e.g., "GameObject/Create Empty") (default: "")
@@ -174,43 +175,6 @@ All commands automatically include the following timing information:
   - `ErrorMessage` (string): Error message if execution failed
   - `Details` (string): Additional information about the execution
   - `MenuItemFound` (boolean): Whether the menu item was found in the system
-
----
-
-## 🔧 Development & Debugging Commands
-
-### 9. unity.ping (Development Only)
-- **Description**: Connection test to Unity side
-- **Parameters**: 
-  - `Message` (string): Message to send to Unity side (default: "Hello from TypeScript MCP Server")
-- **Response**: 
-  - `Message` (string): Unity side response message
-- **Notes**:
-  - Provides detailed execution timing for performance monitoring
-  - Supports dynamic timeout settings
-  - Displays formatted response with connection information
-  - Only visible in development mode
-
-### 10. unity.getCommandDetails (Development Only)
-- **Description**: Retrieve detailed information about all registered Unity MCP commands
-- **Parameters**: 
-  - `IncludeDevelopmentOnly` (boolean): Whether to include development-only commands in the results (default: false)
-- **Response**: 
-  - `Commands` (array): Array of detailed command information
-- **Notes**:
-  - Only visible in development mode
-  - Useful for debugging and development
-
-### 11. unity.setClientName (Development Only)
-- **Description**: Register client name for identification in Unity MCP server
-- **Parameters**: 
-  - `ClientName` (string): Name of the MCP client tool (default: "Unknown Client")
-- **Response**: 
-  - `Message` (string): Success status message
-  - `ClientName` (string): Registered client name
-- **Notes**:
-  - Only visible in development mode
-  - Used internally by TypeScript clients to identify themselves
 
 ---
 
@@ -264,15 +228,15 @@ public class MyCustomSchema : BaseCommandSchema
     [Description("Your parameter description")]
     public string MyParameter { get; set; } = "default_value";
     
-    [Description("Select operation type")]
-    public MyOperationType OperationType { get; set; } = MyOperationType.Process;
+    [Description("Example enum parameter")]
+    public MyEnum EnumParameter { get; set; } = MyEnum.Option1;
 }
 
-public enum MyOperationType
+public enum MyEnum
 {
-    Process,
-    Validate,
-    Export
+    Option1,
+    Option2,
+    Option3
 }
 ```
 
@@ -307,19 +271,19 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
     {
         // Type-safe parameter access
         string param = parameters.MyParameter;
-        MyOperationType operation = parameters.OperationType;
+        MyEnum enumValue = parameters.EnumParameter;
         
         // Implement custom logic here
-        string result = ProcessCustomLogic(param, operation);
+        string result = ProcessCustomLogic(param, enumValue);
         bool success = !string.IsNullOrEmpty(result);
         
         return Task.FromResult(new MyCustomResponse(result, success));
     }
     
-    private string ProcessCustomLogic(string input, MyOperationType operation)
+    private string ProcessCustomLogic(string input, MyEnum enumValue)
     {
         // Implement custom logic
-        return $"Processed '{input}' with operation '{operation}'";
+        return $"Processed '{input}' with enum '{enumValue}'";
     }
 }
 ```
@@ -341,7 +305,7 @@ public class MyManualCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
     protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
     {
         // Same implementation as Method 1
-        string result = ProcessCustomLogic(parameters.MyParameter, parameters.OperationType);
+        string result = ProcessCustomLogic(parameters.MyParameter, parameters.EnumParameter);
         return Task.FromResult(new MyCustomResponse(result, true));
     }
 }
