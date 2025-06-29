@@ -36,14 +36,13 @@ namespace io.github.hatayama.uMCP
             }
             
             // Create response
-            GetMenuItemsResponse response = new GetMenuItemsResponse
-            {
-                MenuItems = filteredMenuItems,
-                TotalCount = allMenuItems.Count,
-                FilteredCount = filteredMenuItems.Count,
-                AppliedFilter = filterText,
-                AppliedFilterType = filterType.ToString()
-            };
+            GetMenuItemsResponse response = new GetMenuItemsResponse(
+                filteredMenuItems,
+                allMenuItems.Count,
+                filteredMenuItems.Count,
+                filterText,
+                filterType.ToString()
+            );
             
             return Task.FromResult(response);
         }

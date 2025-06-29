@@ -15,6 +15,9 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Schema for RunTests command parameters
     /// Provides type-safe parameter access with default values
+    /// Related classes:
+    /// - BaseCommandSchema: Provides base timeout functionality
+    /// - RunTestsCommand: Uses this schema for test execution parameters
     /// </summary>
     public class RunTestsSchema : BaseCommandSchema
     {
@@ -22,13 +25,13 @@ namespace io.github.hatayama.uMCP
         /// Test mode (EditMode or PlayMode)
         /// </summary>
         [Description("Test mode (EditMode or PlayMode)")]
-        public TestMode TestMode { get; set; } = TestMode.EditMode;
+        public TestMode TestMode { get; }
 
         /// <summary>
         /// Type of test filter
         /// </summary>
         [Description("Type of test filter")]
-        public TestFilterType FilterType { get; set; } = TestFilterType.all;
+        public TestFilterType FilterType { get; }
 
         /// <summary>
         /// Filter value (specify when filterType is not all)
@@ -38,18 +41,31 @@ namespace io.github.hatayama.uMCP
         /// • assembly: Assembly name
         /// </summary>
         [Description("Filter value (specify when filterType is not all)\n• fullclassname: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)\n• namespace: Namespace (e.g.: io.github.hatayama.uMCP)\n• testname: Individual test name\n• assembly: Assembly name")]
-        public string FilterValue { get; set; } = "";
+        public string FilterValue { get; }
 
         /// <summary>
         /// Whether to save test results as XML file
         /// </summary>
         [Description("Whether to save test results as XML file. Test results are saved to external files to avoid massive token consumption when returning results directly. Please read the file if you need detailed test results.")]
-        public bool SaveXml { get; set; } = false;
+        public bool SaveXml { get; }
 
         /// <summary>
-        /// Timeout for test execution in seconds (default: 60 seconds for EditMode, 120 seconds for PlayMode)
+        /// Create RunTestsSchema with all parameters
         /// </summary>
-        [Description("Timeout for test execution in seconds (default: 30 seconds)")]
-        public override int TimeoutSeconds { get; set; } = 30;
+        public RunTestsSchema(TestMode testMode = TestMode.EditMode, TestFilterType filterType = TestFilterType.all, string filterValue = "", bool saveXml = false, int timeoutSeconds = 30)
+            : base(timeoutSeconds)
+        {
+            TestMode = testMode;
+            FilterType = filterType;
+            FilterValue = filterValue ?? "";
+            SaveXml = saveXml;
+        }
+
+        /// <summary>
+        /// Parameterless constructor for JSON deserialization
+        /// </summary>
+        public RunTestsSchema() : this(TestMode.EditMode, TestFilterType.all, "", false, 30)
+        {
+        }
     }
 } 

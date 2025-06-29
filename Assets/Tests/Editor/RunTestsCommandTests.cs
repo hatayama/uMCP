@@ -36,13 +36,14 @@ namespace io.github.hatayama.uMCP
             // This test is now obsolete as the new implementation uses type-safe Schema classes
             // instead of JSON parameter parsing. The parsing is handled by the MCP framework.
             
-            // Arrange - Test the Schema object directly
-            RunTestsSchema schema = new RunTestsSchema
-            {
-                FilterType = TestFilterType.fullclassname,
-                FilterValue = "TestClass",
-                SaveXml = true
-            };
+            // Arrange - Test the Schema object directly using constructor
+            RunTestsSchema schema = new RunTestsSchema(
+                testMode: UnityEditor.TestTools.TestRunner.Api.TestMode.EditMode,
+                filterType: TestFilterType.fullclassname,
+                filterValue: "TestClass",
+                saveXml: true,
+                timeoutSeconds: 30
+            );
 
             // Assert - Schema properties should match what we set
             Assert.That(schema.FilterType.ToString(), Is.EqualTo("fullclassname"));
