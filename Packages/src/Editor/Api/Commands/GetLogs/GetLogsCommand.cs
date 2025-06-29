@@ -24,9 +24,6 @@ namespace io.github.hatayama.uMCP
             string searchText = parameters.SearchText;
             bool includeStackTrace = parameters.IncludeStackTrace;
             
-            // Switch to the main thread using MainThreadSwitcher.
-            await MainThreadSwitcher.SwitchToMainThread();
-            
             // Convert enum to string for LogGetter
             string logTypeString = logType.ToString();
             

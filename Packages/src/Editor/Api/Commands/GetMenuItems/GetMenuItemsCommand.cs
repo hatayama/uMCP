@@ -23,9 +23,6 @@ namespace io.github.hatayama.uMCP
             bool includeValidation = parameters.IncludeValidation;
             int maxCount = parameters.MaxCount;
             
-            // Switch to the main thread for Unity API access
-            await MainThreadSwitcher.SwitchToMainThread();
-            
             // Discover all MenuItems using the service
             List<MenuItemInfo> allMenuItems = MenuItemDiscoveryService.DiscoverAllMenuItems();
             

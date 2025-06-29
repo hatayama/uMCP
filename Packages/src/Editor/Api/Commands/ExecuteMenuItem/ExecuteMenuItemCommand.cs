@@ -22,9 +22,6 @@ namespace io.github.hatayama.uMCP
             string menuItemPath = parameters.MenuItemPath;
             bool useReflectionFallback = parameters.UseReflectionFallback;
             
-            // Switch to the main thread for Unity API access
-            await MainThreadSwitcher.SwitchToMainThread();
-            
             ExecuteMenuItemResponse response = new ExecuteMenuItemResponse
             {
                 MenuItemPath = menuItemPath

@@ -33,66 +33,55 @@ namespace io.github.hatayama.uMCP
         /// <returns>Provider details response</returns>
         protected override async Task<GetProviderDetailsResponse> ExecuteAsync(GetProviderDetailsSchema parameters)
         {
-            try
+            ProviderInfo[] providers;
+            string appliedFilter;
+
+            // Get provider details based on parameters
+            if (!string.IsNullOrWhiteSpace(parameters.ProviderId))
             {
-                // Switch to main thread for Unity API access
-                await MainThreadSwitcher.SwitchToMainThread();
-
-                ProviderInfo[] providers;
-                string appliedFilter;
-
-                // Get provider details based on parameters
-                if (!string.IsNullOrWhiteSpace(parameters.ProviderId))
+                // Get specific provider
+                ProviderInfo provider = UnitySearchService.GetProviderDetails(parameters.ProviderId);
+                if (provider == null)
                 {
-                    // Get specific provider
-                    ProviderInfo provider = UnitySearchService.GetProviderDetails(parameters.ProviderId);
-                    if (provider == null)
-                    {
-                        return new GetProviderDetailsResponse($"Provider '{parameters.ProviderId}' not found");
-                    }
-                    providers = new[] { provider };
-                    appliedFilter = parameters.ProviderId;
+                    return new GetProviderDetailsResponse($"Provider '{parameters.ProviderId}' not found");
                 }
-                else
-                {
-                    // Get all providers
-                    providers = UnitySearchService.GetProviderDetails();
-                    appliedFilter = "all";
-                }
-
-                // Apply active-only filter if requested
-                if (parameters.ActiveOnly)
-                {
-                    providers = providers.Where(p => p.IsActive).ToArray();
-                    appliedFilter += " (active only)";
-                }
-
-                // Remove descriptions if not requested
-                if (!parameters.IncludeDescriptions)
-                {
-                    foreach (ProviderInfo provider in providers)
-                    {
-                        provider.Description = "";
-                    }
-                }
-
-                // Sort by priority if requested
-                if (parameters.SortByPriority)
-                {
-                    providers = providers.OrderBy(p => p.Priority).ToArray();
-                }
-
-                // Log command execution for debugging
-                McpLogger.LogDebug($"GetProviderDetails completed: Found {providers.Length} providers" +
-                                 $" (filter: {appliedFilter}, sorted: {parameters.SortByPriority})");
-
-                return new GetProviderDetailsResponse(providers, appliedFilter, parameters.SortByPriority);
+                providers = new[] { provider };
+                appliedFilter = parameters.ProviderId;
             }
-            catch (Exception ex)
+            else
             {
-                McpLogger.LogError($"GetProviderDetails failed: {ex.Message}");
-                return new GetProviderDetailsResponse($"Failed to get provider details: {ex.Message}");
+                // Get all providers
+                providers = UnitySearchService.GetProviderDetails();
+                appliedFilter = "all";
             }
+
+            // Apply active-only filter if requested
+            if (parameters.ActiveOnly)
+            {
+                providers = providers.Where(p => p.IsActive).ToArray();
+                appliedFilter += " (active only)";
+            }
+
+            // Remove descriptions if not requested
+            if (!parameters.IncludeDescriptions)
+            {
+                foreach (ProviderInfo provider in providers)
+                {
+                    provider.Description = "";
+                }
+            }
+
+            // Sort by priority if requested
+            if (parameters.SortByPriority)
+            {
+                providers = providers.OrderBy(p => p.Priority).ToArray();
+            }
+
+            // Log command execution for debugging
+            McpLogger.LogDebug($"GetProviderDetails completed: Found {providers.Length} providers" +
+                             $" (filter: {appliedFilter}, sorted: {parameters.SortByPriority})");
+
+            return new GetProviderDetailsResponse(providers, appliedFilter, parameters.SortByPriority);
         }
 
         /// <summary>

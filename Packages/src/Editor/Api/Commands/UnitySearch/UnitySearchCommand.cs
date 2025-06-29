@@ -25,9 +25,6 @@ namespace io.github.hatayama.uMCP
         /// <returns>Search results or file path if exported</returns>
         protected override async Task<UnitySearchResponse> ExecuteAsync(UnitySearchSchema parameters)
         {
-            // Switch to main thread for Unity API access
-            await MainThreadSwitcher.SwitchToMainThread();
-
             // Clean up old export files before executing new search
             UnitySearchService.CleanupOldExports();
 
