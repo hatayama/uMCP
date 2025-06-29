@@ -38,7 +38,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo($"Project root: {projectRoot}");
             
             // Check local path
-            string localPath = Path.Combine(projectRoot, "Packages", "src", "TypeScriptServer", "dist", "server.js");
+            string localPath = Path.Combine(projectRoot, "Packages", "src", ".TypeScriptServer", "dist", "server.bundle.js");
             McpLogger.LogInfo($"Local path: {localPath} - {(File.Exists(localPath) ? "EXISTS" : "NOT FOUND")}");
             
             // Check Package Cache
@@ -52,7 +52,7 @@ namespace io.github.hatayama.uMCP
                 
                 foreach (string packageDir in packageDirs)
                 {
-                    string serverPathInCache = Path.Combine(packageDir, "TypeScriptServer", "dist", "server.js");
+                    string serverPathInCache = Path.Combine(packageDir, ".TypeScriptServer", "dist", "server.bundle.js");
                     McpLogger.LogInfo($"  {packageDir} -> {(File.Exists(serverPathInCache) ? "HAS SERVER" : "NO SERVER")}");
                 }
             }

@@ -11,7 +11,7 @@ namespace io.github.hatayama.uMCP
     public class TypeScriptBuilder
     {
         // Directory name constants
-        private const string TYPESCRIPT_SERVER_DIR = "TypeScriptServer";
+        private const string TYPESCRIPT_SERVER_DIR = ".TypeScriptServer";
         
         // npm command constants
         private const string NPM_COMMAND_CI = "ci";
