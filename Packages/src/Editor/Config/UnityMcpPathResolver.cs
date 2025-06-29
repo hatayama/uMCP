@@ -88,6 +88,16 @@ namespace io.github.hatayama.uMCP
         private const string MCP_INSPECTOR_CONFIG_FILE = ".inspector.mcp.json";
 #endif
 
+        // TypeScript server related constants
+        private const string TYPESCRIPT_SERVER_DIR = ".TypeScriptServer";
+        private const string DIST_DIR = "dist";
+        private const string SERVER_BUNDLE_FILE = "server.bundle.js";
+        private const string PACKAGES_DIR = "Packages";
+        private const string SRC_DIR = "src";
+        private const string LIBRARY_DIR = "Library";
+        private const string PACKAGE_CACHE_DIR = "PackageCache";
+        private const string PACKAGE_NAME_PATTERN = "io.github.hatayama.umcp@*";
+
         /// <summary>
         /// Gets the path to the project root directory.
         /// </summary>
@@ -231,6 +241,25 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Gets the relative path from package base to TypeScript server file.
+        /// </summary>
+        /// <returns>The relative path to server.bundle.js</returns>
+        private static string GetTypeScriptServerRelativePath()
+        {
+            return Path.Combine(TYPESCRIPT_SERVER_DIR, DIST_DIR, SERVER_BUNDLE_FILE);
+        }
+
+        /// <summary>
+        /// Builds the full path to TypeScript server file from a base path.
+        /// </summary>
+        /// <param name="basePath">The base path to combine with</param>
+        /// <returns>The full path to server.bundle.js</returns>
+        private static string BuildTypeScriptServerPath(string basePath)
+        {
+            return Path.Combine(basePath, GetTypeScriptServerRelativePath());
+        }
+
+        /// <summary>
         /// Gets the path to the TypeScript server.
         /// Supports both installation via Package Manager and local development.
         /// </summary>
@@ -242,7 +271,7 @@ namespace io.github.hatayama.uMCP
                 return string.Empty;
             }
             
-            return Path.Combine(packageBasePath, "TypeScriptServer", "dist", "server.bundle.js");
+            return BuildTypeScriptServerPath(packageBasePath);
         }
 
         /// <summary>
@@ -254,8 +283,8 @@ namespace io.github.hatayama.uMCP
             string projectRoot = GetProjectRoot();
             
             // 1. First, check the path for local development (Packages/src).
-            string localPath = Path.Combine(projectRoot, "Packages", "src");
-            string localServerPath = Path.Combine(localPath, "TypeScriptServer", "dist", "server.bundle.js");
+            string localPath = Path.Combine(projectRoot, PACKAGES_DIR, SRC_DIR);
+            string localServerPath = BuildTypeScriptServerPath(localPath);
             if (File.Exists(localServerPath))
             {
                 // Using local package path
@@ -263,15 +292,15 @@ namespace io.github.hatayama.uMCP
             }
             
             // 2. Search for the path when installed via Package Manager.
-            string packageCacheDir = Path.Combine(projectRoot, "Library", "PackageCache");
+            string packageCacheDir = Path.Combine(projectRoot, LIBRARY_DIR, PACKAGE_CACHE_DIR);
             if (Directory.Exists(packageCacheDir))
             {
                 // Search for directories starting with io.github.hatayama.umcp@.
-                string[] packageDirs = Directory.GetDirectories(packageCacheDir, "io.github.hatayama.umcp@*");
+                string[] packageDirs = Directory.GetDirectories(packageCacheDir, PACKAGE_NAME_PATTERN);
                 
                 foreach (string packageDir in packageDirs)
                 {
-                    string serverPath = Path.Combine(packageDir, "TypeScriptServer", "dist", "server.bundle.js");
+                    string serverPath = BuildTypeScriptServerPath(packageDir);
                     if (File.Exists(serverPath))
                     {
                         // Using Package Manager package path
@@ -281,7 +310,7 @@ namespace io.github.hatayama.uMCP
             }
             
             // 3. If neither is found, return the local path (with an error log).
-            McpLogger.LogError($"Package base path not found. Checked paths:\n  Local: {localPath}\n  Package Cache: {packageCacheDir}/io.github.hatayama.unitymcp@*");
+            McpLogger.LogError($"Package base path not found. Checked paths:\n  Local: {localPath}\n  Package Cache: {packageCacheDir}/{PACKAGE_NAME_PATTERN}");
             
             return localPath;
         }

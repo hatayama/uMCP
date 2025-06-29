@@ -81,13 +81,6 @@ namespace io.github.hatayama.uMCP
                 {
                     McpLogger.LogInfo($"Configuration changed for {serverKey}, updating...");
                 }
-                else
-                {
-                    // Configuration unchanged, skipping update
-                }
-            }
-            else
-            {
             }
 
             if (needsUpdate)
@@ -101,16 +94,6 @@ namespace io.github.hatayama.uMCP
                 string editorName = GetEditorDisplayName(_editorType);
                 McpLogger.LogInfo($"{editorName} configuration updated: {configPath}");
             }
-        }
-
-        /// <summary>
-        /// Updates only the environment variables for development mode without changing other settings.
-        /// </summary>
-        /// <param name="port">The port number to use.</param>
-        /// <param name="developmentMode">Whether to enable development mode.</param>
-        public void UpdateDevelopmentMode(int port, bool developmentMode)
-        {
-            UpdateDevelopmentSettings(port, developmentMode, false);
         }
 
         /// <summary>
