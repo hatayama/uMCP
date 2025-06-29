@@ -26,5 +26,14 @@ namespace io.github.hatayama.uMCP
             Message = message;
             ClientName = clientName;
         }
+
+        /// <summary>
+        /// Parameterless constructor for JSON deserialization
+        /// </summary>
+        public SetClientNameResponse()
+        {
+            Message = string.Empty;
+            ClientName = string.Empty;
+        }
     }
 }

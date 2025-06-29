@@ -19,5 +19,13 @@ namespace io.github.hatayama.uMCP
         {
             Message = message;
         }
+
+        /// <summary>
+        /// Parameterless constructor for JSON deserialization
+        /// </summary>
+        public PingResponse()
+        {
+            Message = string.Empty;
+        }
     }
 } 

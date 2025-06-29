@@ -64,5 +64,15 @@ namespace io.github.hatayama.uMCP
             SkippedCount = skippedCount;
             XmlPath = xmlPath;
         }
+
+        /// <summary>
+        /// Parameterless constructor for JSON deserialization
+        /// </summary>
+        public RunTestsResponse()
+        {
+            Message = string.Empty;
+            CompletedAt = string.Empty;
+            XmlPath = string.Empty;
+        }
     }
 } 
