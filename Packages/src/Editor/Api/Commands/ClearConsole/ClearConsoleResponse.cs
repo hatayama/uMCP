@@ -1,4 +1,5 @@
 using System;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
@@ -38,37 +39,16 @@ namespace io.github.hatayama.uMCP
         public string ErrorMessage { get; }
 
         /// <summary>
-        /// Create a new ClearConsoleResponse for successful operation
+        /// Create a new ClearConsoleResponse
         /// </summary>
-        public ClearConsoleResponse(bool success, int clearedLogCount, ClearedLogCounts clearedCounts, string message)
+        [JsonConstructor]
+        public ClearConsoleResponse(bool success, int clearedLogCount, ClearedLogCounts clearedCounts, string message, string errorMessage = "")
         {
             Success = success;
             ClearedLogCount = clearedLogCount;
             ClearedCounts = clearedCounts ?? new ClearedLogCounts();
             Message = message ?? string.Empty;
-            ErrorMessage = string.Empty;
-        }
-
-        /// <summary>
-        /// Create a new ClearConsoleResponse for failed operation
-        /// </summary>
-        public ClearConsoleResponse(string errorMessage)
-        {
-            Success = false;
-            ClearedLogCount = 0;
-            ClearedCounts = new ClearedLogCounts();
-            Message = string.Empty;
             ErrorMessage = errorMessage ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Parameterless constructor for JSON deserialization
-        /// </summary>
-        public ClearConsoleResponse()
-        {
-            ClearedCounts = new ClearedLogCounts();
-            Message = string.Empty;
-            ErrorMessage = string.Empty;
         }
     }
 
@@ -93,11 +73,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public int LogCount { get; }
 
-        public ClearedLogCounts()
-        {
-        }
-
-        public ClearedLogCounts(int errorCount, int warningCount, int logCount)
+        [JsonConstructor]
+        public ClearedLogCounts(int errorCount = 0, int warningCount = 0, int logCount = 0)
         {
             ErrorCount = errorCount;
             WarningCount = warningCount;

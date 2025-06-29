@@ -34,14 +34,42 @@ namespace io.github.hatayama.uMCP
                 // Validate search query
                 if (string.IsNullOrWhiteSpace(schema.SearchQuery))
                 {
-                    return new UnitySearchResponse("Search query cannot be empty", schema.SearchQuery);
+                    return new UnitySearchResponse(
+                        results: Array.Empty<SearchResultItem>(),
+                        totalCount: 0,
+                        displayedCount: 0,
+                        searchQuery: schema.SearchQuery ?? string.Empty,
+                        providersUsed: Array.Empty<string>(),
+                        searchDurationMs: 0,
+                        success: false,
+                        errorMessage: "Search query cannot be empty",
+                        resultsFilePath: string.Empty,
+                        resultsSavedToFile: false,
+                        savedFileFormat: string.Empty,
+                        saveToFileReason: string.Empty,
+                        appliedFilters: new SearchFilterInfo(Array.Empty<string>(), Array.Empty<string>(), string.Empty, 0)
+                    );
                 }
 
                 // Create search context
                 SearchContext context = CreateSearchContext(schema);
                 if (context == null)
                 {
-                    return new UnitySearchResponse("Failed to create search context", schema.SearchQuery);
+                    return new UnitySearchResponse(
+                        results: Array.Empty<SearchResultItem>(),
+                        totalCount: 0,
+                        displayedCount: 0,
+                        searchQuery: schema.SearchQuery,
+                        providersUsed: Array.Empty<string>(),
+                        searchDurationMs: 0,
+                        success: false,
+                        errorMessage: "Failed to create search context",
+                        resultsFilePath: string.Empty,
+                        resultsSavedToFile: false,
+                        savedFileFormat: string.Empty,
+                        saveToFileReason: string.Empty,
+                        appliedFilters: new SearchFilterInfo(Array.Empty<string>(), Array.Empty<string>(), string.Empty, 0)
+                    );
                 }
 
                 // Execute search
@@ -73,15 +101,47 @@ namespace io.github.hatayama.uMCP
                 }
                 else
                 {
-                    return new UnitySearchResponse(results, searchItems.Count, schema.SearchQuery, 
-                                                 providersUsed, stopwatch.ElapsedMilliseconds);
+                    return new UnitySearchResponse(
+                        results: results,
+                        totalCount: searchItems.Count,
+                        displayedCount: results.Length,
+                        searchQuery: schema.SearchQuery,
+                        providersUsed: providersUsed,
+                        searchDurationMs: stopwatch.ElapsedMilliseconds,
+                        success: true,
+                        errorMessage: string.Empty,
+                        resultsFilePath: string.Empty,
+                        resultsSavedToFile: false,
+                        savedFileFormat: string.Empty,
+                        saveToFileReason: string.Empty,
+                        appliedFilters: new SearchFilterInfo(
+                            fileExtensions: schema.FileExtensions ?? Array.Empty<string>(),
+                            assetTypes: schema.AssetTypes ?? Array.Empty<string>(),
+                            pathFilter: schema.PathFilter ?? string.Empty,
+                            filteredOutCount: 0
+                        )
+                    );
                 }
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
                 McpLogger.LogError($"Unity Search execution failed: {ex.Message}");
-                return new UnitySearchResponse($"Search failed: {ex.Message}", schema.SearchQuery);
+                return new UnitySearchResponse(
+                    results: Array.Empty<SearchResultItem>(),
+                    totalCount: 0,
+                    displayedCount: 0,
+                    searchQuery: schema.SearchQuery ?? string.Empty,
+                    providersUsed: Array.Empty<string>(),
+                    searchDurationMs: stopwatch.ElapsedMilliseconds,
+                    success: false,
+                    errorMessage: $"Search failed: {ex.Message}",
+                    resultsFilePath: string.Empty,
+                    resultsSavedToFile: false,
+                    savedFileFormat: string.Empty,
+                    saveToFileReason: string.Empty,
+                    appliedFilters: new SearchFilterInfo(Array.Empty<string>(), Array.Empty<string>(), string.Empty, 0)
+                );
             }
         }
 
@@ -249,15 +309,51 @@ namespace io.github.hatayama.uMCP
                 
                 string saveReason = schema.SaveToFile ? "user_request" : "auto_threshold";
                 
-                return new UnitySearchResponse(filePath, schema.OutputFormat.ToString(), saveReason,
-                                             results.Length, schema.SearchQuery, providersUsed, searchDurationMs);
+                return new UnitySearchResponse(
+                    results: Array.Empty<SearchResultItem>(),
+                    totalCount: results.Length,
+                    displayedCount: 0,
+                    searchQuery: schema.SearchQuery,
+                    providersUsed: providersUsed,
+                    searchDurationMs: searchDurationMs,
+                    success: true,
+                    errorMessage: string.Empty,
+                    resultsFilePath: filePath,
+                    resultsSavedToFile: true,
+                    savedFileFormat: schema.OutputFormat.ToString(),
+                    saveToFileReason: saveReason,
+                    appliedFilters: new SearchFilterInfo(
+                        fileExtensions: schema.FileExtensions ?? Array.Empty<string>(),
+                        assetTypes: schema.AssetTypes ?? Array.Empty<string>(),
+                        pathFilter: schema.PathFilter ?? string.Empty,
+                        filteredOutCount: 0
+                    )
+                );
             }
             catch (Exception ex)
             {
                 McpLogger.LogError($"Failed to export search results: {ex.Message}");
                 // Fallback to inline response
-                return new UnitySearchResponse(results, results.Length, schema.SearchQuery, 
-                                             providersUsed, searchDurationMs);
+                return new UnitySearchResponse(
+                    results: results,
+                    totalCount: results.Length,
+                    displayedCount: results.Length,
+                    searchQuery: schema.SearchQuery,
+                    providersUsed: providersUsed,
+                    searchDurationMs: searchDurationMs,
+                    success: true,
+                    errorMessage: string.Empty,
+                    resultsFilePath: string.Empty,
+                    resultsSavedToFile: false,
+                    savedFileFormat: string.Empty,
+                    saveToFileReason: "error_fallback",
+                    appliedFilters: new SearchFilterInfo(
+                        fileExtensions: schema.FileExtensions ?? Array.Empty<string>(),
+                        assetTypes: schema.AssetTypes ?? Array.Empty<string>(),
+                        pathFilter: schema.PathFilter ?? string.Empty,
+                        filteredOutCount: 0
+                    )
+                );
             }
         }
 

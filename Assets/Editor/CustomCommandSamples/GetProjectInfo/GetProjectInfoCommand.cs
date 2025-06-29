@@ -19,32 +19,31 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("GetProjectInfo command executed");
             
-            GetProjectInfoResponse response = new GetProjectInfoResponse
-            {
-                ProjectName = Application.productName,
-                CompanyName = Application.companyName,
-                Version = Application.version,
-                UnityVersion = Application.unityVersion,
-                Platform = Application.platform.ToString(),
-                DataPath = Application.dataPath,
-                PersistentDataPath = Application.persistentDataPath,
-                TemporaryCachePath = Application.temporaryCachePath,
-                IsEditor = Application.isEditor,
-                IsPlaying = Application.isPlaying,
-                TargetFrameRate = Application.targetFrameRate,
-                RunInBackground = Application.runInBackground,
-                SystemLanguage = Application.systemLanguage.ToString(),
-                InternetReachability = Application.internetReachability.ToString(),
-                DeviceType = SystemInfo.deviceType.ToString(),
-                DeviceModel = SystemInfo.deviceModel,
-                OperatingSystem = SystemInfo.operatingSystem,
-                ProcessorType = SystemInfo.processorType,
-                ProcessorCount = SystemInfo.processorCount,
-                SystemMemorySize = SystemInfo.systemMemorySize,
-                GraphicsDeviceName = SystemInfo.graphicsDeviceName,
-                Timestamp = System.DateTime.Now,
-                CommandName = CommandName
-            };
+            GetProjectInfoResponse response = new GetProjectInfoResponse(
+                projectName: Application.productName,
+                companyName: Application.companyName,
+                version: Application.version,
+                unityVersion: Application.unityVersion,
+                platform: Application.platform.ToString(),
+                dataPath: Application.dataPath,
+                persistentDataPath: Application.persistentDataPath,
+                temporaryCachePath: Application.temporaryCachePath,
+                isEditor: Application.isEditor,
+                isPlaying: Application.isPlaying,
+                targetFrameRate: Application.targetFrameRate,
+                runInBackground: Application.runInBackground,
+                systemLanguage: Application.systemLanguage.ToString(),
+                internetReachability: Application.internetReachability.ToString(),
+                deviceType: SystemInfo.deviceType.ToString(),
+                deviceModel: SystemInfo.deviceModel,
+                operatingSystem: SystemInfo.operatingSystem,
+                processorType: SystemInfo.processorType,
+                processorCount: SystemInfo.processorCount,
+                systemMemorySize: SystemInfo.systemMemorySize,
+                graphicsDeviceName: SystemInfo.graphicsDeviceName,
+                timestamp: System.DateTime.Now,
+                commandName: CommandName
+            );
             
             return Task.FromResult<BaseCommandResponse>(response);
         }

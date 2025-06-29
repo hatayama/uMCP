@@ -1,46 +1,41 @@
+using System;
 using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Response schema for HelloWorld command
-    /// Provides type-safe response structure
+    /// Response for HelloWorld command
+    /// Contains greeting message with language and timestamp information
+    /// Related classes:
+    /// - BaseCommandResponse: Provides timing information
+    /// - HelloWorldCommand: Creates instances of this response
     /// </summary>
     public class HelloWorldResponse : BaseCommandResponse
     {
         /// <summary>
         /// The greeting message
         /// </summary>
-        public string Message { get; set; }
+        public string Message { get; }
 
         /// <summary>
-        /// Timestamp when the greeting was generated (optional)
+        /// Timestamp when the response was created
         /// </summary>
-        public string Timestamp { get; set; }
+        public string Timestamp { get; }
 
         /// <summary>
-        /// Language used for the greeting
+        /// Language of the greeting
         /// </summary>
-        public string Language { get; set; }
+        public string Language { get; }
 
         /// <summary>
         /// Create a new HelloWorldResponse
         /// </summary>
-        /// <param name="message">Greeting message</param>
-        /// <param name="language">Language used</param>
-        /// <param name="timestamp">Optional timestamp</param>
-        public HelloWorldResponse(string message, string language, string timestamp = null)
+        [JsonConstructor]
+        public HelloWorldResponse(string message, string language, string timestamp)
         {
-            Message = message;
-            Language = language;
-            Timestamp = timestamp;
-        }
-
-        /// <summary>
-        /// Parameterless constructor for JSON deserialization
-        /// </summary>
-        public HelloWorldResponse()
-        {
+            Message = message ?? string.Empty;
+            Language = language ?? string.Empty;
+            Timestamp = timestamp ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         }
     }
 } 

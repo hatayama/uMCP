@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
@@ -24,6 +26,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="message">Success message</param>
         /// <param name="clientName">Registered client name</param>
+        [JsonConstructor]
         public SetClientNameResponse(string message, string clientName)
         {
             Message = message;

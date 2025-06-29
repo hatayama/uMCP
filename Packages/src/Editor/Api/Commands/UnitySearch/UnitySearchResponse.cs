@@ -1,4 +1,5 @@
 using System;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
@@ -6,151 +7,102 @@ namespace io.github.hatayama.uMCP
     /// Response schema for UnitySearch command
     /// Provides type-safe response structure for Unity Search results
     /// Supports both inline results and file-based results for token consumption management
+    /// Related classes:
+    /// - BaseCommandResponse: Provides timing information
+    /// - UnitySearchCommand: Creates instances of this response
+    /// - SearchResultItem: Individual search result data structure
+    /// - SearchFilterInfo: Filter information structure
     /// </summary>
     public class UnitySearchResponse : BaseCommandResponse
     {
         /// <summary>
         /// Array of search result items (empty if results were saved to file)
         /// </summary>
-        public SearchResultItem[] Results { get; set; }
+        public SearchResultItem[] Results { get; }
 
         /// <summary>
         /// Total number of search results found (before MaxResults limit)
         /// </summary>
-        public int TotalCount { get; set; }
+        public int TotalCount { get; }
 
         /// <summary>
         /// Number of results displayed in this response
         /// </summary>
-        public int DisplayedCount { get; set; }
+        public int DisplayedCount { get; }
 
         /// <summary>
         /// Search query that was executed
         /// </summary>
-        public string SearchQuery { get; set; }
+        public string SearchQuery { get; }
 
         /// <summary>
         /// Search providers that were used for the search
         /// </summary>
-        public string[] ProvidersUsed { get; set; }
+        public string[] ProvidersUsed { get; }
 
         /// <summary>
         /// Search duration in milliseconds
         /// </summary>
-        public long SearchDurationMs { get; set; }
+        public long SearchDurationMs { get; }
 
         /// <summary>
         /// Whether the search was completed successfully
         /// </summary>
-        public bool Success { get; set; }
+        public bool Success { get; }
 
         /// <summary>
         /// Error message if search failed
         /// </summary>
-        public string ErrorMessage { get; set; }
+        public string ErrorMessage { get; }
 
         /// <summary>
         /// Path to saved search results file (when SaveToFile is enabled or auto-triggered)
         /// </summary>
-        public string ResultsFilePath { get; set; }
+        public string ResultsFilePath { get; }
 
         /// <summary>
         /// Whether results were saved to file due to size constraints or user preference
         /// </summary>
-        public bool ResultsSavedToFile { get; set; }
+        public bool ResultsSavedToFile { get; }
 
         /// <summary>
         /// File format of saved results (JSON, CSV, TSV)
         /// </summary>
-        public string SavedFileFormat { get; set; }
+        public string SavedFileFormat { get; }
 
         /// <summary>
         /// Reason why results were saved to file (user_request, auto_threshold, error_fallback)
         /// </summary>
-        public string SaveToFileReason { get; set; }
+        public string SaveToFileReason { get; }
 
         /// <summary>
         /// Applied filters information
         /// </summary>
-        public SearchFilterInfo AppliedFilters { get; set; }
+        public SearchFilterInfo AppliedFilters { get; }
 
         /// <summary>
-        /// Default constructor
+        /// Main constructor for UnitySearchResponse
         /// </summary>
-        public UnitySearchResponse()
-        {
-            Results = Array.Empty<SearchResultItem>();
-            SearchQuery = string.Empty;
-            ProvidersUsed = Array.Empty<string>();
-            ErrorMessage = string.Empty;
-            ResultsFilePath = string.Empty;
-            SavedFileFormat = string.Empty;
-            SaveToFileReason = string.Empty;
-            Success = true;
-            AppliedFilters = new SearchFilterInfo();
-        }
-
-        /// <summary>
-        /// Constructor for successful inline results
-        /// </summary>
-        public UnitySearchResponse(SearchResultItem[] results, int totalCount, string searchQuery, 
-                                  string[] providersUsed, long searchDurationMs)
+        [JsonConstructor]
+        public UnitySearchResponse(SearchResultItem[] results, int totalCount, int displayedCount, 
+                                  string searchQuery, string[] providersUsed, long searchDurationMs,
+                                  bool success, string errorMessage, string resultsFilePath, 
+                                  bool resultsSavedToFile, string savedFileFormat, string saveToFileReason,
+                                  SearchFilterInfo appliedFilters)
         {
             Results = results ?? Array.Empty<SearchResultItem>();
             TotalCount = totalCount;
-            DisplayedCount = Results.Length;
+            DisplayedCount = displayedCount;
             SearchQuery = searchQuery ?? string.Empty;
             ProvidersUsed = providersUsed ?? Array.Empty<string>();
             SearchDurationMs = searchDurationMs;
-            Success = true;
-            ErrorMessage = string.Empty;
-            ResultsFilePath = string.Empty;
-            ResultsSavedToFile = false;
-            SavedFileFormat = string.Empty;
-            SaveToFileReason = string.Empty;
-            AppliedFilters = new SearchFilterInfo();
-        }
-
-        /// <summary>
-        /// Constructor for file-based results
-        /// </summary>
-        public UnitySearchResponse(string resultsFilePath, string fileFormat, string saveReason,
-                                  int totalCount, string searchQuery, string[] providersUsed, 
-                                  long searchDurationMs)
-        {
-            Results = Array.Empty<SearchResultItem>();
-            TotalCount = totalCount;
-            DisplayedCount = 0;
-            SearchQuery = searchQuery ?? string.Empty;
-            ProvidersUsed = providersUsed ?? Array.Empty<string>();
-            SearchDurationMs = searchDurationMs;
-            Success = true;
-            ErrorMessage = string.Empty;
-            ResultsFilePath = resultsFilePath ?? string.Empty;
-            ResultsSavedToFile = true;
-            SavedFileFormat = fileFormat ?? string.Empty;
-            SaveToFileReason = saveReason ?? string.Empty;
-            AppliedFilters = new SearchFilterInfo();
-        }
-
-        /// <summary>
-        /// Constructor for error cases
-        /// </summary>
-        public UnitySearchResponse(string errorMessage, string searchQuery)
-        {
-            Results = Array.Empty<SearchResultItem>();
-            TotalCount = 0;
-            DisplayedCount = 0;
-            SearchQuery = searchQuery ?? string.Empty;
-            ProvidersUsed = Array.Empty<string>();
-            SearchDurationMs = 0;
-            Success = false;
+            Success = success;
             ErrorMessage = errorMessage ?? string.Empty;
-            ResultsFilePath = string.Empty;
-            ResultsSavedToFile = false;
-            SavedFileFormat = string.Empty;
-            SaveToFileReason = string.Empty;
-            AppliedFilters = new SearchFilterInfo();
+            ResultsFilePath = resultsFilePath ?? string.Empty;
+            ResultsSavedToFile = resultsSavedToFile;
+            SavedFileFormat = savedFileFormat ?? string.Empty;
+            SaveToFileReason = saveToFileReason ?? string.Empty;
+            AppliedFilters = appliedFilters ?? new SearchFilterInfo(Array.Empty<string>(), Array.Empty<string>(), string.Empty, 0);
         }
     }
 
@@ -163,29 +115,30 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// File extensions that were filtered
         /// </summary>
-        public string[] FileExtensions { get; set; }
+        public string[] FileExtensions { get; }
 
         /// <summary>
         /// Asset types that were filtered
         /// </summary>
-        public string[] AssetTypes { get; set; }
+        public string[] AssetTypes { get; }
 
         /// <summary>
         /// Path filter pattern that was applied
         /// </summary>
-        public string PathFilter { get; set; }
+        public string PathFilter { get; }
 
         /// <summary>
         /// Number of results filtered out
         /// </summary>
-        public int FilteredOutCount { get; set; }
+        public int FilteredOutCount { get; }
 
-        public SearchFilterInfo()
+        [JsonConstructor]
+        public SearchFilterInfo(string[] fileExtensions, string[] assetTypes, string pathFilter, int filteredOutCount)
         {
-            FileExtensions = Array.Empty<string>();
-            AssetTypes = Array.Empty<string>();
-            PathFilter = string.Empty;
-            FilteredOutCount = 0;
+            FileExtensions = fileExtensions ?? Array.Empty<string>();
+            AssetTypes = assetTypes ?? Array.Empty<string>();
+            PathFilter = pathFilter ?? string.Empty;
+            FilteredOutCount = filteredOutCount;
         }
     }
 } 

@@ -21,18 +21,17 @@ namespace io.github.hatayama.uMCP
         {
             McpLogger.LogDebug("GetVersion request received");
             
-            GetVersionResponse response = new GetVersionResponse
-            {
-                UnityVersion = Application.unityVersion,
-                Platform = Application.platform.ToString(),
-                DataPath = Application.dataPath,
-                PersistentDataPath = Application.persistentDataPath,
-                TemporaryCachePath = Application.temporaryCachePath,
-                IsEditor = Application.isEditor,
-                ProductName = Application.productName,
-                CompanyName = Application.companyName,
-                Version = Application.version
-            };
+            GetVersionResponse response = new GetVersionResponse(
+                unityVersion: Application.unityVersion,
+                platform: Application.platform.ToString(),
+                dataPath: Application.dataPath,
+                persistentDataPath: Application.persistentDataPath,
+                temporaryCachePath: Application.temporaryCachePath,
+                isEditor: Application.isEditor,
+                productName: Application.productName,
+                companyName: Application.companyName,
+                version: Application.version
+            );
             
             McpLogger.LogDebug($"GetVersion completed: Unity {Application.unityVersion}");
             

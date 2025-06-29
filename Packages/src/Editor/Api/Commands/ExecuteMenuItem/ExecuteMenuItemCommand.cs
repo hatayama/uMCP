@@ -22,36 +22,40 @@ namespace io.github.hatayama.uMCP
             string menuItemPath = parameters.MenuItemPath;
             bool useReflectionFallback = parameters.UseReflectionFallback;
             
-            ExecuteMenuItemResponse response = new ExecuteMenuItemResponse
-            {
-                MenuItemPath = menuItemPath
-            };
-            
             // Validate parameters
             if (string.IsNullOrEmpty(menuItemPath))
             {
-                response.Success = false;
-                response.ErrorMessage = "MenuItemPath cannot be empty";
-                response.MenuItemFound = false;
-                return Task.FromResult(response);
+                ExecuteMenuItemResponse errorResponse = new ExecuteMenuItemResponse(
+                    menuItemPath: menuItemPath ?? string.Empty,
+                    success: false,
+                    executionMethod: string.Empty,
+                    errorMessage: "MenuItemPath cannot be empty",
+                    details: string.Empty,
+                    menuItemFound: false
+                );
+                return Task.FromResult(errorResponse);
             }
             
             // First, try using EditorApplication.ExecuteMenuItem
-            bool success = TryExecuteViaEditorApplication(menuItemPath, response);
+            ExecuteMenuItemResponse response = TryExecuteViaEditorApplication(menuItemPath);
             
             // If that fails and reflection fallback is enabled, try reflection
-            if (!success && useReflectionFallback)
+            if (!response.Success && useReflectionFallback)
             {
-                success = TryExecuteViaReflection(menuItemPath, response);
+                response = TryExecuteViaReflection(menuItemPath);
             }
             
-            if (!success)
+            // If still not successful, create final error response
+            if (!response.Success && string.IsNullOrEmpty(response.ErrorMessage))
             {
-                response.Success = false;
-                if (string.IsNullOrEmpty(response.ErrorMessage))
-                {
-                    response.ErrorMessage = $"Failed to execute MenuItem: {menuItemPath}";
-                }
+                response = new ExecuteMenuItemResponse(
+                    menuItemPath: menuItemPath,
+                    success: false,
+                    executionMethod: response.ExecutionMethod,
+                    errorMessage: $"Failed to execute MenuItem: {menuItemPath}",
+                    details: response.Details,
+                    menuItemFound: response.MenuItemFound
+                );
             }
             
             return Task.FromResult(response);
@@ -60,81 +64,103 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Attempts to execute MenuItem using EditorApplication.ExecuteMenuItem
         /// </summary>
-        private bool TryExecuteViaEditorApplication(string menuItemPath, ExecuteMenuItemResponse response)
+        private ExecuteMenuItemResponse TryExecuteViaEditorApplication(string menuItemPath)
         {
             bool success = EditorApplication.ExecuteMenuItem(menuItemPath);
             
             if (success)
             {
-                response.Success = true;
-                response.ExecutionMethod = "EditorApplication";
-                response.MenuItemFound = true;
-                response.Details = "MenuItem executed successfully via EditorApplication.ExecuteMenuItem";
-                return true;
+                return new ExecuteMenuItemResponse(
+                    menuItemPath: menuItemPath,
+                    success: true,
+                    executionMethod: "EditorApplication",
+                    errorMessage: string.Empty,
+                    details: "MenuItem executed successfully via EditorApplication.ExecuteMenuItem",
+                    menuItemFound: true
+                );
             }
             
-            response.ExecutionMethod = "EditorApplication";
-            response.ErrorMessage = "EditorApplication.ExecuteMenuItem returned false";
-            response.Details = "MenuItem may not exist or may not be executable via EditorApplication";
-            return false;
+            return new ExecuteMenuItemResponse(
+                menuItemPath: menuItemPath,
+                success: false,
+                executionMethod: "EditorApplication",
+                errorMessage: "EditorApplication.ExecuteMenuItem returned false",
+                details: "MenuItem may not exist or may not be executable via EditorApplication",
+                menuItemFound: false
+            );
         }
 
         /// <summary>
         /// Attempts to execute MenuItem using reflection to find and invoke the method directly
         /// </summary>
-        private bool TryExecuteViaReflection(string menuItemPath, ExecuteMenuItemResponse response)
+        private ExecuteMenuItemResponse TryExecuteViaReflection(string menuItemPath)
         {
             // Find the MenuItem method using the service
             MenuItemInfo menuItemInfo = MenuItemDiscoveryService.FindMenuItemByPath(menuItemPath);
             
             if (menuItemInfo == null)
             {
-                response.ExecutionMethod = "Reflection";
-                response.ErrorMessage = "MenuItem not found via reflection";
-                response.MenuItemFound = false;
-                response.Details = $"Could not find MenuItem with path: {menuItemPath}";
-                return false;
+                return new ExecuteMenuItemResponse(
+                    menuItemPath: menuItemPath,
+                    success: false,
+                    executionMethod: "Reflection",
+                    errorMessage: "MenuItem not found via reflection",
+                    details: $"Could not find MenuItem with path: {menuItemPath}",
+                    menuItemFound: false
+                );
             }
             
             // Don't execute validation functions
             if (menuItemInfo.IsValidateFunction)
             {
-                response.ExecutionMethod = "Reflection";
-                response.ErrorMessage = "Cannot execute validation function";
-                response.MenuItemFound = true;
-                response.Details = "The specified path is a validation function, not an executable MenuItem";
-                return false;
+                return new ExecuteMenuItemResponse(
+                    menuItemPath: menuItemPath,
+                    success: false,
+                    executionMethod: "Reflection",
+                    errorMessage: "Cannot execute validation function",
+                    details: "The specified path is a validation function, not an executable MenuItem",
+                    menuItemFound: true
+                );
             }
             
             // Get the method and invoke it
             Type type = Type.GetType(menuItemInfo.TypeName);
             if (type == null)
             {
-                response.ExecutionMethod = "Reflection";
-                response.ErrorMessage = "Could not load type";
-                response.MenuItemFound = true;
-                response.Details = $"Could not load type: {menuItemInfo.TypeName}";
-                return false;
+                return new ExecuteMenuItemResponse(
+                    menuItemPath: menuItemPath,
+                    success: false,
+                    executionMethod: "Reflection",
+                    errorMessage: "Could not load type",
+                    details: $"Could not load type: {menuItemInfo.TypeName}",
+                    menuItemFound: true
+                );
             }
             
             MethodInfo method = type.GetMethod(menuItemInfo.MethodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)
             {
-                response.ExecutionMethod = "Reflection";
-                response.ErrorMessage = "Could not find method";
-                response.MenuItemFound = true;
-                response.Details = $"Could not find method: {menuItemInfo.MethodName}";
-                return false;
+                return new ExecuteMenuItemResponse(
+                    menuItemPath: menuItemPath,
+                    success: false,
+                    executionMethod: "Reflection",
+                    errorMessage: "Could not find method",
+                    details: $"Could not find method: {menuItemInfo.MethodName}",
+                    menuItemFound: true
+                );
             }
             
             // Invoke the method
             method.Invoke(null, null);
             
-            response.Success = true;
-            response.ExecutionMethod = "Reflection";
-            response.MenuItemFound = true;
-            response.Details = $"MenuItem executed successfully via reflection ({menuItemInfo.TypeName}.{menuItemInfo.MethodName})";
-            return true;
+            return new ExecuteMenuItemResponse(
+                menuItemPath: menuItemPath,
+                success: true,
+                executionMethod: "Reflection",
+                errorMessage: string.Empty,
+                details: $"MenuItem executed successfully via reflection ({menuItemInfo.TypeName}.{menuItemInfo.MethodName})",
+                menuItemFound: true
+            );
         }
     }
 }

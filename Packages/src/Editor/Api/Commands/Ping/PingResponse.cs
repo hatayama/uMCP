@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
@@ -18,6 +20,7 @@ namespace io.github.hatayama.uMCP
         /// Create a new PingResponse
         /// </summary>
         /// <param name="message">Response message</param>
+        [JsonConstructor]
         public PingResponse(string message)
         {
             Message = message;

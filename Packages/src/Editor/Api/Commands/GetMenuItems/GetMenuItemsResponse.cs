@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using uMCP.Editor.Api.Commands.GetMenuItems;
 
 namespace io.github.hatayama.uMCP
@@ -41,6 +42,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Create a new GetMenuItemsResponse with all required data
         /// </summary>
+        [JsonConstructor]
         public GetMenuItemsResponse(List<MenuItemInfo> menuItems, int totalCount, int filteredCount, string appliedFilter, string appliedFilterType)
         {
             MenuItems = menuItems ?? new List<MenuItemInfo>();
@@ -48,18 +50,6 @@ namespace io.github.hatayama.uMCP
             FilteredCount = filteredCount;
             AppliedFilter = appliedFilter ?? string.Empty;
             AppliedFilterType = appliedFilterType ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Parameterless constructor for JSON deserialization
-        /// </summary>
-        public GetMenuItemsResponse()
-        {
-            MenuItems = new List<MenuItemInfo>();
-            TotalCount = 0;
-            FilteredCount = 0;
-            AppliedFilter = string.Empty;
-            AppliedFilterType = string.Empty;
         }
     }
 }

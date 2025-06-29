@@ -36,10 +36,7 @@ namespace io.github.hatayama.uMCP
             }
             
             // Create type-safe response
-            GetCommandDetailsResponse response = new GetCommandDetailsResponse
-            {
-                Commands = filteredCommands
-            };
+            GetCommandDetailsResponse response = new GetCommandDetailsResponse(filteredCommands);
             
             return Task.FromResult(response);
         }

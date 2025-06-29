@@ -1,93 +1,75 @@
 using System;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Response schema for GetProviderDetails command
     /// Provides type-safe response structure for Unity Search provider information
+    /// Related classes:
+    /// - BaseCommandResponse: Provides timing information
+    /// - GetProviderDetailsCommand: Creates instances of this response
+    /// - ProviderInfo: Individual provider information structure
     /// </summary>
     public class GetProviderDetailsResponse : BaseCommandResponse
     {
         /// <summary>
         /// Array of provider information
         /// </summary>
-        public ProviderInfo[] Providers { get; set; }
+        public ProviderInfo[] Providers { get; }
 
         /// <summary>
         /// Total number of providers found
         /// </summary>
-        public int TotalCount { get; set; }
+        public int TotalCount { get; }
 
         /// <summary>
         /// Number of active providers
         /// </summary>
-        public int ActiveCount { get; set; }
+        public int ActiveCount { get; }
 
         /// <summary>
         /// Number of inactive providers
         /// </summary>
-        public int InactiveCount { get; set; }
+        public int InactiveCount { get; }
 
         /// <summary>
         /// Whether the request was successful
         /// </summary>
-        public bool Success { get; set; }
+        public bool Success { get; }
 
         /// <summary>
         /// Error message if request failed
         /// </summary>
-        public string ErrorMessage { get; set; }
+        public string ErrorMessage { get; }
 
         /// <summary>
         /// Filter applied (specific provider ID or "all")
         /// </summary>
-        public string AppliedFilter { get; set; }
+        public string AppliedFilter { get; }
 
         /// <summary>
         /// Whether results are sorted by priority
         /// </summary>
-        public bool SortedByPriority { get; set; }
+        public bool SortedByPriority { get; }
 
         /// <summary>
-        /// Default constructor
+        /// Main constructor for GetProviderDetailsResponse
         /// </summary>
-        public GetProviderDetailsResponse()
-        {
-            Providers = Array.Empty<ProviderInfo>();
-            ErrorMessage = string.Empty;
-            AppliedFilter = string.Empty;
-            Success = true;
-        }
-
-        /// <summary>
-        /// Constructor for successful response
-        /// </summary>
-        public GetProviderDetailsResponse(ProviderInfo[] providers, string appliedFilter, bool sortedByPriority)
+        [JsonConstructor]
+        public GetProviderDetailsResponse(ProviderInfo[] providers, int totalCount, int activeCount, 
+                                        int inactiveCount, bool success, string errorMessage, 
+                                        string appliedFilter, bool sortedByPriority)
         {
             Providers = providers ?? Array.Empty<ProviderInfo>();
-            TotalCount = Providers.Length;
-            ActiveCount = Providers.Count(p => p.IsActive);
-            InactiveCount = TotalCount - ActiveCount;
-            Success = true;
-            ErrorMessage = string.Empty;
-            AppliedFilter = appliedFilter ?? "all";
-            SortedByPriority = sortedByPriority;
-        }
-
-        /// <summary>
-        /// Constructor for error response
-        /// </summary>
-        public GetProviderDetailsResponse(string errorMessage)
-        {
-            Providers = Array.Empty<ProviderInfo>();
-            TotalCount = 0;
-            ActiveCount = 0;
-            InactiveCount = 0;
-            Success = false;
+            TotalCount = totalCount;
+            ActiveCount = activeCount;
+            InactiveCount = inactiveCount;
+            Success = success;
             ErrorMessage = errorMessage ?? string.Empty;
-            AppliedFilter = string.Empty;
-            SortedByPriority = false;
+            AppliedFilter = appliedFilter ?? string.Empty;
+            SortedByPriority = sortedByPriority;
         }
     }
 } 

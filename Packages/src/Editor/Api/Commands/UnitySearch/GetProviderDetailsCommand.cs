@@ -43,7 +43,16 @@ namespace io.github.hatayama.uMCP
                 ProviderInfo provider = UnitySearchService.GetProviderDetails(parameters.ProviderId);
                 if (provider == null)
                 {
-                    return Task.FromResult(new GetProviderDetailsResponse($"Provider '{parameters.ProviderId}' not found"));
+                    return Task.FromResult(new GetProviderDetailsResponse(
+                        providers: Array.Empty<ProviderInfo>(),
+                        totalCount: 0,
+                        activeCount: 0,
+                        inactiveCount: 0,
+                        success: false,
+                        errorMessage: $"Provider '{parameters.ProviderId}' not found",
+                        appliedFilter: parameters.ProviderId,
+                        sortedByPriority: false
+                    ));
                 }
                 providers = new[] { provider };
                 appliedFilter = parameters.ProviderId;
@@ -77,11 +86,25 @@ namespace io.github.hatayama.uMCP
                 providers = providers.OrderBy(p => p.Priority).ToArray();
             }
 
+            // Calculate counts
+            int totalCount = providers.Length;
+            int activeCount = providers.Count(p => p.IsActive);
+            int inactiveCount = totalCount - activeCount;
+
             // Log command execution for debugging
             McpLogger.LogDebug($"GetProviderDetails completed: Found {providers.Length} providers" +
                              $" (filter: {appliedFilter}, sorted: {parameters.SortByPriority})");
 
-            return Task.FromResult(new GetProviderDetailsResponse(providers, appliedFilter, parameters.SortByPriority));
+            return Task.FromResult(new GetProviderDetailsResponse(
+                providers: providers,
+                totalCount: totalCount,
+                activeCount: activeCount,
+                inactiveCount: inactiveCount,
+                success: true,
+                errorMessage: string.Empty,
+                appliedFilter: appliedFilter,
+                sortedByPriority: parameters.SortByPriority
+            ));
         }
 
         /// <summary>
