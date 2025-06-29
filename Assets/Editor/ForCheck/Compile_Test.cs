@@ -9,5 +9,6 @@ public class Compile_Test : MonoBehaviour
         // ThisVariableDoesNotExist = 999;
         // CallUndefinedFunction();
         // string str = 123; // Type error
+        
     }
 } 
