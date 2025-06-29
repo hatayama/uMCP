@@ -19,14 +19,14 @@ namespace io.github.hatayama.uMCP
         {
             // Create filter if specified
             TestExecutionFilter filter = null;
-            if (parameters.FilterType != TestFilterType.all)
+            if (parameters.FilterType != McpTestFilterType.all)
             {
                 filter = CreateFilter(parameters.FilterType.ToString(), parameters.FilterValue);
             }
 
             // Execute tests using appropriate method
             SerializableTestResult result;
-            if (parameters.TestMode == TestMode.PlayMode)
+            if (parameters.TestMode == McpTestMode.PlayMode)
             {
                 result = await PlayModeTestExecuter.ExecutePlayModeTest(
                     filter, 

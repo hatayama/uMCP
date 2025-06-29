@@ -360,18 +360,18 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Convert our search flags to Unity search flags
         /// </summary>
-        private static SearchFlags ConvertSearchFlags(UnitySearchFlags flags)
+        private static SearchFlags ConvertSearchFlags(SearchFlags flags)
         {
             SearchFlags unityFlags = SearchFlags.Default;
 
-            if (flags.HasFlag(UnitySearchFlags.Synchronous))
-                unityFlags |= SearchFlags.Synchronous;
-            if (flags.HasFlag(UnitySearchFlags.WantsMore))
-                unityFlags |= SearchFlags.WantsMore;
-            if (flags.HasFlag(UnitySearchFlags.Packages))
-                unityFlags |= SearchFlags.Packages;
-            if (flags.HasFlag(UnitySearchFlags.Sorted))
-                unityFlags |= SearchFlags.Sorted;
+            if (flags.HasFlag(SearchFlags.Synchronous))
+                unityFlags |= UnityEditor.Search.SearchFlags.Synchronous;
+            if (flags.HasFlag(SearchFlags.WantsMore))
+                unityFlags |= UnityEditor.Search.SearchFlags.WantsMore;
+            if (flags.HasFlag(SearchFlags.Packages))
+                unityFlags |= UnityEditor.Search.SearchFlags.Packages;
+            if (flags.HasFlag(SearchFlags.Sorted))
+                unityFlags |= UnityEditor.Search.SearchFlags.Sorted;
 
             return unityFlags;
         }

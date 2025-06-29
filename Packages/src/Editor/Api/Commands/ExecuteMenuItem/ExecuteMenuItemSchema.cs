@@ -36,7 +36,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Parameterless constructor for JSON deserialization
+        /// Parameterless constructor for new() constraint compatibility
         /// </summary>
         public ExecuteMenuItemSchema() : this("", true, 10)
         {

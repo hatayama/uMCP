@@ -106,17 +106,5 @@ namespace io.github.hatayama.uMCP
                 sortedByPriority: parameters.SortByPriority
             ));
         }
-
-        /// <summary>
-        /// Apply default values for schema properties if they are null
-        /// Ensures reasonable defaults for provider details parameters
-        /// </summary>
-        protected override GetProviderDetailsSchema ApplyDefaultValues(GetProviderDetailsSchema schema)
-        {
-            // Ensure string properties are not null
-            schema.ProviderId ??= "";
-
-            return schema;
-        }
     }
 } 

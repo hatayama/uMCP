@@ -47,30 +47,5 @@ namespace io.github.hatayama.uMCP
 
             return response;
         }
-
-        /// <summary>
-        /// Apply default values for schema properties if they are null
-        /// Ensures reasonable defaults for Unity Search parameters
-        /// </summary>
-        protected override UnitySearchSchema ApplyDefaultValues(UnitySearchSchema schema)
-        {
-            // Ensure arrays are not null
-            schema.Providers ??= new string[0];
-            schema.FileExtensions ??= new string[0];
-            schema.AssetTypes ??= new string[0];
-
-            // Apply reasonable defaults
-            if (schema.MaxResults <= 0)
-                schema.MaxResults = 50;
-
-            if (schema.AutoSaveThreshold < 0)
-                schema.AutoSaveThreshold = 100;
-
-            // Ensure search query is not null
-            schema.SearchQuery ??= "";
-            schema.PathFilter ??= "";
-
-            return schema;
-        }
     }
 } 

@@ -40,26 +40,39 @@ namespace io.github.hatayama.uMCP
             // Arrange
             GetLogsSchema schema = new GetLogsSchema();
             GetLogsResponse result = null;
-            bool completed = false;
+            System.Exception testException = null;
 
-            // Act
-            Task.Run(async () => {
-                try {
-                    // Convert schema to JToken for public ExecuteAsync method
-                    JToken paramsToken = JToken.FromObject(schema);
-                    object response = await getLogsCommand.ExecuteAsync(paramsToken);
-                    result = response as GetLogsResponse;
-                    completed = true;
-                } catch (System.Exception ex) {
-                    UnityEngine.Debug.LogError($"Test failed: {ex.Message}");
-                    completed = true;
+            // Act - Execute on main thread instead of Task.Run
+            Task<BaseCommandResponse> task = null;
+            try {
+                // Convert schema to JToken for public ExecuteAsync method
+                JToken paramsToken = JToken.FromObject(schema);
+                task = getLogsCommand.ExecuteAsync(paramsToken);
+            } catch (System.Exception ex) {
+                testException = ex;
+            }
+
+            // Wait for task completion on main thread
+            if (task != null)
+            {
+                yield return new UnityEngine.WaitUntil(() => task.IsCompleted);
+                
+                if (task.IsFaulted)
+                {
+                    testException = task.Exception?.GetBaseException();
                 }
-            });
-
-            // Wait for completion
-            yield return new UnityEngine.WaitUntil(() => completed);
+                else if (task.IsCompletedSuccessfully)
+                {
+                    result = task.Result as GetLogsResponse;
+                }
+            }
 
             // Assert
+            if (testException != null)
+            {
+                Assert.Fail($"Test failed with exception: {testException.Message}\nStackTrace: {testException.StackTrace}");
+            }
+            
             Assert.That(result, Is.Not.Null);
             Assert.That(result.Logs, Is.Not.Null, "logs property should exist");
             Assert.That(result.TotalCount, Is.GreaterThanOrEqualTo(0), "totalCount should be non-negative");
@@ -79,32 +92,44 @@ namespace io.github.hatayama.uMCP
         public IEnumerator ExecuteAsync_WithCustomParams_ShouldReturnFilteredLogs()
         {
             // Arrange
-            GetLogsSchema schema = new GetLogsSchema
-            {
-                LogType = McpLogType.Error,
-                MaxCount = 50
-            };
+            GetLogsSchema schema = new GetLogsSchema(
+                logType: McpLogType.Error,
+                maxCount: 50
+            );
             GetLogsResponse result = null;
-            bool completed = false;
+            System.Exception testException = null;
 
-            // Act
-            Task.Run(async () => {
-                try {
-                    // Convert schema to JToken for public ExecuteAsync method
-                    JToken paramsToken = JToken.FromObject(schema);
-                    object response = await getLogsCommand.ExecuteAsync(paramsToken);
-                    result = response as GetLogsResponse;
-                    completed = true;
-                } catch (System.Exception ex) {
-                    UnityEngine.Debug.LogError($"Test failed: {ex.Message}");
-                    completed = true;
+            // Act - Execute on main thread instead of Task.Run
+            Task<BaseCommandResponse> task = null;
+            try {
+                // Convert schema to JToken for public ExecuteAsync method
+                JToken paramsToken = JToken.FromObject(schema);
+                task = getLogsCommand.ExecuteAsync(paramsToken);
+            } catch (System.Exception ex) {
+                testException = ex;
+            }
+
+            // Wait for task completion on main thread
+            if (task != null)
+            {
+                yield return new UnityEngine.WaitUntil(() => task.IsCompleted);
+                
+                if (task.IsFaulted)
+                {
+                    testException = task.Exception?.GetBaseException();
                 }
-            });
-
-            // Wait for completion
-            yield return new UnityEngine.WaitUntil(() => completed);
+                else if (task.IsCompletedSuccessfully)
+                {
+                    result = task.Result as GetLogsResponse;
+                }
+            }
 
             // Assert
+            if (testException != null)
+            {
+                Assert.Fail($"Test failed with exception: {testException.Message}\nStackTrace: {testException.StackTrace}");
+            }
+            
             Assert.That(result, Is.Not.Null);
             Assert.That(result.Logs, Is.Not.Null, "logs property should exist");
             Assert.That(result.TotalCount, Is.GreaterThanOrEqualTo(0), "totalCount should be non-negative");

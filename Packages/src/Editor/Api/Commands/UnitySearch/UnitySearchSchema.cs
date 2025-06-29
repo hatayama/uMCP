@@ -1,21 +1,22 @@
 using System.ComponentModel;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Output format options for search results when saved to file
+    /// Output format for search results
     /// </summary>
     public enum SearchOutputFormat
     {
-        JSON,
-        CSV,
-        TSV
+        JSON = 0,
+        CSV = 1,
+        TSV = 2
     }
 
     /// <summary>
-    /// Unity Search flags for controlling search behavior
+    /// Search flags for controlling Unity Search behavior
     /// </summary>
-    public enum UnitySearchFlags
+    public enum SearchFlags
     {
         Default = 0,
         Synchronous = 1,
@@ -26,94 +27,134 @@ namespace io.github.hatayama.uMCP
 
     /// <summary>
     /// Schema for UnitySearch command parameters
-    /// Provides type-safe parameter access for Unity Search functionality
+    /// Provides type-safe parameter access with immutable design
     /// Related classes:
-    /// - SearchResultItem: Individual search result data structure
-    /// - UnitySearchResponse: Response containing search results or file path
-    /// - UnitySearchService: Service layer for Unity Search API integration
+    /// - BaseCommandSchema: Provides base timeout functionality
+    /// - UnitySearchCommand: Uses this schema for search parameters
     /// </summary>
     public class UnitySearchSchema : BaseCommandSchema
     {
         /// <summary>
         /// Search query string (supports Unity Search syntax)
-        /// Examples: "*.cs", "t:Texture2D", "ref:MyScript", "p:MyPackage"
+        /// Examples: '*.cs', 't:Texture2D', 'ref:MyScript', 'p:MyPackage'
         /// </summary>
         [Description("Search query string (supports Unity Search syntax). Examples: '*.cs', 't:Texture2D', 'ref:MyScript', 'p:MyPackage'")]
-        public string SearchQuery { get; set; } = "";
-
-        /// <summary>
-        /// Specific search providers to use (empty = all active providers)
-        /// Common providers: "asset", "scene", "menu", "settings", "packages"
-        /// </summary>
-        [Description("Specific search providers to use (empty = all active providers). Common providers: 'asset', 'scene', 'menu', 'settings', 'packages'")]
-        public string[] Providers { get; set; } = new string[0];
+        public string SearchQuery { get; }
 
         /// <summary>
         /// Maximum number of search results to return
         /// </summary>
         [Description("Maximum number of search results to return")]
-        public int MaxResults { get; set; } = 50;
+        public int MaxResults { get; }
 
         /// <summary>
-        /// Whether to include detailed descriptions in results
+        /// Specific search providers to use (empty = all active providers)
+        /// Common providers: 'asset', 'scene', 'menu', 'settings', 'packages'
         /// </summary>
-        [Description("Whether to include detailed descriptions in results")]
-        public bool IncludeDescription { get; set; } = true;
+        [Description("Specific search providers to use (empty = all active providers). Common providers: 'asset', 'scene', 'menu', 'settings', 'packages'")]
+        public string[] Providers { get; }
 
         /// <summary>
-        /// Whether to include thumbnail/preview information
-        /// </summary>
-        [Description("Whether to include thumbnail/preview information")]
-        public bool IncludeThumbnails { get; set; } = false;
-
-        /// <summary>
-        /// Whether to include file metadata (size, modified date)
-        /// </summary>
-        [Description("Whether to include file metadata (size, modified date)")]
-        public bool IncludeMetadata { get; set; } = false;
-
-        /// <summary>
-        /// Search flags for controlling Unity Search behavior
-        /// </summary>
-        [Description("Search flags for controlling Unity Search behavior")]
-        public UnitySearchFlags SearchFlags { get; set; } = UnitySearchFlags.Default;
-
-        /// <summary>
-        /// Whether to save search results to external file to avoid massive token consumption
-        /// When enabled, results are saved as JSON/CSV files and only the file path is returned
-        /// </summary>
-        [Description("Whether to save search results to external file to avoid massive token consumption when dealing with large result sets. Results are saved as JSON/CSV files for external reading.")]
-        public bool SaveToFile { get; set; } = false;
-
-        /// <summary>
-        /// Output file format when SaveToFile is enabled (JSON, CSV, TSV)
-        /// </summary>
-        [Description("Output file format when SaveToFile is enabled (JSON, CSV, TSV)")]
-        public SearchOutputFormat OutputFormat { get; set; } = SearchOutputFormat.JSON;
-
-        /// <summary>
-        /// Threshold for automatic file saving (if result count exceeds this, automatically save to file)
-        /// Set to 0 to disable automatic file saving
-        /// </summary>
-        [Description("Threshold for automatic file saving (if result count exceeds this, automatically save to file). Set to 0 to disable automatic file saving.")]
-        public int AutoSaveThreshold { get; set; } = 100;
-
-        /// <summary>
-        /// Filter results by file extension (e.g., "cs", "prefab", "mat")
-        /// </summary>
-        [Description("Filter results by file extension (e.g., 'cs', 'prefab', 'mat')")]
-        public string[] FileExtensions { get; set; } = new string[0];
-
-        /// <summary>
-        /// Filter results by asset type (e.g., "Texture2D", "GameObject", "MonoScript")
+        /// Filter results by asset type (e.g., 'Texture2D', 'GameObject', 'MonoScript')
         /// </summary>
         [Description("Filter results by asset type (e.g., 'Texture2D', 'GameObject', 'MonoScript')")]
-        public string[] AssetTypes { get; set; } = new string[0];
+        public string[] AssetTypes { get; }
+
+        /// <summary>
+        /// Filter results by file extension (e.g., 'cs', 'prefab', 'mat')
+        /// </summary>
+        [Description("Filter results by file extension (e.g., 'cs', 'prefab', 'mat')")]
+        public string[] FileExtensions { get; }
 
         /// <summary>
         /// Filter results by path pattern (supports wildcards)
         /// </summary>
         [Description("Filter results by path pattern (supports wildcards)")]
-        public string PathFilter { get; set; } = "";
+        public string PathFilter { get; }
+
+        /// <summary>
+        /// Whether to include detailed descriptions in results
+        /// </summary>
+        [Description("Whether to include detailed descriptions in results")]
+        public bool IncludeDescription { get; }
+
+        /// <summary>
+        /// Whether to include thumbnail/preview information
+        /// </summary>
+        [Description("Whether to include thumbnail/preview information")]
+        public bool IncludeThumbnails { get; }
+
+        /// <summary>
+        /// Whether to include file metadata (size, modified date)
+        /// </summary>
+        [Description("Whether to include file metadata (size, modified date)")]
+        public bool IncludeMetadata { get; }
+
+        /// <summary>
+        /// Whether to save search results to external file
+        /// </summary>
+        [Description("Whether to save search results to external file to avoid massive token consumption when dealing with large result sets. Results are saved as JSON/CSV files for external reading.")]
+        public bool SaveToFile { get; }
+
+        /// <summary>
+        /// Output file format when SaveToFile is enabled (JSON, CSV, TSV)
+        /// </summary>
+        [Description("Output file format when SaveToFile is enabled (JSON, CSV, TSV)")]
+        public SearchOutputFormat OutputFormat { get; }
+
+        /// <summary>
+        /// Threshold for automatic file saving (if result count exceeds this, automatically save to file)
+        /// </summary>
+        [Description("Threshold for automatic file saving (if result count exceeds this, automatically save to file). Set to 0 to disable automatic file saving.")]
+        public int AutoSaveThreshold { get; }
+
+        /// <summary>
+        /// Search flags for controlling Unity Search behavior
+        /// </summary>
+        [Description("Search flags for controlling Unity Search behavior")]
+        public SearchFlags SearchFlags { get; }
+
+        /// <summary>
+        /// Create UnitySearchSchema with all parameters
+        /// </summary>
+        [JsonConstructor]
+        public UnitySearchSchema(
+            string searchQuery = "",
+            int maxResults = 50,
+            string[] providers = null,
+            string[] assetTypes = null,
+            string[] fileExtensions = null,
+            string pathFilter = "",
+            bool includeDescription = true,
+            bool includeThumbnails = false,
+            bool includeMetadata = false,
+            bool saveToFile = false,
+            SearchOutputFormat outputFormat = SearchOutputFormat.JSON,
+            int autoSaveThreshold = 100,
+            SearchFlags searchFlags = SearchFlags.Default,
+            int timeoutSeconds = 10)
+            : base(timeoutSeconds)
+        {
+            SearchQuery = searchQuery ?? "";
+            MaxResults = maxResults;
+            Providers = providers ?? new string[0];
+            AssetTypes = assetTypes ?? new string[0];
+            FileExtensions = fileExtensions ?? new string[0];
+            PathFilter = pathFilter ?? "";
+            IncludeDescription = includeDescription;
+            IncludeThumbnails = includeThumbnails;
+            IncludeMetadata = includeMetadata;
+            SaveToFile = saveToFile;
+            OutputFormat = outputFormat;
+            AutoSaveThreshold = autoSaveThreshold;
+            SearchFlags = searchFlags;
+        }
+
+        /// <summary>
+        /// Parameterless constructor for new() constraint compatibility
+        /// </summary>
+        public UnitySearchSchema() : this("", 50, null, null, null, "", true, false, false, false, SearchOutputFormat.JSON, 100, SearchFlags.Default, 10)
+        {
+        }
     }
 } 
