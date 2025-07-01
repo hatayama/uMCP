@@ -3,33 +3,33 @@ import { infoToFile, warnToFile, errorToFile, debugToFile } from './log-to-file.
 
 /**
  * Development/Debug utility for testing MCP notification system
- * 
+ *
  * Purpose:
  * This class is used to test if MCP clients (like Cursor, Claude Desktop, etc.) properly
  * receive and handle the "notifications/tools/list_changed" notification. This notification
  * tells the client that the available tools have changed and they should refresh their tool list.
- * 
+ *
  * When to use:
  * - Testing if your MCP client properly receives notifications
  * - Debugging tool list refresh issues in IDEs
  * - Verifying that dynamic tool registration works correctly
  * - Troubleshooting when tools don't appear in the client after Unity command changes
- * 
+ *
  * How it works:
  * 1. Simulates tool count changes by toggling between 5 and 8 tools
  * 2. Sends "notifications/tools/list_changed" at regular intervals (default: 10 seconds)
  * 3. Logs all notification attempts for debugging
- * 
+ *
  * Usage example:
  * ```typescript
  * // In your server initialization:
  * const tester = new NotificationTester(server);
  * tester.startPeriodicTest(5000); // Send notification every 5 seconds
- * 
+ *
  * // To stop:
  * tester.stopPeriodicTest();
  * ```
- * 
+ *
  * Note: This is NOT used in production. It's purely for development/debugging purposes.
  */
 export class NotificationTester {
@@ -80,27 +80,26 @@ export class NotificationTester {
   private performNotificationTest(): void {
     // Toggle tool count between 5 and 8
     this.toolCount = this.toolCount === 5 ? 8 : 5;
-    
+
     const testData = {
       previousCount: this.toolCount === 5 ? 8 : 5,
       newCount: this.toolCount,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     debugToFile('Periodic Test: Tool Count Change', testData);
-    
+
     try {
       // Send tools/list_changed notification
       this.server.notification({
-        method: "notifications/tools/list_changed",
-        params: {}
+        method: 'notifications/tools/list_changed',
+        params: {},
       });
-      
+
       infoToFile('Sending notification: notifications/tools/list_changed', {
         simulatedToolCount: this.toolCount,
-        success: true
+        success: true,
       });
-      
     } catch (error) {
       errorToFile('Failed to send notification', error);
     }
@@ -112,7 +111,7 @@ export class NotificationTester {
   getStatus(): { isRunning: boolean; currentToolCount: number } {
     return {
       isRunning: this.isRunning,
-      currentToolCount: this.toolCount
+      currentToolCount: this.toolCount,
     };
   }
-} 
+}

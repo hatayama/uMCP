@@ -17,7 +17,7 @@ describe('MCP Stdio Integration Tests', () => {
 
   test('should not pollute stdout with console.log statements', (done: jest.DoneCallback) => {
     serverProcess = spawn('node', [serverPath], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     let stdoutData = '';
@@ -25,12 +25,14 @@ describe('MCP Stdio Integration Tests', () => {
 
     serverProcess.stdout?.on('data', (data) => {
       stdoutData += data.toString();
-      
+
       // Check if output contains console.log pollution
       const lines = stdoutData.split('\n');
       for (const line of lines) {
-        if (line.trim() === '') continue;
-        
+        if (line.trim() === '') {
+          continue;
+        }
+
         try {
           // Every line should be valid JSON
           JSON.parse(line);
@@ -63,9 +65,9 @@ describe('MCP Stdio Integration Tests', () => {
         capabilities: {},
         clientInfo: {
           name: 'test-client',
-          version: '1.0.0'
-        }
-      }
+          version: '1.0.0',
+        },
+      },
     };
 
     serverProcess.stdin?.write(JSON.stringify(initRequest) + '\n');
@@ -82,7 +84,7 @@ describe('MCP Stdio Integration Tests', () => {
 
   test('should handle tools/list request without stdout pollution', (done: jest.DoneCallback) => {
     serverProcess = spawn('node', [serverPath], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     let responseCount = 0;
@@ -90,14 +92,16 @@ describe('MCP Stdio Integration Tests', () => {
 
     serverProcess.stdout?.on('data', (data) => {
       const lines = data.toString().split('\n');
-      
+
       for (const line of lines) {
-        if (line.trim() === '') continue;
-        
+        if (line.trim() === '') {
+          continue;
+        }
+
         try {
           const response = JSON.parse(line);
           responseCount++;
-          
+
           if (response.result && response.result.tools) {
             hasToolsResponse = true;
           }
@@ -116,8 +120,8 @@ describe('MCP Stdio Integration Tests', () => {
       params: {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'test-client', version: '1.0.0' }
-      }
+        clientInfo: { name: 'test-client', version: '1.0.0' },
+      },
     };
 
     serverProcess.stdin?.write(JSON.stringify(initRequest) + '\n');
@@ -128,9 +132,9 @@ describe('MCP Stdio Integration Tests', () => {
         jsonrpc: '2.0',
         id: 2,
         method: 'tools/list',
-        params: {}
+        params: {},
       };
-      
+
       serverProcess.stdin?.write(JSON.stringify(toolsRequest) + '\n');
     }, 500);
 
@@ -143,4 +147,4 @@ describe('MCP Stdio Integration Tests', () => {
       }
     }, 3000);
   }, 10000);
-}); 
+});

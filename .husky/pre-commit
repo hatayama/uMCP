@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+cd Packages/src/.TypeScriptServer
+npx lint-staged

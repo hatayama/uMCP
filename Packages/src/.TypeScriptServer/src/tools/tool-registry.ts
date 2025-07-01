@@ -17,10 +17,10 @@ export class ToolRegistry {
 
   constructor(context: ToolContext) {
     this.registerDefaultTools(context);
-    
+
     // Setup event-based updates
     this.setupEventListener(context);
-    
+
     // Setup reconnect handler
     this.setupReconnectHandler(context);
   }
@@ -32,16 +32,14 @@ export class ToolRegistry {
     if (this.isEventListenerSetup) {
       return;
     }
-    
+
     // Listen for commandsChanged notifications from Unity
     context.unityClient.onNotification('commandsChanged', async (params: any) => {
-      
       try {
         await this.reloadDynamicTools(context);
-      } catch (error) {
-      }
+      } catch (error) {}
     });
-    
+
     this.isEventListenerSetup = true;
   }
 
@@ -50,13 +48,10 @@ export class ToolRegistry {
    */
   private setupReconnectHandler(context: ToolContext): void {
     context.unityClient.onReconnect(async () => {
-      
       try {
         await this.reloadDynamicTools(context);
-      } catch (error) {
-      }
+      } catch (error) {}
     });
-    
   }
 
   /**
@@ -64,7 +59,7 @@ export class ToolRegistry {
    */
   async initializeDynamicTools(context: ToolContext): Promise<void> {
     await this.loadDynamicTools(context);
-    
+
     // Temporarily disable polling to avoid connection issues
     // this.startPolling(context);
   }
@@ -76,11 +71,11 @@ export class ToolRegistry {
     // Register PingTool only during development (when NODE_ENV=development or ENABLE_PING_TOOL=true)
     const isDevelopment = process.env.NODE_ENV === 'development';
     const enablePingTool = process.env.ENABLE_PING_TOOL === 'true';
-    
+
     if (isDevelopment || enablePingTool) {
       this.register(new PingTool(context));
     }
-    
+
     this.register(new UnityPingTool(context));
     this.register(new GetAvailableCommandsTool(context));
   }
@@ -91,28 +86,30 @@ export class ToolRegistry {
   private async loadDynamicTools(context: ToolContext): Promise<void> {
     try {
       // Wait a bit for Unity to be ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const commands = await context.unityClient.getCommandDetails();
-      
+
       // Skip standard commands that are already registered as specific tools
       const standardCommands = ['ping', 'getavailablecommands'];
-      
+
       for (const command of commands) {
-        const commandName = (command as any).name || (command as any).Name;
-        const commandDescription = (command as any).description || (command as any).Description;
-        const parameterSchema = (command as any).parameterSchema || (command as any).ParameterSchema;
-        const displayDevelopmentOnly = (command as any).displayDevelopmentOnly || false;
-        
+        const commandName = command.name || command.Name;
+        const commandDescription = command.description || command.Description;
+        const parameterSchema = command.parameterSchema || command.ParameterSchema;
+        const displayDevelopmentOnly = command.displayDevelopmentOnly || false;
+
         if (commandName && !standardCommands.includes(commandName.toLowerCase())) {
-          const dynamicTool = new DynamicUnityCommandTool(context, commandName, commandDescription, parameterSchema);
+          const dynamicTool = new DynamicUnityCommandTool(
+            context,
+            commandName,
+            commandDescription,
+            parameterSchema,
+          );
           this.register(dynamicTool);
-          
         }
       }
-      
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -134,10 +131,10 @@ export class ToolRegistry {
    * Get definitions of all tools
    */
   getAllDefinitions(): ToolDefinition[] {
-    return Array.from(this.tools.values()).map(tool => ({
+    return Array.from(this.tools.values()).map((tool) => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: tool.inputSchema
+      inputSchema: tool.inputSchema,
     }));
   }
 
@@ -165,9 +162,10 @@ export class ToolRegistry {
   async reloadDynamicTools(context: ToolContext): Promise<void> {
     // Remove existing dynamic tools (exclude base tools)
     const baseToolNames = ['mcp-ping', 'ping', 'get-available-commands'];
-    const toolsToRemove = Array.from(this.tools.keys()).filter(name => 
-      !baseToolNames.includes(name));
-    
+    const toolsToRemove = Array.from(this.tools.keys()).filter(
+      (name) => !baseToolNames.includes(name),
+    );
+
     for (const toolName of toolsToRemove) {
       this.tools.delete(toolName);
     }
@@ -210,14 +208,13 @@ export class ToolRegistry {
     if (this.pollingInterval) {
       return; // Already polling
     }
-    
+
     const pollInterval = 5000; // Poll every 5 seconds
-    
+
     this.pollingInterval = setInterval(async () => {
       try {
         await this.checkForCommandChanges(context);
-      } catch (error) {
-      }
+      } catch (error) {}
     }, pollInterval);
   }
 
@@ -227,20 +224,19 @@ export class ToolRegistry {
   private async checkForCommandChanges(context: ToolContext): Promise<void> {
     try {
       const commands = await context.unityClient.getCommandDetails();
-      const currentCommandNames = commands.map((cmd: any) => 
-        (cmd.name || cmd.Name || '').toLowerCase()
-      ).filter((name: string) => name).sort();
-      
+      const currentCommandNames = commands
+        .map((cmd: any) => (cmd.name || cmd.Name || '').toLowerCase())
+        .filter((name: string) => name)
+        .sort();
+
       // Compare with last known commands
       const lastCommandNames = [...this.lastKnownCommands].sort();
       const hasChanged = JSON.stringify(currentCommandNames) !== JSON.stringify(lastCommandNames);
-      
+
       if (hasChanged) {
-        
         this.lastKnownCommands = currentCommandNames;
         await this.reloadDynamicTools(context);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }
-} 
+}
