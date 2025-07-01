@@ -5521,8 +5521,10 @@ var POLLING = {
 // src/utils/log-to-file.ts
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 var findProjectRoot = () => {
-  let currentDir = __dirname;
+  const __filename = fileURLToPath(import.meta.url);
+  let currentDir = path.dirname(__filename);
   let searchDepth = 0;
   const maxSearchDepth = 10;
   while (searchDepth < maxSearchDepth) {
@@ -5854,17 +5856,17 @@ var UnityClient = class {
   /**
    * Send client name to Unity for identification
    */
-  async setClientName() {
+  async setClientName(clientName) {
     if (!this.connected) {
       return;
     }
-    const clientName = this.detectClientName();
+    const finalClientName = clientName || this.detectClientName();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
       method: "setClientName",
       params: {
-        ClientName: clientName
+        ClientName: finalClientName
       }
     };
     try {
@@ -6210,6 +6212,15 @@ var DynamicUnityCommandTool = class extends BaseTool {
   }
 };
 
+// src/mcp-constants.ts
+var MCP_PROTOCOL_VERSION = "2024-11-05";
+var MCP_SERVER_NAME = "umcp-server";
+var TOOLS_LIST_CHANGED_CAPABILITY = true;
+var DEV_TOOL_PING_NAME = "mcp-ping";
+var DEV_TOOL_PING_DESCRIPTION = "TypeScript side health check (dev only)";
+var DEV_TOOL_COMMANDS_NAME = "get-unity-commands";
+var DEV_TOOL_COMMANDS_DESCRIPTION = "Get Unity commands list (dev only)";
+
 // package.json
 var package_default = {
   name: "umcp-server",
@@ -6295,6 +6306,7 @@ var SimpleMcpServer = class {
   dynamicTools = /* @__PURE__ */ new Map();
   isShuttingDown = false;
   isRefreshing = false;
+  clientName = "MCP Client";
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     infoToFile("Simple Unity MCP Server Starting");
@@ -6302,13 +6314,13 @@ var SimpleMcpServer = class {
     infoToFile(`Development mode: ${this.isDevelopment}`);
     this.server = new Server(
       {
-        name: "umcp-server",
+        name: MCP_SERVER_NAME,
         version: package_default.version
       },
       {
         capabilities: {
           tools: {
-            listChanged: true
+            listChanged: TOOLS_LIST_CHANGED_CAPABILITY
           }
         }
       }
@@ -6326,6 +6338,12 @@ var SimpleMcpServer = class {
   async initializeDynamicTools() {
     try {
       await this.unityClient.ensureConnected();
+      if (!this.clientName) {
+        const fallbackName = process.env.MCP_CLIENT_NAME || "MCP Client";
+        this.clientName = fallbackName;
+        await this.unityClient.setClientName(fallbackName);
+        infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
+      }
       const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
       const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
@@ -6384,6 +6402,28 @@ var SimpleMcpServer = class {
     }
   }
   setupHandlers() {
+    this.server.setRequestHandler(InitializeRequestSchema, async (request) => {
+      const clientInfo = request.params?.clientInfo;
+      if (clientInfo?.name) {
+        this.clientName = clientInfo.name;
+        infoToFile(`[Simple MCP] Client name received: ${this.clientName}`);
+        if (this.unityClient) {
+          void this.unityClient.setClientName(this.clientName);
+        }
+      }
+      return {
+        protocolVersion: MCP_PROTOCOL_VERSION,
+        capabilities: {
+          tools: {
+            listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+          }
+        },
+        serverInfo: {
+          name: MCP_SERVER_NAME,
+          version: package_default.version
+        }
+      };
+    });
     this.server.setRequestHandler(ListToolsRequestSchema, () => {
       const tools = [];
       for (const [toolName, dynamicTool] of this.dynamicTools) {
@@ -6395,8 +6435,8 @@ var SimpleMcpServer = class {
       }
       if (this.isDevelopment) {
         tools.push({
-          name: "mcp-ping",
-          description: "TypeScript side health check (dev only)",
+          name: DEV_TOOL_PING_NAME,
+          description: DEV_TOOL_PING_DESCRIPTION,
           inputSchema: {
             type: "object",
             properties: {
@@ -6409,8 +6449,8 @@ var SimpleMcpServer = class {
           }
         });
         tools.push({
-          name: "get-unity-commands",
-          description: "Get Unity commands list (dev only)",
+          name: DEV_TOOL_COMMANDS_NAME,
+          description: DEV_TOOL_COMMANDS_DESCRIPTION,
           inputSchema: {
             type: "object",
             properties: {},
@@ -6430,12 +6470,12 @@ var SimpleMcpServer = class {
           return await dynamicTool.execute(args);
         }
         switch (name) {
-          case "mcp-ping":
+          case DEV_TOOL_PING_NAME:
             if (this.isDevelopment) {
               return await this.handlePing(args);
             }
             throw new Error("Development tool not available in production");
-          case "get-unity-commands":
+          case DEV_TOOL_COMMANDS_NAME:
             if (this.isDevelopment) {
               return await this.handleGetAvailableCommands();
             }

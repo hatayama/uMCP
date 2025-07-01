@@ -229,13 +229,13 @@ namespace io.github.hatayama.uMCP
                 showDebugCallback: () =>
                 {
                     string debugInfo = McpServerController.GetDetailedServerStatus();
-                    Debug.Log($"MCP Server Debug Info:\n{debugInfo}");
+                    McpLogger.LogInfo($"MCP Server Debug Info:\n{debugInfo}");
                 },
                 notifyChangesCallback: () => NotifyCommandChanges(),
                 rebuildCallback: () =>
                 {
                     // TypeScript rebuild functionality moved to View layer
-                    Debug.Log("TypeScript rebuild not implemented in this version");
+                    McpLogger.LogInfo("TypeScript rebuild not implemented in this version");
                 });
 #endif
 

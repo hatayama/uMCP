@@ -230,20 +230,20 @@ export class UnityClient {
   /**
    * Send client name to Unity for identification
    */
-  async setClientName(): Promise<void> {
+  async setClientName(clientName?: string): Promise<void> {
     if (!this.connected) {
       return; // Skip if not connected
     }
 
-    // Detect client name from environment or process
-    const clientName = this.detectClientName();
+    // Use provided client name or fallback to environment detection
+    const finalClientName = clientName || this.detectClientName();
 
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
       method: 'setClientName',
       params: {
-        ClientName: clientName,
+        ClientName: finalClientName,
       },
     };
 
