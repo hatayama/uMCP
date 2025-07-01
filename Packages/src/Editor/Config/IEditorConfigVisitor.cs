@@ -39,6 +39,12 @@ namespace io.github.hatayama.uMCP
         /// <returns>Configuration result for Gemini CLI</returns>
         T VisitGeminiCLI();
 
+        /// <summary>
+        /// Visits Windsurf editor configuration.
+        /// </summary>
+        /// <returns>Configuration result for Windsurf</returns>
+        T VisitWindsurf();
+
 #if UMCP_DEBUG
         /// <summary>
         /// Visits MCP Inspector configuration (development mode only).

@@ -104,6 +104,15 @@ namespace io.github.hatayama.uMCP
                 );
             }
 
+            public EditorConfig VisitWindsurf()
+            {
+                return new EditorConfig(
+                    McpConstants.CLIENT_NAME_WINDSURF,
+                    UnityMcpPathResolver.GetWindsurfConfigPath(),
+                    UnityMcpPathResolver.GetWindsurfConfigDirectory()
+                );
+            }
+
 #if UMCP_DEBUG
             public EditorConfig VisitMcpInspector()
             {
@@ -139,6 +148,7 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.ClaudeCode => visitor.VisitClaudeCode(),
                 McpEditorType.VSCode => visitor.VisitVSCode(),
                 McpEditorType.GeminiCLI => visitor.VisitGeminiCLI(),
+                McpEditorType.Windsurf => visitor.VisitWindsurf(),
 #if UMCP_DEBUG
                 McpEditorType.McpInspector => visitor.VisitMcpInspector(),
 #endif
