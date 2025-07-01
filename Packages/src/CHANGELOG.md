@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.16.0](https://github.com/hatayama/uMCP/compare/v0.15.0...v0.16.0) (2025-07-01)
+
+
+### Features
+
+* add Windsurf editor support and refactor hardcoded .codeium paths ([#102](https://github.com/hatayama/uMCP/issues/102)) ([a51969f](https://github.com/hatayama/uMCP/commit/a51969fb1aa063119a740b7f706b0eaeb29bd2cd))
+* implement dynamic client naming using MCP protocol ([#99](https://github.com/hatayama/uMCP/issues/99)) ([7ed004c](https://github.com/hatayama/uMCP/commit/7ed004c9c1b71553abfe662abff2635296c4e7c7))
+
 ## [0.15.0](https://github.com/hatayama/uMCP/compare/v0.14.0...v0.15.0) (2025-07-01)
 
 
