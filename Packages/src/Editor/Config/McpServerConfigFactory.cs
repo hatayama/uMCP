@@ -19,8 +19,8 @@ namespace io.github.hatayama.uMCP
         {
             Dictionary<string, string> env = new Dictionary<string, string>
             {
-                { McpConstants.UNITY_TCP_PORT_ENV_KEY, port.ToString() },
-                { McpConstants.ENV_KEY_MCP_CLIENT_NAME, McpConstants.GetClientNameForEditor(editorType) }
+                { McpConstants.UNITY_TCP_PORT_ENV_KEY, port.ToString() }
+                // MCP_CLIENT_NAME removed - now using clientInfo.name from MCP protocol
             };
 
             return new McpServerConfigData(

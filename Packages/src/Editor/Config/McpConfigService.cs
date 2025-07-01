@@ -161,9 +161,8 @@ namespace io.github.hatayama.uMCP
             updatedEnv.Remove(McpConstants.ENV_KEY_NODE_ENV);
             updatedEnv.Remove(McpConstants.ENV_KEY_MCP_DEBUG);
             
-            // Ensure MCP_CLIENT_NAME is set correctly for this editor type
-            string clientName = McpConstants.GetClientNameForEditor(_editorType);
-            updatedEnv[McpConstants.ENV_KEY_MCP_CLIENT_NAME] = clientName;
+            // Remove MCP_CLIENT_NAME - now using clientInfo.name from MCP protocol
+            updatedEnv.Remove(McpConstants.ENV_KEY_MCP_CLIENT_NAME);
             
             // Add NODE_ENV for development mode (simplified approach)
             if (developmentMode)

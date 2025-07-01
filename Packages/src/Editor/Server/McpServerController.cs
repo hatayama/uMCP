@@ -120,6 +120,7 @@ namespace io.github.hatayama.uMCP
                 SessionState.SetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, true); // Set the post-compilation flag.
                 SessionState.SetBool(McpConstants.SESSION_KEY_RECONNECTING, true); // Set the reconnecting flag.
                 SessionState.SetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, true); // Set the UI display flag.
+                EditorPrefs.SetBool(McpConstants.EDITOR_PREFS_SHOW_RECONNECTING_UI, true); // Also save to EditorPrefs for persistence
                 
                 // Force-save the communication log as well.
                 McpCommunicationLogger.SaveToSessionState();
@@ -473,6 +474,7 @@ namespace io.github.hatayama.uMCP
             {
                 McpLogger.LogDebug("[RECONNECTION UI] Timeout reached, clearing UI display flag");
                 SessionState.EraseBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI);
+                EditorPrefs.DeleteKey(McpConstants.EDITOR_PREFS_SHOW_RECONNECTING_UI); // Also clear EditorPrefs
             }
         }
         
@@ -494,6 +496,7 @@ namespace io.github.hatayama.uMCP
             if (wasShowingUI)
             {
                 SessionState.EraseBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI);
+                EditorPrefs.DeleteKey(McpConstants.EDITOR_PREFS_SHOW_RECONNECTING_UI); // Also clear EditorPrefs
                 McpLogger.LogDebug("[RECONNECTION UI] Client connected, cleared UI display flag");
             }
         }

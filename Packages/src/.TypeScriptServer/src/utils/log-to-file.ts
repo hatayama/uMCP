@@ -27,11 +27,13 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 // Create log file path with timestamp
 // Find project root by looking for specific Unity project files
 const findProjectRoot = (): string => {
-  let currentDir = __dirname;
+  const __filename = fileURLToPath(import.meta.url);
+  let currentDir = path.dirname(__filename);
   let searchDepth = 0;
   const maxSearchDepth = 10; // Prevent infinite loops
 

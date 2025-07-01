@@ -166,17 +166,10 @@ export class UnityClient {
     return new Promise((resolve, reject) => {
       this.socket = new net.Socket();
 
-      this.socket.connect(this.port, this.host, async () => {
+      this.socket.connect(this.port, this.host, () => {
         this._connected = true;
 
-        // Send client name to Unity for identification
-        try {
-          await this.setClientName();
-        } catch (error) {
-          errorToFile('[UnityClient] Failed to set client name:', error);
-        }
-
-        // Notify reconnect handlers
+        // Notify reconnect handlers (this will handle client name setting)
         this.reconnectHandlers.forEach((handler) => {
           try {
             handler();
@@ -230,20 +223,20 @@ export class UnityClient {
   /**
    * Send client name to Unity for identification
    */
-  async setClientName(): Promise<void> {
+  async setClientName(clientName?: string): Promise<void> {
     if (!this.connected) {
       return; // Skip if not connected
     }
 
-    // Detect client name from environment or process
-    const clientName = this.detectClientName();
+    // Use provided client name or fallback to environment detection
+    const finalClientName = clientName || this.detectClientName();
 
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
       method: 'setClientName',
       params: {
-        ClientName: clientName,
+        ClientName: finalClientName,
       },
     };
 
