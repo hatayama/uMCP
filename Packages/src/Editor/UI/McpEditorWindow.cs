@@ -289,8 +289,15 @@ namespace io.github.hatayama.uMCP
         private ConnectedToolsData CreateConnectedToolsData()
         {
             bool isServerRunning = McpServerController.IsServerRunning;
-            bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
             var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
+            
+            // Check both SessionState and EditorPrefs for reconnecting UI flag
+            bool sessionReconnecting = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            bool editorPrefsReconnecting = EditorPrefs.GetBool(McpConstants.EDITOR_PREFS_SHOW_RECONNECTING_UI, false);
+            bool hasClients = connectedClients != null && connectedClients.Count > 0;
+            
+            // Don't show reconnecting if clients are already connected
+            bool showReconnectingUI = (sessionReconnecting || editorPrefsReconnecting) && !hasClients;
 
             return new ConnectedToolsData(connectedClients, _model.UI.ShowConnectedTools, isServerRunning, showReconnectingUI);
         }

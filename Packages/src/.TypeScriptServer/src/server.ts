@@ -82,12 +82,16 @@ class SimpleMcpServer {
     try {
       await this.unityClient.ensureConnected();
 
-      // Set fallback client name only if still using default value or not set
-      if (!this.clientName || this.clientName === DEFAULT_CLIENT_NAME) {
-        const fallbackName = process.env.MCP_CLIENT_NAME || DEFAULT_CLIENT_NAME;
-        this.clientName = fallbackName;
-        await this.unityClient.setClientName(fallbackName);
-        infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
+      // Set fallback client name only if still using default value (empty string) or not set
+      if (!this.clientName) {
+        const fallbackName = process.env.MCP_CLIENT_NAME;
+        if (fallbackName) {
+          this.clientName = fallbackName;
+          await this.unityClient.setClientName(fallbackName);
+          infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
+        } else {
+          infoToFile(`[Simple MCP] No client name set, waiting for initialize request`);
+        }
       } else {
         // Send the already set client name to Unity
         await this.unityClient.setClientName(this.clientName);

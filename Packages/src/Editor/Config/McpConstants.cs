@@ -70,6 +70,9 @@ namespace io.github.hatayama.uMCP
         public const string SESSION_KEY_RECONNECTING = "uMCP.Reconnecting";
         public const string SESSION_KEY_SHOW_RECONNECTING_UI = "uMCP.ShowReconnectingUI";
         
+        // EditorPrefs keys
+        public const string EDITOR_PREFS_SHOW_RECONNECTING_UI = "uMCP_ShowReconnectingUI";
+        
         /// <summary>
         /// Gets the client name for the specified editor type
         /// </summary>

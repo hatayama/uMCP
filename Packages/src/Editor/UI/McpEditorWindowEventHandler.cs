@@ -119,6 +119,9 @@ namespace io.github.hatayama.uMCP
                 }
             }
             
+            // Clear reconnecting flags when client connects
+            McpServerController.ClearReconnectingFlag();
+            
             // Mark that repaint is needed since events are called from background thread
             _model.RequestRepaint();
 

@@ -22,4 +22,4 @@ export const DEV_TOOL_COMMANDS_NAME = 'get-unity-commands';
 export const DEV_TOOL_COMMANDS_DESCRIPTION = 'Get Unity commands list (dev only)';
 
 // Client Name Constants
-export const DEFAULT_CLIENT_NAME = 'MCP Client';
+export const DEFAULT_CLIENT_NAME = ''; // Empty string to avoid showing default names

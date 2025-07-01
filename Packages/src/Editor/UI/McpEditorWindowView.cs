@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace io.github.hatayama.uMCP
 {
@@ -186,19 +187,28 @@ namespace io.github.hatayama.uMCP
             if (data.ShowReconnectingUI)
             {
                 EditorGUILayout.HelpBox(McpUIConstants.RECONNECTING_MESSAGE, MessageType.Info);
-                return;
             }
-            
-            if (data.Clients != null && data.Clients.Count > 0)
+            else if (data.Clients != null && data.Clients.Count > 0)
             {
-                foreach (ConnectedClient client in data.Clients)
+                // Filter out clients with default or unknown names
+                var validClients = data.Clients.Where(client => IsValidClientName(client.ClientName)).ToList();
+                
+                if (validClients.Count > 0)
                 {
-                    DrawConnectedClientItem(client);
+                    foreach (ConnectedClient client in validClients)
+                    {
+                        DrawConnectedClientItem(client);
+                    }
+                }
+                else
+                {
+                    // All clients have invalid names, show as if no clients
+                    EditorGUILayout.HelpBox("No connected tools found.", MessageType.Info);
                 }
             }
             else
             {
-                EditorGUILayout.HelpBox("No LLM tools currently connected.", MessageType.Info);
+                EditorGUILayout.HelpBox("No connected tools found.", MessageType.Info);
             }
         }
 
@@ -508,5 +518,14 @@ namespace io.github.hatayama.uMCP
             EditorGUILayout.EndScrollView();
         }
 #endif
+
+        /// <summary>
+        /// Check if client name is valid for display (not empty)
+        /// </summary>
+        private bool IsValidClientName(string clientName)
+        {
+            // Only show clients with non-empty names (default is empty string)
+            return !string.IsNullOrEmpty(clientName);
+        }
     }
 } 

@@ -6215,7 +6215,7 @@ var DEV_TOOL_PING_NAME = "mcp-ping";
 var DEV_TOOL_PING_DESCRIPTION = "TypeScript side health check (dev only)";
 var DEV_TOOL_COMMANDS_NAME = "get-unity-commands";
 var DEV_TOOL_COMMANDS_DESCRIPTION = "Get Unity commands list (dev only)";
-var DEFAULT_CLIENT_NAME = "MCP Client";
+var DEFAULT_CLIENT_NAME = "";
 
 // package.json
 var package_default = {
@@ -6334,11 +6334,15 @@ var SimpleMcpServer = class {
   async initializeDynamicTools() {
     try {
       await this.unityClient.ensureConnected();
-      if (!this.clientName || this.clientName === DEFAULT_CLIENT_NAME) {
-        const fallbackName = process.env.MCP_CLIENT_NAME || DEFAULT_CLIENT_NAME;
-        this.clientName = fallbackName;
-        await this.unityClient.setClientName(fallbackName);
-        infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
+      if (!this.clientName) {
+        const fallbackName = process.env.MCP_CLIENT_NAME;
+        if (fallbackName) {
+          this.clientName = fallbackName;
+          await this.unityClient.setClientName(fallbackName);
+          infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
+        } else {
+          infoToFile(`[Simple MCP] No client name set, waiting for initialize request`);
+        }
       } else {
         await this.unityClient.setClientName(this.clientName);
         infoToFile(`[Simple MCP] Client name already set, sending to Unity: ${this.clientName}`);
