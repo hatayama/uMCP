@@ -6218,6 +6218,7 @@ var package_default = {
   main: "dist/server.bundle.js",
   type: "module",
   scripts: {
+    prepare: "husky",
     build: "npm run build:bundle",
     "build:bundle": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
     "build:production": "UMCP_PRODUCTION=true NODE_ENV=production esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
@@ -6249,6 +6250,12 @@ var package_default = {
     prepublishOnly: "npm run build",
     postinstall: "npm run build"
   },
+  "lint-staged": {
+    "src/**/*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
   keywords: [
     "mcp",
     "unity",
@@ -6271,7 +6278,9 @@ var package_default = {
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     jest: "^30.0.0",
-    prettier: "^3.3.3",
+    prettier: "^3.5.0",
+    husky: "^9.0.0",
+    "lint-staged": "^15.0.0",
     "ts-jest": "^29.4.0",
     tsx: "4.20.3",
     typescript: "5.8.3"
