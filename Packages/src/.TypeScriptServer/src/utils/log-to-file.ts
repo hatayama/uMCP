@@ -1,24 +1,24 @@
 /**
  * File-based Logger for MCP Server
- * 
+ *
  * Why file output?
  * MCP (Model Context Protocol) servers communicate with clients via JSON-RPC over stdout/stdin.
  * This means we CANNOT use console.log() or any stdout output for debugging, as it would
  * corrupt the JSON-RPC communication channel and cause the MCP connection to fail.
- * 
+ *
  * Even stderr (console.error) can be problematic in some environments, so file-based
  * logging is the safest approach for debugging MCP servers.
- * 
+ *
  * Where are logs written?
  * Logs are written to: {project_root}/UmcpLogs/mcp-debug-YYYY-MM-DD_HH-MM-SS.log
  * - Each server session creates a new timestamped log file
  * - Directory is created automatically on first log write
  * - Logs are only written when MCP_DEBUG environment variable is set
- * 
+ *
  * Usage:
  * Set MCP_DEBUG=true when starting the server to enable logging
  * Example: MCP_DEBUG=true npm start
- * 
+ *
  * Log functions:
  * - mcpDebug(): Debug-level messages
  * - mcpInfo(): Information messages
@@ -27,7 +27,6 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 
 // Create log file path with timestamp
 // Find project root by looking for specific Unity project files
@@ -35,38 +34,34 @@ const findProjectRoot = (): string => {
   let currentDir = __dirname;
   let searchDepth = 0;
   const maxSearchDepth = 10; // Prevent infinite loops
-  
+
   while (searchDepth < maxSearchDepth) {
     const parentDir = path.dirname(currentDir);
-    
+
     // Check if we've reached the root directory
     if (currentDir === parentDir) {
       break;
     }
-    
+
     // Check for Unity project indicators
-    const unityIndicators = [
-      'ProjectSettings',
-      'Assets', 
-      'Packages'
-    ];
-    
-    const hasUnityFiles = unityIndicators.every(indicator => {
+    const unityIndicators = ['ProjectSettings', 'Assets', 'Packages'];
+
+    const hasUnityFiles = unityIndicators.every((indicator) => {
       try {
         return fs.existsSync(path.join(currentDir, indicator));
       } catch {
         return false;
       }
     });
-    
+
     if (hasUnityFiles) {
       return currentDir;
     }
-    
+
     currentDir = parentDir;
     searchDepth++;
   }
-  
+
   // Fallback to current working directory if project root not found
   return process.cwd();
 };
@@ -88,7 +83,7 @@ const writeToFile = (message: string): void => {
       fs.mkdirSync(logDir, { recursive: true });
       directoryCreated = true;
     }
-    
+
     const timestamp = new Date().toISOString();
     fs.appendFileSync(logFile, `${timestamp} ${message}\n`);
   } catch (error) {
@@ -100,11 +95,11 @@ const writeToFile = (message: string): void => {
  * MCP development debug log
  * Only outputs to file when MCP_DEBUG environment variable is set
  */
-export const debugToFile = (...args: any[]): void => {
+export const debugToFile = (...args: unknown[]): void => {
   if (process.env.MCP_DEBUG) {
-    const message = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' ');
+    const message = args
+      .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+      .join(' ');
     writeToFile(`[MCP-DEBUG] ${message}`);
   }
 };
@@ -112,11 +107,11 @@ export const debugToFile = (...args: any[]): void => {
 /**
  * MCP development information log
  */
-export const infoToFile = (...args: any[]): void => {
+export const infoToFile = (...args: unknown[]): void => {
   if (process.env.MCP_DEBUG) {
-    const message = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' ');
+    const message = args
+      .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+      .join(' ');
     writeToFile(`[MCP-INFO] ${message}`);
   }
 };
@@ -124,11 +119,11 @@ export const infoToFile = (...args: any[]): void => {
 /**
  * MCP development warning log
  */
-export const warnToFile = (...args: any[]): void => {
+export const warnToFile = (...args: unknown[]): void => {
   if (process.env.MCP_DEBUG) {
-    const message = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' ');
+    const message = args
+      .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+      .join(' ');
     writeToFile(`[MCP-WARN] ${message}`);
   }
 };
@@ -136,11 +131,11 @@ export const warnToFile = (...args: any[]): void => {
 /**
  * MCP development error log
  */
-export const errorToFile = (...args: any[]): void => {
+export const errorToFile = (...args: unknown[]): void => {
   if (process.env.MCP_DEBUG) {
-    const message = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' ');
+    const message = args
+      .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+      .join(' ');
     writeToFile(`[MCP-ERROR] ${message}`);
   }
-}; 
+};

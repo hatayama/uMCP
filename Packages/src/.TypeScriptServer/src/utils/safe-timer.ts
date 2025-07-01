@@ -1,9 +1,9 @@
 /**
  * Safe Timer Utility - Prevents orphaned processes by ensuring automatic cleanup
- * 
+ *
  * This class provides a foolproof way to manage timers that automatically
  * clean themselves up when the object is destroyed or when the process exits.
- * 
+ *
  * Usage:
  *   const timer = new SafeTimer(() => console.log('tick'), 1000);
  *   // Timer automatically cleans up when timer goes out of scope
@@ -13,7 +13,7 @@
 export class SafeTimer {
   private static activeTimers = new Set<SafeTimer>();
   private static cleanupHandlersInstalled = false;
-  
+
   private timerId: NodeJS.Timeout | null = null;
   private isActive = false;
   private callback: () => void;
@@ -24,10 +24,10 @@ export class SafeTimer {
     this.callback = callback;
     this.delay = delay;
     this.isInterval = isInterval;
-    
+
     // Install global cleanup handlers on first timer creation
     SafeTimer.installCleanupHandlers();
-    
+
     this.start();
   }
 
@@ -44,7 +44,7 @@ export class SafeTimer {
     } else {
       this.timerId = setTimeout(this.callback, this.delay);
     }
-    
+
     this.isActive = true;
     SafeTimer.activeTimers.add(this);
   }
@@ -62,7 +62,7 @@ export class SafeTimer {
     } else {
       clearTimeout(this.timerId);
     }
-    
+
     this.timerId = null;
     this.isActive = false;
     SafeTimer.activeTimers.delete(this);
@@ -84,8 +84,8 @@ export class SafeTimer {
     }
 
     // Clean up all active timers when process exits
-    const cleanup = () => {
-      console.log(`[SafeTimer] Cleaning up ${SafeTimer.activeTimers.size} active timers`);
+    const cleanup = (): void => {
+      // console.log(`[SafeTimer] Cleaning up ${SafeTimer.activeTimers.size} active timers`);
       SafeTimer.cleanupAll();
     };
 

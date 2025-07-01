@@ -16,14 +16,14 @@ export class UnityPingTool extends BaseTool {
       message: {
         type: 'string',
         description: 'Message to send to Unity',
-        default: DEFAULT_MESSAGES.UNITY_PING
-      }
-    }
+        default: DEFAULT_MESSAGES.UNITY_PING,
+      },
+    },
   };
 
   protected validateArgs(args: unknown) {
     const schema = z.object({
-      message: z.string().default(DEFAULT_MESSAGES.UNITY_PING)
+      message: z.string().default(DEFAULT_MESSAGES.UNITY_PING),
     });
     return schema.parse(args || {});
   }
@@ -34,25 +34,25 @@ export class UnityPingTool extends BaseTool {
 
     const response = await this.context.unityClient.ping(args.message);
     const port = process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT;
-    
+
     // Debug: Output response object details
     debugToFile('[UnityPingTool] Raw response:', response);
     debugToFile('[UnityPingTool] Response type:', typeof response);
     debugToFile('[UnityPingTool] Response keys:', response ? Object.keys(response) : 'null');
-    
+
     // Handle the new BaseCommandResponse format with timing info
     let responseText = '';
     if (typeof response === 'object' && response !== null) {
-      const respObj = response as any;
+      const respObj = response;
       debugToFile('[UnityPingTool] Response object properties:', {
         Message: respObj.Message,
         StartedAt: respObj.StartedAt,
         EndedAt: respObj.EndedAt,
-        ExecutionTimeMs: respObj.ExecutionTimeMs
+        ExecutionTimeMs: respObj.ExecutionTimeMs,
       });
-      
+
       responseText = `Message: ${respObj.Message || 'No message'}`;
-      
+
       // Add timing information if available
       if (respObj.StartedAt && respObj.EndedAt && respObj.ExecutionTimeMs !== undefined) {
         responseText += `
@@ -63,7 +63,7 @@ Execution Time: ${respObj.ExecutionTimeMs}ms`;
     } else {
       responseText = String(response);
     }
-    
+
     return `Unity Ping Success!
 Sent: ${args.message}
 Response: ${responseText}
@@ -79,9 +79,9 @@ Connection: TCP/IP established on port ${port}`;
           text: `Unity Ping Failed!
 Error: ${errorMessage}
 
-Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`
-        }
-      ]
+Make sure Unity MCP Bridge is running (Window > Unity MCP > Start Server)`,
+        },
+      ],
     };
   }
-} 
+}

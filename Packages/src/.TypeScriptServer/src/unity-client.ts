@@ -1,13 +1,5 @@
 import * as net from 'net';
-import { 
-  UNITY_CONNECTION, 
-  JSONRPC, 
-  TIMEOUTS, 
-  LOG_CONFIG, 
-  TEST_CONFIG, 
-  ERROR_MESSAGES,
-  POLLING 
-} from './constants.js';
+import { UNITY_CONNECTION, JSONRPC, TIMEOUTS, ERROR_MESSAGES, POLLING } from './constants.js';
 import { errorToFile, warnToFile } from './utils/log-to-file.js';
 import { SafeTimer, safeSetInterval, safeSetTimeout } from './utils/safe-timer.js';
 
@@ -24,9 +16,12 @@ export class UnityClient {
   private readonly port: number;
   private readonly host: string = UNITY_CONNECTION.DEFAULT_HOST;
   private notificationHandlers: Map<string, (params: unknown) => void> = new Map();
-  private pendingRequests: Map<number, { resolve: (value: unknown) => void, reject: (reason: unknown) => void }> = new Map();
+  private pendingRequests: Map<
+    number,
+    { resolve: (value: unknown) => void; reject: (reason: unknown) => void }
+  > = new Map();
   private reconnectHandlers: Set<() => void> = new Set();
-  
+
   // Polling system - using SafeTimer for automatic cleanup
   private pollingTimer: SafeTimer | null = null;
   private onReconnectedCallback: (() => void) | null = null;
@@ -73,11 +68,11 @@ export class UnityClient {
    */
   private handleIncomingData(data: string): void {
     try {
-      const lines = data.split('\n').filter(line => line.trim());
-      
+      const lines = data.split('\n').filter((line) => line.trim());
+
       for (const line of lines) {
         const message = JSON.parse(line);
-        
+
         // Check if this is a notification (no id field)
         if (message.method && !message.hasOwnProperty('id')) {
           this.handleNotification(message);
@@ -87,7 +82,7 @@ export class UnityClient {
         }
       }
     } catch (error) {
-        errorToFile('[UnityClient] Error parsing incoming data:', error);
+      errorToFile('[UnityClient] Error parsing incoming data:', error);
     }
   }
 
@@ -96,8 +91,7 @@ export class UnityClient {
    */
   private handleNotification(notification: { method: string; params: unknown }): void {
     const { method, params } = notification;
-    
-    
+
     const handler = this.notificationHandlers.get(method);
     if (handler) {
       try {
@@ -112,13 +106,17 @@ export class UnityClient {
   /**
    * Handle response from Unity
    */
-  private handleResponse(response: { id: number; error?: { message: string }; result?: unknown }): void {
+  private handleResponse(response: {
+    id: number;
+    error?: { message: string };
+    result?: unknown;
+  }): void {
     const { id } = response;
     const pending = this.pendingRequests.get(id);
-    
+
     if (pending) {
       this.pendingRequests.delete(id);
-      
+
       if (response.error) {
         pending.reject(new Error(response.error.message || 'Unknown error'));
       } else {
@@ -167,26 +165,26 @@ export class UnityClient {
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.socket = new net.Socket();
-      
+
       this.socket.connect(this.port, this.host, async () => {
         this._connected = true;
-        
+
         // Send client name to Unity for identification
         try {
           await this.setClientName();
         } catch (error) {
           errorToFile('[UnityClient] Failed to set client name:', error);
         }
-        
+
         // Notify reconnect handlers
-        this.reconnectHandlers.forEach(handler => {
+        this.reconnectHandlers.forEach((handler) => {
           try {
             handler();
           } catch (error) {
             errorToFile('[UnityClient] Error in reconnect handler:', error);
           }
         });
-        
+
         resolve();
       });
 
@@ -245,13 +243,13 @@ export class UnityClient {
       id: this.generateId(),
       method: 'setClientName',
       params: {
-        ClientName: clientName
-      }
+        ClientName: clientName,
+      },
     };
 
     try {
       const response = await this.sendRequest(request);
-      
+
       if (response.error) {
         errorToFile(`Failed to set client name: ${response.error.message}`);
       }
@@ -273,12 +271,12 @@ export class UnityClient {
       id: this.generateId(),
       method: 'ping',
       params: {
-        Message: message  // Updated to match PingSchema property name
-      }
+        Message: message, // Updated to match PingSchema property name
+      },
     };
 
     const response = await this.sendRequest(request);
-    
+
     if (response.error) {
       throw new Error(`Unity error: ${response.error.message}`);
     }
@@ -292,16 +290,16 @@ export class UnityClient {
    */
   async getAvailableCommands(): Promise<string[]> {
     await this.ensureConnected();
-    
+
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: "getAvailableCommands",
-      params: {}
+      method: 'getAvailableCommands',
+      params: {},
     };
 
     const response = await this.sendRequest(request);
-    
+
     if (response.error) {
       throw new Error(`Failed to get available commands: ${response.error.message}`);
     }
@@ -312,43 +310,48 @@ export class UnityClient {
   /**
    * Get command details from Unity
    */
-  async getCommandDetails(): Promise<Array<{name: string, description: string, parameterSchema?: any}>> {
+  async getCommandDetails(): Promise<
+    Array<{ name: string; description: string; parameterSchema?: any }>
+  > {
     await this.ensureConnected();
-    
+
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: "getCommandDetails",
-      params: {}
+      method: 'getCommandDetails',
+      params: {},
     };
 
     const response = await this.sendRequest(request);
-    
+
     if (response.error) {
       throw new Error(`Failed to get command details: ${response.error.message}`);
     }
 
-    return (response.result as Array<{name: string, description: string, parameterSchema?: any}>) || [];
+    return (
+      (response.result as Array<{ name: string; description: string; parameterSchema?: any }>) || []
+    );
   }
 
   /**
    * Execute any Unity command dynamically
    */
-  async executeCommand(commandName: string, params: Record<string, unknown> = {}): Promise<unknown> {
+  async executeCommand(
+    commandName: string,
+    params: Record<string, unknown> = {},
+  ): Promise<unknown> {
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
       method: commandName,
-      params: params
+      params: params,
     };
 
-
     // Determine timeout based on command type and parameters
-    let timeoutMs = this.getTimeoutForCommand(commandName, params);
-    
+    const timeoutMs = this.getTimeoutForCommand(commandName, params);
+
     const response = await this.sendRequest(request, timeoutMs);
-    
-    
+
     if (response.error) {
       throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
     }
@@ -362,7 +365,11 @@ export class UnityClient {
    */
   private getTimeoutForCommand(commandName: string, params: Record<string, unknown>): number {
     // Check if TimeoutSeconds parameter is provided (from BaseCommandSchema)
-    if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === 'number' && params.TimeoutSeconds > 0) {
+    if (
+      params?.TimeoutSeconds &&
+      typeof params.TimeoutSeconds === 'number' &&
+      params.TimeoutSeconds > 0
+    ) {
       // Add buffer to Unity timeout to ensure Unity timeout triggers first
       const calculatedTimeout = (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1000;
       return calculatedTimeout;
@@ -394,11 +401,13 @@ export class UnityClient {
   /**
    * Send request and wait for response
    */
-  private async sendRequest(request: { id: number; method: string; [key: string]: unknown }, timeoutMs?: number): Promise<{ id: number; error?: { message: string }; result?: unknown }> {
+  private async sendRequest(
+    request: { id: number; method: string; [key: string]: unknown },
+    timeoutMs?: number,
+  ): Promise<{ id: number; error?: { message: string }; result?: unknown }> {
     return new Promise((resolve, reject) => {
       // Use provided timeout or default to PING timeout
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
-      
 
       // Use SafeTimer for automatic cleanup to prevent orphaned processes
       const timeoutTimer = safeSetTimeout(() => {
@@ -415,7 +424,7 @@ export class UnityClient {
         reject: (error) => {
           timeoutTimer.stop(); // Clean up timer
           reject(error);
-        }
+        },
       });
 
       // Send the request
@@ -425,21 +434,21 @@ export class UnityClient {
 
   /**
    * Disconnect
-   * 
+   *
    * IMPORTANT: Always clean up timers when disconnecting!
    * Failure to properly clean up timers can cause orphaned processes
    * that prevent Node.js from exiting gracefully.
    */
   disconnect(): void {
     this.stopPolling(); // Stop polling when manually disconnecting
-    
+
     // Clean up all pending requests and their timers
     // CRITICAL: This prevents orphaned processes by ensuring all setTimeout timers are cleared
     for (const [id, pending] of this.pendingRequests) {
       pending.reject(new Error('Connection closed'));
     }
     this.pendingRequests.clear();
-    
+
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
@@ -461,12 +470,12 @@ export class UnityClient {
     if (this.pollingTimer && this.pollingTimer.active) {
       return; // Already polling
     }
-    
+
     this.pollingTimer = safeSetInterval(async () => {
       try {
         await this.connect();
         this.stopPolling();
-        
+
         // Notify about reconnection
         if (this.onReconnectedCallback) {
           this.onReconnectedCallback();
@@ -486,4 +495,4 @@ export class UnityClient {
       this.pollingTimer = null;
     }
   }
-} 
+}

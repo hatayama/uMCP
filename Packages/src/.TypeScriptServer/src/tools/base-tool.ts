@@ -47,9 +47,9 @@ export abstract class BaseTool implements ToolHandler {
       content: [
         {
           type: 'text',
-          text: typeof result === 'string' ? result : JSON.stringify(result, null, 2)
-        }
-      ]
+          text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+        },
+      ],
     };
   }
 
@@ -62,9 +62,9 @@ export abstract class BaseTool implements ToolHandler {
       content: [
         {
           type: 'text',
-          text: `Error in ${this.name}: ${errorMessage}`
-        }
-      ]
+          text: `Error in ${this.name}: ${errorMessage}`,
+        },
+      ],
     };
   }
-} 
+}

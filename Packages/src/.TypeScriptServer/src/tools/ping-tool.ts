@@ -15,14 +15,14 @@ export class PingTool extends BaseTool {
       message: {
         type: 'string',
         description: 'Test message',
-        default: DEFAULT_MESSAGES.PING
-      }
-    }
+        default: DEFAULT_MESSAGES.PING,
+      },
+    },
   };
 
   protected validateArgs(args: unknown) {
     const schema = z.object({
-      message: z.string().default(DEFAULT_MESSAGES.PING)
+      message: z.string().default(DEFAULT_MESSAGES.PING),
     });
     return schema.parse(args || {});
   }
@@ -30,4 +30,4 @@ export class PingTool extends BaseTool {
   protected async execute(args: { message: string }): Promise<string> {
     return `Unity MCP Server is running! Message: ${args.message}`;
   }
-} 
+}

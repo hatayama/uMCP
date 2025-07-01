@@ -5530,11 +5530,7 @@ var findProjectRoot = () => {
     if (currentDir === parentDir) {
       break;
     }
-    const unityIndicators = [
-      "ProjectSettings",
-      "Assets",
-      "Packages"
-    ];
+    const unityIndicators = ["ProjectSettings", "Assets", "Packages"];
     const hasUnityFiles = unityIndicators.every((indicator) => {
       try {
         return fs.existsSync(path.join(currentDir, indicator));
@@ -5570,33 +5566,25 @@ var writeToFile = (message) => {
 };
 var debugToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
-    const message = args.map(
-      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(" ");
+    const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
     writeToFile(`[MCP-DEBUG] ${message}`);
   }
 };
 var infoToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
-    const message = args.map(
-      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(" ");
+    const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
     writeToFile(`[MCP-INFO] ${message}`);
   }
 };
 var warnToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
-    const message = args.map(
-      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(" ");
+    const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
     writeToFile(`[MCP-WARN] ${message}`);
   }
 };
 var errorToFile = (...args) => {
   if (process.env.MCP_DEBUG) {
-    const message = args.map(
-      (arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(" ");
+    const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
     writeToFile(`[MCP-ERROR] ${message}`);
   }
 };
@@ -5662,7 +5650,6 @@ var SafeTimer = class _SafeTimer {
       return;
     }
     const cleanup = () => {
-      console.log(`[SafeTimer] Cleaning up ${_SafeTimer.activeTimers.size} active timers`);
       _SafeTimer.cleanupAll();
     };
     process.on("exit", cleanup);
@@ -5955,7 +5942,7 @@ var UnityClient = class {
       method: commandName,
       params
     };
-    let timeoutMs = this.getTimeoutForCommand(commandName, params);
+    const timeoutMs = this.getTimeoutForCommand(commandName, params);
     const response = await this.sendRequest(request, timeoutMs);
     if (response.error) {
       throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
@@ -6016,7 +6003,7 @@ var UnityClient = class {
   }
   /**
    * Disconnect
-   * 
+   *
    * IMPORTANT: Always clean up timers when disconnecting!
    * Failure to properly clean up timers can cause orphaned processes
    * that prevent Node.js from exiting gracefully.
@@ -6138,7 +6125,9 @@ var DynamicUnityCommandTool = class extends BaseTool {
     }
     const properties = {};
     const required = [];
-    for (const [propName, propInfo] of Object.entries(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY])) {
+    for (const [propName, propInfo] of Object.entries(
+      parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]
+    )) {
       const info = propInfo;
       const property = {
         type: this.convertType(info[PARAMETER_SCHEMA.TYPE_PROPERTY]),
@@ -6197,10 +6186,12 @@ var DynamicUnityCommandTool = class extends BaseTool {
       const actualArgs = this.validateArgs(args);
       const result = await this.context.unityClient.executeCommand(this.commandName, actualArgs);
       return {
-        content: [{
-          type: "text",
-          text: typeof result === "string" ? result : JSON.stringify(result, null, 2)
-        }]
+        content: [
+          {
+            type: "text",
+            text: typeof result === "string" ? result : JSON.stringify(result, null, 2)
+          }
+        ]
       };
     } catch (error) {
       return this.formatErrorResponse(error);
@@ -6209,10 +6200,12 @@ var DynamicUnityCommandTool = class extends BaseTool {
   formatErrorResponse(error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return {
-      content: [{
-        type: "text",
-        text: `Failed to execute command '${this.commandName}': ${errorMessage}`
-      }]
+      content: [
+        {
+          type: "text",
+          text: `Failed to execute command '${this.commandName}': ${errorMessage}`
+        }
+      ]
     };
   }
 };
@@ -6233,6 +6226,11 @@ var package_default = {
     start: "node dist/server.bundle.js",
     "start:production": "UMCP_PRODUCTION=true node dist/server.bundle.js",
     "start:dev": "NODE_ENV=development node dist/server.bundle.js",
+    lint: "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    format: "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "lint:check": "npm run lint && npm run format:check",
     test: "jest",
     "test:mcp": "tsx src/tools/__tests__/test-runner.ts",
     "test:integration": "tsx src/tools/__tests__/integration-test.ts",
@@ -6266,8 +6264,14 @@ var package_default = {
   devDependencies: {
     "@types/jest": "^29.5.14",
     "@types/node": "20.19.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
     esbuild: "^0.24.0",
+    eslint: "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
     jest: "^30.0.0",
+    prettier: "^3.3.3",
     "ts-jest": "^29.4.0",
     tsx: "4.20.3",
     typescript: "5.8.3"
@@ -6302,7 +6306,7 @@ var SimpleMcpServer = class {
     );
     this.unityClient = new UnityClient();
     this.unityClient.setReconnectedCallback(() => {
-      this.refreshDynamicToolsSafe();
+      void this.refreshDynamicToolsSafe();
     });
     this.setupHandlers();
     this.setupSignalHandlers();
@@ -6325,7 +6329,6 @@ var SimpleMcpServer = class {
         const commandName = commandInfo.name;
         const description = commandInfo.description || `Execute Unity command: ${commandName}`;
         const parameterSchema = commandInfo.parameterSchema;
-        const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
         const toolName = commandName;
         const dynamicTool = new DynamicUnityCommandTool(
           toolContext,
@@ -6372,7 +6375,7 @@ var SimpleMcpServer = class {
     }
   }
   setupHandlers() {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    this.server.setRequestHandler(ListToolsRequestSchema, () => {
       const tools = [];
       for (const [toolName, dynamicTool] of this.dynamicTools) {
         tools.push({
@@ -6512,7 +6515,9 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
     this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
       if (this.isDevelopment) {
         const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
-        debugToFile(`[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`);
+        debugToFile(
+          `[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`
+        );
         debugToFile(`[TRACE] Notification params: ${JSON.stringify(params)}`);
       }
       try {

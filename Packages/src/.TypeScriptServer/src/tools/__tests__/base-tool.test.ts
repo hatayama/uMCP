@@ -9,8 +9,12 @@ class DummyTool extends BaseTool {
   readonly name = 'dummy';
   readonly description = 'dummy tool';
   readonly inputSchema = {};
-  protected validateArgs(args: unknown) { return {}; }
-  protected async execute(args: any): Promise<string> { return 'ok'; }
+  protected validateArgs(args: unknown) {
+    return {};
+  }
+  protected async execute(args: any): Promise<string> {
+    return 'ok';
+  }
 }
 
 describe('BaseTool', () => {
@@ -23,10 +27,12 @@ describe('BaseTool', () => {
 
   it('should format error response if execute throws', async () => {
     class ErrorTool extends DummyTool {
-      protected async execute(args: any): Promise<string> { throw new Error('fail!'); }
+      protected async execute(args: any): Promise<string> {
+        throw new Error('fail!');
+      }
     }
     const tool = new ErrorTool({ unityClient: {} });
     const res = await tool.handle({});
     expect(res.content[0].text).toContain('Error in dummy: fail!');
   });
-}); 
+});
