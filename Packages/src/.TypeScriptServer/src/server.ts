@@ -20,6 +20,7 @@ import {
   DEV_TOOL_PING_DESCRIPTION,
   DEV_TOOL_COMMANDS_NAME,
   DEV_TOOL_COMMANDS_DESCRIPTION,
+  DEFAULT_CLIENT_NAME,
 } from './mcp-constants.js';
 import packageJson from '../package.json' assert { type: 'json' };
 import { ToolResponse } from './types/tool-types.js';
@@ -39,7 +40,7 @@ class SimpleMcpServer {
   private readonly dynamicTools: Map<string, DynamicUnityCommandTool> = new Map();
   private isShuttingDown: boolean = false;
   private isRefreshing: boolean = false;
-  private clientName: string = 'MCP Client';
+  private clientName: string = DEFAULT_CLIENT_NAME;
 
   constructor() {
     // Simple environment variable check
@@ -81,13 +82,23 @@ class SimpleMcpServer {
     try {
       await this.unityClient.ensureConnected();
 
-      // Set fallback client name only if not already set via initialize request
-      if (!this.clientName) {
-        const fallbackName = process.env.MCP_CLIENT_NAME || 'MCP Client';
+      // Set fallback client name only if still using default value or not set
+      if (!this.clientName || this.clientName === DEFAULT_CLIENT_NAME) {
+        const fallbackName = process.env.MCP_CLIENT_NAME || DEFAULT_CLIENT_NAME;
         this.clientName = fallbackName;
         await this.unityClient.setClientName(fallbackName);
         infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
+      } else {
+        // Send the already set client name to Unity
+        await this.unityClient.setClientName(this.clientName);
+        infoToFile(`[Simple MCP] Client name already set, sending to Unity: ${this.clientName}`);
       }
+
+      // Register reconnect handler to re-send client name after reconnection
+      this.unityClient.onReconnect(() => {
+        infoToFile(`[Simple MCP] Reconnected - resending client name: ${this.clientName}`);
+        void this.unityClient.setClientName(this.clientName);
+      });
 
       // Get detailed command information including schemas
       const commandDetailsResponse = await this.unityClient.executeCommand('getCommandDetails', {});

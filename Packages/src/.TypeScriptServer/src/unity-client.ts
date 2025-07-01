@@ -166,17 +166,10 @@ export class UnityClient {
     return new Promise((resolve, reject) => {
       this.socket = new net.Socket();
 
-      this.socket.connect(this.port, this.host, async () => {
+      this.socket.connect(this.port, this.host, () => {
         this._connected = true;
 
-        // Send client name to Unity for identification
-        try {
-          await this.setClientName();
-        } catch (error) {
-          errorToFile('[UnityClient] Failed to set client name:', error);
-        }
-
-        // Notify reconnect handlers
+        // Notify reconnect handlers (this will handle client name setting)
         this.reconnectHandlers.forEach((handler) => {
           try {
             handler();

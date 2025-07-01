@@ -5808,13 +5808,8 @@ var UnityClient = class {
   async connect() {
     return new Promise((resolve, reject) => {
       this.socket = new net.Socket();
-      this.socket.connect(this.port, this.host, async () => {
+      this.socket.connect(this.port, this.host, () => {
         this._connected = true;
-        try {
-          await this.setClientName();
-        } catch (error) {
-          errorToFile("[UnityClient] Failed to set client name:", error);
-        }
         this.reconnectHandlers.forEach((handler) => {
           try {
             handler();
@@ -6220,6 +6215,7 @@ var DEV_TOOL_PING_NAME = "mcp-ping";
 var DEV_TOOL_PING_DESCRIPTION = "TypeScript side health check (dev only)";
 var DEV_TOOL_COMMANDS_NAME = "get-unity-commands";
 var DEV_TOOL_COMMANDS_DESCRIPTION = "Get Unity commands list (dev only)";
+var DEFAULT_CLIENT_NAME = "MCP Client";
 
 // package.json
 var package_default = {
@@ -6306,7 +6302,7 @@ var SimpleMcpServer = class {
   dynamicTools = /* @__PURE__ */ new Map();
   isShuttingDown = false;
   isRefreshing = false;
-  clientName = "MCP Client";
+  clientName = DEFAULT_CLIENT_NAME;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     infoToFile("Simple Unity MCP Server Starting");
@@ -6338,12 +6334,19 @@ var SimpleMcpServer = class {
   async initializeDynamicTools() {
     try {
       await this.unityClient.ensureConnected();
-      if (!this.clientName) {
-        const fallbackName = process.env.MCP_CLIENT_NAME || "MCP Client";
+      if (!this.clientName || this.clientName === DEFAULT_CLIENT_NAME) {
+        const fallbackName = process.env.MCP_CLIENT_NAME || DEFAULT_CLIENT_NAME;
         this.clientName = fallbackName;
         await this.unityClient.setClientName(fallbackName);
         infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
+      } else {
+        await this.unityClient.setClientName(this.clientName);
+        infoToFile(`[Simple MCP] Client name already set, sending to Unity: ${this.clientName}`);
       }
+      this.unityClient.onReconnect(() => {
+        infoToFile(`[Simple MCP] Reconnected - resending client name: ${this.clientName}`);
+        void this.unityClient.setClientName(this.clientName);
+      });
       const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
       const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
       if (!Array.isArray(commandDetails)) {
