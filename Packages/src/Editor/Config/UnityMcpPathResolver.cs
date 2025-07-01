@@ -12,6 +12,7 @@ namespace io.github.hatayama.uMCP
         ClaudeCode,
         VSCode,
         GeminiCLI,
+        Windsurf,
 #if UMCP_DEBUG
         McpInspector
 #endif
@@ -78,9 +79,11 @@ namespace io.github.hatayama.uMCP
         private const string CURSOR_CONFIG_DIR = ".cursor";
         private const string VSCODE_CONFIG_DIR = ".vscode";
         private const string GEMINI_CONFIG_DIR = ".gemini";
+        private const string CODEIUM_CONFIG_DIR = ".codeium";
         private const string MCP_CONFIG_FILE = "mcp.json";
         private const string CLAUDE_CODE_CONFIG_FILE = ".mcp.json";
         private const string GEMINI_CONFIG_FILE = "settings.json";
+        private const string WINDSURF_CONFIG_FILE = "mcp_config.json";
 #if UMCP_DEBUG
         private const string MCP_INSPECTOR_CONFIG_FILE = ".inspector.mcp.json";
 #endif
@@ -139,7 +142,14 @@ namespace io.github.hatayama.uMCP
             return Path.Combine(projectRoot, GEMINI_CONFIG_DIR, GEMINI_CONFIG_FILE);
         }
 
-
+        /// <summary>
+        /// Gets the path to the Windsurf configuration file (~/.codeium/mcp_config.json).
+        /// </summary>
+        public static string GetWindsurfConfigPath()
+        {
+            string homeDirectory = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+            return Path.Combine(homeDirectory, CODEIUM_CONFIG_DIR, WINDSURF_CONFIG_FILE);
+        }
 
 #if UMCP_DEBUG
         /// <summary>
@@ -189,7 +199,14 @@ namespace io.github.hatayama.uMCP
             return Path.Combine(projectRoot, GEMINI_CONFIG_DIR);
         }
 
-
+        /// <summary>
+        /// Gets the path to the .codeium directory for Windsurf.
+        /// </summary>
+        public static string GetWindsurfConfigDirectory()
+        {
+            string homeDirectory = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+            return Path.Combine(homeDirectory, CODEIUM_CONFIG_DIR);
+        }
 
         /// <summary>
         /// Gets the configuration directory for the specified editor (only if it exists).
