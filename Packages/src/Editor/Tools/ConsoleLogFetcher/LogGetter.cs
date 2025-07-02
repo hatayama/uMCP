@@ -17,24 +17,6 @@ namespace io.github.hatayama.uMCP
             LogRetriever = new ConsoleLogRetriever();
         }
 
-        /// <summary>
-        /// Converts string log type to McpLogType enum
-        /// </summary>
-        /// <param name="logType">String representation of log type</param>
-        /// <returns>Corresponding McpLogType enum value</returns>
-        private static McpLogType ConvertStringToMcpLogType(string logType)
-        {
-            if (string.IsNullOrEmpty(logType) || logType == "All")
-                return McpLogType.All;
-            
-            return logType switch
-            {
-                "Error" => McpLogType.Error,
-                "Warning" => McpLogType.Warning,
-                "Log" => McpLogType.Log,
-                _ => McpLogType.All
-            };
-        }
 
         /// <summary>
         /// Converts McpLogType to Unity's LogType
