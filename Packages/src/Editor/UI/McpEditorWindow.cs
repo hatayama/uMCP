@@ -40,7 +40,7 @@ namespace io.github.hatayama.uMCP
         // Server operations handler (MVP pattern helper)
         private McpServerOperations _serverOperations;
 
-        [MenuItem("Window/uMCP")]
+        [MenuItem("Window/uMCP/Open uMCP Window", false, 1)]
         public static void ShowWindow()
         {
             McpEditorWindow window = GetWindow<McpEditorWindow>(McpConstants.PROJECT_NAME);
@@ -201,19 +201,19 @@ namespace io.github.hatayama.uMCP
             // Use view layer for rendering
             ServerStatusData statusData = CreateServerStatusData();
             _view.DrawServerStatus(statusData);
-            
+
             ServerControlsData controlsData = CreateServerControlsData();
             _view.DrawServerControls(
                 data: controlsData,
                 toggleServerCallback: ToggleServer,
                 autoStartCallback: UpdateAutoStartServer,
                 portChangeCallback: UpdateCustomPort);
-            
+
             ConnectedToolsData toolsData = CreateConnectedToolsData();
             _view.DrawConnectedToolsSection(
                 data: toolsData,
                 toggleFoldoutCallback: UpdateShowConnectedTools);
-            
+
             EditorConfigData configData = CreateEditorConfigData();
             _view.DrawEditorConfigSection(
                 data: configData,
@@ -222,25 +222,7 @@ namespace io.github.hatayama.uMCP
                 foldoutCallback: UpdateShowLLMToolSettings);
 
 #if UMCP_DEBUG
-            DeveloperToolsData devToolsData = CreateDeveloperToolsData();
-            _view.DrawDeveloperTools(
-                data: devToolsData,
-                foldoutCallback: UpdateShowDeveloperTools,
-                devModeCallback: UpdateEnableDevelopmentMode,
-                mcpLogsCallback: UpdateEnableMcpLogs,
-                commLogsCallback: UpdateEnableCommunicationLogs,
-                commLogsFoldoutCallback: UpdateShowCommunicationLogs,
-                showDebugCallback: () =>
-                {
-                    string debugInfo = McpServerController.GetDetailedServerStatus();
-                    McpLogger.LogInfo($"MCP Server Debug Info:\n{debugInfo}");
-                },
-                notifyChangesCallback: () => NotifyCommandChanges(),
-                rebuildCallback: () =>
-                {
-                    // TypeScript rebuild functionality moved to View layer
-                    McpLogger.LogInfo("TypeScript rebuild not implemented in this version");
-                });
+            DrawDeveloperTools();
 #endif
 
             EditorGUILayout.EndScrollView();
@@ -294,18 +276,18 @@ namespace io.github.hatayama.uMCP
         {
             bool isServerRunning = McpServerController.IsServerRunning;
             var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
-            
+
             // Check reconnecting UI flags from McpSessionManager
             bool showReconnectingUIFlag = McpSessionManager.instance.ShowReconnectingUI;
             bool showPostCompileUIFlag = McpSessionManager.instance.ShowPostCompileReconnectingUI;
-            
+
             // Only count clients with proper names (not Unknown Client) as "connected"
-            bool hasNamedClients = connectedClients != null && 
-                connectedClients.Any(client => client.ClientName != McpConstants.UNKNOWN_CLIENT_NAME);
-            
+            bool hasNamedClients = connectedClients != null &&
+                                   connectedClients.Any(client => client.ClientName != McpConstants.UNKNOWN_CLIENT_NAME);
+
             // Show reconnecting if either flag is true and no named clients are connected
             bool showReconnectingUI = (showReconnectingUIFlag || showPostCompileUIFlag) && !hasNamedClients;
-            
+
             // Clear post-compile flag when named clients are connected
             if (hasNamedClients && showPostCompileUIFlag)
             {
@@ -322,17 +304,17 @@ namespace io.github.hatayama.uMCP
         {
             bool isServerRunning = McpServerController.IsServerRunning;
             int currentPort = McpServerController.ServerPort;
-            
+
             // Check configuration status
             bool isConfigured = false;
             bool hasPortMismatch = false;
             string configurationError = null;
-            
+
             try
             {
                 McpConfigService configService = GetConfigService(_model.UI.SelectedEditorType);
                 isConfigured = configService.IsConfigured();
-                
+
                 // Check for port mismatch if configured and server is running
                 if (isConfigured && isServerRunning)
                 {
@@ -440,7 +422,7 @@ namespace io.github.hatayama.uMCP
         {
             _model.UpdateMainScrollPosition(position);
         }
-        
+
         /// <summary>
         /// Toggle server state (start if stopped, stop if running)
         /// </summary>
@@ -458,6 +440,29 @@ namespace io.github.hatayama.uMCP
 
         // DebugState update helper methods for callback unification
 #if UMCP_DEBUG
+        private void DrawDeveloperTools()
+        {
+            DeveloperToolsData devToolsData = CreateDeveloperToolsData();
+            _view.DrawDeveloperTools(
+                data: devToolsData,
+                foldoutCallback: UpdateShowDeveloperTools,
+                devModeCallback: UpdateEnableDevelopmentMode,
+                mcpLogsCallback: UpdateEnableMcpLogs,
+                commLogsCallback: UpdateEnableCommunicationLogs,
+                commLogsFoldoutCallback: UpdateShowCommunicationLogs,
+                showDebugCallback: () =>
+                {
+                    string debugInfo = McpServerController.GetDetailedServerStatus();
+                    McpLogger.LogInfo($"MCP Server Debug Info:\n{debugInfo}");
+                },
+                notifyChangesCallback: () => NotifyCommandChanges(),
+                rebuildCallback: () =>
+                {
+                    // TypeScript rebuild functionality moved to View layer
+                    McpLogger.LogInfo("TypeScript rebuild not implemented in this version");
+                });
+        }
+
         /// <summary>
         /// Create developer tools data for view rendering
         /// </summary>
