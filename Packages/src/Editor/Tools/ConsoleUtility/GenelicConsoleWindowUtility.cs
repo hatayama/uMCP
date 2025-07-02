@@ -33,7 +33,6 @@ namespace io.github.hatayama.uMCP
         {
             logRetriever = new ConsoleLogRetriever();
             EditorApplication.update += CheckForLogChanges;
-            Debug.Log("ConsoleWindowUtility initialized successfully");
         }
 
         /// <summary>
@@ -165,10 +164,6 @@ namespace io.github.hatayama.uMCP
                     lastLogCount = 0;
                     lastErrorCount = 0;
                     lastWarningCount = 0;
-                    
-                    // Add a log message after clearing
-                    Debug.Log("=== Console cleared ===");
-                    
                     // Fire the change event
                     consoleLogsChanged?.Invoke();
                 }

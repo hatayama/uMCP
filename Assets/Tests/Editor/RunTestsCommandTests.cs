@@ -1,8 +1,4 @@
 using NUnit.Framework;
-using Newtonsoft.Json.Linq;
-using System.Threading.Tasks;
-using System.Collections;
-using UnityEngine.TestTools;
 
 namespace io.github.hatayama.uMCP
 {

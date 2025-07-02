@@ -38,8 +38,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class McpCommunicationLogger
     {
-        private const string LOGS_SESSION_KEY = McpConstants.SESSION_KEY_COMMUNICATION_LOGS;
-        private const string PENDING_REQUESTS_SESSION_KEY = McpConstants.SESSION_KEY_PENDING_REQUESTS;
+        // Note: Communication logs are now managed via McpSessionManager
 
         private static List<McpCommunicationLogEntry> _logs;
         private static Dictionary<string, PendingRequest> _pendingRequests;
@@ -214,7 +213,7 @@ namespace io.github.hatayama.uMCP
         private static void LoadFromSessionState()
         {
             // Restore logs.
-            string logsJson = SessionState.GetString(LOGS_SESSION_KEY, "[]");
+            string logsJson = McpSessionManager.instance.CommunicationLogsJson;
             try
             {
                 _logs = JsonConvert.DeserializeObject<List<McpCommunicationLogEntry>>(logsJson) ?? new List<McpCommunicationLogEntry>();
@@ -226,7 +225,7 @@ namespace io.github.hatayama.uMCP
             }
 
             // Restore pending requests.
-            string pendingJson = SessionState.GetString(PENDING_REQUESTS_SESSION_KEY, "{}");
+            string pendingJson = McpSessionManager.instance.PendingRequestsJson;
             try
             {
                 _pendingRequests = JsonConvert.DeserializeObject<Dictionary<string, PendingRequest>>(pendingJson) ?? new Dictionary<string, PendingRequest>();
@@ -262,8 +261,9 @@ namespace io.github.hatayama.uMCP
                 string logsJson = JsonConvert.SerializeObject(logsSnapshot);
                 string pendingJson = JsonConvert.SerializeObject(pendingSnapshot);
 
-                SessionState.SetString(LOGS_SESSION_KEY, logsJson);
-                SessionState.SetString(PENDING_REQUESTS_SESSION_KEY, pendingJson);
+                McpSessionManager sessionManager = McpSessionManager.instance;
+                sessionManager.CommunicationLogsJson = logsJson;
+                sessionManager.PendingRequestsJson = pendingJson;
             }
             catch (Exception ex)
             {
@@ -278,8 +278,7 @@ namespace io.github.hatayama.uMCP
         {
             try
             {
-                SessionState.EraseString(LOGS_SESSION_KEY);
-                SessionState.EraseString(PENDING_REQUESTS_SESSION_KEY);
+                McpSessionManager.instance.ClearCommunicationLogs();
                 
                 lock (_logs)
                 {

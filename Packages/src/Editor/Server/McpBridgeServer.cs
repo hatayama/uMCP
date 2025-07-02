@@ -77,8 +77,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class McpBridgeServer : IDisposable
     {
-        // SessionState key constant.
-        private const string SESSION_KEY_DOMAIN_RELOAD = "uMCP.DomainReloadInProgress";
+        // Note: Domain reload progress is now tracked via McpSessionManager
         
         private TcpListener tcpListener;
         private CancellationTokenSource cancellationTokenSource;
@@ -146,6 +145,12 @@ namespace io.github.hatayama.uMCP
                 
                 McpLogger.LogInfo($"[UpdateClientName] {clientEndpoint} (PID: {targetClient.ProcessId}): '{targetClient.ClientName}' → '{clientName}' (Success: {updateResult})");
                 McpLogger.LogInfo($"[UpdateClientName] ConnectedAt preserved: {updatedClient.ConnectedAt:HH:mm:ss.fff}");
+                
+                // Clear reconnecting flags when client name is successfully set (client is now fully connected)
+                if (updateResult && clientName != McpConstants.UNKNOWN_CLIENT_NAME)
+                {
+                    McpServerController.ClearReconnectingFlag();
+                }
             }
             else
             {
@@ -419,7 +424,7 @@ namespace io.github.hatayama.uMCP
                 catch (ThreadAbortException ex)
                 {
                     // Treat as normal behavior if a domain reload is in progress.
-                    if (!SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
+                    if (!McpSessionManager.instance.IsDomainReloadInProgress)
                     {
                         McpLogger.LogError($"Unexpected thread abort in server loop: {ex.Message}");
                         OnError?.Invoke($"Unexpected thread abort: {ex.Message}");
@@ -450,7 +455,7 @@ namespace io.github.hatayama.uMCP
             catch (ThreadAbortException ex)
             {
                 // Treat as normal behavior if a domain reload is in progress.
-                if (!SessionState.GetBool(SESSION_KEY_DOMAIN_RELOAD, false))
+                if (!McpSessionManager.instance.IsDomainReloadInProgress)
                 {
                     McpLogger.LogError($"Unexpected thread abort in AcceptTcpClient: {ex.Message}");
                 }

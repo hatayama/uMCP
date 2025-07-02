@@ -1,7 +1,11 @@
 using UnityEngine;
 using UnityEditor;
+using System.Linq;
+
+#if UMCP_DEBUG
 using System.Collections.Generic;
 using System;
+#endif
 
 namespace io.github.hatayama.uMCP
 {
@@ -121,10 +125,10 @@ namespace io.github.hatayama.uMCP
             _model.EnablePostCompileMode();
 
             // Clear reconnecting UI flag on domain reload to ensure proper state
-            SessionState.SetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            McpSessionManager.instance.ShowReconnectingUI = false;
 
             // Check if after compilation
-            bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
+            bool isAfterCompile = McpSessionManager.instance.IsAfterCompile;
 
             // Determine if server should be started automatically
             bool shouldStartAutomatically = isAfterCompile || _model.UI.AutoStartServer;
@@ -135,10 +139,10 @@ namespace io.github.hatayama.uMCP
             {
                 if (isAfterCompile)
                 {
-                    SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
+                    McpSessionManager.instance.ClearAfterCompileFlag();
 
                     // Use saved port number
-                    int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, _model.UI.CustomPort);
+                    int savedPort = McpSessionManager.instance.ServerPort;
                     bool portNeedsUpdate = savedPort != _model.UI.CustomPort;
 
                     if (portNeedsUpdate)
@@ -291,13 +295,22 @@ namespace io.github.hatayama.uMCP
             bool isServerRunning = McpServerController.IsServerRunning;
             var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
             
-            // Check both SessionState and EditorPrefs for reconnecting UI flag
-            bool sessionReconnecting = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
-            bool editorPrefsReconnecting = EditorPrefs.GetBool(McpConstants.EDITOR_PREFS_SHOW_RECONNECTING_UI, false);
-            bool hasClients = connectedClients != null && connectedClients.Count > 0;
+            // Check reconnecting UI flags from McpSessionManager
+            bool showReconnectingUIFlag = McpSessionManager.instance.ShowReconnectingUI;
+            bool showPostCompileUIFlag = McpSessionManager.instance.ShowPostCompileReconnectingUI;
             
-            // Don't show reconnecting if clients are already connected
-            bool showReconnectingUI = (sessionReconnecting || editorPrefsReconnecting) && !hasClients;
+            // Only count clients with proper names (not Unknown Client) as "connected"
+            bool hasNamedClients = connectedClients != null && 
+                connectedClients.Any(client => client.ClientName != McpConstants.UNKNOWN_CLIENT_NAME);
+            
+            // Show reconnecting if either flag is true and no named clients are connected
+            bool showReconnectingUI = (showReconnectingUIFlag || showPostCompileUIFlag) && !hasNamedClients;
+            
+            // Clear post-compile flag when named clients are connected
+            if (hasNamedClients && showPostCompileUIFlag)
+            {
+                McpSessionManager.instance.ClearPostCompileReconnectingUI();
+            }
 
             return new ConnectedToolsData(connectedClients, _model.UI.ShowConnectedTools, isServerRunning, showReconnectingUI);
         }
@@ -349,30 +362,6 @@ namespace io.github.hatayama.uMCP
 #endif
             Repaint();
         }
-
-#if UMCP_DEBUG
-        /// <summary>
-        /// Create developer tools data for view rendering
-        /// </summary>
-        private DeveloperToolsData CreateDeveloperToolsData()
-        {
-            IReadOnlyList<McpCommunicationLogEntry> logs = McpCommunicationLogger.GetAllLogs();
-
-            return new DeveloperToolsData(
-                _model.Debug.ShowDeveloperTools,
-                _model.Debug.EnableMcpLogs,
-                _model.Debug.EnableCommunicationLogs,
-                _model.Debug.EnableDevelopmentMode,
-                _model.Debug.ShowCommunicationLogs,
-                logs,
-                _model.Debug.CommunicationLogScrollPosition,
-                _model.Debug.CommunicationLogHeight,
-                _model.Debug.RequestScrollPositions,
-                _model.Debug.ResponseScrollPositions
-            );
-        }
-#endif
-
 
         /// <summary>
         /// Start server (for user operations)
@@ -469,6 +458,27 @@ namespace io.github.hatayama.uMCP
 
         // DebugState update helper methods for callback unification
 #if UMCP_DEBUG
+        /// <summary>
+        /// Create developer tools data for view rendering
+        /// </summary>
+        private DeveloperToolsData CreateDeveloperToolsData()
+        {
+            IReadOnlyList<McpCommunicationLogEntry> logs = McpCommunicationLogger.GetAllLogs();
+
+            return new DeveloperToolsData(
+                _model.Debug.ShowDeveloperTools,
+                _model.Debug.EnableMcpLogs,
+                _model.Debug.EnableCommunicationLogs,
+                _model.Debug.EnableDevelopmentMode,
+                _model.Debug.ShowCommunicationLogs,
+                logs,
+                _model.Debug.CommunicationLogScrollPosition,
+                _model.Debug.CommunicationLogHeight,
+                _model.Debug.RequestScrollPositions,
+                _model.Debug.ResponseScrollPositions
+            );
+        }
+
         /// <summary>
         /// Notify command changes to TypeScript side
         /// </summary>

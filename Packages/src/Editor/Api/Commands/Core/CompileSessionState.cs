@@ -10,8 +10,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class CompileSessionState
     {
-        private const string SESSION_KEY_PREFIX = "uMCP.CompileRequest.";
-        private const string PENDING_REQUESTS_KEY = "uMCP.PendingCompileRequests";
+        // Note: Compile requests are now managed via McpSessionManager
 
         /// <summary>
         /// Forced recompilation request information
@@ -45,15 +44,9 @@ namespace io.github.hatayama.uMCP
             CompileRequestInfo requestInfo = new CompileRequestInfo(requestId, forceRecompile, clientEndpoint);
             string json = JsonConvert.SerializeObject(requestInfo);
             
-            SessionState.SetString(SESSION_KEY_PREFIX + requestId, json);
-            
-            // Add to pending request list
-            string[] pendingRequests = GetPendingRequestIds();
-            string[] newPendingRequests = new string[pendingRequests.Length + 1];
-            Array.Copy(pendingRequests, newPendingRequests, pendingRequests.Length);
-            newPendingRequests[pendingRequests.Length] = requestId;
-            
-            SessionState.SetString(PENDING_REQUESTS_KEY, JsonConvert.SerializeObject(newPendingRequests));
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            sessionManager.SetCompileRequestJson(requestId, json);
+            sessionManager.AddPendingCompileRequest(requestId);
             
         }
 
@@ -62,15 +55,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static string[] GetPendingRequestIds()
         {
-            string json = SessionState.GetString(PENDING_REQUESTS_KEY, "[]");
-            try
-            {
-                return JsonConvert.DeserializeObject<string[]>(json) ?? new string[0];
-            }
-            catch
-            {
-                return new string[0];
-            }
+            return McpSessionManager.instance.PendingCompileRequestIds;
         }
 
         /// <summary>
@@ -78,7 +63,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static CompileRequestInfo GetCompileRequest(string requestId)
         {
-            string json = SessionState.GetString(SESSION_KEY_PREFIX + requestId, null);
+            string json = McpSessionManager.instance.GetCompileRequestJson(requestId);
             if (string.IsNullOrEmpty(json)) return null;
 
             try
@@ -101,40 +86,13 @@ namespace io.github.hatayama.uMCP
 
             requestInfo.isCompleted = true;
             string json = JsonConvert.SerializeObject(requestInfo);
-            SessionState.SetString(SESSION_KEY_PREFIX + requestId, json);
-
-            // Remove from pending request list
-            RemoveFromPendingRequests(requestId);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            sessionManager.SetCompileRequestJson(requestId, json);
+            sessionManager.RemovePendingCompileRequest(requestId);
             
         }
 
-        /// <summary>
-        /// Remove from pending request list
-        /// </summary>
-        private static void RemoveFromPendingRequests(string requestId)
-        {
-            string[] pendingRequests = GetPendingRequestIds();
-            string[] newPendingRequests = new string[pendingRequests.Length];
-            int newIndex = 0;
-            
-            for (int i = 0; i < pendingRequests.Length; i++)
-            {
-                if (pendingRequests[i] != requestId)
-                {
-                    newPendingRequests[newIndex++] = pendingRequests[i];
-                }
-            }
-            
-            // Adjust array size
-            if (newIndex < newPendingRequests.Length)
-            {
-                string[] trimmedArray = new string[newIndex];
-                Array.Copy(newPendingRequests, trimmedArray, newIndex);
-                newPendingRequests = trimmedArray;
-            }
-            
-            SessionState.SetString(PENDING_REQUESTS_KEY, JsonConvert.SerializeObject(newPendingRequests));
-        }
+        // Note: RemoveFromPendingRequests is now handled by McpSessionManager
 
         /// <summary>
         /// Start forced recompilation
@@ -151,12 +109,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void ClearAll()
         {
-            string[] pendingRequests = GetPendingRequestIds();
-            foreach (string requestId in pendingRequests)
-            {
-                SessionState.EraseString(SESSION_KEY_PREFIX + requestId);
-            }
-            SessionState.EraseString(PENDING_REQUESTS_KEY);
+            McpSessionManager.instance.ClearAllCompileRequests();
             
         }
     }
