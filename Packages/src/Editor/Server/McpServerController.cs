@@ -329,43 +329,36 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void SendCommandsChangedNotification()
         {
-            try
+            // Log with stack trace to identify caller
+            System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace(true);
+            string callerInfo = stackTrace.GetFrame(1)?.GetMethod()?.Name ?? "Unknown";
+            McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification called from: {callerInfo}");
+            McpLogger.LogDebug($"[TRACE] Full stack trace:\n{stackTrace.ToString()}");
+            
+            if (mcpServer == null)
             {
-                // Log with stack trace to identify caller
-                System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace(true);
-                string callerInfo = stackTrace.GetFrame(1)?.GetMethod()?.Name ?? "Unknown";
-                McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification called from: {callerInfo}");
-                McpLogger.LogDebug($"[TRACE] Full stack trace:\n{stackTrace.ToString()}");
-                
-                if (mcpServer == null)
-                {
-                    McpLogger.LogDebug("[TRACE] SendCommandsChangedNotification skipped: mcpServer is null");
-                    return;
-                }
-                
-                // Send MCP standard notification only
-                var notificationParams = new
-                {
-                    timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                    message = "Unity commands have been updated"
-                };
-                
-                var mcpNotification = new
-                {
-                    jsonrpc = McpServerConfig.JSONRPC_VERSION,
-                    method = "notifications/tools/list_changed",
-                    @params = notificationParams
-                };
-                
-                string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
-                mcpServer.SendNotificationToClients(mcpNotificationJson);
-                
-                McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification sent successfully at {System.DateTime.Now:HH:mm:ss.fff}");
+                McpLogger.LogDebug("[TRACE] SendCommandsChangedNotification skipped: mcpServer is null");
+                return;
             }
-            catch (System.Exception ex)
+            
+            // Send MCP standard notification only
+            var notificationParams = new
             {
-                McpLogger.LogError($"[TRACE] Failed to send commands changed notification: {ex.Message}");
-            }
+                timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                message = "Unity commands have been updated"
+            };
+            
+            var mcpNotification = new
+            {
+                jsonrpc = McpServerConfig.JSONRPC_VERSION,
+                method = "notifications/tools/list_changed",
+                @params = notificationParams
+            };
+            
+            string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
+            mcpServer.SendNotificationToClients(mcpNotificationJson);
+            
+            McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification sent successfully at {System.DateTime.Now:HH:mm:ss.fff}");
         }
 
         /// <summary>
