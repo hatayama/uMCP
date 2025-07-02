@@ -292,5 +292,88 @@ namespace io.github.hatayama.uMCP
             
             return localPath;
         }
+
+        /// <summary>
+        /// Detects if running in WSL2 environment.
+        /// </summary>
+        /// <returns>True if running in WSL2, false otherwise.</returns>
+        public static bool IsWSL2Environment()
+        {
+            // Check WSL_DISTRO_NAME environment variable (WSL2 specific)
+            string wslDistroName = System.Environment.GetEnvironmentVariable("WSL_DISTRO_NAME");
+            if (!string.IsNullOrEmpty(wslDistroName))
+            {
+                return true;
+            }
+
+            // Check WSLENV environment variable (WSL1/WSL2 common)
+            string wslEnv = System.Environment.GetEnvironmentVariable("WSLENV");
+            if (!string.IsNullOrEmpty(wslEnv))
+            {
+                return true;
+            }
+
+            // Check if /proc/version contains Microsoft (WSL indicator)
+            string versionFilePath = "/proc/version";
+            if (File.Exists(versionFilePath))
+            {
+                string versionContent = File.ReadAllText(versionFilePath);
+                if (versionContent.Contains("Microsoft", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Converts Windows path to WSL2 path format.
+        /// Example: C:\Users\user\project -> /mnt/c/Users/user/project
+        /// </summary>
+        /// <param name="windowsPath">Windows absolute path</param>
+        /// <returns>WSL2 formatted path</returns>
+        public static string ConvertWindowsPathToWSL2(string windowsPath)
+        {
+            if (string.IsNullOrEmpty(windowsPath))
+            {
+                return windowsPath;
+            }
+
+            // Check if it's already a Unix-style path
+            if (windowsPath.StartsWith("/"))
+            {
+                return windowsPath;
+            }
+
+            // Check if it's a Windows absolute path (starts with drive letter)
+            if (windowsPath.Length >= 3 && windowsPath[1] == ':' && windowsPath[2] == '\\')
+            {
+                char driveLetter = char.ToLower(windowsPath[0]);
+                string pathWithoutDrive = windowsPath.Substring(3); // Remove "C:\"
+                string unixPath = pathWithoutDrive.Replace('\\', '/');
+                return $"/mnt/{driveLetter}/{unixPath}";
+            }
+
+            // If it's not a Windows absolute path, return as-is
+            return windowsPath;
+        }
+
+        /// <summary>
+        /// Gets the TypeScript server path with WSL2 conversion if needed for Claude Code.
+        /// </summary>
+        /// <param name="forClaudeCode">Whether this path is for Claude Code configuration</param>
+        /// <returns>TypeScript server path, converted to WSL2 format if needed</returns>
+        public static string GetTypeScriptServerPath(bool forClaudeCode = false)
+        {
+            string serverPath = GetTypeScriptServerPath();
+            
+            if (forClaudeCode && IsWSL2Environment())
+            {
+                return ConvertWindowsPathToWSL2(serverPath);
+            }
+            
+            return serverPath;
+        }
     }
 } 
