@@ -17,6 +17,13 @@ namespace io.github.hatayama.uMCP
         /// <returns>Settings data for Unity MCP.</returns>
         public static McpServerConfigData CreateUnityMcpConfig(int port, string serverPath, McpEditorType editorType)
         {
+            // Convert server path to WSL2 format if needed for Claude Code
+            string finalServerPath = serverPath;
+            if (editorType == McpEditorType.ClaudeCode && UnityMcpPathResolver.IsWSL2Environment())
+            {
+                finalServerPath = UnityMcpPathResolver.ConvertWindowsPathToWSL2(serverPath);
+            }
+
             Dictionary<string, string> env = new Dictionary<string, string>
             {
                 { McpConstants.UNITY_TCP_PORT_ENV_KEY, port.ToString() }
@@ -25,7 +32,7 @@ namespace io.github.hatayama.uMCP
 
             return new McpServerConfigData(
                 command: McpConstants.NODE_COMMAND,
-                args: new[] { serverPath },
+                args: new[] { finalServerPath },
                 env: env
             );
         }
