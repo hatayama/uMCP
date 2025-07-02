@@ -395,29 +395,6 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Notify command changes to TypeScript side
-        /// </summary>
-        private void NotifyCommandChanges()
-        {
-            try
-            {
-                McpLogger.LogDebug("[TRACE] McpEditorWindow.NotifyCommandChanges: About to call TriggerCommandsChangedNotification (MANUAL_BUTTON)");
-                UnityCommandRegistry.TriggerCommandsChangedNotification();
-                EditorUtility.DisplayDialog("Command Notification",
-                    "Command changes have been notified to Cursor successfully!",
-                    "OK");
-                // Command changes notification sent
-            }
-            catch (Exception ex)
-            {
-                EditorUtility.DisplayDialog("Notification Error",
-                    $"Failed to notify command changes: {ex.Message}",
-                    "OK");
-                McpLogger.LogError($"Failed to notify command changes: {ex.Message}");
-            }
-        }
-
-        /// <summary>
         /// Get corresponding configuration service from editor type
         /// </summary>
         private McpConfigService GetConfigService(McpEditorType editorType)
@@ -474,8 +451,46 @@ namespace io.github.hatayama.uMCP
         {
             _model.UpdateMainScrollPosition(position);
         }
+        
+        /// <summary>
+        /// Toggle server state (start if stopped, stop if running)
+        /// </summary>
+        private void ToggleServer()
+        {
+            if (McpServerController.IsServerRunning)
+            {
+                StopServer();
+            }
+            else
+            {
+                StartServer();
+            }
+        }
 
         // DebugState update helper methods for callback unification
+#if UMCP_DEBUG
+        /// <summary>
+        /// Notify command changes to TypeScript side
+        /// </summary>
+        private void NotifyCommandChanges()
+        {
+            try
+            {
+                McpLogger.LogDebug("[TRACE] McpEditorWindow.NotifyCommandChanges: About to call TriggerCommandsChangedNotification (MANUAL_BUTTON)");
+                UnityCommandRegistry.TriggerCommandsChangedNotification();
+                EditorUtility.DisplayDialog("Command Notification",
+                    "Command changes have been notified to Cursor successfully!",
+                    "OK");
+                // Command changes notification sent
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.DisplayDialog("Notification Error",
+                    $"Failed to notify command changes: {ex.Message}",
+                    "OK");
+                McpLogger.LogError($"Failed to notify command changes: {ex.Message}");
+            }
+        }
 
         /// <summary>
         /// Update ShowDeveloperTools setting with persistence
@@ -516,20 +531,6 @@ namespace io.github.hatayama.uMCP
         {
             _model.UpdateShowCommunicationLogs(show);
         }
-
-        /// <summary>
-        /// Toggle server state (start if stopped, stop if running)
-        /// </summary>
-        private void ToggleServer()
-        {
-            if (McpServerController.IsServerRunning)
-            {
-                StopServer();
-            }
-            else
-            {
-                StartServer();
-            }
-        }
+#endif
     }
 }
