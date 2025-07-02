@@ -33,7 +33,6 @@ namespace io.github.hatayama.uMCP
         {
             logRetriever = new ConsoleLogRetriever();
             EditorApplication.update += CheckForLogChanges;
-            Debug.Log("ConsoleWindowUtility initialized successfully");
         }
 
         /// <summary>
