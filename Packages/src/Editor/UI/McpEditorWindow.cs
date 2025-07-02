@@ -294,12 +294,19 @@ namespace io.github.hatayama.uMCP
             bool isServerRunning = McpServerController.IsServerRunning;
             var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
             
-            // Check reconnecting UI flag from McpSessionManager
+            // Check reconnecting UI flags from McpSessionManager
             bool showReconnectingUIFlag = McpSessionManager.instance.ShowReconnectingUI;
+            bool showPostCompileUIFlag = McpSessionManager.instance.ShowPostCompileReconnectingUI;
             bool hasClients = connectedClients != null && connectedClients.Count > 0;
             
-            // Don't show reconnecting if clients are already connected
-            bool showReconnectingUI = showReconnectingUIFlag && !hasClients;
+            // Show reconnecting if either flag is true and no clients are connected
+            bool showReconnectingUI = (showReconnectingUIFlag || showPostCompileUIFlag) && !hasClients;
+            
+            // Clear post-compile flag when clients are connected
+            if (hasClients && showPostCompileUIFlag)
+            {
+                McpSessionManager.instance.ClearPostCompileReconnectingUI();
+            }
 
             return new ConnectedToolsData(connectedClients, _model.UI.ShowConnectedTools, isServerRunning, showReconnectingUI);
         }

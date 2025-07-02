@@ -12,6 +12,7 @@ namespace io.github.hatayama.uMCP
         [SerializeField] private bool isDomainReloadInProgress;
         [SerializeField] private bool isReconnecting;
         [SerializeField] private bool showReconnectingUI;
+        [SerializeField] private bool showPostCompileReconnectingUI;
         [SerializeField] private int selectedEditorType = (int)McpEditorType.Cursor;
         [SerializeField] private float communicationLogHeight = McpUIConstants.DEFAULT_COMMUNICATION_LOG_HEIGHT;
         [SerializeField] private string communicationLogsJson = "[]";
@@ -62,7 +63,13 @@ namespace io.github.hatayama.uMCP
         public bool ShowReconnectingUI
         {
             get => showReconnectingUI;
-            set => showReconnectingUI = value;
+            set { showReconnectingUI = value; }
+        }
+
+        public bool ShowPostCompileReconnectingUI
+        {
+            get => showPostCompileReconnectingUI;
+            set { showPostCompileReconnectingUI = value; }
         }
 
         // UI関連
@@ -128,6 +135,11 @@ namespace io.github.hatayama.uMCP
         {
             isReconnecting = false;
             showReconnectingUI = false;
+        }
+
+        public void ClearPostCompileReconnectingUI()
+        {
+            showPostCompileReconnectingUI = false;
         }
 
         public void ClearDomainReloadFlag()

@@ -122,6 +122,7 @@ namespace io.github.hatayama.uMCP
                 sessionManager.IsAfterCompile = true; // Set the post-compilation flag.
                 sessionManager.IsReconnecting = true; // Set the reconnecting flag.
                 sessionManager.ShowReconnectingUI = true; // Set the UI display flag.
+                sessionManager.ShowPostCompileReconnectingUI = true; // Set the post-compile specific UI flag.
                 
                 // Force-save the communication log as well.
                 McpCommunicationLogger.SaveToSessionState();
