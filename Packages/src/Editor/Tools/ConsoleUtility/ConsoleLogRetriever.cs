@@ -369,13 +369,5 @@ namespace io.github.hatayama.uMCP
             return 7; // Default to show all
         }
 
-        /// <summary>
-        /// Fallback method to set mask via ConsoleWindow
-        /// </summary>
-        private void SetMaskViaConsoleWindow(int mask)
-        {
-            // Implementation would modify ConsoleWindow's filter state
-            Debug.LogWarning("SetMaskViaConsoleWindow not fully implemented");
-        }
     }
 }

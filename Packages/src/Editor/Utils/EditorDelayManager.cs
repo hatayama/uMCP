@@ -161,7 +161,6 @@ namespace io.github.hatayama.uMCP
         {
             lock (lockObject)
             {
-                int previousCount = currentFrameCount;
                 currentFrameCount = 0;
             }
         }
@@ -173,7 +172,6 @@ namespace io.github.hatayama.uMCP
         {
             lock (lockObject)
             {
-                int clearedCount = delayTasks.Count;
                 delayTasks.Clear();
             }
         }

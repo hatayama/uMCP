@@ -182,38 +182,4 @@ namespace io.github.hatayama.uMCP
         }
     }
 
-    /// <summary>
-    /// Advanced main thread switching using TaskScheduler.
-    /// </summary>
-    public static class AdvancedMainThreadSwitcher
-    {
-        private static TaskScheduler unityTaskScheduler;
-
-        [InitializeOnLoadMethod]
-        static void Initialize()
-        {
-            // Create a TaskScheduler on Unity's main thread.
-            unityTaskScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-        }
-
-        /// <summary>
-        /// Switches to the main thread using TaskScheduler.
-        /// </summary>
-        public static Task SwitchToMainThreadAsync()
-        {
-            if (MainThreadSwitcher.IsMainThread)
-            {
-                return Task.CompletedTask;
-            }
-
-            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
-            
-            Task.Factory.StartNew(() =>
-            {
-                tcs.SetResult(true);
-            }, CancellationToken.None, TaskCreationOptions.None, unityTaskScheduler);
-
-            return tcs.Task;
-        }
-    }
 } 
