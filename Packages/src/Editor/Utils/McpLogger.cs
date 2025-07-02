@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using UnityEngine;
 using UnityEditor;
+using Debug = UnityEngine.Debug;
 
 namespace io.github.hatayama.uMCP
 {
@@ -24,6 +26,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Output information log
         /// </summary>
+        [Conditional(McpConstants.MCP_DEBUG)]
         public static void LogInfo(string message)
         {
             if (EnableDebugLog)
@@ -36,6 +39,7 @@ namespace io.github.hatayama.uMCP
         /// Output warning log
         /// Always outputs warnings regardless of EnableDebugLog setting
         /// </summary>
+        [Conditional(McpConstants.MCP_DEBUG)]
         public static void LogWarning(string message)
         {
             // Warnings should also always be logged as they indicate potential issues
@@ -46,6 +50,7 @@ namespace io.github.hatayama.uMCP
         /// Output error log
         /// Always outputs errors regardless of EnableDebugLog setting
         /// </summary>
+        [Conditional(McpConstants.MCP_DEBUG)]
         public static void LogError(string message)
         {
             // Errors should ALWAYS be logged regardless of debug settings
@@ -56,6 +61,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Output debug log (only when EnableDebugLog is true)
         /// </summary>
+        [Conditional(McpConstants.MCP_DEBUG)]
         public static void LogDebug(string message)
         {
             if (EnableDebugLog)
@@ -67,6 +73,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Output JSON-RPC communication log
         /// </summary>
+        [Conditional(McpConstants.MCP_DEBUG)]
         public static void LogJsonRpc(string direction, string content)
         {
             if (EnableDebugLog)
@@ -78,6 +85,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Output client connection log
         /// </summary>
+        [Conditional(McpConstants.MCP_DEBUG)]
         public static void LogClientConnection(string clientEndpoint, bool connected)
         {
             string status = connected ? "connected" : "disconnected";

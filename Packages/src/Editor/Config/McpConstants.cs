@@ -3,6 +3,8 @@ namespace io.github.hatayama.uMCP
     public static class McpConstants
     {
         public const string PROJECT_NAME = "uMCP";
+
+        public const string MCP_DEBUG = "MCP_DEBUG";
         
         // JSON configuration keys
         public const string JSON_KEY_MCP_SERVERS = "mcpServers";
@@ -70,9 +72,6 @@ namespace io.github.hatayama.uMCP
         public const string SESSION_KEY_PENDING_REQUESTS = "uMCP.PendingRequests";
         public const string SESSION_KEY_RECONNECTING = "uMCP.Reconnecting";
         public const string SESSION_KEY_SHOW_RECONNECTING_UI = "uMCP.ShowReconnectingUI";
-        
-        // EditorPrefs keys
-        public const string EDITOR_PREFS_SHOW_RECONNECTING_UI = "uMCP_ShowReconnectingUI";
         
         /// <summary>
         /// Gets the client name for the specified editor type

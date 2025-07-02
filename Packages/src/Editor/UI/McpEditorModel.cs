@@ -113,9 +113,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public void LoadFromSessionState()
         {
-            McpEditorType selectedEditor = (McpEditorType)SessionState.GetInt(
-                McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, 
-                (int)McpEditorType.Cursor);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            McpEditorType selectedEditor = sessionManager.SelectedEditorType;
 
             UpdateUIState(ui => new UIState(
                 customPort: ui.CustomPort,
@@ -126,9 +125,7 @@ namespace io.github.hatayama.uMCP
                 mainScrollPosition: ui.MainScrollPosition));
 
 #if UMCP_DEBUG
-            float communicationLogHeight = SessionState.GetFloat(
-                McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, 
-                McpUIConstants.DEFAULT_COMMUNICATION_LOG_HEIGHT);
+            float communicationLogHeight = sessionManager.CommunicationLogHeight;
 
             UpdateDebugState(debug => new DebugState(
                 showDeveloperTools: debug.ShowDeveloperTools,
@@ -148,10 +145,11 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public void SaveToSessionState()
         {
-            SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)UI.SelectedEditorType);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            sessionManager.SelectedEditorType = UI.SelectedEditorType;
 
 #if UMCP_DEBUG
-            SessionState.SetFloat(McpConstants.SESSION_KEY_COMMUNICATION_LOG_HEIGHT, Debug.CommunicationLogHeight);
+            sessionManager.CommunicationLogHeight = Debug.CommunicationLogHeight;
 #endif
         }
 
@@ -297,7 +295,7 @@ namespace io.github.hatayama.uMCP
                 showConnectedTools: ui.ShowConnectedTools,
                 selectedEditorType: type,
                 mainScrollPosition: ui.MainScrollPosition));
-            SessionState.SetInt(McpConstants.SESSION_KEY_SELECTED_EDITOR_TYPE, (int)type);
+            McpSessionManager.instance.SelectedEditorType = type;
         }
 
         /// <summary>

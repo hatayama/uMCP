@@ -71,8 +71,9 @@ namespace io.github.hatayama.uMCP
             mcpServer.StartServer(port);
             
             // Save the state to SessionState.
-            SessionState.SetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, true);
-            SessionState.SetInt(McpConstants.SESSION_KEY_SERVER_PORT, port);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            sessionManager.IsServerRunning = true;
+            sessionManager.ServerPort = port;
             
             McpLogger.LogInfo($"Unity MCP Server started on port {port}");
         }
@@ -89,8 +90,8 @@ namespace io.github.hatayama.uMCP
             }
             
             // Delete the state from SessionState.
-            SessionState.EraseBool(McpConstants.SESSION_KEY_SERVER_RUNNING);
-            SessionState.EraseInt(McpConstants.SESSION_KEY_SERVER_PORT);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            sessionManager.ClearServerSession();
             
             McpLogger.LogInfo("Unity MCP Server stopped");
         }
@@ -102,7 +103,8 @@ namespace io.github.hatayama.uMCP
         {
             
             // Set the domain reload start flag.
-            SessionState.SetBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS, true);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            sessionManager.IsDomainReloadInProgress = true;
             
             // Debug: Log server state before assembly reload
             bool serverExists = mcpServer != null;
@@ -115,12 +117,11 @@ namespace io.github.hatayama.uMCP
                 int portToSave = mcpServer.Port;
                 
                 // Execute SessionState operations immediately (to ensure they are saved before a domain reload).
-                SessionState.SetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, true);
-                SessionState.SetInt(McpConstants.SESSION_KEY_SERVER_PORT, portToSave);
-                SessionState.SetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, true); // Set the post-compilation flag.
-                SessionState.SetBool(McpConstants.SESSION_KEY_RECONNECTING, true); // Set the reconnecting flag.
-                SessionState.SetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, true); // Set the UI display flag.
-                EditorPrefs.SetBool(McpConstants.EDITOR_PREFS_SHOW_RECONNECTING_UI, true); // Also save to EditorPrefs for persistence
+                sessionManager.IsServerRunning = true;
+                sessionManager.ServerPort = portToSave;
+                sessionManager.IsAfterCompile = true; // Set the post-compilation flag.
+                sessionManager.IsReconnecting = true; // Set the reconnecting flag.
+                sessionManager.ShowReconnectingUI = true; // Set the UI display flag.
                 
                 // Force-save the communication log as well.
                 McpCommunicationLogger.SaveToSessionState();
@@ -151,10 +152,11 @@ namespace io.github.hatayama.uMCP
         private static void OnAfterAssemblyReload()
         {
             // Clear the domain reload completion flag.
-            SessionState.EraseBool(McpConstants.SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            sessionManager.ClearDomainReloadFlag();
             
             // Start UI timeout if UI display flag is set
-            bool showReconnectingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            bool showReconnectingUI = sessionManager.ShowReconnectingUI;
             McpLogger.LogDebug($"[RECONNECTION] OnAfterAssemblyReload: showReconnectingUI={showReconnectingUI}");
             
             if (showReconnectingUI)
@@ -181,9 +183,10 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static void RestoreServerStateIfNeeded()
         {
-            bool wasRunning = SessionState.GetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, false);
-            int savedPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
-            bool isAfterCompile = SessionState.GetBool(McpConstants.SESSION_KEY_AFTER_COMPILE, false);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            bool wasRunning = sessionManager.IsServerRunning;
+            int savedPort = sessionManager.ServerPort;
+            bool isAfterCompile = sessionManager.IsAfterCompile;
             
             // If the server is already running (e.g., started from McpEditorWindow).
             if (mcpServer?.IsRunning == true)
@@ -191,7 +194,7 @@ namespace io.github.hatayama.uMCP
                 // Just clear the post-compilation flag and exit.
                 if (isAfterCompile)
                 {
-                    SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
+                    sessionManager.ClearAfterCompileFlag();
                 }
                 return;
             }
@@ -199,7 +202,7 @@ namespace io.github.hatayama.uMCP
             // Clear the post-compilation flag.
             if (isAfterCompile)
             {
-                SessionState.EraseBool(McpConstants.SESSION_KEY_AFTER_COMPILE);
+                sessionManager.ClearAfterCompileFlag();
             }
             
             if (wasRunning && (mcpServer == null || !mcpServer.IsRunning))
@@ -225,8 +228,7 @@ namespace io.github.hatayama.uMCP
                     {
                         // If Auto Start Server is off, do not start the server.
                         // Clear SessionState (wait for the server to be started manually).
-                        SessionState.EraseBool(McpConstants.SESSION_KEY_SERVER_RUNNING);
-                        SessionState.EraseInt(McpConstants.SESSION_KEY_SERVER_PORT);
+                        sessionManager.ClearServerSession();
                     }
                 }
             }
@@ -256,7 +258,7 @@ namespace io.github.hatayama.uMCP
                 
                 // Clear server-side reconnecting flag on successful restoration
                 // NOTE: Do NOT clear UI display flag here - let it be cleared by timeout or client connection
-                SessionState.EraseBool(McpConstants.SESSION_KEY_RECONNECTING);
+                McpSessionManager.instance.IsReconnecting = false;
                 McpLogger.LogDebug("[RECONNECTION] Server restored successfully, cleared server reconnecting flag");
                 
                 // Commands changed notification will be sent by OnAfterAssemblyReload
@@ -275,8 +277,7 @@ namespace io.github.hatayama.uMCP
                 {
                     // If it ultimately fails, clear the SessionState.
                     McpLogger.LogError($"Failed to restore MCP Server on port {port} after {maxRetries + 1} attempts. Clearing session state.");
-                    SessionState.EraseBool(McpConstants.SESSION_KEY_SERVER_RUNNING);
-                    SessionState.EraseInt(McpConstants.SESSION_KEY_SERVER_PORT);
+                    McpSessionManager.instance.ClearServerSession();
                 }
             }
         }
@@ -304,7 +305,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static (bool isRunning, int port, bool wasRestoredFromSession) GetServerStatus()
         {
-            bool wasRestored = SessionState.GetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, false);
+            bool wasRestored = McpSessionManager.instance.IsServerRunning;
             return (IsServerRunning, ServerPort, wasRestored);
         }
 
@@ -313,8 +314,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static string GetDetailedServerStatus()
         {
-            bool sessionWasRunning = SessionState.GetBool(McpConstants.SESSION_KEY_SERVER_RUNNING, false);
-            int sessionPort = SessionState.GetInt(McpConstants.SESSION_KEY_SERVER_PORT, McpServerConfig.DEFAULT_PORT);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            bool sessionWasRunning = sessionManager.IsServerRunning;
+            int sessionPort = sessionManager.ServerPort;
             bool serverInstanceExists = mcpServer != null;
             bool serverInstanceRunning = mcpServer?.IsRunning ?? false;
             int serverInstancePort = mcpServer?.Port ?? -1;
@@ -442,11 +444,12 @@ namespace io.github.hatayama.uMCP
             await EditorDelay.DelayFrame(timeoutFrames);
             
             // Check if reconnecting flag is still set after timeout
-            bool isStillReconnecting = SessionState.GetBool(McpConstants.SESSION_KEY_RECONNECTING, false);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            bool isStillReconnecting = sessionManager.IsReconnecting;
             if (isStillReconnecting)
             {
                 McpLogger.LogWarning("[RECONNECTION] Timeout reached, clearing reconnecting flag");
-                SessionState.EraseBool(McpConstants.SESSION_KEY_RECONNECTING);
+                sessionManager.IsReconnecting = false;
             }
         }
         
@@ -462,12 +465,12 @@ namespace io.github.hatayama.uMCP
             await EditorDelay.DelayFrame(timeoutFrames);
             
             // Check if UI flag is still set after timeout
-            bool isStillShowingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            bool isStillShowingUI = sessionManager.ShowReconnectingUI;
             if (isStillShowingUI)
             {
                 McpLogger.LogDebug("[RECONNECTION UI] Timeout reached, clearing UI display flag");
-                SessionState.EraseBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI);
-                EditorPrefs.DeleteKey(McpConstants.EDITOR_PREFS_SHOW_RECONNECTING_UI); // Also clear EditorPrefs
+                sessionManager.ClearReconnectingFlags();
             }
         }
         
@@ -477,20 +480,21 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void ClearReconnectingFlag()
         {
-            bool wasReconnecting = SessionState.GetBool(McpConstants.SESSION_KEY_RECONNECTING, false);
-            bool wasShowingUI = SessionState.GetBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI, false);
+            McpSessionManager sessionManager = McpSessionManager.instance;
+            bool wasReconnecting = sessionManager.IsReconnecting;
+            bool wasShowingUI = sessionManager.ShowReconnectingUI;
             
-            if (wasReconnecting)
+            if (wasReconnecting || wasShowingUI)
             {
-                SessionState.EraseBool(McpConstants.SESSION_KEY_RECONNECTING);
-                McpLogger.LogDebug("[RECONNECTION] Client connected, cleared reconnecting flag");
-            }
-            
-            if (wasShowingUI)
-            {
-                SessionState.EraseBool(McpConstants.SESSION_KEY_SHOW_RECONNECTING_UI);
-                EditorPrefs.DeleteKey(McpConstants.EDITOR_PREFS_SHOW_RECONNECTING_UI); // Also clear EditorPrefs
-                McpLogger.LogDebug("[RECONNECTION UI] Client connected, cleared UI display flag");
+                sessionManager.ClearReconnectingFlags();
+                if (wasReconnecting)
+                {
+                    McpLogger.LogDebug("[RECONNECTION] Client connected, cleared reconnecting flag");
+                }
+                if (wasShowingUI)
+                {
+                    McpLogger.LogDebug("[RECONNECTION UI] Client connected, cleared UI display flag");
+                }
             }
         }
 

@@ -12,9 +12,7 @@ namespace io.github.hatayama.uMCP
         private Vector2 scrollPosition;
         private bool forceRecompile = false;
 
-        // Keys for SessionState
-        private const string LOG_TEXT_KEY = "CompileEditorWindow.LogText";
-        private const string HAS_DATA_KEY = "CompileEditorWindow.HasData";
+        // Note: Compile window data is now managed via McpSessionManager
 
         [MenuItem("uMCP/CompileWindow/Window")]
         public static void ShowWindow()
@@ -32,11 +30,11 @@ namespace io.github.hatayama.uMCP
                 compileChecker = new CompileChecker();
                 logDisplay = new CompileLogDisplay();
 
-                // Restore persisted logs from SessionState
-                bool hasPersistedData = SessionState.GetBool(HAS_DATA_KEY, false);
+                // Restore persisted logs from McpSessionManager
+                bool hasPersistedData = McpSessionManager.instance.CompileWindowHasData;
                 if (hasPersistedData)
                 {
-                    string persistentLogText = SessionState.GetString(LOG_TEXT_KEY, "");
+                    string persistentLogText = McpSessionManager.instance.CompileWindowLogText;
                     logDisplay.RestoreFromText(persistentLogText);
                 }
 
@@ -140,9 +138,9 @@ namespace io.github.hatayama.uMCP
         {
             logDisplay.AppendCompletionMessage(result);
 
-            // Persist log to SessionState
-            SessionState.SetString(LOG_TEXT_KEY, logDisplay.LogText);
-            SessionState.SetBool(HAS_DATA_KEY, true);
+            // Persist log to McpSessionManager
+            McpSessionManager.instance.CompileWindowLogText = logDisplay.LogText;
+            McpSessionManager.instance.CompileWindowHasData = true;
 
             Repaint();
         }
@@ -171,9 +169,8 @@ namespace io.github.hatayama.uMCP
             logDisplay.Clear();
             compileChecker.ClearMessages();
 
-            // Also clear SessionState
-            SessionState.EraseString(LOG_TEXT_KEY);
-            SessionState.EraseBool(HAS_DATA_KEY);
+            // Also clear McpSessionManager data
+            McpSessionManager.instance.ClearCompileWindowData();
 
             Repaint();
         }
