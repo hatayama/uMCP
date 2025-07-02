@@ -145,6 +145,12 @@ namespace io.github.hatayama.uMCP
                 
                 McpLogger.LogInfo($"[UpdateClientName] {clientEndpoint} (PID: {targetClient.ProcessId}): '{targetClient.ClientName}' → '{clientName}' (Success: {updateResult})");
                 McpLogger.LogInfo($"[UpdateClientName] ConnectedAt preserved: {updatedClient.ConnectedAt:HH:mm:ss.fff}");
+                
+                // Clear reconnecting flags when client name is successfully set (client is now fully connected)
+                if (updateResult && clientName != McpConstants.UNKNOWN_CLIENT_NAME)
+                {
+                    McpServerController.ClearReconnectingFlag();
+                }
             }
             else
             {

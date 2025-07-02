@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using System.Linq;
 
 #if UMCP_DEBUG
 using System.Collections.Generic;
@@ -297,13 +298,16 @@ namespace io.github.hatayama.uMCP
             // Check reconnecting UI flags from McpSessionManager
             bool showReconnectingUIFlag = McpSessionManager.instance.ShowReconnectingUI;
             bool showPostCompileUIFlag = McpSessionManager.instance.ShowPostCompileReconnectingUI;
-            bool hasClients = connectedClients != null && connectedClients.Count > 0;
             
-            // Show reconnecting if either flag is true and no clients are connected
-            bool showReconnectingUI = (showReconnectingUIFlag || showPostCompileUIFlag) && !hasClients;
+            // Only count clients with proper names (not Unknown Client) as "connected"
+            bool hasNamedClients = connectedClients != null && 
+                connectedClients.Any(client => client.ClientName != McpConstants.UNKNOWN_CLIENT_NAME);
             
-            // Clear post-compile flag when clients are connected
-            if (hasClients && showPostCompileUIFlag)
+            // Show reconnecting if either flag is true and no named clients are connected
+            bool showReconnectingUI = (showReconnectingUIFlag || showPostCompileUIFlag) && !hasNamedClients;
+            
+            // Clear post-compile flag when named clients are connected
+            if (hasNamedClients && showPostCompileUIFlag)
             {
                 McpSessionManager.instance.ClearPostCompileReconnectingUI();
             }
