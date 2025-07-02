@@ -45,7 +45,6 @@ jobs:
           path: Packages/src
           release-type: node
           package-name: "io.github.hatayama.umcp"
-          include-component-in-tag: false
           token: ${{ secrets.GITHUB_TOKEN }}
           extra-files: |
             .TypeScriptServer/package.json
