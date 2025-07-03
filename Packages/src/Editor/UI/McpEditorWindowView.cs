@@ -146,11 +146,6 @@ namespace io.github.hatayama.uMCP
                     {
                         EditorGUILayout.HelpBox($"Warning: {editorName} settings port number may not match current server port ({data.CurrentPort}).", MessageType.Warning);
                         
-                        if (GUILayout.Button($"Update {editorName} settings to port {data.CurrentPort}"))
-                        {
-                            configureCallback?.Invoke(editorName);
-                        }
-                        
                         EditorGUILayout.Space();
                     }
                     

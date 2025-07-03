@@ -57,6 +57,23 @@ namespace io.github.hatayama.uMCP
             // Find available port starting from the requested port
             int availablePort = FindAvailablePort(port);
             
+            // Show confirmation dialog if port was changed
+            if (availablePort != port)
+            {
+                bool userConfirmed = UnityEditor.EditorUtility.DisplayDialog(
+                    "Port Conflict",
+                    $"Port {port} is already in use.\n\nWould you like to use port {availablePort} instead?",
+                    "OK",
+                    "Cancel"
+                );
+                
+                if (!userConfirmed)
+                {
+                    McpLogger.LogInfo($"Server startup cancelled by user. Requested port {port} was in use.");
+                    return;
+                }
+            }
+            
             // Validate server configuration before starting
             ValidateServerConfiguration(availablePort);
             

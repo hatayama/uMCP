@@ -217,6 +217,8 @@ namespace io.github.hatayama.uMCP
 
         /// <summary>
         /// Gets the configured port number from the editor settings.
+        /// If server is running, tries to find config matching the current server port.
+        /// Otherwise returns the first available configuration.
         /// </summary>
         /// <returns>The configured port number.</returns>
         public int GetConfiguredPort()
@@ -230,7 +232,13 @@ namespace io.github.hatayama.uMCP
             
             McpConfig config = _repository.Load(configPath);
             
-            // Find Unity MCP server configuration
+            // If server is running, try to find config matching current server port
+            bool serverIsRunning = McpServerController.IsServerRunning;
+            int currentServerPort = serverIsRunning ? McpServerController.ServerPort : -1;
+            
+            // Collect all Unity MCP configurations
+            var umcpConfigs = new System.Collections.Generic.List<(string key, int port)>();
+            
             foreach (var serverEntry in config.mcpServers)
             {
                 if (serverEntry.Key.StartsWith(McpConstants.PROJECT_NAME))
@@ -240,13 +248,29 @@ namespace io.github.hatayama.uMCP
                         string portString = serverEntry.Value.env[McpConstants.UNITY_TCP_PORT_ENV_KEY];
                         if (int.TryParse(portString, out int port))
                         {
-                            return port;
+                            umcpConfigs.Add((serverEntry.Key, port));
                         }
                     }
                 }
             }
             
-            throw new System.InvalidOperationException("Unity MCP server configuration not found.");
+            if (umcpConfigs.Count == 0)
+            {
+                throw new System.InvalidOperationException("Unity MCP server configuration not found.");
+            }
+            
+            // If server is running, find config matching current server port
+            if (serverIsRunning)
+            {
+                var matchingConfig = umcpConfigs.FirstOrDefault(c => c.port == currentServerPort);
+                if (matchingConfig != default)
+                {
+                    return matchingConfig.port;
+                }
+            }
+            
+            // Otherwise return the first configuration
+            return umcpConfigs[0].port;
         }
 
         /// <summary>
