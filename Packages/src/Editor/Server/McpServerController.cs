@@ -261,14 +261,27 @@ namespace io.github.hatayama.uMCP
                     System.Threading.Thread.Sleep(200);
                 }
                 
-                mcpServer = new McpBridgeServer();
-                mcpServer.StartServer(port);
+                // Find available port starting from the requested port
+                int availablePort = FindAvailablePort(port);
                 
-                McpLogger.LogInfo($"Unity MCP Server restored on port {port}");
+                mcpServer = new McpBridgeServer();
+                mcpServer.StartServer(availablePort);
+                
+                // Update session manager with the actual port used
+                McpSessionManager sessionManager = McpSessionManager.instance;
+                sessionManager.ServerPort = availablePort;
+                
+                // Log warning if port was changed
+                if (availablePort != port)
+                {
+                    McpLogger.LogWarning($"Requested port {port} was in use during restoration. Server restored on port {availablePort} instead.");
+                }
+                
+                McpLogger.LogInfo($"Unity MCP Server restored on port {availablePort}");
                 
                 // Clear server-side reconnecting flag on successful restoration
                 // NOTE: Do NOT clear UI display flag here - let it be cleared by timeout or client connection
-                McpSessionManager.instance.IsReconnecting = false;
+                sessionManager.IsReconnecting = false;
                 McpLogger.LogDebug("[RECONNECTION] Server restored successfully, cleared server reconnecting flag");
                 
                 // Commands changed notification will be sent by OnAfterAssemblyReload
