@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 
+
 #if UMCP_DEBUG
 using System.Collections.Generic;
 using System;
@@ -275,7 +276,7 @@ namespace io.github.hatayama.uMCP
             {
                 // Check if requested port is available
                 int requestedPort = _model.UI.CustomPort;
-                if (McpBridgeServer.IsPortInUse(requestedPort))
+                if (NetworkUtility.IsPortInUse(requestedPort))
                 {
                     hasPortWarning = true;
                     portWarningMessage = $"Port {requestedPort} is already in use. Server will automatically find an available port when started.";

@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 
-namespace io.github.hatayama.uMCP.Editor
+namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Unity Editor menu items for toggling UMCP_DEBUG scripting define symbol

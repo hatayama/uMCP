@@ -17,12 +17,8 @@ namespace io.github.hatayama.uMCP
         /// <returns>Settings data for Unity MCP.</returns>
         public static McpServerConfigData CreateUnityMcpConfig(int port, string serverPath, McpEditorType editorType)
         {
-            // Convert server path to WSL2 format if needed for Claude Code
-            string finalServerPath = serverPath;
-            if (editorType == McpEditorType.ClaudeCode && UnityMcpPathResolver.IsWSL2Environment())
-            {
-                finalServerPath = UnityMcpPathResolver.ConvertWindowsPathToWSL2(serverPath);
-            }
+            // Convert server path to appropriate format based on editor type
+            string finalServerPath = GetServerPathForEditor(serverPath, editorType);
 
             Dictionary<string, string> env = new Dictionary<string, string>
             {
@@ -35,6 +31,53 @@ namespace io.github.hatayama.uMCP
                 args: new[] { finalServerPath },
                 env: env
             );
+        }
+
+        /// <summary>
+        /// Get appropriate server path based on editor type
+        /// </summary>
+        /// <param name="serverPath">The original server path</param>
+        /// <param name="editorType">The editor type</param>
+        /// <returns>The processed server path</returns>
+        private static string GetServerPathForEditor(string serverPath, McpEditorType editorType)
+        {
+            // Desktop editors (Cursor, VSCode, Windsurf) require absolute path for proper connection
+            if (editorType == McpEditorType.Cursor || 
+                editorType == McpEditorType.VSCode || 
+                editorType == McpEditorType.Windsurf)
+            {
+                return serverPath;
+            }
+            
+            // CLI-based editors (Claude Code, Gemini CLI) use relative path for better portability
+            return ConvertToRelativePath(serverPath);
+        }
+
+        /// <summary>
+        /// Convert absolute path to relative path for all editors
+        /// </summary>
+        /// <param name="absolutePath">The absolute path to convert</param>
+        /// <returns>The relative path from project root</returns>
+        private static string ConvertToRelativePath(string absolutePath)
+        {
+            string projectRoot = UnityMcpPathResolver.GetProjectRoot();
+            
+            // Check if the path is within the project
+            if (absolutePath.StartsWith(projectRoot))
+            {
+                // Remove project root and convert to forward slashes
+                string relativePath = absolutePath.Substring(projectRoot.Length);
+                if (relativePath.StartsWith("\\") || relativePath.StartsWith("/"))
+                {
+                    relativePath = relativePath.Substring(1);
+                }
+                
+                // Convert backslashes to forward slashes for better compatibility
+                return relativePath.Replace('\\', '/');
+            }
+            
+            // If not within project, return as-is
+            return absolutePath;
         }
 
         /// <summary>

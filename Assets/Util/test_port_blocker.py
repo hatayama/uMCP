@@ -9,7 +9,7 @@ import socket
 import time
 import sys
 
-def block_port(port=7400):
+def block_port(port=8700):
     """Block the specified port to test uMCP port adjustment"""
     try:
         # Create socket and bind to port
@@ -21,8 +21,8 @@ def block_port(port=7400):
         print(f"✅ Port {port} is now occupied and blocked")
         print("📋 Now you can test uMCP automatic port adjustment:")
         print("   1. Open Unity uMCP Window")
-        print("   2. Try to start server on port 7400")
-        print("   3. It should automatically find port 7401")
+        print("   2. Try to start server on port 8700")
+        print("   3. It should automatically find port 8701")
         print("\n🛑 Press Ctrl+C to stop blocking the port")
         
         # Keep the port blocked
@@ -51,13 +51,13 @@ def block_port(port=7400):
 
 if __name__ == "__main__":
     # Get port number from command line argument or use default
-    port = 7400
+    port = 8700
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
         except ValueError:
-            print("❌ Invalid port number. Using default port 7400")
-            port = 7400
+            print("❌ Invalid port number. Using default port 8700")
+            port = 8700
     
     print(f"🚀 Starting port blocker for port {port}")
     block_port(port)
