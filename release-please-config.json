@@ -1,11 +1,10 @@
 {
+  "release-type": "node",
+  "include-v-in-tag": true,
+  "extra-files": [
+    "Packages/src/.TypeScriptServer/package.json"
+  ],
   "packages": {
-    "Packages/src": {
-      "release-type": "node",
-      "include-v-in-tag": true,
-      "extra-files": [
-        ".TypeScriptServer/package.json"
-      ]
-    }
+    "Packages/src": {}
   }
 }

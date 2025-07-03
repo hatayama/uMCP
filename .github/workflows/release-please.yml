@@ -42,9 +42,4 @@ jobs:
       - name: 🚀 Run release‑please
         uses: googleapis/release-please-action@v3
         with:
-          path: Packages/src
-          release-type: node
-          package-name: "io.github.hatayama.umcp"
           token: ${{ secrets.GITHUB_TOKEN }}
-          extra-files: |
-            .TypeScriptServer/package.json
