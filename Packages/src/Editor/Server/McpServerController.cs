@@ -54,8 +54,28 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void StartServer(int port = McpServerConfig.DEFAULT_PORT)
         {
+            // Find available port starting from the requested port
+            int availablePort = FindAvailablePort(port);
+            
+            // Show confirmation dialog if port was changed
+            if (availablePort != port)
+            {
+                bool userConfirmed = UnityEditor.EditorUtility.DisplayDialog(
+                    "Port Conflict",
+                    $"Port {port} is already in use.\n\nWould you like to use port {availablePort} instead?",
+                    "OK",
+                    "Cancel"
+                );
+                
+                if (!userConfirmed)
+                {
+                    McpLogger.LogInfo($"Server startup cancelled by user. Requested port {port} was in use.");
+                    return;
+                }
+            }
+            
             // Validate server configuration before starting
-            ValidateServerConfiguration(port);
+            ValidateServerConfiguration(availablePort);
             
             // Always stop the existing server (to release the port).
             if (mcpServer != null)
@@ -68,14 +88,20 @@ namespace io.github.hatayama.uMCP
             }
 
             mcpServer = new McpBridgeServer();
-            mcpServer.StartServer(port);
+            mcpServer.StartServer(availablePort);
             
             // Save the state to SessionState.
             McpSessionManager sessionManager = McpSessionManager.instance;
             sessionManager.IsServerRunning = true;
-            sessionManager.ServerPort = port;
+            sessionManager.ServerPort = availablePort;
             
-            McpLogger.LogInfo($"Unity MCP Server started on port {port}");
+            // Log warning if port was changed
+            if (availablePort != port)
+            {
+                McpLogger.LogWarning($"Requested port {port} was in use. Server started on port {availablePort} instead.");
+            }
+            
+            McpLogger.LogInfo($"Unity MCP Server started on port {availablePort}");
         }
 
         /// <summary>
@@ -252,14 +278,27 @@ namespace io.github.hatayama.uMCP
                     System.Threading.Thread.Sleep(200);
                 }
                 
-                mcpServer = new McpBridgeServer();
-                mcpServer.StartServer(port);
+                // Find available port starting from the requested port
+                int availablePort = FindAvailablePort(port);
                 
-                McpLogger.LogInfo($"Unity MCP Server restored on port {port}");
+                mcpServer = new McpBridgeServer();
+                mcpServer.StartServer(availablePort);
+                
+                // Update session manager with the actual port used
+                McpSessionManager sessionManager = McpSessionManager.instance;
+                sessionManager.ServerPort = availablePort;
+                
+                // Log warning if port was changed
+                if (availablePort != port)
+                {
+                    McpLogger.LogWarning($"Requested port {port} was in use during restoration. Server restored on port {availablePort} instead.");
+                }
+                
+                McpLogger.LogInfo($"Unity MCP Server restored on port {availablePort}");
                 
                 // Clear server-side reconnecting flag on successful restoration
                 // NOTE: Do NOT clear UI display flag here - let it be cleared by timeout or client connection
-                McpSessionManager.instance.IsReconnecting = false;
+                sessionManager.IsReconnecting = false;
                 McpLogger.LogDebug("[RECONNECTION] Server restored successfully, cleared server reconnecting flag");
                 
                 // Commands changed notification will be sent by OnAfterAssemblyReload
@@ -500,6 +539,43 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Finds an available port starting from the given port number
+        /// </summary>
+        /// <param name="startPort">The starting port number to check</param>
+        /// <returns>The first available port number</returns>
+        private static int FindAvailablePort(int startPort)
+        {
+            const int maxAttempts = 10;
+            
+            for (int i = 0; i < maxAttempts; i++)
+            {
+                int candidatePort = startPort + i;
+                
+                // Skip if port is out of valid range
+                if (candidatePort > 65535)
+                {
+                    break;
+                }
+                
+                // Skip commonly used system ports
+                if (System.Array.IndexOf(CommonSystemPorts, candidatePort) != -1)
+                {
+                    continue;
+                }
+                
+                // Check if port is available
+                if (!McpBridgeServer.IsPortInUse(candidatePort))
+                {
+                    return candidatePort;
+                }
+            }
+            
+            // If no available port found, throw exception
+            throw new System.InvalidOperationException(
+                $"Could not find an available port starting from {startPort}. Tried {maxAttempts} ports.");
+        }
+
+        /// <summary>
         /// Validates server configuration before starting
         /// Implements fail-fast behavior for invalid configurations
         /// </summary>
@@ -512,13 +588,6 @@ namespace io.github.hatayama.uMCP
                     $"Port number must be between 1 and 65535. Received: {port}");
             }
 
-            // Check for commonly used ports that might conflict (server-specific strict validation)
-            if (System.Array.IndexOf(CommonSystemPorts, port) != -1)
-            {
-                throw new System.InvalidOperationException(
-                    $"Port {port} is a commonly used system port and should not be used for MCP server. Please choose a different port (e.g., 7400-7500).");
-            }
-
             // Validate Unity Editor state
             if (EditorApplication.isCompiling)
             {
@@ -526,14 +595,8 @@ namespace io.github.hatayama.uMCP
                     "Cannot start MCP server while Unity is compiling. Please wait for compilation to complete.");
             }
 
-            // Check if port is already in use
-            if (McpBridgeServer.IsPortInUse(port))
-            {
-                throw new System.InvalidOperationException(
-                    $"Port {port} is already in use. Please choose a different port or stop the service using this port.");
-            }
-
             // Server configuration validation passed
+            // Note: Port availability and system port conflicts are handled by FindAvailablePort
         }
     }
 }

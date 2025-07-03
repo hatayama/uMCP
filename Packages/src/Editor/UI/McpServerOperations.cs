@@ -84,20 +84,9 @@ namespace io.github.hatayama.uMCP
                 return true; // Already running, treat as success
             }
 
-            // Check if another process is using the port
-            bool portInUseByOtherProcess = McpBridgeServer.IsPortInUse(currentPort);
+            // Note: Port conflict check is now handled by McpServerController.StartServer
+            // which automatically finds an available port and logs appropriate warnings
             
-            if (portInUseByOtherProcess)
-            {
-                if (showErrorDialogs)
-                {
-                    EditorUtility.DisplayDialog("Port Error",
-                        $"Port {currentPort} is already in use by another process.\nPlease choose a different port number.",
-                        "OK");
-                }
-                return false;
-            }
-
             try
             {
                 McpServerController.StartServer(currentPort);

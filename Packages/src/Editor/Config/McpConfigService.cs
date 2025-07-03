@@ -216,6 +216,82 @@ namespace io.github.hatayama.uMCP
 
 
         /// <summary>
+        /// Gets the configured port number from the editor settings.
+        /// If server is running, tries to find config matching the current server port.
+        /// Otherwise returns the first available configuration.
+        /// </summary>
+        /// <returns>The configured port number.</returns>
+        public int GetConfiguredPort()
+        {
+            McpConfig config = LoadConfiguration();
+            System.Collections.Generic.List<(string key, int port)> umcpConfigs = ExtractUmcpConfigurations(config);
+            return SelectBestMatchingPort(umcpConfigs);
+        }
+
+        /// <summary>
+        /// Load configuration file from the appropriate path
+        /// </summary>
+        /// <returns>The loaded MCP configuration</returns>
+        private McpConfig LoadConfiguration()
+        {
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
+            
+            if (!_repository.Exists(configPath))
+            {
+                throw new System.InvalidOperationException("Configuration file not found.");
+            }
+            
+            return _repository.Load(configPath);
+        }
+
+        /// <summary>
+        /// Extract Unity MCP configurations from the loaded config
+        /// </summary>
+        /// <param name="config">The loaded MCP configuration</param>
+        /// <returns>List of Unity MCP server configurations with their ports</returns>
+        private System.Collections.Generic.List<(string key, int port)> ExtractUmcpConfigurations(McpConfig config)
+        {
+            System.Collections.Generic.List<(string key, int port)> umcpConfigs = new System.Collections.Generic.List<(string key, int port)>();
+            
+            foreach (System.Collections.Generic.KeyValuePair<string, McpServerConfigData> serverEntry in config.mcpServers)
+            {
+                if (!serverEntry.Key.StartsWith(McpConstants.PROJECT_NAME)) continue;
+                
+                if (!serverEntry.Value.env.ContainsKey(McpConstants.UNITY_TCP_PORT_ENV_KEY)) continue;
+                
+                string portString = serverEntry.Value.env[McpConstants.UNITY_TCP_PORT_ENV_KEY];
+                if (int.TryParse(portString, out int port))
+                {
+                    umcpConfigs.Add((serverEntry.Key, port));
+                }
+            }
+            
+            if (umcpConfigs.Count == 0)
+            {
+                throw new System.InvalidOperationException("Unity MCP server configuration not found.");
+            }
+            
+            return umcpConfigs;
+        }
+
+        /// <summary>
+        /// Select the best matching port based on server status
+        /// </summary>
+        /// <param name="umcpConfigs">Available Unity MCP configurations</param>
+        /// <returns>The most appropriate port number</returns>
+        private int SelectBestMatchingPort(System.Collections.Generic.List<(string key, int port)> umcpConfigs)
+        {
+            bool serverIsRunning = McpServerController.IsServerRunning;
+            
+            if (!serverIsRunning) return umcpConfigs[0].port;
+            
+            int currentServerPort = McpServerController.ServerPort;
+            (string key, int port) matchingConfig = umcpConfigs.FirstOrDefault(c => c.port == currentServerPort);
+            
+            return matchingConfig != default ? matchingConfig.port : umcpConfigs[0].port;
+        }
+
+        /// <summary>
         /// Validates configuration parameters for fail-fast behavior
         /// </summary>
         private void ValidateConfigurationParameters(int port)

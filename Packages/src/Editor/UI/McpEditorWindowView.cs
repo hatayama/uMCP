@@ -40,6 +40,12 @@ namespace io.github.hatayama.uMCP
             }
             EditorGUI.EndDisabledGroup();
             
+            // Port warning message
+            if (data.HasPortWarning && !string.IsNullOrEmpty(data.PortWarningMessage))
+            {
+                EditorGUILayout.HelpBox(data.PortWarningMessage, MessageType.Warning);
+            }
+            
             EditorGUILayout.Space();
             
             // Toggle Server button
@@ -139,16 +145,11 @@ namespace io.github.hatayama.uMCP
                     if (data.HasPortMismatch)
                     {
                         EditorGUILayout.HelpBox($"Warning: {editorName} settings port number may not match current server port ({data.CurrentPort}).", MessageType.Warning);
-                        
-                        if (GUILayout.Button($"Update {editorName} settings to port {data.CurrentPort}"))
-                        {
-                            configureCallback?.Invoke(editorName);
-                        }
-                        
-                        EditorGUILayout.Space();
                     }
-                    
-                    EditorGUILayout.HelpBox($"{editorName} settings are already configured.", MessageType.Info);
+                    else
+                    {
+                        EditorGUILayout.HelpBox($"{editorName} settings are already configured.", MessageType.Info);
+                    }
                 }
                 else
                 {
