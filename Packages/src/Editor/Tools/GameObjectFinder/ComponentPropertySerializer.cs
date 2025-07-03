@@ -13,118 +13,79 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class ComponentPropertySerializer
     {
-        private readonly HashSet<Type> supportedTypes = new HashSet<Type>
-        {
-            typeof(string),
-            typeof(int),
-            typeof(float),
-            typeof(double),
-            typeof(bool),
-            typeof(Vector2),
-            typeof(Vector3),
-            typeof(Vector4),
-            typeof(Quaternion),
-            typeof(Color),
-            typeof(Color32),
-            typeof(Rect),
-            typeof(Bounds),
-            typeof(Matrix4x4)
-        };
         
-        // Properties that can cause infinite loops or crashes
-        private readonly HashSet<string> blacklistedProperties = new HashSet<string>
-        {
-            // Camera component properties that can cause issues
-            "targetTexture",
-            "activeTexture",
-            "commandBufferCount",
-            "allCameras",
-            "current",
-            "main",
-            "scene",
-            
-            // Transform properties that reference other transforms
-            "root",
-            "parent",
-            
-            // General Unity properties that can cause issues
-            "gameObject",
-            "transform",
-            "rigidbody",
-            "rigidbody2D",
-            "camera",
-            "light",
-            "animation",
-            "constantForce",
-            "renderer",
-            "audio",
-            "networkView",
-            "collider",
-            "collider2D",
-            "hingeJoint",
-            "particleSystem",
-            
-            // Matrix properties that might have circular references
-            "worldToLocalMatrix",
-            "localToWorldMatrix"
-        };
         
-        public ComponentPropertyInfo[] SerializeProperties(Component component, bool includeInheritedProperties)
+        public ComponentPropertyInfo[] SerializeProperties(Component component)
         {
             if (component == null)
                 return new ComponentPropertyInfo[0];
                 
-            Type componentType = component.GetType();
-            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance;
-            
-            if (!includeInheritedProperties)
-                bindingFlags |= BindingFlags.DeclaredOnly;
-                
-            PropertyInfo[] properties = componentType.GetProperties(bindingFlags);
             List<ComponentPropertyInfo> propertyInfos = new List<ComponentPropertyInfo>();
             
-            foreach (PropertyInfo property in properties)
+            // Use SerializedObject to get only Inspector-visible properties
+            SerializedObject serializedObject = new SerializedObject(component);
+            SerializedProperty iterator = serializedObject.GetIterator();
+            
+            // Skip the first property (m_Script)
+            if (iterator.NextVisible(true))
             {
-                if (!property.CanRead)
-                    continue;
-                    
-                if (!IsTypeSupported(property.PropertyType))
-                    continue;
-                
-                // Skip blacklisted properties
-                if (blacklistedProperties.Contains(property.Name))
+                while (iterator.NextVisible(false))
                 {
-                    McpLogger.LogDebug($"[ComponentPropertySerializer] Skipped blacklisted property '{property.Name}' on {component.GetType().Name}");
-                    continue;
-                }
-                    
-                try
-                {
-                    object value = property.GetValue(component);
-                    
-                    ComponentPropertyInfo info = new ComponentPropertyInfo
+                    object value = GetSerializedPropertyValue(iterator);
+                    if (value != null)
                     {
-                        name = property.Name,
-                        type = property.PropertyType.Name,
-                        value = SerializeValue(value)
-                    };
-                    
-                    propertyInfos.Add(info);
-                }
-                catch (Exception ex)
-                {
-                    // Log which property failed
-                    McpLogger.LogWarning($"[ComponentPropertySerializer] Skipped property '{property.Name}' on {component.GetType().Name}: {ex.Message}");
+                        ComponentPropertyInfo info = new ComponentPropertyInfo
+                        {
+                            name = iterator.displayName,
+                            type = iterator.propertyType.ToString(),
+                            value = SerializeValue(value)
+                        };
+                        
+                        propertyInfos.Add(info);
+                    }
                 }
             }
             
             return propertyInfos.ToArray();
         }
         
-        private bool IsTypeSupported(Type type)
+        /// <summary>
+        /// Extract value from SerializedProperty based on its type
+        /// </summary>
+        private object GetSerializedPropertyValue(SerializedProperty property)
         {
-            return supportedTypes.Contains(type) || type.IsEnum;
+            switch (property.propertyType)
+            {
+                case SerializedPropertyType.Integer:
+                    return property.intValue;
+                case SerializedPropertyType.Boolean:
+                    return property.boolValue;
+                case SerializedPropertyType.Float:
+                    return property.floatValue;
+                case SerializedPropertyType.String:
+                    return property.stringValue;
+                case SerializedPropertyType.Color:
+                    return property.colorValue;
+                case SerializedPropertyType.Vector2:
+                    return property.vector2Value;
+                case SerializedPropertyType.Vector3:
+                    return property.vector3Value;
+                case SerializedPropertyType.Vector4:
+                    return property.vector4Value;
+                case SerializedPropertyType.Rect:
+                    return property.rectValue;
+                case SerializedPropertyType.Bounds:
+                    return property.boundsValue;
+                case SerializedPropertyType.Quaternion:
+                    return property.quaternionValue;
+                case SerializedPropertyType.Enum:
+                    return property.enumNames[property.enumValueIndex];
+                default:
+                    return null; // Unsupported property types
+            }
         }
+        
+        
         
         private object SerializeValue(object value)
         {

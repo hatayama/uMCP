@@ -70,7 +70,7 @@ namespace io.github.hatayama.uMCP
                     isActive = details.IsActive,
                     tag = details.GameObject.tag,
                     layer = details.GameObject.layer,
-                    components = serializer.SerializeComponents(details.GameObject, parameters.IncludeInheritedProperties)
+                    components = serializer.SerializeComponents(details.GameObject)
                 };
                 
                 results.Add(result);

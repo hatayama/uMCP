@@ -144,15 +144,7 @@ namespace io.github.hatayama.uMCP
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                MaxDepth = 10,
-                Error = (sender, args) =>
-                {
-                    McpLogger.LogError($"[JsonRpcProcessor] Serialization error: {args.ErrorContext.Error.Message}");
-                    McpLogger.LogError($"[JsonRpcProcessor] Error path: {args.ErrorContext.Path}");
-                    McpLogger.LogError($"[JsonRpcProcessor] Member: {args.ErrorContext.Member}");
-                    // Don't handle the error - let it throw
-                    args.ErrorContext.Handled = false;
-                }
+                MaxDepth = 10
             };
             
             try
@@ -165,14 +157,20 @@ namespace io.github.hatayama.uMCP
                 };
                 return response.ToString(Formatting.None);
             }
-            catch (JsonSerializationException ex)
+            catch (Exception)
             {
-                McpLogger.LogError($"[JsonRpcProcessor] Failed to serialize response: {ex.Message}");
-                if (ex.InnerException != null)
+                // Return safe fallback response for any serialization errors
+                JObject fallbackResponse = new JObject
                 {
-                    McpLogger.LogError($"[JsonRpcProcessor] Inner exception: {ex.InnerException.Message}");
-                }
-                throw;
+                    ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
+                    ["id"] = id != null ? JToken.FromObject(id) : null,
+                    ["result"] = new JObject
+                    {
+                        ["error"] = "Serialization failed - returning safe fallback",
+                        ["commandType"] = result?.GetType()?.Name ?? "unknown"
+                    }
+                };
+                return fallbackResponse.ToString(Formatting.None);
             }
         }
 
