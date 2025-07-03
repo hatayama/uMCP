@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEditor;
 
 namespace io.github.hatayama.uMCP
 {
@@ -30,6 +31,44 @@ namespace io.github.hatayama.uMCP
             typeof(Matrix4x4)
         };
         
+        // Properties that can cause infinite loops or crashes
+        private readonly HashSet<string> blacklistedProperties = new HashSet<string>
+        {
+            // Camera component properties that can cause issues
+            "targetTexture",
+            "activeTexture",
+            "commandBufferCount",
+            "allCameras",
+            "current",
+            "main",
+            "scene",
+            
+            // Transform properties that reference other transforms
+            "root",
+            "parent",
+            
+            // General Unity properties that can cause issues
+            "gameObject",
+            "transform",
+            "rigidbody",
+            "rigidbody2D",
+            "camera",
+            "light",
+            "animation",
+            "constantForce",
+            "renderer",
+            "audio",
+            "networkView",
+            "collider",
+            "collider2D",
+            "hingeJoint",
+            "particleSystem",
+            
+            // Matrix properties that might have circular references
+            "worldToLocalMatrix",
+            "localToWorldMatrix"
+        };
+        
         public ComponentPropertyInfo[] SerializeProperties(Component component, bool includeInheritedProperties)
         {
             if (component == null)
@@ -51,6 +90,13 @@ namespace io.github.hatayama.uMCP
                     
                 if (!IsTypeSupported(property.PropertyType))
                     continue;
+                
+                // Skip blacklisted properties
+                if (blacklistedProperties.Contains(property.Name))
+                {
+                    McpLogger.LogDebug($"[ComponentPropertySerializer] Skipped blacklisted property '{property.Name}' on {component.GetType().Name}");
+                    continue;
+                }
                     
                 try
                 {
@@ -65,9 +111,10 @@ namespace io.github.hatayama.uMCP
                     
                     propertyInfos.Add(info);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Skip properties that throw exceptions when accessed
+                    // Log which property failed
+                    McpLogger.LogWarning($"[ComponentPropertySerializer] Skipped property '{property.Name}' on {component.GetType().Name}: {ex.Message}");
                 }
             }
             
@@ -105,7 +152,14 @@ namespace io.github.hatayama.uMCP
             else if (valueType == typeof(Quaternion))
             {
                 Quaternion q = (Quaternion)value;
-                return new { x = q.x, y = q.y, z = q.z, w = q.w };
+                return new 
+                { 
+                    x = q.x, 
+                    y = q.y, 
+                    z = q.z, 
+                    w = q.w,
+                    eulerAngles = new { x = q.eulerAngles.x, y = q.eulerAngles.y, z = q.eulerAngles.z }
+                };
             }
             else if (valueType == typeof(Color))
             {

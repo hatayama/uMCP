@@ -9,18 +9,28 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class GameObjectSearchFilters
     {
-        public static bool MatchesNamePattern(GameObject gameObject, string pattern, bool useRegex)
+        public static bool MatchesNamePattern(GameObject gameObject, string pattern, SearchMode searchMode)
         {
             if (string.IsNullOrEmpty(pattern))
                 return true;
                 
-            if (useRegex)
+            switch (searchMode)
             {
-                return Regex.IsMatch(gameObject.name, pattern);
-            }
-            else
-            {
-                return gameObject.name.Contains(pattern);
+                case SearchMode.Exact:
+                    return gameObject.name == pattern;
+                    
+                case SearchMode.Path:
+                    // Path search is handled separately in GameObjectFinderService
+                    return false;
+                    
+                case SearchMode.Regex:
+                    return Regex.IsMatch(gameObject.name, pattern);
+                    
+                case SearchMode.Contains:
+                    return gameObject.name.Contains(pattern);
+                    
+                default:
+                    return false;
             }
         }
         

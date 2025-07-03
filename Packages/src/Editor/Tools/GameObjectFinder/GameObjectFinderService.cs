@@ -9,43 +9,11 @@ namespace io.github.hatayama.uMCP
     /// Core service for finding GameObjects and extracting component information
     /// Related classes:
     /// - ComponentSerializer: Serializes component properties to ComponentInfo
-    /// - FindGameObjectCommand: API command that uses this service
     /// - FindGameObjectsCommand: API command for advanced search
     /// - GameObjectSearchFilters: Filtering logic for search operations
     /// </summary>
     public class GameObjectFinderService
     {
-        public GameObjectDetails FindGameObject(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                return new GameObjectDetails
-                {
-                    Found = false,
-                    ErrorMessage = "Path cannot be null or empty"
-                };
-            }
-            
-            GameObject gameObject = GameObject.Find(path);
-            
-            if (gameObject == null)
-            {
-                return new GameObjectDetails
-                {
-                    Found = false,
-                    ErrorMessage = $"GameObject not found at path: {path}"
-                };
-            }
-            
-            return new GameObjectDetails
-            {
-                Found = true,
-                GameObject = gameObject,
-                Name = gameObject.name,
-                Path = GetFullPath(gameObject),
-                IsActive = gameObject.activeSelf
-            };
-        }
         
         private string GetFullPath(GameObject gameObject)
         {
@@ -60,6 +28,25 @@ namespace io.github.hatayama.uMCP
         public GameObjectDetails[] FindGameObjectsAdvanced(GameObjectSearchOptions options)
         {
             List<GameObjectDetails> results = new List<GameObjectDetails>();
+            
+            // Handle hierarchy path search separately
+            if (options.SearchMode == SearchMode.Path && !string.IsNullOrEmpty(options.NamePattern))
+            {
+                GameObject found = GameObject.Find(options.NamePattern);
+                if (found != null)
+                {
+                    GameObjectDetails details = new GameObjectDetails
+                    {
+                        Found = true,
+                        GameObject = found,
+                        Name = found.name,
+                        Path = GetFullPath(found),
+                        IsActive = found.activeSelf
+                    };
+                    results.Add(details);
+                }
+                return results.ToArray();
+            }
             
             // Get all root GameObjects from all loaded scenes
             List<GameObject> allGameObjects = GetAllGameObjects(options.IncludeInactive);
@@ -124,7 +111,7 @@ namespace io.github.hatayama.uMCP
         private bool MatchesAllCriteria(GameObject gameObject, GameObjectSearchOptions options)
         {
             // Check name pattern
-            if (!GameObjectSearchFilters.MatchesNamePattern(gameObject, options.NamePattern, options.UseRegex))
+            if (!GameObjectSearchFilters.MatchesNamePattern(gameObject, options.NamePattern, options.SearchMode))
                 return false;
                 
             // Check required components

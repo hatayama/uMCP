@@ -6,7 +6,7 @@ namespace io.github.hatayama.uMCP
     public class GameObjectSearchOptions
     {
         public string NamePattern { get; set; } = "";
-        public bool UseRegex { get; set; } = false;
+        public SearchMode SearchMode { get; set; } = SearchMode.Exact;
         public string[] RequiredComponents { get; set; } = new string[0];
         public string Tag { get; set; } = "";
         public int? Layer { get; set; } = null;

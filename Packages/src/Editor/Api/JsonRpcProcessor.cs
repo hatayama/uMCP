@@ -110,14 +110,28 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static async Task<string> ProcessRpcRequest(JsonRpcRequest request, string originalJson)
         {
-            await MainThreadSwitcher.SwitchToMainThread();
-            await McpCommunicationLogger.LogRequest(originalJson);
-            BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
-            string response = CreateSuccessResponse(request.Id, result);
-            
-            McpLogger.LogDebug($"Method: [{request.Method}], executed in {result.ExecutionTimeMs}ms");
-            _ = McpCommunicationLogger.RecordLogResponse(response);
-            return response;
+            try
+            {
+                await MainThreadSwitcher.SwitchToMainThread();
+                await McpCommunicationLogger.LogRequest(originalJson);
+                BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
+                string response = CreateSuccessResponse(request.Id, result);
+                McpLogger.LogDebug($"Method: [{request.Method}], executed in {result.ExecutionTimeMs}ms");
+                _ = McpCommunicationLogger.RecordLogResponse(response);
+                return response;
+            }
+            catch (JsonSerializationException ex)
+            {
+                McpLogger.LogError($"JSON serialization error in method [{request.Method}]: {ex.Message}");
+                UnityEngine.Debug.LogError($"[JsonRpcProcessor] JSON serialization error: {ex.Message}\nStack trace: {ex.StackTrace}");
+                return CreateErrorResponse(request.Id, ex);
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogError($"Error processing method [{request.Method}]: {ex.Message}");
+                UnityEngine.Debug.LogError($"[JsonRpcProcessor] Error: {ex.Message}\nStack trace: {ex.StackTrace}");
+                return CreateErrorResponse(request.Id, ex);
+            }
         }
 
         /// <summary>
@@ -127,13 +141,39 @@ namespace io.github.hatayama.uMCP
         /// <param name="result">Command execution result</param>
         private static string CreateSuccessResponse(object id, BaseCommandResponse result)
         {
-            JObject response = new JObject
+            JsonSerializerSettings settings = new JsonSerializerSettings
             {
-                ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                ["id"] = id != null ? JToken.FromObject(id) : null,
-                ["result"] = JToken.FromObject(result)
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                MaxDepth = 10,
+                Error = (sender, args) =>
+                {
+                    McpLogger.LogError($"[JsonRpcProcessor] Serialization error: {args.ErrorContext.Error.Message}");
+                    McpLogger.LogError($"[JsonRpcProcessor] Error path: {args.ErrorContext.Path}");
+                    McpLogger.LogError($"[JsonRpcProcessor] Member: {args.ErrorContext.Member}");
+                    // Don't handle the error - let it throw
+                    args.ErrorContext.Handled = false;
+                }
             };
-            return response.ToString(Formatting.None);
+            
+            try
+            {
+                JObject response = new JObject
+                {
+                    ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
+                    ["id"] = id != null ? JToken.FromObject(id) : null,
+                    ["result"] = JToken.FromObject(result, JsonSerializer.Create(settings))
+                };
+                return response.ToString(Formatting.None);
+            }
+            catch (JsonSerializationException ex)
+            {
+                McpLogger.LogError($"[JsonRpcProcessor] Failed to serialize response: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    McpLogger.LogError($"[JsonRpcProcessor] Inner exception: {ex.InnerException.Message}");
+                }
+                throw;
+            }
         }
 
         /// <summary>

@@ -35,7 +35,7 @@ namespace io.github.hatayama.uMCP
             GameObjectSearchOptions options = new GameObjectSearchOptions
             {
                 NamePattern = parameters.NamePattern,
-                UseRegex = parameters.UseRegex,
+                SearchMode = parameters.SearchMode,
                 RequiredComponents = parameters.RequiredComponents,
                 Tag = parameters.Tag,
                 Layer = parameters.Layer,
@@ -46,6 +46,16 @@ namespace io.github.hatayama.uMCP
             // Execute search
             GameObjectFinderService service = new GameObjectFinderService();
             GameObjectDetails[] foundObjects = service.FindGameObjectsAdvanced(options);
+            
+            // Log search results for debugging
+            if (foundObjects.Length > parameters.MaxResults)
+            {
+                McpLogger.LogWarning($"[FindGameObjectsCommand] Found {foundObjects.Length} objects but limited to {parameters.MaxResults}");
+            }
+            else
+            {
+                McpLogger.LogDebug($"[FindGameObjectsCommand] Found {foundObjects.Length} objects");
+            }
             
             // Convert to response format
             ComponentSerializer serializer = new ComponentSerializer();

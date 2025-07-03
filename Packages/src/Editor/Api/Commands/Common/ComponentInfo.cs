@@ -1,15 +1,8 @@
 namespace io.github.hatayama.uMCP
 {
-    public class FindGameObjectResponse : BaseCommandResponse
-    {
-        public string name { get; set; }
-        public string path { get; set; }
-        public bool isActive { get; set; }
-        public ComponentInfo[] components { get; set; }
-        public bool found { get; set; }
-        public string errorMessage { get; set; }
-    }
-    
+    /// <summary>
+    /// Represents information about a Unity component
+    /// </summary>
     public class ComponentInfo
     {
         public string type { get; set; }
@@ -17,6 +10,9 @@ namespace io.github.hatayama.uMCP
         public ComponentPropertyInfo[] properties { get; set; }
     }
     
+    /// <summary>
+    /// Represents a property of a Unity component
+    /// </summary>
     public class ComponentPropertyInfo
     {
         public string name { get; set; }

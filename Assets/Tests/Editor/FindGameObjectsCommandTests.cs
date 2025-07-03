@@ -50,7 +50,8 @@ namespace io.github.hatayama.uMCP.Tests
             // Arrange
             JObject paramsJson = new JObject
             {
-                ["NamePattern"] = "TestObject"
+                ["NamePattern"] = "TestObject",
+                ["SearchMode"] = "Contains"
             };
             
             // Act
@@ -224,7 +225,7 @@ namespace io.github.hatayama.uMCP.Tests
             JObject paramsJson = new JObject
             {
                 ["NamePattern"] = "Enemy\\d+",
-                ["UseRegex"] = true
+                ["SearchMode"] = "Regex"
             };
             
             try
@@ -262,6 +263,7 @@ namespace io.github.hatayama.uMCP.Tests
             JObject paramsJson = new JObject
             {
                 ["NamePattern"] = "Object",
+                ["SearchMode"] = "Contains",
                 ["IncludeInactive"] = true
             };
             
@@ -290,6 +292,7 @@ namespace io.github.hatayama.uMCP.Tests
             JObject paramsJson = new JObject
             {
                 ["NamePattern"] = "Object",
+                ["SearchMode"] = "Contains",
                 ["IncludeInactive"] = false
             };
             
@@ -317,6 +320,7 @@ namespace io.github.hatayama.uMCP.Tests
             JObject paramsJson = new JObject
             {
                 ["NamePattern"] = "Object",
+                ["SearchMode"] = "Contains",
                 ["RequiredComponents"] = new JArray { "BoxCollider" },
                 ["Layer"] = 8
             };
@@ -350,6 +354,7 @@ namespace io.github.hatayama.uMCP.Tests
             JObject paramsJson = new JObject
             {
                 ["NamePattern"] = "ManyObject",
+                ["SearchMode"] = "Contains",
                 ["MaxResults"] = 5
             };
             
@@ -377,6 +382,113 @@ namespace io.github.hatayama.uMCP.Tests
                 {
                     if (obj != null) Object.DestroyImmediate(obj);
                 }
+            }
+        }
+        
+        [Test]
+        public async Task ExecuteAsync_WithPathSearchMode_FindsObjectByHierarchyPath()
+        {
+            // Arrange
+            GameObject parent = new GameObject("Parent");
+            GameObject child = new GameObject("Child");
+            GameObject grandchild = new GameObject("Grandchild");
+            child.transform.SetParent(parent.transform);
+            grandchild.transform.SetParent(child.transform);
+            
+            JObject paramsJson = new JObject
+            {
+                ["NamePattern"] = "Parent/Child/Grandchild",
+                ["SearchMode"] = "Path"
+            };
+            
+            try
+            {
+                // Act
+                BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+                FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
+                
+                // Assert
+                Assert.That(response, Is.Not.Null);
+                Assert.That(response.totalFound, Is.EqualTo(1));
+                Assert.That(response.results[0].name, Is.EqualTo("Grandchild"));
+                Assert.That(response.results[0].path, Is.EqualTo("Parent/Child/Grandchild"));
+            }
+            finally
+            {
+                // Cleanup
+                Object.DestroyImmediate(parent);
+            }
+        }
+        
+        [Test]
+        public async Task ExecuteAsync_WithExactSearchMode_FindsExactNameMatch()
+        {
+            // Arrange
+            GameObject exact = new GameObject("ExactName");
+            GameObject partial = new GameObject("ExactNamePart");
+            GameObject different = new GameObject("DifferentName");
+            
+            JObject paramsJson = new JObject
+            {
+                ["NamePattern"] = "ExactName",
+                ["SearchMode"] = "Exact"
+            };
+            
+            try
+            {
+                // Act
+                BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+                FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
+                
+                // Assert
+                Assert.That(response, Is.Not.Null);
+                Assert.That(response.totalFound, Is.EqualTo(1));
+                Assert.That(response.results[0].name, Is.EqualTo("ExactName"));
+            }
+            finally
+            {
+                // Cleanup
+                Object.DestroyImmediate(exact);
+                Object.DestroyImmediate(partial);
+                Object.DestroyImmediate(different);
+            }
+        }
+        
+        [Test]
+        public async Task ExecuteAsync_WithContainsSearchMode_FindsPartialMatch()
+        {
+            // Arrange
+            GameObject obj1 = new GameObject("TestObjectOne");
+            GameObject obj2 = new GameObject("AnotherTestObjectTwo");
+            GameObject obj3 = new GameObject("DifferentName");
+            
+            JObject paramsJson = new JObject
+            {
+                ["NamePattern"] = "TestObject",
+                ["SearchMode"] = "Contains"
+            };
+            
+            try
+            {
+                // Act
+                BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+                FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
+                
+                // Assert
+                Assert.That(response, Is.Not.Null);
+                Assert.That(response.totalFound, Is.EqualTo(4)); // Includes SetUp objects (TestObject1, TestObject2)
+                
+                string[] foundNames = System.Array.ConvertAll(response.results, r => r.name);
+                Assert.That(foundNames, Does.Contain("TestObjectOne"));
+                Assert.That(foundNames, Does.Contain("AnotherTestObjectTwo"));
+                Assert.That(foundNames, Does.Not.Contain("DifferentName"));
+            }
+            finally
+            {
+                // Cleanup
+                Object.DestroyImmediate(obj1);
+                Object.DestroyImmediate(obj2);
+                Object.DestroyImmediate(obj3);
             }
         }
     }
