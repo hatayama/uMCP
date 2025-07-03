@@ -165,7 +165,7 @@ namespace io.github.hatayama.uMCP
                     Type = GetItemType(item),
                     Path = GetItemPath(item),
                     Score = item.score,
-                    Thumbnail = schema.IncludeThumbnails ? GetThumbnailPath(item) : "",
+                    Thumbnail = "",
                     Tags = GetItemTags(item),
                     IsSelectable = true
                 };
@@ -322,15 +322,6 @@ namespace io.github.hatayama.uMCP
             return item.id ?? "";
         }
 
-        /// <summary>
-        /// Get thumbnail path from Unity SearchItem
-        /// </summary>
-        private static string GetThumbnailPath(SearchItem item)
-        {
-            // Unity Search API doesn't directly expose thumbnails
-            // This would need custom implementation based on item type
-            return "";
-        }
 
         /// <summary>
         /// Get item tags from Unity SearchItem
