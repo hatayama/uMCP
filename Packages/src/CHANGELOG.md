@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.18.0](https://github.com/hatayama/uMCP/compare/v0.17.1...v0.18.0) (2025-07-03)
+
+
+### Features
+
+* add advanced GameObject search commands with safe component serialization ([#130](https://github.com/hatayama/uMCP/issues/130)) ([8aa3a95](https://github.com/hatayama/uMCP/commit/8aa3a95158945ac7d28b798e2faa4736acfb0373))
+* add GetHierarchy command for AI-friendly Unity scene analysis ([#129](https://github.com/hatayama/uMCP/issues/129)) ([4e0fa0b](https://github.com/hatayama/uMCP/commit/4e0fa0b7abf8a361a3e4ccf5ae79e816a1112632))
+* implement automatic port adjustment with user confirmation ([#126](https://github.com/hatayama/uMCP/issues/126)) ([849d9a9](https://github.com/hatayama/uMCP/commit/849d9a97b07c5468b7f9c5297f94e495a6daefee))
+
+
+### Bug Fixes
+
+* update schema ([#128](https://github.com/hatayama/uMCP/issues/128)) ([404b597](https://github.com/hatayama/uMCP/commit/404b597084da3e4bd4ecd2b8de38a0efca4411e4))
+
 ## [0.17.1](https://github.com/hatayama/uMCP/compare/v0.17.0...v0.17.1) (2025-07-02)
 
 
