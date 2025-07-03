@@ -3,8 +3,5 @@
   "include-v-in-tag": true,
   "extra-files": [
     "Packages/src/.TypeScriptServer/package.json"
-  ],
-  "packages": {
-    "Packages/src": {}
-  }
+  ]
 }
