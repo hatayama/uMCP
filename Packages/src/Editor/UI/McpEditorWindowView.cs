@@ -40,6 +40,12 @@ namespace io.github.hatayama.uMCP
             }
             EditorGUI.EndDisabledGroup();
             
+            // Port warning message
+            if (data.HasPortWarning && !string.IsNullOrEmpty(data.PortWarningMessage))
+            {
+                EditorGUILayout.HelpBox(data.PortWarningMessage, MessageType.Warning);
+            }
+            
             EditorGUILayout.Space();
             
             // Toggle Server button

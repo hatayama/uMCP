@@ -216,6 +216,40 @@ namespace io.github.hatayama.uMCP
 
 
         /// <summary>
+        /// Gets the configured port number from the editor settings.
+        /// </summary>
+        /// <returns>The configured port number.</returns>
+        public int GetConfiguredPort()
+        {
+            string configPath = UnityMcpPathResolver.GetConfigPath(_editorType);
+            
+            if (!_repository.Exists(configPath))
+            {
+                throw new System.InvalidOperationException("Configuration file not found.");
+            }
+            
+            McpConfig config = _repository.Load(configPath);
+            
+            // Find Unity MCP server configuration
+            foreach (var serverEntry in config.mcpServers)
+            {
+                if (serverEntry.Key.StartsWith(McpConstants.PROJECT_NAME))
+                {
+                    if (serverEntry.Value.env.ContainsKey(McpConstants.UNITY_TCP_PORT_ENV_KEY))
+                    {
+                        string portString = serverEntry.Value.env[McpConstants.UNITY_TCP_PORT_ENV_KEY];
+                        if (int.TryParse(portString, out int port))
+                        {
+                            return port;
+                        }
+                    }
+                }
+            }
+            
+            throw new System.InvalidOperationException("Unity MCP server configuration not found.");
+        }
+
+        /// <summary>
         /// Validates configuration parameters for fail-fast behavior
         /// </summary>
         private void ValidateConfigurationParameters(int port)

@@ -266,7 +266,23 @@ namespace io.github.hatayama.uMCP
         private ServerControlsData CreateServerControlsData()
         {
             bool isRunning = McpServerController.IsServerRunning;
-            return new ServerControlsData(_model.UI.CustomPort, _model.UI.AutoStartServer, isRunning, !isRunning);
+            
+            // Check for port mismatch warnings
+            bool hasPortWarning = false;
+            string portWarningMessage = null;
+            
+            if (!isRunning)
+            {
+                // Check if requested port is available
+                int requestedPort = _model.UI.CustomPort;
+                if (McpBridgeServer.IsPortInUse(requestedPort))
+                {
+                    hasPortWarning = true;
+                    portWarningMessage = $"Port {requestedPort} is already in use. Server will automatically find an available port when started.";
+                }
+            }
+            
+            return new ServerControlsData(_model.UI.CustomPort, _model.UI.AutoStartServer, isRunning, !isRunning, hasPortWarning, portWarningMessage);
         }
 
         /// <summary>
@@ -315,10 +331,22 @@ namespace io.github.hatayama.uMCP
                 McpConfigService configService = GetConfigService(_model.UI.SelectedEditorType);
                 isConfigured = configService.IsConfigured();
 
-                // Check for port mismatch if configured and server is running
-                if (isConfigured && isServerRunning)
+                // Check for port mismatch if configured
+                if (isConfigured)
                 {
-                    hasPortMismatch = currentPort != _model.UI.CustomPort;
+                    // Get configured port from the settings file
+                    int configuredPort = configService.GetConfiguredPort();
+                    
+                    // Check mismatch between server port and configured port
+                    if (isServerRunning)
+                    {
+                        hasPortMismatch = currentPort != configuredPort;
+                    }
+                    else
+                    {
+                        // When server is not running, check if UI port matches configured port
+                        hasPortMismatch = _model.UI.CustomPort != configuredPort;
+                    }
                 }
             }
             catch (System.Exception ex)
