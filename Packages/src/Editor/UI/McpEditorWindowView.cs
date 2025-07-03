@@ -145,11 +145,11 @@ namespace io.github.hatayama.uMCP
                     if (data.HasPortMismatch)
                     {
                         EditorGUILayout.HelpBox($"Warning: {editorName} settings port number may not match current server port ({data.CurrentPort}).", MessageType.Warning);
-                        
-                        EditorGUILayout.Space();
                     }
-                    
-                    EditorGUILayout.HelpBox($"{editorName} settings are already configured.", MessageType.Info);
+                    else
+                    {
+                        EditorGUILayout.HelpBox($"{editorName} settings are already configured.", MessageType.Info);
+                    }
                 }
                 else
                 {
