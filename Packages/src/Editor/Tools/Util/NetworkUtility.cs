@@ -1,11 +1,11 @@
 /*
  * NetworkUtility.cs
  * 
- * 設計ドキュメント: ARCHITECTURE.md - Network Communication
- * 関連クラス: McpBridgeServer, McpServerController, ConnectedClient
+ * Design Document: ARCHITECTURE.md - Network Communication
+ * Related Classes: McpBridgeServer, McpServerController, ConnectedClient
  * 
- * ネットワーク関連のユーティリティ機能を提供する統合クラス
- * ポート利用可能性チェック、プロセスID取得、ネットワーク接続管理を担当
+ * Provides network-related utility functions
+ * Handles port availability checking, process ID resolution, and network connection management
  */
 
 using System;
@@ -18,24 +18,24 @@ using io.github.hatayama.uMCP;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// ネットワーク関連のユーティリティ機能を提供する統合クラス
-    /// ポート利用可能性チェック、プロセスID取得、ネットワーク接続管理を担当
+    /// Provides network-related utility functions
+    /// Handles port availability checking, process ID resolution, and network connection management
     /// </summary>
     public static class NetworkUtility
     {
         /// <summary>
-        /// 一般的なシステムポート（競合を避けるため除外対象）
+        /// Common system ports to avoid conflicts
         /// </summary>
         private static readonly int[] CommonSystemPorts = { 80, 443, 21, 22, 23, 25, 53, 110, 143, 993, 995, 3389 };
 
         #region Port Availability Methods
 
         /// <summary>
-        /// 指定されたポートが使用中かどうかをチェックする
-        /// TCP接続テストによりポートの利用可能性を確認
+        /// Checks if the specified port is currently in use
+        /// Uses TCP connection test to determine port availability
         /// </summary>
-        /// <param name="port">チェック対象のポート番号</param>
-        /// <returns>ポートが使用中の場合true、利用可能な場合false</returns>
+        /// <param name="port">Port number to check</param>
+        /// <returns>True if the port is in use, false if available</returns>
         public static bool IsPortInUse(int port)
         {
             TcpListener tcpListener = null;
@@ -64,13 +64,13 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// 指定されたポートから開始して利用可能なポートを探索する
-        /// システムポートを避けて安全なポートを選択
+        /// Finds an available port starting from the specified port number
+        /// Avoids system ports and selects a safe port for use
         /// </summary>
-        /// <param name="startPort">探索開始ポート番号</param>
-        /// <param name="maxAttempts">最大試行回数（デフォルト: 10）</param>
-        /// <returns>利用可能なポート番号</returns>
-        /// <exception cref="InvalidOperationException">利用可能なポートが見つからない場合</exception>
+        /// <param name="startPort">Starting port number for search</param>
+        /// <param name="maxAttempts">Maximum number of attempts (default: 10)</param>
+        /// <returns>Available port number</returns>
+        /// <exception cref="InvalidOperationException">Thrown when no available port is found</exception>
         public static int FindAvailablePort(int startPort, int maxAttempts = 10)
         {
             for (int i = 0; i < maxAttempts; i++)
@@ -102,11 +102,11 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// ポート番号の有効性を検証する
+        /// Validates if the port number is within valid range
         /// </summary>
-        /// <param name="port">検証対象のポート番号</param>
-        /// <param name="parameterName">パラメータ名（エラーメッセージ用）</param>
-        /// <returns>有効な場合true</returns>
+        /// <param name="port">Port number to validate</param>
+        /// <param name="parameterName">Parameter name for error messages</param>
+        /// <returns>True if valid, false otherwise</returns>
         public static bool IsValidPort(int port, string parameterName = "port")
         {
             if (port < 1 || port > 65535)
@@ -122,12 +122,12 @@ namespace io.github.hatayama.uMCP
         #region Process ID Resolution Methods
 
         /// <summary>
-        /// クライアントプロセスIDを取得する（プラットフォーム自動判定）
+        /// Gets the client process ID with automatic platform detection
         /// </summary>
-        /// <param name="serverPort">サーバーポート番号</param>
-        /// <param name="remotePort">リモートポート番号</param>
-        /// <param name="currentUnityPid">現在のUnityプロセスID（除外対象）</param>
-        /// <returns>クライアントプロセスID、見つからない場合は UNKNOWN_PROCESS_ID</returns>
+        /// <param name="serverPort">Server port number</param>
+        /// <param name="remotePort">Remote port number</param>
+        /// <param name="currentUnityPid">Current Unity process ID to exclude</param>
+        /// <returns>Client process ID, or UNKNOWN_PROCESS_ID if not found</returns>
         public static int GetClientProcessId(int serverPort, int remotePort, int currentUnityPid)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -141,12 +141,12 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Windows環境でnetstatコマンドを使用してクライアントプロセスIDを取得する
+        /// Gets client process ID on Windows using netstat command
         /// </summary>
-        /// <param name="serverPort">サーバーポート番号</param>
-        /// <param name="remotePort">リモートポート番号</param>
-        /// <param name="currentUnityPid">現在のUnityプロセスID（除外対象）</param>
-        /// <returns>クライアントプロセスID、見つからない場合は UNKNOWN_PROCESS_ID</returns>
+        /// <param name="serverPort">Server port number</param>
+        /// <param name="remotePort">Remote port number</param>
+        /// <param name="currentUnityPid">Current Unity process ID to exclude</param>
+        /// <returns>Client process ID, or UNKNOWN_PROCESS_ID if not found</returns>
         private static int GetClientProcessIdWindows(int serverPort, int remotePort, int currentUnityPid)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
@@ -217,12 +217,12 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Unix環境（macOS/Linux）でlsofコマンドを使用してクライアントプロセスIDを取得する
+        /// Gets client process ID on Unix systems (macOS/Linux) using lsof command
         /// </summary>
-        /// <param name="serverPort">サーバーポート番号</param>
-        /// <param name="remotePort">リモートポート番号</param>
-        /// <param name="currentUnityPid">現在のUnityプロセスID（除外対象）</param>
-        /// <returns>クライアントプロセスID、見つからない場合は UNKNOWN_PROCESS_ID</returns>
+        /// <param name="serverPort">Server port number</param>
+        /// <param name="remotePort">Remote port number</param>
+        /// <param name="currentUnityPid">Current Unity process ID to exclude</param>
+        /// <returns>Client process ID, or UNKNOWN_PROCESS_ID if not found</returns>
         private static int GetClientProcessIdUnix(int serverPort, int remotePort, int currentUnityPid)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
