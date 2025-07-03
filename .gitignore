@@ -27,6 +27,7 @@ Assets/InitTestScene**
 
 # Visual Studio cache directory
 .vs/
+.vsconfig
 
 .idea
 

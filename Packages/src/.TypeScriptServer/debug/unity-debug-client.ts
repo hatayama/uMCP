@@ -1,4 +1,5 @@
 import * as net from 'net';
+import { UNITY_CONNECTION } from '../src/constants.js';
 import {
     CompileResult,
     GetLogsResult,
@@ -21,7 +22,7 @@ export class UnityDebugClient {
     private readonly host: string;
 
     constructor() {
-        this.port = parseInt(process.env.UNITY_TCP_PORT || '7400', 10);
+        this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
         this.host = 'localhost';
     }
 

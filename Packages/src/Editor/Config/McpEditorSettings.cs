@@ -10,7 +10,7 @@ namespace io.github.hatayama.uMCP
     [Serializable]
     public record McpEditorSettingsData
     {
-        public int customPort = 7400;
+        public int customPort = McpServerConfig.DEFAULT_PORT;
         public bool autoStartServer = false;
         public bool showDeveloperTools = false;
         public bool enableMcpLogs = false;

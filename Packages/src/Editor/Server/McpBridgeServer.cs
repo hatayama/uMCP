@@ -9,8 +9,10 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using UnityEditor;
 using Newtonsoft.Json;
+
 
 namespace io.github.hatayama.uMCP
 {
@@ -172,88 +174,24 @@ namespace io.github.hatayama.uMCP
             string endpoint = remoteEndPoint.ToString();
             int currentUnityPid = Process.GetCurrentProcess().Id;
             
-            // Use lsof command on macOS/Linux to find the process ID
-            // Search for connections to the server port (7400) and find the client process
-            int serverPort = tcpListener?.LocalEndpoint is IPEndPoint serverEndpoint ? serverEndpoint.Port : 7400;
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = McpConstants.LSOF_COMMAND,
-                Arguments = string.Format(McpConstants.LSOF_ARGS_TEMPLATE, serverPort),
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
+            // Get server port for connection lookup
+            int serverPort = tcpListener?.LocalEndpoint is IPEndPoint serverEndpoint ? serverEndpoint.Port : McpServerConfig.DEFAULT_PORT;
             
-            
-            using (Process process = Process.Start(startInfo))
-            {
-                string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-                
-                
-                string[] lines = output.Split('\n');
-                foreach (string line in lines)
-                {
-                    
-                    if ((line.Contains($":{serverPort}") || line.Contains($":{remotePort}")) && !line.StartsWith(McpConstants.LSOF_HEADER_COMMAND))
-                    {
-                        string[] parts = line.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
-                        
-                        if (parts.Length >= McpConstants.LSOF_PID_ARRAY_MIN_LENGTH && int.TryParse(parts[McpConstants.LSOF_PID_COLUMN_INDEX], out int pid))
-                        {
-                            // Skip Unity's own PID and look for the client PID
-                            if (pid == currentUnityPid)
-                            {
-                                continue;
-                            }
-                            
-                            // Check if this line represents an ESTABLISHED connection from client to server
-                            // For client connections, look for lines that contain the remote port and are ESTABLISHED but not Unity's PID
-                            if (line.Contains("ESTABLISHED") && line.Contains($":{remotePort}->"))
-                            {
-                                return pid;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return McpConstants.UNKNOWN_PROCESS_ID; // Process ID not found
+            // Use NetworkUtility for cross-platform process ID detection
+            return NetworkUtility.GetClientProcessId(serverPort, remotePort, currentUnityPid);
         }
+
+
 
         /// <summary>
         /// Checks if the specified port is in use.
+        /// Delegates to NetworkUtility for consistent port checking behavior.
         /// </summary>
         /// <param name="port">The port number to check.</param>
         /// <returns>True if the port is in use.</returns>
         public static bool IsPortInUse(int port)
         {
-            TcpListener tcpListener = null;
-            try
-            {
-                tcpListener = new TcpListener(IPAddress.Loopback, port);
-                tcpListener.Start();
-                return false; // The port is available.
-            }
-            catch (SocketException ex)
-            {
-                // If the port is already in use.
-                if (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
-                {
-                    return true;
-                }
-                // Treat other socket errors as "in use" as well.
-                return true;
-            }
-            catch
-            {
-                // Treat other exceptions as "in use" as well.
-                return true;
-            }
-            finally
-            {
-                tcpListener?.Stop();
-            }
+            return NetworkUtility.IsPortInUse(port);
         }
 
         /// <summary>
@@ -322,9 +260,10 @@ namespace io.github.hatayama.uMCP
             {
                 tcpListener?.Stop();
             }
-            catch (Exception ex)
+            finally
             {
-                McpLogger.LogError($"Error stopping TcpListener: {ex.Message}");
+                // Set the TCP listener to null regardless of success/failure
+                tcpListener = null;
             }
             
             // Wait for the server task to complete.
@@ -332,25 +271,24 @@ namespace io.github.hatayama.uMCP
             {
                 serverTask?.Wait(TimeSpan.FromSeconds(McpServerConfig.SHUTDOWN_TIMEOUT_SECONDS));
             }
-            catch (Exception ex)
+            finally
             {
-                McpLogger.LogError($"Error waiting for server task completion: {ex.Message}");
+                // Set the server task to null regardless of success/failure
+                serverTask = null;
             }
             
             // Dispose of the cancellation token source.
             try
             {
                 cancellationTokenSource?.Dispose();
+            }
+            finally
+            {
+                // Set the cancellation token source to null regardless of success/failure
                 cancellationTokenSource = null;
             }
-            catch (Exception ex)
-            {
-                McpLogger.LogError($"Error disposing CancellationTokenSource: {ex.Message}");
-            }
             
-            // Set the TCP listener to null.
-            tcpListener = null;
-            serverTask = null;
+
             
             McpLogger.LogInfo("Unity MCP Server stopped");
         }
@@ -423,13 +361,13 @@ namespace io.github.hatayama.uMCP
                 }
                 catch (ThreadAbortException ex)
                 {
-                    // Treat as normal behavior if a domain reload is in progress.
+                    // Log and re-throw ThreadAbortException
                     if (!McpSessionManager.instance.IsDomainReloadInProgress)
                     {
                         McpLogger.LogError($"Unexpected thread abort in server loop: {ex.Message}");
                         OnError?.Invoke($"Unexpected thread abort: {ex.Message}");
                     }
-                    break; // Exit the server loop.
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -454,12 +392,12 @@ namespace io.github.hatayama.uMCP
             }
             catch (ThreadAbortException ex)
             {
-                // Treat as normal behavior if a domain reload is in progress.
+                // Log and re-throw ThreadAbortException
                 if (!McpSessionManager.instance.IsDomainReloadInProgress)
                 {
                     McpLogger.LogError($"Unexpected thread abort in AcceptTcpClient: {ex.Message}");
                 }
-                return null;
+                throw;
             }
             catch (OperationCanceledException)
             {
@@ -652,9 +590,10 @@ namespace io.github.hatayama.uMCP
                         clientsToRemove.Add(client.Key);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Any error means client should be removed
+                    // Log the error before removing the client
+                    McpLogger.LogWarning($"Error sending notification to client {client.Key}: {ex.Message}");
                     clientsToRemove.Add(client.Key);
                 }
             }
@@ -736,12 +675,7 @@ namespace io.github.hatayama.uMCP
             }
             catch (JsonReaderException)
             {
-                // Incomplete or malformed JSON
-                return false;
-            }
-            catch (Exception)
-            {
-                // Unexpected error validating JSON
+                // Incomplete or malformed JSON - this is expected behavior
                 return false;
             }
         }

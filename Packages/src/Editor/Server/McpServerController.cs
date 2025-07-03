@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using Newtonsoft.Json;
 
+
 namespace io.github.hatayama.uMCP
 {
     // Related classes:
@@ -14,7 +15,7 @@ namespace io.github.hatayama.uMCP
     [InitializeOnLoad]
     public static class McpServerController
     {
-        private static readonly int[] CommonSystemPorts = { 80, 443, 21, 22, 23, 25, 53, 110, 143, 993, 995, 3389 };
+
         
         private static McpBridgeServer mcpServer;
         
@@ -540,39 +541,13 @@ namespace io.github.hatayama.uMCP
 
         /// <summary>
         /// Finds an available port starting from the given port number
+        /// Delegates to NetworkUtility for consistent port finding behavior.
         /// </summary>
         /// <param name="startPort">The starting port number to check</param>
         /// <returns>The first available port number</returns>
         private static int FindAvailablePort(int startPort)
         {
-            const int maxAttempts = 10;
-            
-            for (int i = 0; i < maxAttempts; i++)
-            {
-                int candidatePort = startPort + i;
-                
-                // Skip if port is out of valid range
-                if (candidatePort > 65535)
-                {
-                    break;
-                }
-                
-                // Skip commonly used system ports
-                if (System.Array.IndexOf(CommonSystemPorts, candidatePort) != -1)
-                {
-                    continue;
-                }
-                
-                // Check if port is available
-                if (!McpBridgeServer.IsPortInUse(candidatePort))
-                {
-                    return candidatePort;
-                }
-            }
-            
-            // If no available port found, throw exception
-            throw new System.InvalidOperationException(
-                $"Could not find an available port starting from {startPort}. Tried {maxAttempts} ports.");
+            return NetworkUtility.FindAvailablePort(startPort);
         }
 
         /// <summary>

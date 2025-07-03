@@ -8,7 +8,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Default port number.
         /// </summary>
-        public const int DEFAULT_PORT = 7400;
+        public const int DEFAULT_PORT = 8700;
         
         /// <summary>
         /// Buffer size for TCP/IP communication.
