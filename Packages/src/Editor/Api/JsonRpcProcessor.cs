@@ -110,14 +110,28 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private static async Task<string> ProcessRpcRequest(JsonRpcRequest request, string originalJson)
         {
-            await MainThreadSwitcher.SwitchToMainThread();
-            await McpCommunicationLogger.LogRequest(originalJson);
-            BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
-            string response = CreateSuccessResponse(request.Id, result);
-            
-            McpLogger.LogDebug($"Method: [{request.Method}], executed in {result.ExecutionTimeMs}ms");
-            _ = McpCommunicationLogger.RecordLogResponse(response);
-            return response;
+            try
+            {
+                await MainThreadSwitcher.SwitchToMainThread();
+                await McpCommunicationLogger.LogRequest(originalJson);
+                BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
+                string response = CreateSuccessResponse(request.Id, result);
+                McpLogger.LogDebug($"Method: [{request.Method}], executed in {result.ExecutionTimeMs}ms");
+                _ = McpCommunicationLogger.RecordLogResponse(response);
+                return response;
+            }
+            catch (JsonSerializationException ex)
+            {
+                McpLogger.LogError($"JSON serialization error in method [{request.Method}]: {ex.Message}");
+                UnityEngine.Debug.LogError($"[JsonRpcProcessor] JSON serialization error: {ex.Message}\nStack trace: {ex.StackTrace}");
+                return CreateErrorResponse(request.Id, ex);
+            }
+            catch (Exception ex)
+            {
+                McpLogger.LogError($"Error processing method [{request.Method}]: {ex.Message}");
+                UnityEngine.Debug.LogError($"[JsonRpcProcessor] Error: {ex.Message}\nStack trace: {ex.StackTrace}");
+                return CreateErrorResponse(request.Id, ex);
+            }
         }
 
         /// <summary>
@@ -127,13 +141,37 @@ namespace io.github.hatayama.uMCP
         /// <param name="result">Command execution result</param>
         private static string CreateSuccessResponse(object id, BaseCommandResponse result)
         {
-            JObject response = new JObject
+            JsonSerializerSettings settings = new JsonSerializerSettings
             {
-                ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                ["id"] = id != null ? JToken.FromObject(id) : null,
-                ["result"] = JToken.FromObject(result)
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                MaxDepth = 10
             };
-            return response.ToString(Formatting.None);
+            
+            try
+            {
+                JObject response = new JObject
+                {
+                    ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
+                    ["id"] = id != null ? JToken.FromObject(id) : null,
+                    ["result"] = JToken.FromObject(result, JsonSerializer.Create(settings))
+                };
+                return response.ToString(Formatting.None);
+            }
+            catch (Exception)
+            {
+                // Return safe fallback response for any serialization errors
+                JObject fallbackResponse = new JObject
+                {
+                    ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
+                    ["id"] = id != null ? JToken.FromObject(id) : null,
+                    ["result"] = new JObject
+                    {
+                        ["error"] = "Serialization failed - returning safe fallback",
+                        ["commandType"] = result?.GetType()?.Name ?? "unknown"
+                    }
+                };
+                return fallbackResponse.ToString(Formatting.None);
+            }
         }
 
         /// <summary>
