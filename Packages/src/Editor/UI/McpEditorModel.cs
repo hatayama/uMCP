@@ -441,6 +441,9 @@ namespace io.github.hatayama.uMCP
                 requestScrollPositions: debug.RequestScrollPositions,
                 responseScrollPositions: debug.ResponseScrollPositions));
             McpEditorSettings.SetEnableMcpLogs(enable);
+            
+            // Synchronize McpLogger settings
+            McpLogger.EnableDebugLog = enable;
         }
 
         /// <summary>
