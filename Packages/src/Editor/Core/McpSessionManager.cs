@@ -29,7 +29,7 @@ namespace io.github.hatayama.uMCP
             public string json;
         }
 
-        // Server関連
+        // Server related
         public bool IsServerRunning
         {
             get => isServerRunning;
@@ -72,7 +72,7 @@ namespace io.github.hatayama.uMCP
             set { showPostCompileReconnectingUI = value; }
         }
 
-        // UI関連
+        // UI related
         public McpEditorType SelectedEditorType
         {
             get => (McpEditorType)selectedEditorType;
@@ -85,7 +85,7 @@ namespace io.github.hatayama.uMCP
             set => communicationLogHeight = value;
         }
 
-        // Communication Log関連
+        // Communication Log related
         public string CommunicationLogsJson
         {
             get => communicationLogsJson;
@@ -98,7 +98,7 @@ namespace io.github.hatayama.uMCP
             set => pendingRequestsJson = value;
         }
 
-        // CompileWindow関連
+        // CompileWindow related
         public string CompileWindowLogText
         {
             get => compileWindowLogText;
@@ -111,14 +111,14 @@ namespace io.github.hatayama.uMCP
             set => compileWindowHasData = value;
         }
 
-        // CompileSessionState関連のプロパティ
+        // CompileSessionState related properties
         public string[] PendingCompileRequestIds
         {
             get => pendingCompileRequestIds.ToArray();
             set => pendingCompileRequestIds = new List<string>(value);
         }
 
-        // メソッド群
+        // Methods
 
         public void ClearServerSession()
         {
@@ -178,11 +178,6 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        public void ClearCompileRequest(string requestId)
-        {
-            compileRequests.RemoveAll(r => r.requestId == requestId);
-        }
-
         public void ClearAllCompileRequests()
         {
             compileRequests.Clear();
@@ -200,18 +195,6 @@ namespace io.github.hatayama.uMCP
         public void RemovePendingCompileRequest(string requestId)
         {
             pendingCompileRequestIds.Remove(requestId);
-        }
-
-        // SessionState全体をクリアする危険な操作（開発時のみ使用）
-        public void ClearAllSessionData()
-        {
-            ClearServerSession();
-            ClearAfterCompileFlag();
-            ClearReconnectingFlags();
-            ClearDomainReloadFlag();
-            ClearCommunicationLogs();
-            ClearCompileWindowData();
-            ClearAllCompileRequests();
         }
     }
 }
