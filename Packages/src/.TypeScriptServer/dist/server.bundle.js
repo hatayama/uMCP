@@ -5477,6 +5477,9 @@ var StdioServerTransport = class {
 import * as net from "net";
 
 // src/constants.ts
+var MCP_PROTOCOL_VERSION = "2024-11-05";
+var MCP_SERVER_NAME = "umcp-server";
+var TOOLS_LIST_CHANGED_CAPABILITY = true;
 var UNITY_CONNECTION = {
   DEFAULT_PORT: "8700",
   DEFAULT_HOST: "localhost",
@@ -5499,10 +5502,15 @@ var TIMEOUTS = {
   GET_LOGS: 1e4,
   RUN_TESTS: 6e4
 };
+var DEV_TOOL_PING_NAME = "mcp-ping";
+var DEV_TOOL_PING_DESCRIPTION = "TypeScript side health check (dev only)";
+var DEV_TOOL_COMMANDS_NAME = "get-unity-commands";
+var DEV_TOOL_COMMANDS_DESCRIPTION = "Get Unity commands list (dev only)";
 var DEFAULT_MESSAGES = {
   PING: "Hello Unity MCP!",
   UNITY_PING: "Hello from TypeScript MCP Server"
 };
+var DEFAULT_CLIENT_NAME = "";
 var ENVIRONMENT = {
   NODE_ENV_DEVELOPMENT: "development",
   NODE_ENV_PRODUCTION: "production"
@@ -5685,24 +5693,49 @@ function safeSetInterval(callback, delay) {
   return new SafeTimer(callback, delay, true);
 }
 
-// src/unity-client.ts
-var UnityClient = class {
-  socket = null;
-  _connected = false;
-  port;
-  host = UNITY_CONNECTION.DEFAULT_HOST;
-  notificationHandlers = /* @__PURE__ */ new Map();
-  pendingRequests = /* @__PURE__ */ new Map();
-  reconnectHandlers = /* @__PURE__ */ new Set();
-  // Polling system - using SafeTimer for automatic cleanup
+// src/connection-manager.ts
+var ConnectionManager = class {
   pollingTimer = null;
   onReconnectedCallback = null;
-  constructor() {
-    this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
+  /**
+   * Set callback for when connection is restored
+   */
+  setReconnectedCallback(callback) {
+    this.onReconnectedCallback = callback;
   }
-  get connected() {
-    return this._connected && this.socket !== null && !this.socket.destroyed;
+  /**
+   * Start polling for connection recovery
+   */
+  startPolling(connectFn) {
+    if (this.pollingTimer && this.pollingTimer.active) {
+      return;
+    }
+    this.pollingTimer = safeSetInterval(async () => {
+      try {
+        await connectFn();
+        this.stopPolling();
+        if (this.onReconnectedCallback) {
+          this.onReconnectedCallback();
+        }
+      } catch (error) {
+      }
+    }, POLLING.INTERVAL_MS);
   }
+  /**
+   * Stop polling
+   */
+  stopPolling() {
+    if (this.pollingTimer) {
+      this.pollingTimer.stop();
+      this.pollingTimer = null;
+    }
+  }
+};
+
+// src/message-handler.ts
+var MessageHandler = class {
+  notificationHandlers = /* @__PURE__ */ new Map();
+  pendingRequests = /* @__PURE__ */ new Map();
   /**
    * Register notification handler for specific method
    */
@@ -5716,16 +5749,10 @@ var UnityClient = class {
     this.notificationHandlers.delete(method);
   }
   /**
-   * Register reconnect handler
+   * Register a pending request
    */
-  onReconnect(handler) {
-    this.reconnectHandlers.add(handler);
-  }
-  /**
-   * Remove reconnect handler
-   */
-  offReconnect(handler) {
-    this.reconnectHandlers.delete(handler);
+  registerPendingRequest(id, resolve, reject) {
+    this.pendingRequests.set(id, { resolve, reject });
   }
   /**
    * Handle incoming data from Unity
@@ -5742,7 +5769,7 @@ var UnityClient = class {
         }
       }
     } catch (error) {
-      errorToFile("[UnityClient] Error parsing incoming data:", error);
+      errorToFile("[MessageHandler] Error parsing incoming data:", error);
     }
   }
   /**
@@ -5755,9 +5782,8 @@ var UnityClient = class {
       try {
         handler(params);
       } catch (error) {
-        errorToFile(`[UnityClient] Error in notification handler for ${method}:`, error);
+        errorToFile(`[MessageHandler] Error in notification handler for ${method}:`, error);
       }
-    } else {
     }
   }
   /**
@@ -5774,8 +5800,70 @@ var UnityClient = class {
         pending.resolve(response);
       }
     } else {
-      warnToFile(`[UnityClient] Received response for unknown request ID: ${id}`);
+      warnToFile(`[MessageHandler] Received response for unknown request ID: ${id}`);
     }
+  }
+  /**
+   * Clear all pending requests (used during disconnect)
+   */
+  clearPendingRequests(reason) {
+    for (const [id, pending] of this.pendingRequests) {
+      pending.reject(new Error(reason));
+    }
+    this.pendingRequests.clear();
+  }
+  /**
+   * Create JSON-RPC request
+   */
+  createRequest(method, params, id) {
+    const request = {
+      jsonrpc: JSONRPC.VERSION,
+      id,
+      method,
+      params
+    };
+    return JSON.stringify(request) + "\n";
+  }
+};
+
+// src/unity-client.ts
+var UnityClient = class {
+  socket = null;
+  _connected = false;
+  port;
+  host = UNITY_CONNECTION.DEFAULT_HOST;
+  reconnectHandlers = /* @__PURE__ */ new Set();
+  connectionManager = new ConnectionManager();
+  messageHandler = new MessageHandler();
+  constructor() {
+    this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
+  }
+  get connected() {
+    return this._connected && this.socket !== null && !this.socket.destroyed;
+  }
+  /**
+   * Register notification handler for specific method
+   */
+  onNotification(method, handler) {
+    this.messageHandler.onNotification(method, handler);
+  }
+  /**
+   * Remove notification handler
+   */
+  offNotification(method) {
+    this.messageHandler.offNotification(method);
+  }
+  /**
+   * Register reconnect handler
+   */
+  onReconnect(handler) {
+    this.reconnectHandlers.add(handler);
+  }
+  /**
+   * Remove reconnect handler
+   */
+  offReconnect(handler) {
+    this.reconnectHandlers.delete(handler);
   }
   /**
    * Actually test Unity's connection status
@@ -5825,20 +5913,20 @@ var UnityClient = class {
           reject(new Error(`Unity connection failed: ${error.message}`));
         } else {
           errorToFile("[UnityClient] Connection error:", error);
-          this.startPolling();
+          this.connectionManager.startPolling(() => this.connect());
         }
       });
       this.socket.on("close", () => {
         this._connected = false;
-        this.startPolling();
+        this.connectionManager.startPolling(() => this.connect());
       });
       this.socket.on("end", () => {
         errorToFile("[UnityClient] Connection ended by server");
         this._connected = false;
-        this.startPolling();
+        this.connectionManager.startPolling(() => this.connect());
       });
       this.socket.on("data", (data) => {
-        this.handleIncomingData(data.toString());
+        this.messageHandler.handleIncomingData(data.toString());
       });
     });
   }
@@ -5982,20 +6070,22 @@ var UnityClient = class {
     return new Promise((resolve, reject) => {
       const timeout_duration = timeoutMs || TIMEOUTS.PING;
       const timeoutTimer = safeSetTimeout(() => {
-        this.pendingRequests.delete(request.id);
+        this.messageHandler.clearPendingRequests(`Request ${ERROR_MESSAGES.TIMEOUT}`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
-      this.pendingRequests.set(request.id, {
-        resolve: (response) => {
+      this.messageHandler.registerPendingRequest(
+        request.id,
+        (response) => {
           timeoutTimer.stop();
           resolve(response);
         },
-        reject: (error) => {
+        (error) => {
           timeoutTimer.stop();
           reject(error);
         }
-      });
-      this.socket.write(JSON.stringify(request) + "\n");
+      );
+      const requestStr = this.messageHandler.createRequest(request.method, request.params, request.id);
+      this.socket.write(requestStr);
     });
   }
   /**
@@ -6006,11 +6096,8 @@ var UnityClient = class {
    * that prevent Node.js from exiting gracefully.
    */
   disconnect() {
-    this.stopPolling();
-    for (const [id, pending] of this.pendingRequests) {
-      pending.reject(new Error("Connection closed"));
-    }
-    this.pendingRequests.clear();
+    this.connectionManager.stopPolling();
+    this.messageHandler.clearPendingRequests("Connection closed");
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
@@ -6021,34 +6108,7 @@ var UnityClient = class {
    * Set callback for when connection is restored
    */
   setReconnectedCallback(callback) {
-    this.onReconnectedCallback = callback;
-  }
-  /**
-   * Start polling for connection recovery
-   */
-  startPolling() {
-    if (this.pollingTimer && this.pollingTimer.active) {
-      return;
-    }
-    this.pollingTimer = safeSetInterval(async () => {
-      try {
-        await this.connect();
-        this.stopPolling();
-        if (this.onReconnectedCallback) {
-          this.onReconnectedCallback();
-        }
-      } catch (error) {
-      }
-    }, POLLING.INTERVAL_MS);
-  }
-  /**
-   * Stop polling
-   */
-  stopPolling() {
-    if (this.pollingTimer) {
-      this.pollingTimer.stop();
-      this.pollingTimer = null;
-    }
+    this.connectionManager.setReconnectedCallback(callback);
   }
 };
 
@@ -6113,7 +6173,7 @@ var DynamicUnityCommandTool = class extends BaseTool {
     this.inputSchema = this.generateInputSchema(parameterSchema);
   }
   generateInputSchema(parameterSchema) {
-    if (!parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0) {
+    if (this.hasNoParameters(parameterSchema)) {
       return {
         type: "object",
         properties: {},
@@ -6172,6 +6232,9 @@ var DynamicUnityCommandTool = class extends BaseTool {
         return "string";
     }
   }
+  hasNoParameters(parameterSchema) {
+    return !parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0;
+  }
   validateArgs(args) {
     if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 0) {
       return {};
@@ -6206,16 +6269,6 @@ var DynamicUnityCommandTool = class extends BaseTool {
     };
   }
 };
-
-// src/mcp-constants.ts
-var MCP_PROTOCOL_VERSION = "2024-11-05";
-var MCP_SERVER_NAME = "umcp-server";
-var TOOLS_LIST_CHANGED_CAPABILITY = true;
-var DEV_TOOL_PING_NAME = "mcp-ping";
-var DEV_TOOL_PING_DESCRIPTION = "TypeScript side health check (dev only)";
-var DEV_TOOL_COMMANDS_NAME = "get-unity-commands";
-var DEV_TOOL_COMMANDS_DESCRIPTION = "Get Unity commands list (dev only)";
-var DEFAULT_CLIENT_NAME = "";
 
 // package.json
 var package_default = {
@@ -6334,47 +6387,69 @@ var SimpleMcpServer = class {
   async initializeDynamicTools() {
     try {
       await this.unityClient.ensureConnected();
-      if (!this.clientName) {
-        const fallbackName = process.env.MCP_CLIENT_NAME;
-        if (fallbackName) {
-          this.clientName = fallbackName;
-          await this.unityClient.setClientName(fallbackName);
-          infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
-        } else {
-          infoToFile(`[Simple MCP] No client name set, waiting for initialize request`);
-        }
-      } else {
-        await this.unityClient.setClientName(this.clientName);
-        infoToFile(`[Simple MCP] Client name already set, sending to Unity: ${this.clientName}`);
-      }
-      this.unityClient.onReconnect(() => {
-        infoToFile(`[Simple MCP] Reconnected - resending client name: ${this.clientName}`);
-        void this.unityClient.setClientName(this.clientName);
-      });
-      const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
-      const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
-      if (!Array.isArray(commandDetails)) {
-        errorToFile("[Simple MCP] Invalid command details response:", commandDetailsResponse);
+      await this.handleClientNameInitialization();
+      const commandDetails = await this.fetchCommandDetailsFromUnity();
+      if (!commandDetails) {
         return;
       }
-      this.dynamicTools.clear();
-      const toolContext = { unityClient: this.unityClient };
-      for (const commandInfo of commandDetails) {
-        const commandName = commandInfo.name;
-        const description = commandInfo.description || `Execute Unity command: ${commandName}`;
-        const parameterSchema = commandInfo.parameterSchema;
-        const toolName = commandName;
-        const dynamicTool = new DynamicUnityCommandTool(
-          toolContext,
-          commandName,
-          description,
-          parameterSchema
-          // Pass schema information
-        );
-        this.dynamicTools.set(toolName, dynamicTool);
-      }
+      this.createDynamicToolsFromCommands(commandDetails);
     } catch (error) {
       errorToFile("[Simple MCP] Failed to initialize dynamic tools:", error);
+    }
+  }
+  /**
+   * Handle client name initialization and setup
+   */
+  async handleClientNameInitialization() {
+    if (!this.clientName) {
+      const fallbackName = process.env.MCP_CLIENT_NAME;
+      if (fallbackName) {
+        this.clientName = fallbackName;
+        await this.unityClient.setClientName(fallbackName);
+        infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
+      } else {
+        infoToFile("[Simple MCP] No client name set, waiting for initialize request");
+      }
+    } else {
+      await this.unityClient.setClientName(this.clientName);
+      infoToFile(`[Simple MCP] Client name already set, sending to Unity: ${this.clientName}`);
+    }
+    this.unityClient.onReconnect(() => {
+      infoToFile(`[Simple MCP] Reconnected - resending client name: ${this.clientName}`);
+      void this.unityClient.setClientName(this.clientName);
+    });
+  }
+  /**
+   * Fetch command details from Unity
+   */
+  async fetchCommandDetailsFromUnity() {
+    const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
+    const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
+    if (!Array.isArray(commandDetails)) {
+      errorToFile("[Simple MCP] Invalid command details response:", commandDetailsResponse);
+      return null;
+    }
+    return commandDetails;
+  }
+  /**
+   * Create dynamic tools from Unity command details
+   */
+  createDynamicToolsFromCommands(commandDetails) {
+    this.dynamicTools.clear();
+    const toolContext = { unityClient: this.unityClient };
+    for (const commandInfo of commandDetails) {
+      const commandName = commandInfo.name;
+      const description = commandInfo.description || `Execute Unity command: ${commandName}`;
+      const parameterSchema = commandInfo.parameterSchema;
+      const toolName = commandName;
+      const dynamicTool = new DynamicUnityCommandTool(
+        toolContext,
+        commandName,
+        description,
+        parameterSchema
+        // Pass schema information
+      );
+      this.dynamicTools.set(toolName, dynamicTool);
     }
   }
   /**

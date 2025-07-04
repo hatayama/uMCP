@@ -29,11 +29,7 @@ export class DynamicUnityCommandTool extends BaseTool {
   }
 
   private generateInputSchema(parameterSchema?: any): any {
-    if (
-      !parameterSchema ||
-      !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] ||
-      Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0
-    ) {
+    if (this.hasNoParameters(parameterSchema)) {
       // For commands without parameters, return minimal schema without dummy parameters
       return {
         type: 'object',
@@ -122,6 +118,14 @@ export class DynamicUnityCommandTool extends BaseTool {
       default:
         return 'string'; // Default fallback
     }
+  }
+
+  private hasNoParameters(parameterSchema?: any): boolean {
+    return (
+      !parameterSchema ||
+      !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] ||
+      Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0
+    );
   }
 
   validateArgs(args: unknown): any {

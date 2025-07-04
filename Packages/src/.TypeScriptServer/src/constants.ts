@@ -5,12 +5,12 @@
  * Design document reference: Packages/src/Editor/ARCHITECTURE.md
  * 
  * Related files:
- * - mcp-constants.ts: MCP protocol specific constants
  * - server.ts: Main server that uses these constants
  * - unity-client.ts: Unity TCP client that uses connection constants
  * - tools/*-tool.ts: Tool implementations that use timeout and configuration constants
  * 
  * Key features:
+ * - MCP protocol constants (version, capabilities)
  * - Server configuration (name, version)
  * - Unity connection settings (port, host)
  * - JSON-RPC protocol constants
@@ -18,7 +18,14 @@
  * - Error messages and logging configuration
  */
 
-// Server configuration
+// MCP Protocol Constants
+export const MCP_PROTOCOL_VERSION = '2024-11-05';
+export const MCP_SERVER_NAME = 'umcp-server';
+
+// MCP Capabilities
+export const TOOLS_LIST_CHANGED_CAPABILITY = true;
+
+// Server configuration (legacy - kept for backward compatibility)
 export const SERVER_CONFIG = {
   NAME: 'unity-mcp-server',
   VERSION: '0.1.0',
@@ -83,11 +90,22 @@ export const TOOL_NAMES = {
   GET_AVAILABLE_COMMANDS: 'get-available-commands',
 } as const;
 
+// Development Tools
+export const DEV_TOOL_PING_NAME = 'mcp-ping';
+export const DEV_TOOL_PING_DESCRIPTION = 'TypeScript side health check (dev only)';
+export const DEV_TOOL_PING_DEFAULT_MESSAGE = 'Hello Unity MCP!';
+
+export const DEV_TOOL_COMMANDS_NAME = 'get-unity-commands';
+export const DEV_TOOL_COMMANDS_DESCRIPTION = 'Get Unity commands list (dev only)';
+
 // Default messages
 export const DEFAULT_MESSAGES = {
   PING: 'Hello Unity MCP!',
   UNITY_PING: 'Hello from TypeScript MCP Server',
 } as const;
+
+// Client Name Constants
+export const DEFAULT_CLIENT_NAME = ''; // Empty string to avoid showing default names
 
 // Environment configuration
 export const ENVIRONMENT = {
