@@ -59,16 +59,28 @@ namespace io.github.hatayama.uMCP
             // Load existing settings (or create new ones if they don't exist).
             McpConfig config = _repository.Load(configPath);
 
-
-            // Generate a settings key that includes the port number.
+            // For Windsurf, keep the original behavior (always create new key)
+            // For other editors, remove existing uMCP configuration and create new one with updated port
             string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+            bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
+            
+            Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
+            
+            if (shouldReplaceExistingKey)
+            {
+                // Try to find existing uMCP configuration
+                string existingKey = FindExistingUmcpConfigurationKey(config);
+                if (!string.IsNullOrEmpty(existingKey) && existingKey != serverKey)
+                {
+                    // Remove existing configuration with different key
+                    updatedServers.Remove(existingKey);
+                    McpLogger.LogInfo($"Removed existing uMCP configuration key: {existingKey}, creating new key: {serverKey}");
+                }
+            }
 
             // Create new settings.
             string serverPath = UnityMcpPathResolver.GetTypeScriptServerPath();
             McpServerConfigData newConfig = McpServerConfigFactory.CreateUnityMcpConfig(port, serverPath, _editorType);
-
-            // Retain existing settings and add/update new settings.
-            Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
 
             // Compare with existing settings and update if there are differences.
             bool needsUpdate = true;
@@ -97,6 +109,27 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Finds existing Unity MCP configuration key in the loaded config.
+        /// Returns the first found uMCP configuration key, or null if none exists.
+        /// </summary>
+        /// <param name="config">The loaded MCP configuration</param>
+        /// <returns>Existing uMCP configuration key, or null if not found</returns>
+        private string FindExistingUmcpConfigurationKey(McpConfig config)
+        {
+            foreach (System.Collections.Generic.KeyValuePair<string, McpServerConfigData> serverEntry in config.mcpServers)
+            {
+                if (!serverEntry.Key.StartsWith(McpConstants.PROJECT_NAME)) continue;
+                
+                if (!serverEntry.Value.env.ContainsKey(McpConstants.UNITY_TCP_PORT_ENV_KEY)) continue;
+                
+                // Found existing uMCP configuration
+                return serverEntry.Key;
+            }
+            
+            return null;
+        }
+
+        /// <summary>
         /// Updates environment variables for development mode and MCP debug logs.
         /// </summary>
         /// <param name="port">The port number to use.</param>
@@ -112,11 +145,27 @@ namespace io.github.hatayama.uMCP
             // Load existing settings (or create new ones if they don't exist)
             McpConfig config = _repository.Load(configPath);
 
-            // Generate settings key that includes the port number
+            // For Windsurf, keep the original behavior (always use port-based key)
+            // For other editors, remove existing uMCP configuration and create new one with updated port
             string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+            bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
+            
+            Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
+            
+            if (shouldReplaceExistingKey)
+            {
+                // Try to find existing uMCP configuration
+                string existingKey = FindExistingUmcpConfigurationKey(config);
+                if (!string.IsNullOrEmpty(existingKey) && existingKey != serverKey)
+                {
+                    // Remove existing configuration with different key
+                    updatedServers.Remove(existingKey);
+                    McpLogger.LogInfo($"Removed existing uMCP configuration key: {existingKey}, creating new key: {serverKey}");
+                }
+            }
 
             // Check if our server configuration exists
-            if (!config.mcpServers.ContainsKey(serverKey))
+            if (!updatedServers.ContainsKey(serverKey))
             {
                 // If it doesn't exist, create it with full configuration
                 AutoConfigure(port);
@@ -141,19 +190,40 @@ namespace io.github.hatayama.uMCP
             
             // Load existing settings
             McpConfig config = _repository.Load(configPath);
-            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
             
-            if (!config.mcpServers.ContainsKey(serverKey))
+            // For Windsurf, keep the original behavior (always use port-based key)
+            // For other editors, remove existing uMCP configuration and create new one with updated port
+            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+            bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
+            
+            Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
+            
+            if (shouldReplaceExistingKey)
+            {
+                // Try to find existing uMCP configuration
+                string existingKey = FindExistingUmcpConfigurationKey(config);
+                if (!string.IsNullOrEmpty(existingKey) && existingKey != serverKey)
+                {
+                    // Remove existing configuration with different key
+                    updatedServers.Remove(existingKey);
+                    McpLogger.LogInfo($"Removed existing uMCP configuration key: {existingKey}, creating new key: {serverKey}");
+                }
+            }
+            
+            if (!updatedServers.ContainsKey(serverKey))
             {
                 McpLogger.LogError($"Server configuration not found: {serverKey}");
                 return;
             }
 
             // Get existing configuration
-            McpServerConfigData existingConfig = config.mcpServers[serverKey];
+            McpServerConfigData existingConfig = updatedServers[serverKey];
             
             // Create new environment variables based on existing ones
             Dictionary<string, string> updatedEnv = new(existingConfig.env);
+            
+            // Update the port number in environment variables
+            updatedEnv[McpConstants.UNITY_TCP_PORT_ENV_KEY] = port.ToString();
             
             // Remove old development mode environment variables (cleanup legacy settings)
             updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_DEBUG);
@@ -186,7 +256,6 @@ namespace io.github.hatayama.uMCP
             );
             
             // Update only this server's configuration
-            Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
             updatedServers[serverKey] = updatedConfig;
             
             // Save the updated configuration
