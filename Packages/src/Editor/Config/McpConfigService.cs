@@ -61,7 +61,7 @@ namespace io.github.hatayama.uMCP
 
             // For Windsurf, keep the original behavior (always create new key)
             // For other editors, remove existing uMCP configuration and create new one with updated port
-            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port, _editorType);
             bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
             
             Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
@@ -147,7 +147,7 @@ namespace io.github.hatayama.uMCP
 
             // For Windsurf, keep the original behavior (always use port-based key)
             // For other editors, remove existing uMCP configuration and create new one with updated port
-            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port, _editorType);
             bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
             
             Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
@@ -193,7 +193,7 @@ namespace io.github.hatayama.uMCP
             
             // For Windsurf, keep the original behavior (always use port-based key)
             // For other editors, remove existing uMCP configuration and create new one with updated port
-            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port);
+            string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port, _editorType);
             bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
             
             Dictionary<string, McpServerConfigData> updatedServers = new(config.mcpServers);
