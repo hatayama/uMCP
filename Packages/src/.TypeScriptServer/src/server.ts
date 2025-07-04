@@ -82,7 +82,11 @@ class SimpleMcpServer {
     try {
       await this.unityClient.ensureConnected();
 
-      // Set fallback client name only if still using default value (empty string) or not set
+      // Client name handling:
+      // 1. Primary: clientInfo.name from MCP protocol initialize request
+      // 2. Fallback: MCP_CLIENT_NAME environment variable (for backward compatibility)
+      // 3. Default: Empty string (Unity will show "No Client" in UI)
+      // Note: MCP_CLIENT_NAME is deprecated but kept for compatibility with older setups
       if (!this.clientName) {
         const fallbackName = process.env.MCP_CLIENT_NAME;
         if (fallbackName) {
@@ -300,19 +304,7 @@ class SimpleMcpServer {
             }
             throw new Error('Development tool not available in production');
           default:
-            // Commented out test-tool handling
-            /*
-            if (name.startsWith('test-tool-')) {
-              return {
-                content: [
-                  {
-                    type: 'text',
-                    text: `Tool ${name} executed successfully with args: ${JSON.stringify(args)}`
-                  }
-                ]
-              };
-            }
-            */
+            // Test tools removed - no longer needed for production
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {

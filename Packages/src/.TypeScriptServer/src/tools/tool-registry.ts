@@ -7,6 +7,23 @@ import { DynamicUnityCommandTool } from './dynamic-unity-command-tool.js';
 /**
  * Tool registry
  * Responsible for tool registration, management, and execution
+ * 
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * 
+ * Related classes:
+ * - BaseTool: Abstract base class for all tool implementations
+ * - PingTool: TypeScript-side ping tool for health checks
+ * - UnityPingTool: Unity-side ping tool for connection testing
+ * - GetAvailableCommandsTool: Lists all available Unity commands
+ * - DynamicUnityCommandTool: Dynamically creates tools for Unity commands
+ * - ToolContext: Provides Unity client and server access to tools
+ * - ToolHandler: Interface defining tool structure
+ * 
+ * Key features:
+ * - Registers default tools and Unity command tools dynamically
+ * - Listens for Unity command changes via event notifications
+ * - Handles reconnection scenarios to restore tool state
+ * - Manages tool lifecycle and execution
  */
 export class ToolRegistry {
   private tools: Map<string, ToolHandler> = new Map();

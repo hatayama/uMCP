@@ -5,6 +5,20 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Factory class for creating MCP server configuration objects.
     /// Single Responsibility Principle: Only responsible for object creation.
+    /// 
+    /// Design document reference: Packages/src/Editor/ARCHITECTURE.md
+    /// 
+    /// Related classes:
+    /// - McpConfigService: Uses this factory to create server configurations
+    /// - McpServerConfigData: Value object that this factory creates
+    /// - UnityMcpPathResolver: Provides TypeScript server paths and project root
+    /// - McpConstants: Contains command constants (NODE_COMMAND) and environment keys
+    /// - McpEditorType: Enum defining supported editor types
+    /// 
+    /// Key features:
+    /// - Creates server configuration with editor-specific path formats (absolute/relative)
+    /// - Generates server keys with or without port numbers based on editor type
+    /// - Environment variables are minimal (only UNITY_TCP_PORT, no MCP_CLIENT_NAME)
     /// </summary>
     public static class McpServerConfigFactory
     {

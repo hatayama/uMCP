@@ -6,6 +6,17 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// A class responsible for the business logic of MCP settings.
     /// Single Responsibility Principle: Responsible only for the business logic of settings management.
+    /// 
+    /// Design document reference: Packages/src/Editor/ARCHITECTURE.md
+    /// 
+    /// Related classes:
+    /// - McpConfigRepository: Handles file I/O operations for configuration persistence
+    /// - McpServerConfigFactory: Creates server configuration objects with proper formatting
+    /// - McpConfigServiceFactory: Factory that creates and manages McpConfigService instances
+    /// - UnityMcpPathResolver: Provides configuration file paths for different editors
+    /// - McpServerConfigComparer: Compares server configurations to detect changes
+    /// - McpPortValidator: Validates port numbers for configuration
+    /// - McpEditorSettings: Manages editor-specific settings like custom port
     /// </summary>
     public class McpConfigService
     {
@@ -231,8 +242,7 @@ namespace io.github.hatayama.uMCP
             updatedEnv.Remove(McpConstants.ENV_KEY_NODE_ENV);
             updatedEnv.Remove(McpConstants.ENV_KEY_MCP_DEBUG);
             
-            // Remove MCP_CLIENT_NAME - now using clientInfo.name from MCP protocol
-            updatedEnv.Remove(McpConstants.ENV_KEY_MCP_CLIENT_NAME);
+            // MCP_CLIENT_NAME is no longer used - client identification handled by MCP protocol
             
             // Add NODE_ENV for development mode (simplified approach)
             if (developmentMode)

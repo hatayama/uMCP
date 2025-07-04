@@ -1,5 +1,17 @@
 namespace io.github.hatayama.uMCP
 {
+    /// <summary>
+    /// Central constants repository for Unity MCP system.
+    /// 
+    /// Design document reference: Packages/src/Editor/ARCHITECTURE.md
+    /// 
+    /// Related classes:
+    /// - McpConfigService: Uses these constants for configuration management
+    /// - McpServerConfigFactory: Uses port and environment variable constants
+    /// - McpEditorWindow: Uses SessionState keys for UI state persistence
+    /// - McpSessionManager: Uses SessionState keys for connection state management
+    /// - EditorConfigProvider: Provides client names via GetClientNameForEditor method
+    /// </summary>
     public static class McpConstants
     {
         public const string PROJECT_NAME = "uMCP";
@@ -25,7 +37,7 @@ namespace io.github.hatayama.uMCP
         public const string ENV_KEY_UMCP_PRODUCTION = "UMCP_PRODUCTION";
         public const string ENV_KEY_NODE_ENV = "NODE_ENV";
         public const string ENV_KEY_MCP_DEBUG = "MCP_DEBUG";
-        public const string ENV_KEY_MCP_CLIENT_NAME = "MCP_CLIENT_NAME";
+        // MCP_CLIENT_NAME removed - now using clientInfo.name from MCP protocol
         
         // Environment variable values
         public const string ENV_VALUE_TRUE = "true";
