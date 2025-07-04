@@ -1,6 +1,21 @@
 /**
  * Unity MCP Server common constants
  * Centralized management of constants used across all files
+ * 
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * 
+ * Related files:
+ * - mcp-constants.ts: MCP protocol specific constants
+ * - server.ts: Main server that uses these constants
+ * - unity-client.ts: Unity TCP client that uses connection constants
+ * - tools/*-tool.ts: Tool implementations that use timeout and configuration constants
+ * 
+ * Key features:
+ * - Server configuration (name, version)
+ * - Unity connection settings (port, host)
+ * - JSON-RPC protocol constants
+ * - Tool-specific timeouts and configurations
+ * - Error messages and logging configuration
  */
 
 // Server configuration

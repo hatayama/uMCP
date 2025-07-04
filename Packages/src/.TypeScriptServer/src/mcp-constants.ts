@@ -2,6 +2,20 @@
  * MCP Server Constants
  *
  * Centralized constants for the Unity MCP server implementation
+ * 
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * 
+ * Related files:
+ * - constants.ts: General server constants
+ * - server.ts: Uses MCP protocol version and capabilities
+ * - tools/ping-tool.ts: Uses development tool constants
+ * - tools/get-available-commands-tool.ts: Uses development tool constants
+ * 
+ * Key features:
+ * - MCP protocol version and server name
+ * - Capability flags (tools list changed notification)
+ * - Development tool names and descriptions
+ * - Client name defaults (empty string to rely on MCP protocol)
  */
 
 // MCP Protocol Constants
