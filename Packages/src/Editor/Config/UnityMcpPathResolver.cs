@@ -22,56 +22,78 @@ namespace io.github.hatayama.uMCP
     /// Class for resolving paths related to Unity MCP.
     /// Single Responsibility Principle: Only responsible for path resolution.
     /// 
+    /// ## Architecture Overview
+    /// 
+    /// This project uses the Visitor pattern to eliminate switch statements and centralize
+    /// editor-specific configuration logic. The EditorConfigProvider class now handles
+    /// all editor-specific configuration retrieval.
+    /// 
     /// ## Adding New LLM Tools Support
     /// 
-    /// When adding support for a new LLM tool, follow these steps to avoid common failures:
+    /// When adding support for a new LLM tool, follow these steps:
     /// 
-    /// ### 1. Update UnityMcpPathResolver.cs (this file)
-    /// - Add new McpEditorType enum value
-    /// - Add configuration file path constants
+    /// ### 1. Update McpEditorType enum (this file)
+    /// - Add new enum value (e.g., `NewEditor`)
+    /// 
+    /// ### 2. Update IEditorConfigVisitor interface
+    /// - Add new Visit method (e.g., `VisitNewEditor()`)
+    /// 
+    /// ### 3. Update EditorConfigProvider.ConfigurationVisitor
+    /// - Implement the new Visit method with configuration details
+    /// - Return EditorConfig with client name, config path, and config directory
+    /// 
+    /// ### 4. Update McpEditorTypeExtensions.Accept method
+    /// - Add case for new editor type in switch expression
+    /// 
+    /// ### 5. Add path resolution methods (this file)
     /// - Add GetXXXConfigPath() method
     /// - Add GetXXXConfigDirectory() method (if needed)
-    /// - Update GetConfigPath() switch statement
-    /// - Update GetConfigDirectory() switch statement
+    /// - Add configuration file path constants
     /// 
-    /// ### 2. Update McpConstants.cs
+    /// ### 6. Update McpConstants.cs
     /// - Add CLIENT_NAME_XXX constant
-    /// - Update GetClientNameForEditor() switch statement
     /// 
-    /// ### 3. No changes needed in McpConfigServiceFactory.cs
-    /// - Factory automatically detects and creates services for all enum values
-    /// - New editor types are handled automatically via Enum.GetValues()
-    /// 
-    /// ### 4. Related Classes to Check
+    /// ### 7. Related Classes
+    /// - EditorConfigProvider: Centralized configuration management using Visitor pattern
     /// - McpConfigService: Handles configuration file read/write operations
     /// - McpConfigRepository: Manages configuration data persistence
-    /// - McpConfigServiceFactory: Creates and manages configuration service instances
-    /// - McpServerConfigFactory: Creates server configuration objects
+    /// - McpConfigServiceFactory: Automatically creates services for all enum values
+    /// - McpServerConfigFactory: Creates server configuration objects with editor-specific handling
     /// - McpEditorSettings: Manages editor-specific settings
     /// 
-    /// ### 5. Configuration File Format
-    /// All tools use the same JSON structure:
+    /// ### 8. Configuration Details
+    /// 
+    /// #### Server Key Format:
+    /// - Windsurf: "uMCP-{port}" (includes port number)
+    /// - Other editors: "uMCP" (no port number)
+    /// 
+    /// #### Server Path Format:
+    /// - Desktop editors (Cursor, VSCode, Windsurf): Absolute path
+    /// - CLI editors (Claude Code, Gemini CLI): Relative path from project root
+    /// 
+    /// #### Environment Variables:
     /// ```json
     /// {
     ///   "mcpServers": {
-    ///     "unity-mcp@{port}": {
+    ///     "uMCP": {
     ///       "command": "node",
     ///       "args": ["{path_to_server.bundle.js}"],
     ///       "env": {
-    ///         "UNITY_TCP_PORT": "{port}",
-    ///         "MCP_CLIENT_NAME": "{client_name}"
+    ///         "UNITY_TCP_PORT": "{port}"
+    ///         // MCP_CLIENT_NAME removed - now using clientInfo.name from MCP protocol
     ///       }
     ///     }
     ///   }
     /// }
     /// ```
     /// 
-    /// ### 6. Testing Checklist
+    /// ### 9. Testing Checklist
     /// - Verify compilation succeeds without errors
     /// - Test configuration file creation/update
-    /// - Verify client name appears correctly in Unity MCP window
+    /// - Verify client name appears correctly via MCP protocol handshake
     /// - Test server start/stop functionality
-    /// - Confirm MCP_CLIENT_NAME environment variable is set correctly
+    /// - Verify correct server key format (with/without port)
+    /// - Test path format (absolute/relative) based on editor type
     /// - Verify factory automatically creates service for new editor type
     /// </summary>
     public static class UnityMcpPathResolver
