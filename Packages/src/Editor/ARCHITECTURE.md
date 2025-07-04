@@ -142,7 +142,163 @@ Contains low-level, general-purpose helper classes.
 - **`EditorDelay.cs`**: A custom, `async/await`-compatible implementation of a frame-based delay, useful for waiting a few frames for the Editor to reach a stable state, especially after domain reloads.
 - **`McpLogger.cs`**: A simple, unified logging wrapper to prefix all package-related logs with `[uMCP]`.
 
-## 4. Key Workflows
+## 4. TypeScript Server Architecture
+
+The TypeScript server (`Packages/src/.TypeScriptServer`) implements the MCP protocol and bridges communication between MCP clients (Claude, Cursor) and the Unity Editor.
+
+### 4.1. Core Components
+
+#### `/src/server.ts` - UnityMcpServer
+The main MCP server implementation (formerly SimpleMcpServer).
+- **Responsibilities**: MCP protocol handling, tool registration, client name management, lifecycle management
+- **Key Features**: Dynamic tool discovery, automatic reconnection handling, development mode tools
+- **Design Pattern**: Orchestrator pattern - coordinates between MCP protocol and Unity communication
+
+#### `/src/unity-client.ts` - UnityClient
+TCP client for Unity Editor communication.
+- **Responsibilities**: TCP connection management, JSON-RPC command execution, notification handling
+- **Separation of Concerns**: Connection logic delegated to ConnectionManager, message handling to MessageHandler
+- **Design Pattern**: Facade pattern - provides simple interface for Unity communication
+
+#### `/src/connection-manager.ts` - ConnectionManager
+Manages TCP connection state and reconnection polling.
+- **Responsibilities**: Connection polling, reconnection callbacks, timer management
+- **Design Pattern**: Single Responsibility - focuses only on connection lifecycle
+
+#### `/src/message-handler.ts` - MessageHandler
+Handles JSON-RPC message processing.
+- **Responsibilities**: Message parsing, notification routing, request/response matching
+- **Design Pattern**: Single Responsibility - focuses only on message protocol handling
+
+### 4.2. Tool System
+
+#### `/src/tools/base-tool.ts` - BaseTool
+Abstract base class for all tools using Template Method pattern.
+- **Provides**: Common error handling, response formatting, validation flow
+- **Extension Point**: Subclasses implement `validateArgs` and `execute` methods
+
+#### `/src/tools/dynamic-unity-command-tool.ts` - DynamicUnityCommandTool
+Dynamically creates MCP tools from Unity command definitions.
+- **Key Feature**: Automatic JSON Schema generation from Unity parameter schemas
+- **Design Pattern**: Factory pattern - creates tools based on Unity command metadata
+
+### 4.3. Architecture Principles
+
+1. **Separation of Concerns**: Each class has a single, well-defined responsibility
+2. **High Cohesion**: Related functionality is grouped together (e.g., all connection logic in ConnectionManager)
+3. **Low Coupling**: Classes communicate through well-defined interfaces, avoiding tight dependencies
+4. **Extensibility**: New Unity commands automatically become MCP tools without code changes
+5. **Resilience**: Automatic reconnection, graceful error handling, proper cleanup on shutdown
+
+### 4.4. TypeScript-Unity Communication Flow
+
+```mermaid
+sequenceDiagram
+    participant MC as MCP Client<br/>(Claude/Cursor)
+    participant US as UnityMcpServer
+    participant DT as DynamicUnityCommandTool
+    participant UC as UnityClient
+    participant MH as MessageHandler
+    participant CM as ConnectionManager
+    participant UE as Unity Editor<br/>(C# Server)
+
+    MC->>US: CallTool Request
+    US->>DT: execute(args)
+    DT->>UC: executeCommand()
+    UC->>MH: createRequest()
+    UC->>UE: Send JSON-RPC
+    UE-->>UC: JSON-RPC Response
+    UC->>MH: handleIncomingData()
+    MH-->>UC: Resolve Promise
+    UC-->>DT: Command Result
+    DT-->>US: Tool Response
+    US-->>MC: CallTool Response
+
+    Note over CM: Handles reconnection<br/>if connection lost
+```
+
+### 4.5. Class Relationships
+
+```mermaid
+classDiagram
+    class UnityMcpServer {
+        -server: Server
+        -unityClient: UnityClient
+        -dynamicTools: Map
+        +start()
+        +handleClientNameInitialization()
+        +fetchCommandDetailsFromUnity()
+        +createDynamicToolsFromCommands()
+    }
+
+    class UnityClient {
+        -socket: Socket
+        -connectionManager: ConnectionManager
+        -messageHandler: MessageHandler
+        +connect()
+        +disconnect()
+        +executeCommand()
+        +ensureConnected()
+    }
+
+    class ConnectionManager {
+        -pollingTimer: SafeTimer
+        -onReconnectedCallback: Function
+        +startPolling()
+        +stopPolling()
+        +setReconnectedCallback()
+    }
+
+    class MessageHandler {
+        -notificationHandlers: Map
+        -pendingRequests: Map
+        +handleIncomingData()
+        +createRequest()
+        +registerPendingRequest()
+        +clearPendingRequests()
+    }
+
+    class BaseTool {
+        <<abstract>>
+        #context: ToolContext
+        +handle()
+        #validateArgs()*
+        #execute()*
+        #formatResponse()
+    }
+
+    class DynamicUnityCommandTool {
+        +name: string
+        +description: string
+        +inputSchema: object
+        +execute()
+        -hasNoParameters()
+    }
+
+    UnityMcpServer "1" --> "1" UnityClient : uses
+    UnityMcpServer "1" --> "*" DynamicUnityCommandTool : manages
+    UnityClient "1" --> "1" ConnectionManager : delegates to
+    UnityClient "1" --> "1" MessageHandler : delegates to
+    DynamicUnityCommandTool --|> BaseTool : extends
+    DynamicUnityCommandTool --> UnityClient : uses
+```
+
+### 4.6. Connection State Management
+
+```mermaid
+stateDiagram-v2
+    [*] --> Disconnected
+    Disconnected --> Connecting : connect()
+    Connecting --> Connected : Socket Connected
+    Connecting --> Disconnected : Connection Failed
+    Connected --> Disconnected : Socket Error/Close
+    Disconnected --> Polling : Start Polling
+    Polling --> Connecting : Retry Connection
+    Polling --> [*] : stopPolling()
+    Connected --> [*] : disconnect()
+```
+
+## 5. Key Workflows
 
 ### Command Execution Flow
 1.  The `McpBridgeServer` receives a JSON string from the TypeScript client.

@@ -2,12 +2,15 @@ import { BaseTool } from './base-tool.js';
 import { ToolContext } from '../types/tool-types.js';
 import { PARAMETER_SCHEMA } from '../constants.js';
 
-// Related classes:
-// - SimpleMcpServer: Instantiates and uses this tool.
-// - UnityClient: Used to execute the actual command in Unity.
-
 /**
  * Dynamically generated tool for Unity commands
+ * 
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * 
+ * Related classes:
+ * - UnityMcpServer: Instantiates and uses this tool
+ * - UnityClient: Used to execute the actual command in Unity
+ * - BaseTool: Base class providing common tool functionality
  */
 export class DynamicUnityCommandTool extends BaseTool {
   public readonly name: string;

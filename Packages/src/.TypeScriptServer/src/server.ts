@@ -26,13 +26,17 @@ import {
 import packageJson from '../package.json' assert { type: 'json' };
 import { ToolResponse } from './types/tool-types.js';
 
-// Related classes:
-// - UnityClient: Handles the TCP connection to the Unity Editor.
-// - DynamicUnityCommandTool: Dynamically creates tools based on commands from Unity.
-// - @modelcontextprotocol/sdk/server: The core MCP server implementation.
-
 /**
  * Unity MCP Server - Bridge between MCP protocol and Unity Editor
+ * 
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * 
+ * Related classes:
+ * - UnityClient: Handles the TCP connection to the Unity Editor
+ * - DynamicUnityCommandTool: Dynamically creates tools based on commands from Unity
+ * - ConnectionManager: Manages connection polling (used via UnityClient)
+ * - MessageHandler: Handles JSON-RPC messages (used via UnityClient)
+ * - @modelcontextprotocol/sdk/server: The core MCP server implementation
  */
 class UnityMcpServer {
   private server: Server;

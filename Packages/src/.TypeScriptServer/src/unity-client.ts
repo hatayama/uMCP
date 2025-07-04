@@ -5,12 +5,16 @@ import { safeSetTimeout } from './utils/safe-timer.js';
 import { ConnectionManager } from './connection-manager.js';
 import { MessageHandler } from './message-handler.js';
 
-// Related classes:
-// - SimpleMcpServer: The main server class that uses this client.
-// - DynamicUnityCommandTool: Uses this client to execute commands in Unity.
-
 /**
  * TCP/IP client for communication with Unity
+ * 
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * 
+ * Related classes:
+ * - UnityMcpServer: The main server class that uses this client
+ * - DynamicUnityCommandTool: Uses this client to execute commands in Unity
+ * - ConnectionManager: Handles connection state and reconnection polling
+ * - MessageHandler: Handles JSON-RPC message processing
  */
 export class UnityClient {
   private socket: net.Socket | null = null;
