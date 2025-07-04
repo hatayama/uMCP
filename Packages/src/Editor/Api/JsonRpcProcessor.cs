@@ -23,6 +23,24 @@ namespace io.github.hatayama.uMCP
 
     /// <summary>
     /// Class specialized in handling JSON-RPC 2.0 processing
+    /// 
+    /// Design document reference: Packages/src/Editor/ARCHITECTURE.md
+    /// 
+    /// Related classes:
+    /// - UnityApiHandler: Executes Unity commands based on JSON-RPC requests
+    /// - McpBridgeServer: TCP server that receives JSON-RPC messages from TypeScript
+    /// - MainThreadSwitcher: Ensures Unity API calls run on the main thread
+    /// - JsonRpcRequest: Request model for JSON-RPC 2.0 protocol
+    /// - McpCommunicationLog: Logs all JSON-RPC communication for debugging
+    /// - ClientExecutionContext: Thread-local context for tracking current client
+    /// 
+    /// Processing flow:
+    /// 1. Receives JSON message from McpBridgeServer
+    /// 2. Parses and validates JSON-RPC 2.0 format
+    /// 3. Sets client context for the current thread
+    /// 4. Delegates to UnityApiHandler for command execution
+    /// 5. Formats response according to JSON-RPC 2.0 specification
+    /// 6. Returns JSON response to be sent back to client
     /// </summary>
     public static class JsonRpcProcessor
     {

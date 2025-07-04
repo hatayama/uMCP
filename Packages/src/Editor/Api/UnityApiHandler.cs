@@ -16,6 +16,23 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Class specialized in handling Unity API calls
     /// Supports new command-based structure
+    /// 
+    /// Design document reference: Packages/src/Editor/ARCHITECTURE.md
+    /// 
+    /// Related classes:
+    /// - UnityCommandRegistry: Registry that manages all available Unity commands
+    /// - CustomCommandManager: Provides access to the command registry singleton
+    /// - JsonRpcProcessor: Receives JSON-RPC requests and delegates to this handler
+    /// - IUnityCommand: Interface implemented by all command classes
+    /// - AbstractUnityCommand: Base class for all Unity commands
+    /// - BaseCommandResponse: Base response type for all commands
+    /// - MainThreadSwitcher: Ensures command execution on Unity's main thread
+    /// 
+    /// Command execution flow:
+    /// 1. JsonRpcProcessor receives request from TypeScript server
+    /// 2. Delegates to ExecuteCommand method with command name and parameters
+    /// 3. Looks up command in registry and executes asynchronously
+    /// 4. Returns command response or error information
     /// </summary>
     public static class UnityApiHandler
     {
