@@ -129,5 +129,22 @@ namespace io.github.hatayama.uMCP
             return $"{McpConstants.PROJECT_NAME}-{port}";
         }
 
+        /// <summary>
+        /// Creates Unity MCP server key with editor type consideration.
+        /// </summary>
+        /// <param name="port">The port number.</param>
+        /// <param name="editorType">The editor type.</param>
+        /// <returns>The server key.</returns>
+        public static string CreateUnityMcpServerKey(int port, McpEditorType editorType)
+        {
+            // Windsurf keeps the port number in the key
+            if (editorType == McpEditorType.Windsurf)
+            {
+                return $"{McpConstants.PROJECT_NAME}-{port}";
+            }
+            // Other editors use simple key without port
+            return McpConstants.PROJECT_NAME;
+        }
+
     }
 } 
