@@ -11,7 +11,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class GetLogsCommand : AbstractUnityCommand<GetLogsSchema, GetLogsResponse>
     {
-        public override string CommandName => "getlogs";
+        public override string CommandName => "get-logs";
         public override string Description => "Retrieve logs from Unity Console";
 
 

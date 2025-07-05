@@ -10,8 +10,6 @@ namespace io.github.hatayama.uMCP
         public const float DEFAULT_COMMUNICATION_LOG_HEIGHT = 300f;
 
         // UI spacing and dimensions
-        public const float LABEL_WIDTH_SERVER_STATUS = 85f;
-        public const float LABEL_WIDTH_STATUS = 80f;
         public const float BUTTON_HEIGHT_LARGE = 30f;
         public const float BUTTON_HEIGHT_MEDIUM = 25f;
         public const float BUTTON_WIDTH_CLEAR = 60f;

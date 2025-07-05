@@ -40,7 +40,7 @@
     - `Line` (number): 警告が発生した行番号
   - `Message` (string): 追加情報のためのオプションメッセージ
 
-### 2. getlogs
+### 2. get-logs
 - **説明**: フィルタリングおよび検索機能付きでUnityコンソールからログ情報を取得します
 - **パラメータ**: 
   - `LogType` (enum): フィルタするログタイプ - "Error", "Warning", "Log", "All"（デフォルト: "All"）
@@ -60,7 +60,7 @@
     - `StackTrace` (string): スタックトレース（IncludeStackTraceがtrueの場合）
     - `File` (string): ログが発生したファイル名
 
-### 3. runtests
+### 3. run-tests
 - **説明**: Unity Test Runnerを実行し、包括的なレポート付きでテスト結果を取得します
 - **パラメータ**: 
   - `FilterType` (enum): テストフィルタのタイプ - "all", "fullclassname"（デフォルト: "all"）
@@ -81,7 +81,7 @@
   - `SkippedCount` (number): スキップされたテストの数
   - `XmlPath` (string): XML結果ファイルのパス（SaveXmlがtrueの場合）
 
-### 4. clearconsole
+### 4. clear-console
 - **説明**: クリーンな開発ワークフローのためにUnityコンソールログをクリアします
 - **パラメータ**: 
   - `AddConfirmationMessage` (boolean): クリア後に確認ログメッセージを追加するかどうか（デフォルト: true）
@@ -95,11 +95,40 @@
   - `Message` (string): クリア操作結果を説明するメッセージ
   - `ErrorMessage` (string): 操作が失敗した場合のエラーメッセージ
 
+### 5. find-game-objects
+- **説明**: 高度な検索条件（コンポーネントタイプ、タグ、レイヤーなど）で複数のGameObjectを検索します
+- **パラメータ**: 
+  - `NamePattern` (string): 検索するGameObject名のパターン（デフォルト: ""）
+  - `SearchMode` (enum): 検索モード - "Exact", "Path", "Regex", "Contains"（デフォルト: "Exact"）
+  - `RequiredComponents` (array): GameObjectが持つ必要のあるコンポーネントタイプ名の配列（デフォルト: []）
+  - `Tag` (string): タグフィルター（デフォルト: ""）
+  - `Layer` (number): レイヤーフィルター（デフォルト: null）
+  - `IncludeInactive` (boolean): 非アクティブなGameObjectを含めるかどうか（デフォルト: false）
+  - `MaxResults` (number): 返す結果の最大数（デフォルト: 20）
+  - `IncludeInheritedProperties` (boolean): 継承プロパティを含めるかどうか（デフォルト: false）
+- **レスポンス**: 
+  - `Success` (boolean): 検索が成功したかどうか
+  - `GameObjects` (array): 見つかったGameObjectの配列
+    - `Name` (string): GameObject名
+    - `Path` (string): 完全な階層パス
+    - `InstanceId` (number): UnityインスタンスID
+    - `IsActive` (boolean): GameObjectがアクティブかどうか
+    - `Tag` (string): GameObjectタグ
+    - `Layer` (number): GameObjectレイヤー
+    - `LayerName` (string): GameObjectレイヤー名
+    - `Components` (array): GameObject上のコンポーネントの配列
+      - `TypeName` (string): コンポーネントタイプ名
+      - `AssemblyQualifiedName` (string): 完全なアセンブリ修飾名
+      - `Properties` (object): コンポーネントプロパティ（IncludeInheritedPropertiesがtrueの場合）
+  - `TotalCount` (number): 見つかったGameObjectの総数
+  - `Message` (string): 検索操作メッセージ
+  - `ErrorMessage` (string): 検索が失敗した場合のエラーメッセージ
+
 ---
 
 ## 🔍 Unity 検索・発見コマンド
 
-### 5. unitysearch
+### 6. unity-search
 - **説明**: Unity Search APIを使用してUnityプロジェクトを検索し、包括的なフィルタリングとエクスポートオプションを提供します
 - **パラメータ**: 
   - `SearchQuery` (string): 検索クエリ文字列（Unity Search構文をサポート）（デフォルト: ""）
@@ -131,7 +160,31 @@
   - `SavedFileFormat` (string): 保存された結果のファイル形式
   - `SaveToFileReason` (string): 結果がファイルに保存された理由
 
-### 6. getproviderdetails
+### 6. get-hierarchy
+- **説明**: Unity階層構造をAIフレンドリーな形式で取得します
+- **パラメータ**: 
+  - `IncludeInactive` (boolean): 非アクティブなGameObjectを含めるかどうか（デフォルト: true）
+  - `MaxDepth` (number): 探索する最大深度（無制限の場合は-1）（デフォルト: -1）
+  - `RootPath` (string): 開始ルートパス（すべてのルートオブジェクトの場合はnull）（デフォルト: null）
+  - `IncludeComponents` (boolean): コンポーネント情報を含めるかどうか（デフォルト: true）
+- **レスポンス**: 
+  - `Success` (boolean): 操作が成功したかどうか
+  - `Hierarchy` (object): GameObjectの階層構造
+    - `RootObjects` (array): ルートレベルのGameObjectの配列
+      - `Name` (string): GameObject名
+      - `Path` (string): 完全な階層パス
+      - `IsActive` (boolean): GameObjectがアクティブかどうか
+      - `Tag` (string): GameObjectタグ
+      - `Layer` (number): GameObjectレイヤー
+      - `LayerName` (string): GameObjectレイヤー名
+      - `Components` (array): コンポーネントタイプ名の配列（IncludeComponentsがtrueの場合）
+      - `Children` (array): 同じ構造を持つ子GameObjectの再帰的配列
+  - `TotalGameObjectCount` (number): 階層内のGameObjectの総数
+  - `MaxDepthReached` (number): 探索中に到達した実際の最大深度
+  - `Message` (string): 操作メッセージ
+  - `ErrorMessage` (string): 操作が失敗した場合のエラーメッセージ
+
+### 7. get-provider-details
 - **説明**: 表示名、説明、アクティブ状態、機能を含むUnity Searchプロバイダーの詳細情報を取得します
 - **パラメータ**: 
   - `ProviderId` (string): 詳細を取得する特定のプロバイダーID（空 = すべてのプロバイダー）（デフォルト: ""）
@@ -149,7 +202,7 @@
   - `AppliedFilter` (string): 適用されたフィルタ（特定のプロバイダーIDまたは"all"）
   - `SortedByPriority` (boolean): 結果が優先度でソートされているかどうか
 
-### 7. getmenuitems
+### 8. get-menu-items
 - **説明**: プログラム実行のための詳細なメタデータ付きでUnity MenuItemsを取得します。Unity Searchのメニュープロバイダーとは異なり、自動化とデバッグに必要な実装詳細（メソッド名、アセンブリ、実行互換性）を提供します
 - **パラメータ**: 
   - `FilterText` (string): MenuItemパスをフィルタするテキスト（すべてのアイテムの場合は空）（デフォルト: ""）
@@ -163,7 +216,7 @@
   - `AppliedFilter` (string): 適用されたフィルタテキスト
   - `AppliedFilterType` (string): 適用されたフィルタタイプ
 
-### 8. executemenuitem
+### 9. execute-menu-item
 - **説明**: パスによってUnity MenuItemを実行します
 - **パラメータ**: 
   - `MenuItemPath` (string): 実行するメニューアイテムパス（例: "GameObject/Create Empty"）（デフォルト: ""）
@@ -208,151 +261,6 @@
 - **複数フォーマット**: JSON、CSV、TSVエクスポート形式をサポート
 - **自動クリーンアップ**: ディスク容量問題を防ぐため古いエクスポートファイルを自動クリーンアップ
 - **閾値ベースエクスポート**: 自動ファイル保存のための設定可能な閾値
-
----
-
-## 🔧 カスタムコマンド開発
-
-uMCPシステムは、開発者がコアパッケージを変更することなく独自のコマンドを追加できる**動的カスタムコマンド登録**をサポートしています。カスタムコマンドを登録する方法は**2つ**あります：
-
-### 方法1: [McpTool]属性による自動登録（推奨）
-
-これは**最も簡単で推奨される方法**です。Unityのコンパイル時にコマンドが自動的に発見・登録されます。
-
-**ステップ1: スキーマクラスの作成**（パラメータを定義）：
-```csharp
-using System.ComponentModel;
-
-public class MyCustomSchema : BaseCommandSchema
-{
-    [Description("パラメータの説明")]
-    public string MyParameter { get; set; } = "default_value";
-    
-    [Description("Enumパラメータの例")]
-    public MyEnum EnumParameter { get; set; } = MyEnum.Option1;
-}
-
-public enum MyEnum
-{
-    Option1,
-    Option2,
-    Option3
-}
-```
-
-**ステップ2: レスポンスクラスの作成**（戻りデータを定義）：
-```csharp
-public class MyCustomResponse : BaseCommandResponse
-{
-    public string Result { get; set; }
-    public bool Success { get; set; }
-    
-    public MyCustomResponse(string result, bool success)
-    {
-        Result = result;
-        Success = success;
-    }
-    
-    // 必須のパラメータなしコンストラクタ
-    public MyCustomResponse() { }
-}
-```
-
-**ステップ3: コマンドクラスの作成**：
-```csharp
-[McpTool]  // ← この属性により自動登録が有効になります！
-public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
-{
-    public override string CommandName => "myCustomCommand";
-    public override string Description => "私のカスタムコマンドの説明";
-    
-    // メインスレッドで実行されます
-    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
-    {
-        // 型安全なパラメータアクセス
-        string param = parameters.MyParameter;
-        MyEnum enumValue = parameters.EnumParameter;
-        
-        // カスタムロジックをここに実装
-        string result = ProcessCustomLogic(param, enumValue);
-        bool success = !string.IsNullOrEmpty(result);
-        
-        return Task.FromResult(new MyCustomResponse(result, success));
-    }
-    
-    private string ProcessCustomLogic(string input, MyEnum enumValue)
-    {
-        // カスタムロジックを実装
-        return $"Processed '{input}' with enum '{enumValue}'";
-    }
-}
-```
-
-### 方法2: CustomCommandManagerによる手動登録
-
-この方法では、コマンドがいつ登録/登録解除されるかを**完全に制御**できます。
-
-**ステップ1-2: スキーマとレスポンスクラスの作成**（方法1と同じですが、`[McpTool]`属性は**なし**）
-
-**ステップ3: コマンドクラスの作成**（`[McpTool]`属性なし）：
-```csharp
-// 手動登録のため[McpTool]属性なし
-public class MyManualCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
-{
-    public override string CommandName => "myManualCommand";
-    public override string Description => "手動登録されたカスタムコマンド";
-    
-    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
-    {
-        // 方法1と同じ実装
-        string result = ProcessCustomLogic(parameters.MyParameter, parameters.EnumParameter);
-        return Task.FromResult(new MyCustomResponse(result, true));
-    }
-}
-```
-
-**ステップ4: 手動登録**：
-```csharp
-using UnityEngine;
-using UnityEditor;
-
-public static class MyCommandRegistration
-{
-    // Unityメニュー経由でコマンドを登録
-    [MenuItem("MyProject/Register Custom Commands")]
-    public static void RegisterMyCommands()
-    {
-        CustomCommandManager.RegisterCustomCommand(new MyManualCommand());
-        Debug.Log("カスタムコマンドが登録されました！");
-        
-        // オプション: LLMツールに変更を手動で通知
-        CustomCommandManager.NotifyCommandChanges();
-    }
-    
-    // Unityメニュー経由でコマンドを登録解除  
-    [MenuItem("MyProject/Unregister Custom Commands")]
-    public static void UnregisterMyCommands()
-    {
-        CustomCommandManager.UnregisterCustomCommand("myManualCommand");
-        Debug.Log("カスタムコマンドが登録解除されました！");
-    }
-}
-```
-
-### カスタムコマンドのデバッグ
-
-```csharp
-// 登録されたすべてのコマンドを表示
-[MenuItem("uMCP/Debug/Show Registered Commands")]
-public static void ShowCommands()
-{
-    CommandInfo[] commands = CustomCommandManager.GetRegisteredCustomCommands();
-    foreach (var cmd in commands)
-    {
-        Debug.Log($"Command: {cmd.Name} - {cmd.Description}");
-    }
-}
-```
 
 ---
 

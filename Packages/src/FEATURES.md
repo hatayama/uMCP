@@ -1,6 +1,6 @@
 [日本語](FEATURES_ja.md)
 
-# uMCP Features
+# uMCP Feature Specifications
 
 This document provides detailed information about all Unity MCP (Model Context Protocol) commands and features.
 
@@ -19,10 +19,10 @@ All commands automatically include the following timing information:
 
 ---
 
-## 🛠️ Core Unity Commands
+## 🛠️ Unity Core Commands
 
 ### 1. compile
-- **Description**: Executes Unity project compilation with detailed timing information after AssetDatabase.Refresh()
+- **Description**: Executes compilation after AssetDatabase.Refresh(). Returns compilation results with detailed timing information.
 - **Parameters**: 
   - `ForceRecompile` (boolean): Whether to perform forced recompilation (default: false)
 - **Response**: 
@@ -40,7 +40,7 @@ All commands automatically include the following timing information:
     - `Line` (number): Line number where warning occurred
   - `Message` (string): Optional message for additional information
 
-### 2. getlogs
+### 2. get-logs
 - **Description**: Retrieves log information from Unity console with filtering and search capabilities
 - **Parameters**: 
   - `LogType` (enum): Log type to filter - "Error", "Warning", "Log", "All" (default: "All")
@@ -60,7 +60,7 @@ All commands automatically include the following timing information:
     - `StackTrace` (string): Stack trace (if IncludeStackTrace is true)
     - `File` (string): File name where log occurred
 
-### 3. runtests
+### 3. run-tests
 - **Description**: Executes Unity Test Runner and retrieves test results with comprehensive reporting
 - **Parameters**: 
   - `FilterType` (enum): Type of test filter - "all", "fullclassname" (default: "all")
@@ -81,7 +81,7 @@ All commands automatically include the following timing information:
   - `SkippedCount` (number): Number of skipped tests
   - `XmlPath` (string): XML result file path (if SaveXml is true)
 
-### 4. clearconsole
+### 4. clear-console
 - **Description**: Clears Unity console logs for clean development workflow
 - **Parameters**: 
   - `AddConfirmationMessage` (boolean): Whether to add a confirmation log message after clearing (default: true)
@@ -95,11 +95,40 @@ All commands automatically include the following timing information:
   - `Message` (string): Message describing the clear operation result
   - `ErrorMessage` (string): Error message if the operation failed
 
+### 5. find-game-objects
+- **Description**: Find multiple GameObjects with advanced search criteria (component type, tag, layer, etc.)
+- **Parameters**: 
+  - `NamePattern` (string): GameObject name pattern to search for (default: "")
+  - `SearchMode` (enum): Search mode - "Exact", "Path", "Regex", "Contains" (default: "Exact")
+  - `RequiredComponents` (array): Array of component type names that GameObjects must have (default: [])
+  - `Tag` (string): Tag filter (default: "")
+  - `Layer` (number): Layer filter (default: null)
+  - `IncludeInactive` (boolean): Whether to include inactive GameObjects (default: false)
+  - `MaxResults` (number): Maximum number of results to return (default: 20)
+  - `IncludeInheritedProperties` (boolean): Whether to include inherited properties (default: false)
+- **Response**: 
+  - `Success` (boolean): Whether the search was successful
+  - `GameObjects` (array): Array of found GameObjects
+    - `Name` (string): GameObject name
+    - `Path` (string): Full hierarchy path
+    - `InstanceId` (number): Unity instance ID
+    - `IsActive` (boolean): Whether the GameObject is active
+    - `Tag` (string): GameObject tag
+    - `Layer` (number): GameObject layer
+    - `LayerName` (string): GameObject layer name
+    - `Components` (array): Array of components on the GameObject
+      - `TypeName` (string): Component type name
+      - `AssemblyQualifiedName` (string): Full assembly qualified name
+      - `Properties` (object): Component properties (if IncludeInheritedProperties is true)
+  - `TotalCount` (number): Total number of GameObjects found
+  - `Message` (string): Search operation message
+  - `ErrorMessage` (string): Error message if search failed
+
 ---
 
 ## 🔍 Unity Search & Discovery Commands
 
-### 5. unitysearch
+### 6. unity-search
 - **Description**: Search Unity project using Unity Search API with comprehensive filtering and export options
 - **Parameters**: 
   - `SearchQuery` (string): Search query string (supports Unity Search syntax) (default: "")
@@ -108,12 +137,11 @@ All commands automatically include the following timing information:
     - Common providers: "asset", "scene", "menu", "settings", "packages"
   - `MaxResults` (number): Maximum number of search results to return (default: 50)
   - `IncludeDescription` (boolean): Whether to include detailed descriptions in results (default: true)
-  - `IncludeThumbnails` (boolean): Whether to include thumbnail/preview information (default: false)
   - `IncludeMetadata` (boolean): Whether to include file metadata (size, modified date) (default: false)
   - `SearchFlags` (enum): Search flags for controlling Unity Search behavior (default: "Default")
-  - `SaveToFile` (boolean): Whether to save search results to external file (default: false)
+  - `SaveToFile` (boolean): Whether to save search results to external file to avoid massive token consumption when dealing with large result sets (default: false)
   - `OutputFormat` (enum): Output file format when SaveToFile is enabled - "JSON", "CSV", "TSV" (default: "JSON")
-  - `AutoSaveThreshold` (number): Threshold for automatic file saving (default: 100)
+  - `AutoSaveThreshold` (number): Threshold for automatic file saving (result count exceeding this will automatically save to file). Set to 0 to disable automatic file saving (default: 100)
   - `FileExtensions` (array): Filter results by file extension (e.g., "cs", "prefab", "mat") (default: [])
   - `AssetTypes` (array): Filter results by asset type (e.g., "Texture2D", "GameObject", "MonoScript") (default: [])
   - `PathFilter` (string): Filter results by path pattern (supports wildcards) (default: "")
@@ -131,7 +159,31 @@ All commands automatically include the following timing information:
   - `SavedFileFormat` (string): File format of saved results
   - `SaveToFileReason` (string): Reason why results were saved to file
 
-### 6. getproviderdetails
+### 6. get-hierarchy
+- **Description**: Get Unity Hierarchy structure in AI-friendly format
+- **Parameters**: 
+  - `IncludeInactive` (boolean): Whether to include inactive GameObjects (default: true)
+  - `MaxDepth` (number): Maximum depth to traverse (-1 for unlimited) (default: -1)
+  - `RootPath` (string): Starting root path (null for all root objects) (default: null)
+  - `IncludeComponents` (boolean): Whether to include component information (default: true)
+- **Response**: 
+  - `Success` (boolean): Whether the operation was successful
+  - `Hierarchy` (object): Hierarchical structure of GameObjects
+    - `RootObjects` (array): Array of root level GameObjects
+      - `Name` (string): GameObject name
+      - `Path` (string): Full hierarchy path
+      - `IsActive` (boolean): Whether the GameObject is active
+      - `Tag` (string): GameObject tag
+      - `Layer` (number): GameObject layer
+      - `LayerName` (string): GameObject layer name
+      - `Components` (array): Array of component type names (if IncludeComponents is true)
+      - `Children` (array): Recursive array of child GameObjects with same structure
+  - `TotalGameObjectCount` (number): Total number of GameObjects in the hierarchy
+  - `MaxDepthReached` (number): The actual maximum depth reached during traversal
+  - `Message` (string): Operation message
+  - `ErrorMessage` (string): Error message if operation failed
+
+### 7. get-provider-details
 - **Description**: Get detailed information about Unity Search providers including display names, descriptions, active status, and capabilities
 - **Parameters**: 
   - `ProviderId` (string): Specific provider ID to get details for (empty = all providers) (default: "")
@@ -149,7 +201,7 @@ All commands automatically include the following timing information:
   - `AppliedFilter` (string): Filter applied (specific provider ID or "all")
   - `SortedByPriority` (boolean): Whether results are sorted by priority
 
-### 7. getmenuitems
+### 8. get-menu-items
 - **Description**: Retrieve Unity MenuItems with detailed metadata for programmatic execution. Unlike Unity Search menu provider, this provides implementation details (method names, assemblies, execution compatibility) needed for automation and debugging
 - **Parameters**: 
   - `FilterText` (string): Text to filter MenuItem paths (empty for all items) (default: "")
@@ -163,7 +215,7 @@ All commands automatically include the following timing information:
   - `AppliedFilter` (string): The filter text that was applied
   - `AppliedFilterType` (string): The filter type that was applied
 
-### 8. executemenuitem
+### 9. execute-menu-item
 - **Description**: Execute Unity MenuItem by path
 - **Parameters**: 
   - `MenuItemPath` (string): The menu item path to execute (e.g., "GameObject/Create Empty") (default: "")
@@ -211,154 +263,9 @@ All commands automatically include the following timing information:
 
 ---
 
-## 🔧 Custom Command Development
-
-The uMCP system supports **dynamic custom command registration** that allows developers to add their own commands without modifying the core package. There are **two ways** to register custom commands:
-
-### Method 1: Automatic Registration with [McpTool] Attribute (Recommended)
-
-This is the **easiest and recommended method**. Commands are automatically discovered and registered when Unity compiles.
-
-**Step 1: Create a Schema Class** (defines parameters):
-```csharp
-using System.ComponentModel;
-
-public class MyCustomSchema : BaseCommandSchema
-{
-    [Description("Your parameter description")]
-    public string MyParameter { get; set; } = "default_value";
-    
-    [Description("Example enum parameter")]
-    public MyEnum EnumParameter { get; set; } = MyEnum.Option1;
-}
-
-public enum MyEnum
-{
-    Option1,
-    Option2,
-    Option3
-}
-```
-
-**Step 2: Create a Response Class** (defines return data):
-```csharp
-public class MyCustomResponse : BaseCommandResponse
-{
-    public string Result { get; set; }
-    public bool Success { get; set; }
-    
-    public MyCustomResponse(string result, bool success)
-    {
-        Result = result;
-        Success = success;
-    }
-    
-    // Required parameterless constructor
-    public MyCustomResponse() { }
-}
-```
-
-**Step 3: Create the Command Class**:
-```csharp
-[McpTool]  // ← This attribute enables automatic registration!
-public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
-{
-    public override string CommandName => "myCustomCommand";
-    public override string Description => "My custom command description";
-    
-    // Executed on main thread
-    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
-    {
-        // Type-safe parameter access
-        string param = parameters.MyParameter;
-        MyEnum enumValue = parameters.EnumParameter;
-        
-        // Implement custom logic here
-        string result = ProcessCustomLogic(param, enumValue);
-        bool success = !string.IsNullOrEmpty(result);
-        
-        return Task.FromResult(new MyCustomResponse(result, success));
-    }
-    
-    private string ProcessCustomLogic(string input, MyEnum enumValue)
-    {
-        // Implement custom logic
-        return $"Processed '{input}' with enum '{enumValue}'";
-    }
-}
-```
-
-### Method 2: Manual Registration via CustomCommandManager
-
-This method gives you **complete control** over when commands are registered/unregistered.
-
-**Steps 1-2: Schema and Response Classes** (same as Method 1, but without `[McpTool]` attribute)
-
-**Step 3: Command Class** (without `[McpTool]` attribute):
-```csharp
-// No [McpTool] attribute for manual registration
-public class MyManualCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
-{
-    public override string CommandName => "myManualCommand";
-    public override string Description => "Manually registered custom command";
-    
-    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
-    {
-        // Same implementation as Method 1
-        string result = ProcessCustomLogic(parameters.MyParameter, parameters.EnumParameter);
-        return Task.FromResult(new MyCustomResponse(result, true));
-    }
-}
-```
-
-**Step 4: Manual Registration**:
-```csharp
-using UnityEngine;
-using UnityEditor;
-
-public static class MyCommandRegistration
-{
-    // Register command via Unity menu
-    [MenuItem("MyProject/Register Custom Commands")]
-    public static void RegisterMyCommands()
-    {
-        CustomCommandManager.RegisterCustomCommand(new MyManualCommand());
-        Debug.Log("Custom command registered!");
-        
-        // Optional: Manually notify LLM tools of changes
-        CustomCommandManager.NotifyCommandChanges();
-    }
-    
-    // Unregister command via Unity menu  
-    [MenuItem("MyProject/Unregister Custom Commands")]
-    public static void UnregisterMyCommands()
-    {
-        CustomCommandManager.UnregisterCustomCommand("myManualCommand");
-        Debug.Log("Custom command unregistered!");
-    }
-}
-```
-
-### Debugging Custom Commands
-
-```csharp
-// Display all registered commands
-[MenuItem("uMCP/Debug/Show Registered Commands")]
-public static void ShowCommands()
-{
-    CommandInfo[] commands = CustomCommandManager.GetRegisteredCustomCommands();
-    foreach (var cmd in commands)
-    {
-        Debug.Log($"Command: {cmd.Name} - {cmd.Description}");
-    }
-}
-```
-
----
-
 ## 📚 Related Documentation
 
-- [Main README](README.md) - Project overview and setup
+- [Main README](README_ja.md) - Project overview and setup
 - [Architecture Documentation](Editor/ARCHITECTURE.md) - Technical architecture details
 - [TypeScript Server Architecture](TypeScriptServer~/ARCHITECTURE.md) - TypeScript server implementation
-- [Changelog](CHANGELOG.md) - Version history and updates 
+- [Changelog](CHANGELOG.md) - Version history and updates

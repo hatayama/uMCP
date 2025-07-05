@@ -10,7 +10,7 @@ namespace io.github.hatayama.uMCP
     [McpTool(DisplayDevelopmentOnly = true)]
     public class SetClientNameCommand : AbstractUnityCommand<SetClientNameSchema, SetClientNameResponse>
     {
-        public override string CommandName => "setClientName";
+        public override string CommandName => "set-client-name";
         public override string Description => "Register client name for identification in Unity MCP server";
 
         protected override Task<SetClientNameResponse> ExecuteAsync(SetClientNameSchema parameters)

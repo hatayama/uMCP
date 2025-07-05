@@ -14,7 +14,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class ClearConsoleCommand : AbstractUnityCommand<ClearConsoleSchema, ClearConsoleResponse>
     {
-        public override string CommandName => "clearconsole";
+        public override string CommandName => "clear-console";
         public override string Description => "Clear Unity console logs";
 
         /// <summary>

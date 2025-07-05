@@ -140,7 +140,7 @@ class UnityMcpServer {
    */
   private async fetchCommandDetailsFromUnity(): Promise<unknown[] | null> {
     // Get detailed command information including schemas
-    const commandDetailsResponse = await this.unityClient.executeCommand('getCommandDetails', {});
+    const commandDetailsResponse = await this.unityClient.executeCommand('get-command-details', {});
 
     // Handle new GetCommandDetailsResponse structure
     const commandDetails =

@@ -25,17 +25,17 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: 'Packages/src/.TypeScriptServer/package-lock.json'
+        cache-dependency-path: 'Packages/src/TypeScriptServer~/package-lock.json'
         
     - name: Install TypeScript Server dependencies
-      working-directory: Packages/src/.TypeScriptServer
+      working-directory: Packages/src/TypeScriptServer~
       run: |
         echo "Installing dependencies (node_modules will be created temporarily)..."
         npm ci
         echo "Dependencies installed successfully"
         
     - name: Build TypeScript Server
-      working-directory: Packages/src/.TypeScriptServer
+      working-directory: Packages/src/TypeScriptServer~
       env:
         UMCP_PRODUCTION: "true"
         NODE_ENV: "production"
@@ -46,7 +46,7 @@ jobs:
         echo "Production build completed successfully"
         
     - name: Verify build output
-      working-directory: Packages/src/.TypeScriptServer
+      working-directory: Packages/src/TypeScriptServer~
       env:
         UMCP_PRODUCTION: "true"
         NODE_ENV: "production"
@@ -58,7 +58,7 @@ jobs:
         timeout 5s node dist/server.bundle.js || echo "Production server built successfully"
         
     - name: Clean up node_modules (optional verification)
-      working-directory: Packages/src/.TypeScriptServer
+      working-directory: Packages/src/TypeScriptServer~
       run: |
         echo "node_modules size before cleanup:"
         du -sh node_modules/ || echo "node_modules not found"
@@ -71,7 +71,7 @@ jobs:
         git config --local user.name "GitHub Action"
         
         echo "Adding only dist/ files to git..."
-        git add Packages/src/.TypeScriptServer/dist/
+        git add Packages/src/TypeScriptServer~/dist/
         
         echo "Checking for changes..."
         if git diff --staged --quiet; then
@@ -103,12 +103,12 @@ jobs:
         # Unity Package必須ファイルの存在確認
         test -f "Packages/src/package.json" || exit 1
         test -d "Packages/src/Editor" || exit 1
-        test -f "Packages/src/.TypeScriptServer/dist/server.bundle.js" || exit 1
+        test -f "Packages/src/TypeScriptServer~/dist/server.bundle.js" || exit 1
         
         echo "✅ Unity Package structure is valid"
         
         # node_modulesが含まれていないことを確認
-        if [ -d "Packages/src/.TypeScriptServer/node_modules" ]; then
+        if [ -d "Packages/src/TypeScriptServer~/node_modules" ]; then
           echo "❌ ERROR: node_modules should not be in the repository"
           exit 1
         else
