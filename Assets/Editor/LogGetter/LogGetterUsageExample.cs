@@ -9,7 +9,7 @@ namespace io.github.hatayama.uMCP
     public class LogGetterUsageExample
     {
         
-        [MenuItem("uMCP/LogGetter/Direct Test")]
+        [MenuItem("uMCP/Debug/LogGetter Tests/Direct Test")]
         public static void TestLogGetter()
         {
             Debug.Log("=== LogGetter Direct Test Start ===");
@@ -25,7 +25,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log("=== LogGetter Direct Test End ===");
         }
 
-        [MenuItem("uMCP/LogGetter/Run Usage Examples")]
+        [MenuItem("uMCP/Debug/LogGetter Tests/Run Usage Examples")]
         public static void RunUsageExamples()
         {
             Debug.Log("=== LogGetter Usage Examples Start ===");
@@ -87,7 +87,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log($"Total number of console logs: {totalCount}");
         }
 
-        [MenuItem("uMCP/LogGetter/Custom Processing Example")]
+        [MenuItem("uMCP/Debug/LogGetter Tests/Custom Processing Example")]
         public static void CustomProcessingExample()
         {
             Debug.Log("=== Custom Processing Example ===");

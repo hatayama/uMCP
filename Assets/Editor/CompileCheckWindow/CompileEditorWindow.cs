@@ -14,7 +14,7 @@ namespace io.github.hatayama.uMCP
 
         // Note: Compile window data is now managed via McpSessionManager
 
-        [MenuItem("uMCP/CompileWindow/Window")]
+        [MenuItem("uMCP/Windows/Compile Tool")]
         public static void ShowWindow()
         {
             CompileEditorWindow window = GetWindow<CompileEditorWindow>();

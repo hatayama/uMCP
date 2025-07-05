@@ -14,8 +14,8 @@ namespace io.github.hatayama.uMCP
     public static class UmcpDebugToggle
     {
         private const string DEBUG_SYMBOL = "UMCP_DEBUG";
-        private const string MENU_PATH_ENABLE = "Window/uMCP/Enable Debug Mode";
-        private const string MENU_PATH_DISABLE = "Window/uMCP/Disable Debug Mode";
+        private const string MENU_PATH_ENABLE = "uMCP/Tools/Debug Settings/Enable Debug Mode";
+        private const string MENU_PATH_DISABLE = "uMCP/Tools/Debug Settings/Disable Debug Mode";
 
         /// <summary>
         /// Check if UMCP_DEBUG symbol is currently defined

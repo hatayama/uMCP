@@ -7,7 +7,7 @@ namespace io.github.hatayama.uMCP
 {
     public static class FindGameObjectsTestMenu
     {
-        [MenuItem("uMCP/Test/Test FindGameObjects - Camera")]
+        [MenuItem("uMCP/Debug/FindGameObjects Tests/Test Camera Search")]
         public static async void TestFindGameObjectsCamera()
         {
             FindGameObjectsCommand command = new FindGameObjectsCommand();
@@ -47,7 +47,7 @@ namespace io.github.hatayama.uMCP
             }
         }
         
-        [MenuItem("uMCP/Test/Test FindGameObjects - Main Camera by Path")]
+        [MenuItem("uMCP/Debug/FindGameObjects Tests/Test Main Camera by Path")]
         public static async void TestFindMainCameraByPath()
         {
             Debug.Log("[FindGameObjectsTestMenu] Starting Main Camera path search test...");

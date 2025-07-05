@@ -41,7 +41,7 @@ namespace io.github.hatayama.uMCP
         // Server operations handler (MVP pattern helper)
         private McpServerOperations _serverOperations;
 
-        [MenuItem("Window/uMCP/Open uMCP Window", false, 1)]
+        [MenuItem("Window/uMCP")]
         public static void ShowWindow()
         {
             McpEditorWindow window = GetWindow<McpEditorWindow>(McpConstants.PROJECT_NAME);

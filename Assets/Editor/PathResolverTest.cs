@@ -9,7 +9,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class PathResolverTest
     {
-        [MenuItem("uMCP/Debug/Test TypeScript Server Path")]
+        [MenuItem("uMCP/Tools/Path Resolver/Test TypeScript Server Path")]
         public static void TestTypeScriptServerPath()
         {
             McpLogger.LogInfo("=== TypeScript Server Path Test ===");
@@ -60,7 +60,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo("=== Test Complete ===");
         }
         
-        [MenuItem("uMCP/Debug/Force Update MCP Config")]
+        [MenuItem("uMCP/Tools/Path Resolver/Force Update MCP Config")]
         public static void ForceUpdateMcpConfig()
         {
             McpLogger.LogInfo("=== Force Update MCP Config ===");
@@ -73,7 +73,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo("MCP config update completed");
         }
 
-        [MenuItem("uMCP/Test Path Resolver")]
+        [MenuItem("uMCP/Tools/Path Resolver/Test Path Resolver")]
         public static void TestPathResolver()
         {
             Debug.Log("=== Path Resolver Test ===");

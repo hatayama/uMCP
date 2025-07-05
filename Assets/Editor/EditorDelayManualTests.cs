@@ -14,7 +14,7 @@ namespace io.github.hatayama.uMCP
         private static int testFrameStart;
         private static int testCounter = 0;
         
-        [MenuItem("uMCP/EditorDelay/EditorDelay/1. Basic Delay Tests")]
+        [MenuItem("uMCP/Debug/EditorDelay Tests/Basic Delay Tests")]
         public static void TestBasicDelays()
         {
             Debug.Log("========================================");
@@ -65,7 +65,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log($"[Test {testCounter}] Multiple Frame Delay - Complete (Frame: {completionFrame}) - Frames elapsed: {framesDiff}");
         }
         
-        [MenuItem("uMCP/EditorDelay/2. Concurrent Execution Test")]
+        [MenuItem("uMCP/Debug/EditorDelay Tests/Concurrent Execution Test")]
         public static void TestConcurrentExecution()
         {
             Debug.Log("=========================================");
@@ -96,7 +96,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log($"Task {taskName}: Complete (Frame: {endFrame}, Total elapsed: {elapsed} frames)");
         }
         
-        [MenuItem("uMCP/EditorDelay/3. Stress Test (100 Tasks)")]
+        [MenuItem("uMCP/Debug/EditorDelay Tests/Stress Test (100 Tasks)")]
         public static void TestStressLoad()
         {
             Debug.Log("==============================");
@@ -133,7 +133,7 @@ namespace io.github.hatayama.uMCP
             onComplete?.Invoke();
         }
         
-        [MenuItem("uMCP/EditorDelay/4. Cancellation Test")]
+        [MenuItem("uMCP/Debug/EditorDelay Tests/Cancellation Test")]
         public static void TestCancellation()
         {
             Debug.Log("==============================");
@@ -170,7 +170,7 @@ namespace io.github.hatayama.uMCP
             }
         }
         
-        [MenuItem("uMCP/EditorDelay/5. Integration Test (McpServerController)")]
+        [MenuItem("uMCP/Debug/EditorDelay Tests/Integration Test")]
         public static void TestMcpServerControllerIntegration()
         {
             Debug.Log("==========================================");
@@ -200,7 +200,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log("Simulation: Server restoration sequence completed!");
         }
         
-        [MenuItem("uMCP/EditorDelay/Status/Show Manager Status")]
+        [MenuItem("uMCP/Debug/EditorDelay Tests/Show Manager Status")]
         public static void ShowDelayManagerStatus()
         {
             Debug.Log("==============================");
@@ -211,7 +211,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log($"Time Since Startup: {EditorApplication.timeSinceStartup:F2}s");
         }
         
-        [MenuItem("uMCP/EditorDelay/Clear All Tasks")]
+        [MenuItem("uMCP/Debug/EditorDelay Tests/Clear All Tasks")]
         public static void ClearAllTasks()
         {
             int clearedCount = EditorDelayManager.PendingTaskCount;
@@ -219,7 +219,7 @@ namespace io.github.hatayama.uMCP
             Debug.Log($"Cleared {clearedCount} pending tasks from EditorDelayManager");
         }
         
-        [MenuItem("uMCP/EditorDelay/Help Show Test Instructions")]
+        [MenuItem("uMCP/Debug/EditorDelay Tests/Show Test Instructions")]
         public static void ShowTestInstructions()
         {
             Debug.Log("=======================================");

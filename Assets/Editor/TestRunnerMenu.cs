@@ -10,7 +10,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class TestRunnerMenu
     {
-        [MenuItem("uMCP/Test Runner/EditMode/Run EditMode Tests (Save XML)")]
+        [MenuItem("uMCP/Tools/Test Runner/Run EditMode Tests/All Tests (Save XML)")]
         public static async void RunEditModeTestsAndSaveXml()
         {
             Debug.Log("Running EditMode tests and saving to XML!");
@@ -22,7 +22,7 @@ namespace io.github.hatayama.uMCP
             LogTestResult(result);
         }
         
-        [MenuItem("uMCP/Test Runner/EditMode/Run EditMode Tests (Log Only)")]
+        [MenuItem("uMCP/Tools/Test Runner/Run EditMode Tests/All Tests (Log Only)")]
         public static async void RunEditModeTestsAndLogOnly()
         {
             Debug.Log("Running EditMode tests (log only)!");
@@ -34,7 +34,7 @@ namespace io.github.hatayama.uMCP
             LogTestResult(result);
         }
 
-        [MenuItem("uMCP/Test Runner/PlayMode/Run PlayMode Tests (Save XML)")]
+        [MenuItem("uMCP/Tools/Test Runner/Run PlayMode Tests/All Tests (Save XML)")]
         public static async void RunPlayModeTestsAndSaveXml()
         {
             Debug.Log("Running PlayMode tests and saving to XML!");
@@ -46,7 +46,7 @@ namespace io.github.hatayama.uMCP
             LogTestResult(result);
         }
         
-        [MenuItem("uMCP/Test Runner/PlayMode/Run PlayMode Tests (Log Only)")]
+        [MenuItem("uMCP/Tools/Test Runner/Run PlayMode Tests/All Tests (Log Only)")]
         public static async void RunPlayModeTestsAndLogOnly()
         {
             Debug.Log("Running PlayMode tests (log only)!");
@@ -58,7 +58,7 @@ namespace io.github.hatayama.uMCP
             LogTestResult(result);
         }
         
-        [MenuItem("uMCP/Test Runner/Open Test Runner Window")]
+        [MenuItem("uMCP/Tools/Test Runner/Open Test Runner Window")]
         public static void OpenTestRunnerWindow()
         {
             // Open Unity's Test Runner Window
@@ -69,7 +69,7 @@ namespace io.github.hatayama.uMCP
         
         // ===== Menu to run a specific test class =====
         
-        [MenuItem("uMCP/Test Runner/Run Specific Test/CompileCommandTests")]
+        [MenuItem("uMCP/Tools/Test Runner/Run Specific Tests/CompileCommandTests")]
         public static async void RunCompileCommandTests()
         {
             Debug.Log("Running only CompileCommandTests!");
@@ -82,7 +82,7 @@ namespace io.github.hatayama.uMCP
             LogTestResult(result);
         }
         
-        [MenuItem("uMCP/Test Runner/Run Specific Test/GetLogsCommandTests")]
+        [MenuItem("uMCP/Tools/Test Runner/Run Specific Tests/GetLogsCommandTests")]
         public static async void RunGetLogsCommandTests()
         {
             Debug.Log("Running only GetLogsCommandTests!");
@@ -95,7 +95,7 @@ namespace io.github.hatayama.uMCP
             LogTestResult(result);
         }
         
-        [MenuItem("uMCP/Test Runner/Run Specific Test/MainThreadSwitcherTests")]
+        [MenuItem("uMCP/Tools/Test Runner/Run Specific Tests/MainThreadSwitcherTests")]
         public static async void RunMainThreadSwitcherTests()
         {
             Debug.Log("Running only MainThreadSwitcherTests!");
@@ -108,7 +108,7 @@ namespace io.github.hatayama.uMCP
             LogTestResult(result);
         }
         
-        [MenuItem("uMCP/Test Runner/Run Specific Test/SampleEditModeTest")]
+        [MenuItem("uMCP/Tools/Test Runner/Run Specific Tests/SampleEditModeTest")]
         public static async void RunSampleEditModeTest()
         {
             Debug.Log("Running only SampleEditModeTest!");

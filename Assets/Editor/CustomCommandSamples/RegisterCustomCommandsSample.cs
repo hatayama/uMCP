@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Register custom commands
         /// </summary>
-        [MenuItem("uMCP/Custom Commands/Register Sample Commands")]
+        [MenuItem("uMCP/Tools/Custom Commands/Register Sample Commands")]
         public static void RegisterSampleCommands()
         {
             CustomCommandManager.RegisterCustomCommand(new HelloWorldCommand());
@@ -36,7 +36,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Unregister custom commands
         /// </summary>
-        [MenuItem("uMCP/Custom Commands/Unregister Sample Commands")]
+        [MenuItem("uMCP/Tools/Custom Commands/Unregister Sample Commands")]
         public static void UnregisterSampleCommands()
         {
             CustomCommandManager.UnregisterCustomCommand("helloworld");
@@ -54,7 +54,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Display list of currently registered commands
         /// </summary>
-        [MenuItem("uMCP/Custom Commands/Show Registered Commands")]
+        [MenuItem("uMCP/Tools/Custom Commands/Show Registered Commands")]
         public static void ShowRegisteredCommands()
         {
             CommandInfo[] commands = CustomCommandManager.GetRegisteredCustomCommands();

@@ -10,7 +10,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class ConsoleMaskDebugger : EditorWindow
     {
-        [MenuItem("uMCP/Console Mask Debugger")]
+        [MenuItem("uMCP/Windows/Console Mask Debugger")]
         public static void ShowWindow()
         {
             GetWindow<ConsoleMaskDebugger>("Console Mask Debugger");
