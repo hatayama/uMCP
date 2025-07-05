@@ -521,12 +521,13 @@ namespace io.github.hatayama.uMCP
 #endif
 
         /// <summary>
-        /// Check if client name is valid for display (not empty)
+        /// Check if client name is valid for display
         /// </summary>
         private bool IsValidClientName(string clientName)
         {
-            // Only show clients with non-empty names (default is empty string)
-            return !string.IsNullOrEmpty(clientName);
+            // Only show clients with properly set names
+            // Filter out empty names and the default "Unknown Client" placeholder
+            return !string.IsNullOrEmpty(clientName) && clientName != McpConstants.UNKNOWN_CLIENT_NAME;
         }
     }
 } 

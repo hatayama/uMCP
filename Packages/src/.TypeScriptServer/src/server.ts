@@ -46,6 +46,7 @@ class UnityMcpServer {
   private isShuttingDown: boolean = false;
   private isRefreshing: boolean = false;
   private clientName: string = DEFAULT_CLIENT_NAME;
+  private isInitialized: boolean = false;
 
   constructor() {
     // Simple environment variable check
@@ -224,10 +225,19 @@ class UnityMcpServer {
       if (clientInfo?.name) {
         this.clientName = clientInfo.name;
         infoToFile(`[Unity MCP] Client name received: ${this.clientName}`);
+      }
 
-        // Immediately send client name to Unity if connected
-        if (this.unityClient) {
-          void this.unityClient.setClientName(this.clientName);
+      // Initialize Unity connection after receiving client name
+      if (!this.isInitialized) {
+        this.isInitialized = true;
+        infoToFile(`[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`);
+        
+        try {
+          await this.initializeDynamicTools();
+          infoToFile('[Unity MCP] Unity connection established successfully');
+        } catch (error) {
+          errorToFile('[Unity MCP] Failed to initialize Unity connection:', error);
+          // Continue anyway - tools can be loaded later via refresh
         }
       }
 
@@ -414,15 +424,14 @@ class UnityMcpServer {
    * Start the server
    */
   async start(): Promise<void> {
-    // Setup Unity event notification listener BEFORE connecting
+    // Setup Unity event notification listener (will be used after Unity connection)
     this.setupUnityEventListener();
 
-    // Initialize dynamic Unity command tools BEFORE connecting to MCP transport
-    await this.initializeDynamicTools();
-
-    // Now connect to MCP transport - at this point all tools should be ready
+    // Connect to MCP transport first - wait for client name before connecting to Unity
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
+    
+    infoToFile('[Unity MCP] Server started, waiting for client initialization...');
   }
 
   /**
