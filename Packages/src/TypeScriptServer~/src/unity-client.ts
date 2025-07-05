@@ -170,7 +170,7 @@ export class UnityClient {
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: 'setClientName',
+      method: 'set-client-name',
       params: {
         ClientName: finalClientName,
       },
@@ -247,7 +247,7 @@ export class UnityClient {
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: 'getCommandDetails',
+      method: 'get-command-details',
       params: {},
     };
 

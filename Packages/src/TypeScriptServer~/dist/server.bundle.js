@@ -5947,7 +5947,7 @@ var UnityClient = class {
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: "setClientName",
+      method: "set-client-name",
       params: {
         ClientName: finalClientName
       }
@@ -6008,7 +6008,7 @@ var UnityClient = class {
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: "getCommandDetails",
+      method: "get-command-details",
       params: {}
     };
     const response = await this.sendRequest(request);
@@ -6424,7 +6424,7 @@ var UnityMcpServer = class {
    * Fetch command details from Unity
    */
   async fetchCommandDetailsFromUnity() {
-    const commandDetailsResponse = await this.unityClient.executeCommand("getCommandDetails", {});
+    const commandDetailsResponse = await this.unityClient.executeCommand("get-command-details", {});
     const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
     if (!Array.isArray(commandDetails)) {
       errorToFile("[Unity MCP] Invalid command details response:", commandDetailsResponse);

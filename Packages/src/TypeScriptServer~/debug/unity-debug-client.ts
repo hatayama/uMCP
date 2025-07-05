@@ -269,7 +269,7 @@ export class UnityDebugClient {
         const request: JsonRpcRequest = {
             jsonrpc: '2.0',
             id: Date.now(),
-            method: "getCommandDetails",
+            method: "get-command-details",
             params: {}
         };
 
