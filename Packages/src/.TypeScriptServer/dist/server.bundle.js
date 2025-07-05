@@ -6356,6 +6356,7 @@ var UnityMcpServer = class {
   isShuttingDown = false;
   isRefreshing = false;
   clientName = DEFAULT_CLIENT_NAME;
+  isInitialized = false;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     infoToFile("Unity MCP Server Starting");
@@ -6489,9 +6490,12 @@ var UnityMcpServer = class {
       if (clientInfo?.name) {
         this.clientName = clientInfo.name;
         infoToFile(`[Unity MCP] Client name received: ${this.clientName}`);
-        if (this.unityClient) {
-          void this.unityClient.setClientName(this.clientName);
-        }
+      }
+      if (!this.isInitialized) {
+        this.isInitialized = true;
+        infoToFile(`[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`);
+        await this.initializeDynamicTools();
+        infoToFile("[Unity MCP] Unity connection established successfully");
       }
       return {
         protocolVersion: MCP_PROTOCOL_VERSION,
@@ -6635,9 +6639,9 @@ ${JSON.stringify(dynamicToolsInfo, null, 2)}`
    */
   async start() {
     this.setupUnityEventListener();
-    await this.initializeDynamicTools();
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
+    infoToFile("[Unity MCP] Server started, waiting for client initialization...");
   }
   /**
    * Setup Unity event listener for automatic tool updates

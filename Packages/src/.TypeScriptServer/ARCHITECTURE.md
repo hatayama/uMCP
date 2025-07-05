@@ -164,6 +164,7 @@ The server is designed to be resilient to connection drops and process lifecycle
 - **Connection Polling**: `ConnectionManager` now handles the polling mechanism (extracted from `UnityClient`). If the connection to Unity is lost (e.g., Unity Editor is closed or crashes), it periodically attempts to reconnect, ensuring the bridge is re-established automatically when Unity becomes available again.
 - **Graceful Shutdown**: `UnityMcpServer` includes signal handlers (`SIGINT`, `SIGTERM`, `SIGHUP`) and monitors `stdin` to ensure a graceful shutdown. When the parent process (the LLM tool) terminates, the Node.js server cleans up its connections and exits, preventing orphaned processes.
 - **Safe Timers**: The `safe-timer.ts` utility provides `setTimeout` and `setInterval` wrappers that automatically clear themselves when the process exits, further preventing hangs and orphaned processes.
+- **Delayed Unity Connection**: The server now waits for the MCP client to provide its name before connecting to Unity, preventing "Unknown Client" from appearing in the Unity UI. This ensures the client is properly identified from the first connection.
 
 ### 3.4. Safe Logging
 Because the server uses `stdio` for JSON-RPC communication, `console.log` cannot be used for debugging as it would corrupt the protocol stream.
@@ -176,8 +177,10 @@ This is the main entry point of the application.
 - **`UnityMcpServer` class**:
     - Initializes the `@modelcontextprotocol/sdk` `Server`.
     - Instantiates the `UnityClient`.
-    - On `start()`, it first calls `initializeDynamicTools()` to fetch commands from Unity and create the toolset.
-    - It then sets up request handlers for `ListToolsRequestSchema` and `CallToolRequestSchema`.
+    - On `start()`, it connects to the MCP transport and waits for client initialization.
+    - Sets up request handlers including `InitializeRequestSchema` which triggers Unity connection.
+    - After receiving client information, it calls `initializeDynamicTools()` to fetch commands from Unity.
+    - It then handles `ListToolsRequestSchema` and `CallToolRequestSchema`.
         - The `ListTools` handler returns the list of all registered tools (static and dynamic).
         - The `CallTool` handler finds the appropriate tool and executes it.
     - It listens for `notifications/tools/list_changed` from the `UnityClient` and triggers `refreshDynamicToolsSafe()` to update its toolset.
@@ -211,13 +214,17 @@ A central file for all shared constants, including MCP protocol constants (previ
 1.  `UnityMcpServer` is instantiated.
 2.  `UnityClient` is instantiated.
 3.  `UnityMcpServer.start()` is called.
-4.  It calls `initializeDynamicTools()`.
-5.  `UnityClient.ensureConnected()` establishes a TCP connection to the Unity Editor.
-6.  `UnityClient.executeCommand('getCommandDetails', ...)` is sent to Unity.
-7.  Unity's `UnityCommandRegistry` gathers all `IUnityCommand` implementations and returns their schemas.
-8.  Back in `UnityMcpServer`, the response is received, and it iterates through the command details.
-9.  For each command, a new `DynamicUnityCommandTool` instance is created and stored in the `dynamicTools` map.
-10. The MCP server connects to the `StdioServerTransport`, ready to serve requests from the client.
+4.  The MCP server connects to the `StdioServerTransport`, ready to serve requests from the client.
+5.  The server waits for an `initialize` request from the MCP client.
+6.  Upon receiving the `initialize` request:
+    - Client name is extracted from `clientInfo.name` if provided.
+    - `initializeDynamicTools()` is called for the first time.
+7.  `UnityClient.ensureConnected()` establishes a TCP connection to the Unity Editor.
+8.  Client name is immediately sent to Unity via `setClientName()`.
+9.  `UnityClient.executeCommand('getCommandDetails', ...)` is sent to Unity.
+10. Unity's `UnityCommandRegistry` gathers all `IUnityCommand` implementations and returns their schemas.
+11. Back in `UnityMcpServer`, the response is received, and it iterates through the command details.
+12. For each command, a new `DynamicUnityCommandTool` instance is created and stored in the `dynamicTools` map.
 
 ### Handling a Tool Call
 1.  The MCP client (e.g., Cursor) sends a `tools/call` request via `stdin`.

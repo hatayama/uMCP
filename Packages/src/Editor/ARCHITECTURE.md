@@ -32,6 +32,7 @@ graph TB
     
     MCP <--> UC
     UC <-->|TCP/JSON-RPC| MB
+    UC -->|Client Name| MB
     MB <--> CMD
     CMD <--> API
     UI --> MB
@@ -177,7 +178,20 @@ To avoid manual and error-prone JSON parsing, the system uses a schema-driven ap
 
 This design eliminates inconsistencies between the server and client and provides strong type safety within the C# code.
 
-### 2.3. SOLID Principles
+### 2.3. Client Identification Flow
+The system ensures proper client identification to prevent "Unknown Client" display issues:
+
+1. **Initial State**: Unity Editor shows "No connected tools found" when no clients are connected.
+2. **MCP Client Connection**: When an MCP client (Cursor, Claude, VSCode) connects:
+   - Client sends `initialize` request with `clientInfo.name`
+   - TypeScript server receives and stores the client name
+   - Only then does TypeScript server connect to Unity
+3. **Unity Connection**: TypeScript server immediately sends `setClientName` command
+4. **UI Update**: Unity UI displays the correct client name from the first connection
+
+This flow prevents the temporary "Unknown Client" display that would occur if the TypeScript server connected to Unity before receiving the client name.
+
+### 2.4. SOLID Principles
 - **Single Responsibility Principle (SRP)**: Each class has a well-defined responsibility.
     - `McpBridgeServer`: Handles raw TCP communication.
     - `McpServerController`: Manages the server's lifecycle and state across domain reloads.
@@ -191,7 +205,7 @@ This design eliminates inconsistencies between the server and client and provide
         - `McpServerOperations`: Handles server operations only.
 - **Open/Closed Principle (OCP)**: The system is open for extension but closed for modification. The Command Pattern is the prime example; new commands can be added without altering the core execution logic. The MVP + Helper pattern also demonstrates this principle - new functionality can be added by creating new helper classes without modifying existing components.
 
-### 2.4. MVP + Helper Pattern for UI Architecture
+### 2.5. MVP + Helper Pattern for UI Architecture
 The UI layer implements a sophisticated **MVP (Model-View-Presenter) + Helper Pattern** that evolved from a monolithic 1247-line class into a well-structured, maintainable architecture.
 
 #### Pattern Components
@@ -216,7 +230,7 @@ The UI layer implements a sophisticated **MVP (Model-View-Presenter) + Helper Pa
 - **Complex Operations**: Delegate to appropriate helper classes rather than implementing in Presenter
 - **Event Handling**: Isolate all Unity Editor event management in dedicated EventHandler
 
-### 2.5. Resilience to Domain Reloads
+### 2.6. Resilience to Domain Reloads
 A significant challenge in the Unity Editor is the "domain reload," which resets the application's state. The architecture handles this gracefully:
 - **`McpServerController`**: Uses `[InitializeOnLoad]` to hook into Editor lifecycle events.
 - **`AssemblyReloadEvents`**: Before a reload, `OnBeforeAssemblyReload` is used to save the server's running state (port, status) into `SessionState`.
