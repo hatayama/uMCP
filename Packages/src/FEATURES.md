@@ -1,6 +1,6 @@
 [日本語](FEATURES_ja.md)
 
-# uMCP Features
+# uMCP Feature Specifications
 
 This document provides detailed information about all Unity MCP (Model Context Protocol) commands and features.
 
@@ -19,10 +19,10 @@ All commands automatically include the following timing information:
 
 ---
 
-## 🛠️ Core Unity Commands
+## 🛠️ Unity Core Commands
 
 ### 1. compile
-- **Description**: Executes Unity project compilation with detailed timing information after AssetDatabase.Refresh()
+- **Description**: Executes compilation after AssetDatabase.Refresh(). Returns compilation results with detailed timing information.
 - **Parameters**: 
   - `ForceRecompile` (boolean): Whether to perform forced recompilation (default: false)
 - **Response**: 
@@ -137,12 +137,11 @@ All commands automatically include the following timing information:
     - Common providers: "asset", "scene", "menu", "settings", "packages"
   - `MaxResults` (number): Maximum number of search results to return (default: 50)
   - `IncludeDescription` (boolean): Whether to include detailed descriptions in results (default: true)
-  - `IncludeThumbnails` (boolean): Whether to include thumbnail/preview information (default: false)
   - `IncludeMetadata` (boolean): Whether to include file metadata (size, modified date) (default: false)
   - `SearchFlags` (enum): Search flags for controlling Unity Search behavior (default: "Default")
-  - `SaveToFile` (boolean): Whether to save search results to external file (default: false)
+  - `SaveToFile` (boolean): Whether to save search results to external file to avoid massive token consumption when dealing with large result sets (default: false)
   - `OutputFormat` (enum): Output file format when SaveToFile is enabled - "JSON", "CSV", "TSV" (default: "JSON")
-  - `AutoSaveThreshold` (number): Threshold for automatic file saving (default: 100)
+  - `AutoSaveThreshold` (number): Threshold for automatic file saving (result count exceeding this will automatically save to file). Set to 0 to disable automatic file saving (default: 100)
   - `FileExtensions` (array): Filter results by file extension (e.g., "cs", "prefab", "mat") (default: [])
   - `AssetTypes` (array): Filter results by asset type (e.g., "Texture2D", "GameObject", "MonoScript") (default: [])
   - `PathFilter` (string): Filter results by path pattern (supports wildcards) (default: "")
@@ -264,154 +263,9 @@ All commands automatically include the following timing information:
 
 ---
 
-## 🔧 Custom Command Development
-
-The uMCP system supports **dynamic custom command registration** that allows developers to add their own commands without modifying the core package. There are **two ways** to register custom commands:
-
-### Method 1: Automatic Registration with [McpTool] Attribute (Recommended)
-
-This is the **easiest and recommended method**. Commands are automatically discovered and registered when Unity compiles.
-
-**Step 1: Create a Schema Class** (defines parameters):
-```csharp
-using System.ComponentModel;
-
-public class MyCustomSchema : BaseCommandSchema
-{
-    [Description("Your parameter description")]
-    public string MyParameter { get; set; } = "default_value";
-    
-    [Description("Example enum parameter")]
-    public MyEnum EnumParameter { get; set; } = MyEnum.Option1;
-}
-
-public enum MyEnum
-{
-    Option1,
-    Option2,
-    Option3
-}
-```
-
-**Step 2: Create a Response Class** (defines return data):
-```csharp
-public class MyCustomResponse : BaseCommandResponse
-{
-    public string Result { get; set; }
-    public bool Success { get; set; }
-    
-    public MyCustomResponse(string result, bool success)
-    {
-        Result = result;
-        Success = success;
-    }
-    
-    // Required parameterless constructor
-    public MyCustomResponse() { }
-}
-```
-
-**Step 3: Create the Command Class**:
-```csharp
-[McpTool]  // ← This attribute enables automatic registration!
-public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
-{
-    public override string CommandName => "myCustomCommand";
-    public override string Description => "My custom command description";
-    
-    // Executed on main thread
-    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
-    {
-        // Type-safe parameter access
-        string param = parameters.MyParameter;
-        MyEnum enumValue = parameters.EnumParameter;
-        
-        // Implement custom logic here
-        string result = ProcessCustomLogic(param, enumValue);
-        bool success = !string.IsNullOrEmpty(result);
-        
-        return Task.FromResult(new MyCustomResponse(result, success));
-    }
-    
-    private string ProcessCustomLogic(string input, MyEnum enumValue)
-    {
-        // Implement custom logic
-        return $"Processed '{input}' with enum '{enumValue}'";
-    }
-}
-```
-
-### Method 2: Manual Registration via CustomCommandManager
-
-This method gives you **complete control** over when commands are registered/unregistered.
-
-**Steps 1-2: Schema and Response Classes** (same as Method 1, but without `[McpTool]` attribute)
-
-**Step 3: Command Class** (without `[McpTool]` attribute):
-```csharp
-// No [McpTool] attribute for manual registration
-public class MyManualCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
-{
-    public override string CommandName => "myManualCommand";
-    public override string Description => "Manually registered custom command";
-    
-    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
-    {
-        // Same implementation as Method 1
-        string result = ProcessCustomLogic(parameters.MyParameter, parameters.EnumParameter);
-        return Task.FromResult(new MyCustomResponse(result, true));
-    }
-}
-```
-
-**Step 4: Manual Registration**:
-```csharp
-using UnityEngine;
-using UnityEditor;
-
-public static class MyCommandRegistration
-{
-    // Register command via Unity menu
-    [MenuItem("MyProject/Register Custom Commands")]
-    public static void RegisterMyCommands()
-    {
-        CustomCommandManager.RegisterCustomCommand(new MyManualCommand());
-        Debug.Log("Custom command registered!");
-        
-        // Optional: Manually notify LLM tools of changes
-        CustomCommandManager.NotifyCommandChanges();
-    }
-    
-    // Unregister command via Unity menu  
-    [MenuItem("MyProject/Unregister Custom Commands")]
-    public static void UnregisterMyCommands()
-    {
-        CustomCommandManager.UnregisterCustomCommand("myManualCommand");
-        Debug.Log("Custom command unregistered!");
-    }
-}
-```
-
-### Debugging Custom Commands
-
-```csharp
-// Display all registered commands
-[MenuItem("uMCP/Debug/Show Registered Commands")]
-public static void ShowCommands()
-{
-    CommandInfo[] commands = CustomCommandManager.GetRegisteredCustomCommands();
-    foreach (var cmd in commands)
-    {
-        Debug.Log($"Command: {cmd.Name} - {cmd.Description}");
-    }
-}
-```
-
----
-
 ## 📚 Related Documentation
 
-- [Main README](README.md) - Project overview and setup
+- [Main README](README_ja.md) - Project overview and setup
 - [Architecture Documentation](Editor/ARCHITECTURE.md) - Technical architecture details
 - [TypeScript Server Architecture](TypeScriptServer~/ARCHITECTURE.md) - TypeScript server implementation
-- [Changelog](CHANGELOG.md) - Version history and updates 
+- [Changelog](CHANGELOG.md) - Version history and updates
