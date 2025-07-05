@@ -6494,12 +6494,8 @@ var UnityMcpServer = class {
       if (!this.isInitialized) {
         this.isInitialized = true;
         infoToFile(`[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`);
-        try {
-          await this.initializeDynamicTools();
-          infoToFile("[Unity MCP] Unity connection established successfully");
-        } catch (error) {
-          errorToFile("[Unity MCP] Failed to initialize Unity connection:", error);
-        }
+        await this.initializeDynamicTools();
+        infoToFile("[Unity MCP] Unity connection established successfully");
       }
       return {
         protocolVersion: MCP_PROTOCOL_VERSION,

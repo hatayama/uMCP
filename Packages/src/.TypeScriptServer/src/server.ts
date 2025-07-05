@@ -232,13 +232,8 @@ class UnityMcpServer {
         this.isInitialized = true;
         infoToFile(`[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`);
         
-        try {
-          await this.initializeDynamicTools();
-          infoToFile('[Unity MCP] Unity connection established successfully');
-        } catch (error) {
-          errorToFile('[Unity MCP] Failed to initialize Unity connection:', error);
-          // Continue anyway - tools can be loaded later via refresh
-        }
+        await this.initializeDynamicTools();
+        infoToFile('[Unity MCP] Unity connection established successfully');
       }
 
       return {
