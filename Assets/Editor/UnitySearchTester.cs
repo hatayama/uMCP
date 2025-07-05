@@ -16,7 +16,7 @@ public class UnitySearchTester : EditorWindow
     private string lastResult = "";
     private Vector2 scrollPosition;
     
-    [MenuItem("uMCP/Unity Search Tester")]
+    [MenuItem("uMCP/Windows/Unity Search Tester")]
     public static void ShowWindow()
     {
         GetWindow<UnitySearchTester>("Unity Search Tester");

@@ -13,11 +13,11 @@ namespace io.github.hatayama.uMCP
         private string selectedLogType = "All";
         private readonly string[] logTypeOptions = { "All", "Log", "Warning", "Error", "Assert" };
 
-        [MenuItem("uMCP/LogGetter/Window")]
+        [MenuItem("uMCP/Windows/Log Viewer")]
         public static void ShowWindow()
         {
             LogGetterEditorWindow window = GetWindow<LogGetterEditorWindow>();
-            window.titleContent = new GUIContent("Log Getter");
+            window.titleContent = new GUIContent("Log Viewer");
             window.Show();
         }
 

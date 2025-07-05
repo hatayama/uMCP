@@ -5,7 +5,7 @@ namespace io.github.hatayama.uMCP
 {
     public class CompileCheckerExample
     {
-        [MenuItem("uMCP/CompileWindow/Compile Checker Usage Example")]
+        [MenuItem("uMCP/Debug/Compile Tests/Compile Checker Usage Example")]
         public static async void TestCompileChecker()
         {
             CompileChecker compileChecker = new CompileChecker();
@@ -39,7 +39,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        [MenuItem("uMCP/CompileWindow/Force Compile Checker Usage Example")]
+        [MenuItem("uMCP/Debug/Compile Tests/Force Compile Checker Usage Example")]
         public static async void TestForceCompileChecker()
         {
             CompileChecker compileChecker = new CompileChecker();
