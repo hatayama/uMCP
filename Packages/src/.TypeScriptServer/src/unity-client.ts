@@ -1,30 +1,29 @@
 import * as net from 'net';
 import { UNITY_CONNECTION, JSONRPC, TIMEOUTS, ERROR_MESSAGES, POLLING } from './constants.js';
-import { errorToFile, warnToFile } from './utils/log-to-file.js';
-import { SafeTimer, safeSetInterval, safeSetTimeout } from './utils/safe-timer.js';
-
-// Related classes:
-// - SimpleMcpServer: The main server class that uses this client.
-// - DynamicUnityCommandTool: Uses this client to execute commands in Unity.
+import { errorToFile } from './utils/log-to-file.js';
+import { safeSetTimeout } from './utils/safe-timer.js';
+import { ConnectionManager } from './connection-manager.js';
+import { MessageHandler } from './message-handler.js';
 
 /**
  * TCP/IP client for communication with Unity
+ * 
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * 
+ * Related classes:
+ * - UnityMcpServer: The main server class that uses this client
+ * - DynamicUnityCommandTool: Uses this client to execute commands in Unity
+ * - ConnectionManager: Handles connection state and reconnection polling
+ * - MessageHandler: Handles JSON-RPC message processing
  */
 export class UnityClient {
   private socket: net.Socket | null = null;
   private _connected: boolean = false;
   private readonly port: number;
   private readonly host: string = UNITY_CONNECTION.DEFAULT_HOST;
-  private notificationHandlers: Map<string, (params: unknown) => void> = new Map();
-  private pendingRequests: Map<
-    number,
-    { resolve: (value: unknown) => void; reject: (reason: unknown) => void }
-  > = new Map();
   private reconnectHandlers: Set<() => void> = new Set();
-
-  // Polling system - using SafeTimer for automatic cleanup
-  private pollingTimer: SafeTimer | null = null;
-  private onReconnectedCallback: (() => void) | null = null;
+  private connectionManager: ConnectionManager = new ConnectionManager();
+  private messageHandler: MessageHandler = new MessageHandler();
 
   constructor() {
     // Get port number from environment variable UNITY_TCP_PORT, default is 7400
@@ -39,14 +38,14 @@ export class UnityClient {
    * Register notification handler for specific method
    */
   onNotification(method: string, handler: (params: unknown) => void): void {
-    this.notificationHandlers.set(method, handler);
+    this.messageHandler.onNotification(method, handler);
   }
 
   /**
    * Remove notification handler
    */
   offNotification(method: string): void {
-    this.notificationHandlers.delete(method);
+    this.messageHandler.offNotification(method);
   }
 
   /**
@@ -63,69 +62,6 @@ export class UnityClient {
     this.reconnectHandlers.delete(handler);
   }
 
-  /**
-   * Handle incoming data from Unity
-   */
-  private handleIncomingData(data: string): void {
-    try {
-      const lines = data.split('\n').filter((line) => line.trim());
-
-      for (const line of lines) {
-        const message = JSON.parse(line);
-
-        // Check if this is a notification (no id field)
-        if (message.method && !message.hasOwnProperty('id')) {
-          this.handleNotification(message);
-        } else if (message.id) {
-          // This is a response to a request
-          this.handleResponse(message);
-        }
-      }
-    } catch (error) {
-      errorToFile('[UnityClient] Error parsing incoming data:', error);
-    }
-  }
-
-  /**
-   * Handle notification from Unity
-   */
-  private handleNotification(notification: { method: string; params: unknown }): void {
-    const { method, params } = notification;
-
-    const handler = this.notificationHandlers.get(method);
-    if (handler) {
-      try {
-        handler(params);
-      } catch (error) {
-        errorToFile(`[UnityClient] Error in notification handler for ${method}:`, error);
-      }
-    } else {
-    }
-  }
-
-  /**
-   * Handle response from Unity
-   */
-  private handleResponse(response: {
-    id: number;
-    error?: { message: string };
-    result?: unknown;
-  }): void {
-    const { id } = response;
-    const pending = this.pendingRequests.get(id);
-
-    if (pending) {
-      this.pendingRequests.delete(id);
-
-      if (response.error) {
-        pending.reject(new Error(response.error.message || 'Unknown error'));
-      } else {
-        pending.resolve(response);
-      }
-    } else {
-      warnToFile(`[UnityClient] Received response for unknown request ID: ${id}`);
-    }
-  }
 
   /**
    * Actually test Unity's connection status
@@ -190,25 +126,25 @@ export class UnityClient {
         } else {
           // Error after connection was established
           errorToFile('[UnityClient] Connection error:', error);
-          this.startPolling();
+          this.connectionManager.startPolling(() => this.connect());
         }
       });
 
       this.socket.on('close', () => {
         this._connected = false;
-        this.startPolling();
+        this.connectionManager.startPolling(() => this.connect());
       });
 
       // Handle graceful end of connection
       this.socket.on('end', () => {
         errorToFile('[UnityClient] Connection ended by server');
         this._connected = false;
-        this.startPolling();
+        this.connectionManager.startPolling(() => this.connect());
       });
 
       // Handle incoming data (both notifications and responses)
       this.socket.on('data', (data) => {
-        this.handleIncomingData(data.toString());
+        this.messageHandler.handleIncomingData(data.toString());
       });
     });
   }
@@ -404,24 +340,26 @@ export class UnityClient {
 
       // Use SafeTimer for automatic cleanup to prevent orphaned processes
       const timeoutTimer = safeSetTimeout(() => {
-        this.pendingRequests.delete(request.id);
+        this.messageHandler.clearPendingRequests(`Request ${ERROR_MESSAGES.TIMEOUT}`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
 
-      // Store the pending request
-      this.pendingRequests.set(request.id, {
-        resolve: (response) => {
+      // Register the pending request
+      this.messageHandler.registerPendingRequest(
+        request.id,
+        (response) => {
           timeoutTimer.stop(); // Clean up timer
           resolve(response as { id: number; error?: { message: string }; result?: unknown });
         },
-        reject: (error) => {
+        (error) => {
           timeoutTimer.stop(); // Clean up timer
           reject(error);
-        },
-      });
+        }
+      );
 
       // Send the request
-      this.socket!.write(JSON.stringify(request) + '\n');
+      const requestStr = this.messageHandler.createRequest(request.method, request.params as Record<string, unknown>, request.id);
+      this.socket!.write(requestStr);
     });
   }
 
@@ -433,14 +371,11 @@ export class UnityClient {
    * that prevent Node.js from exiting gracefully.
    */
   disconnect(): void {
-    this.stopPolling(); // Stop polling when manually disconnecting
+    this.connectionManager.stopPolling(); // Stop polling when manually disconnecting
 
     // Clean up all pending requests and their timers
     // CRITICAL: This prevents orphaned processes by ensuring all setTimeout timers are cleared
-    for (const [id, pending] of this.pendingRequests) {
-      pending.reject(new Error('Connection closed'));
-    }
-    this.pendingRequests.clear();
+    this.messageHandler.clearPendingRequests('Connection closed');
 
     if (this.socket) {
       this.socket.destroy();
@@ -453,39 +388,6 @@ export class UnityClient {
    * Set callback for when connection is restored
    */
   setReconnectedCallback(callback: () => void): void {
-    this.onReconnectedCallback = callback;
-  }
-
-  /**
-   * Start polling for connection recovery
-   */
-  private startPolling(): void {
-    if (this.pollingTimer && this.pollingTimer.active) {
-      return; // Already polling
-    }
-
-    this.pollingTimer = safeSetInterval(async () => {
-      try {
-        await this.connect();
-        this.stopPolling();
-
-        // Notify about reconnection
-        if (this.onReconnectedCallback) {
-          this.onReconnectedCallback();
-        }
-      } catch (error) {
-        // Silent polling - don't spam logs for expected connection failures
-      }
-    }, POLLING.INTERVAL_MS);
-  }
-
-  /**
-   * Stop polling
-   */
-  private stopPolling(): void {
-    if (this.pollingTimer) {
-      this.pollingTimer.stop();
-      this.pollingTimer = null;
-    }
+    this.connectionManager.setReconnectedCallback(callback);
   }
 }

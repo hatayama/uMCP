@@ -11,8 +11,9 @@ import {
 import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
 import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
-import { ENVIRONMENT, DEFAULT_MESSAGES } from './constants.js';
 import {
+  ENVIRONMENT,
+  DEFAULT_MESSAGES,
   MCP_PROTOCOL_VERSION,
   MCP_SERVER_NAME,
   TOOLS_LIST_CHANGED_CAPABILITY,
@@ -21,19 +22,23 @@ import {
   DEV_TOOL_COMMANDS_NAME,
   DEV_TOOL_COMMANDS_DESCRIPTION,
   DEFAULT_CLIENT_NAME,
-} from './mcp-constants.js';
+} from './constants.js';
 import packageJson from '../package.json' assert { type: 'json' };
 import { ToolResponse } from './types/tool-types.js';
 
-// Related classes:
-// - UnityClient: Handles the TCP connection to the Unity Editor.
-// - DynamicUnityCommandTool: Dynamically creates tools based on commands from Unity.
-// - @modelcontextprotocol/sdk/server: The core MCP server implementation.
-
 /**
- * Simple Unity MCP Server for testing notifications
+ * Unity MCP Server - Bridge between MCP protocol and Unity Editor
+ * 
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * 
+ * Related classes:
+ * - UnityClient: Handles the TCP connection to the Unity Editor
+ * - DynamicUnityCommandTool: Dynamically creates tools based on commands from Unity
+ * - ConnectionManager: Manages connection polling (used via UnityClient)
+ * - MessageHandler: Handles JSON-RPC messages (used via UnityClient)
+ * - @modelcontextprotocol/sdk/server: The core MCP server implementation
  */
-class SimpleMcpServer {
+class UnityMcpServer {
   private server: Server;
   private unityClient: UnityClient;
   private readonly isDevelopment: boolean;
@@ -46,7 +51,7 @@ class SimpleMcpServer {
     // Simple environment variable check
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
 
-    infoToFile('Simple Unity MCP Server Starting');
+    infoToFile('Unity MCP Server Starting');
     infoToFile(`Environment variable: NODE_ENV=${process.env.NODE_ENV}`);
     infoToFile(`Development mode: ${this.isDevelopment}`);
 
@@ -82,70 +87,96 @@ class SimpleMcpServer {
     try {
       await this.unityClient.ensureConnected();
 
-      // Client name handling:
-      // 1. Primary: clientInfo.name from MCP protocol initialize request
-      // 2. Fallback: MCP_CLIENT_NAME environment variable (for backward compatibility)
-      // 3. Default: Empty string (Unity will show "No Client" in UI)
-      // Note: MCP_CLIENT_NAME is deprecated but kept for compatibility with older setups
-      if (!this.clientName) {
-        const fallbackName = process.env.MCP_CLIENT_NAME;
-        if (fallbackName) {
-          this.clientName = fallbackName;
-          await this.unityClient.setClientName(fallbackName);
-          infoToFile(`[Simple MCP] Fallback client name set to Unity: ${fallbackName}`);
-        } else {
-          infoToFile(`[Simple MCP] No client name set, waiting for initialize request`);
-        }
-      } else {
-        // Send the already set client name to Unity
-        await this.unityClient.setClientName(this.clientName);
-        infoToFile(`[Simple MCP] Client name already set, sending to Unity: ${this.clientName}`);
-      }
+      await this.handleClientNameInitialization();
 
-      // Register reconnect handler to re-send client name after reconnection
-      this.unityClient.onReconnect(() => {
-        infoToFile(`[Simple MCP] Reconnected - resending client name: ${this.clientName}`);
-        void this.unityClient.setClientName(this.clientName);
-      });
-
-      // Get detailed command information including schemas
-      const commandDetailsResponse = await this.unityClient.executeCommand('getCommandDetails', {});
-
-      // Handle new GetCommandDetailsResponse structure
-      const commandDetails =
-        (commandDetailsResponse as { Commands?: unknown[] })?.Commands || commandDetailsResponse;
-      if (!Array.isArray(commandDetails)) {
-        errorToFile('[Simple MCP] Invalid command details response:', commandDetailsResponse);
+      const commandDetails = await this.fetchCommandDetailsFromUnity();
+      if (!commandDetails) {
         return;
       }
 
-      // Create dynamic tools for each Unity command
-      this.dynamicTools.clear();
-      const toolContext = { unityClient: this.unityClient };
-
-      for (const commandInfo of commandDetails) {
-        const commandName = (commandInfo as { name: string }).name;
-        const description =
-          (commandInfo as { description?: string }).description ||
-          `Execute Unity command: ${commandName}`;
-        const parameterSchema = (commandInfo as { parameterSchema?: unknown }).parameterSchema;
-
-        const toolName = commandName;
-
-        const dynamicTool = new DynamicUnityCommandTool(
-          toolContext,
-          commandName,
-          description,
-          parameterSchema, // Pass schema information
-        );
-
-        this.dynamicTools.set(toolName, dynamicTool);
-      }
+      this.createDynamicToolsFromCommands(commandDetails);
 
       // Command details processed successfully
     } catch (error) {
-      errorToFile('[Simple MCP] Failed to initialize dynamic tools:', error);
+      errorToFile('[Unity MCP] Failed to initialize dynamic tools:', error);
       // Continue without dynamic tools
+    }
+  }
+
+  /**
+   * Handle client name initialization and setup
+   */
+  private async handleClientNameInitialization(): Promise<void> {
+    // Client name handling:
+    // 1. Primary: clientInfo.name from MCP protocol initialize request
+    // 2. Fallback: MCP_CLIENT_NAME environment variable (for backward compatibility)
+    // 3. Default: Empty string (Unity will show "No Client" in UI)
+    // Note: MCP_CLIENT_NAME is deprecated but kept for compatibility with older setups
+    if (!this.clientName) {
+      const fallbackName = process.env.MCP_CLIENT_NAME;
+      if (fallbackName) {
+        this.clientName = fallbackName;
+        await this.unityClient.setClientName(fallbackName);
+        infoToFile(`[Unity MCP] Fallback client name set to Unity: ${fallbackName}`);
+      } else {
+        infoToFile('[Unity MCP] No client name set, waiting for initialize request');
+      }
+    } else {
+      // Send the already set client name to Unity
+      await this.unityClient.setClientName(this.clientName);
+      infoToFile(`[Unity MCP] Client name already set, sending to Unity: ${this.clientName}`);
+    }
+
+    // Register reconnect handler to re-send client name after reconnection
+    this.unityClient.onReconnect(() => {
+      infoToFile(`[Unity MCP] Reconnected - resending client name: ${this.clientName}`);
+      void this.unityClient.setClientName(this.clientName);
+    });
+  }
+
+  /**
+   * Fetch command details from Unity
+   */
+  private async fetchCommandDetailsFromUnity(): Promise<unknown[] | null> {
+    // Get detailed command information including schemas
+    const commandDetailsResponse = await this.unityClient.executeCommand('getCommandDetails', {});
+
+    // Handle new GetCommandDetailsResponse structure
+    const commandDetails =
+      (commandDetailsResponse as { Commands?: unknown[] })?.Commands || commandDetailsResponse;
+    if (!Array.isArray(commandDetails)) {
+      errorToFile('[Unity MCP] Invalid command details response:', commandDetailsResponse);
+      return null;
+    }
+
+    return commandDetails;
+  }
+
+  /**
+   * Create dynamic tools from Unity command details
+   */
+  private createDynamicToolsFromCommands(commandDetails: unknown[]): void {
+    // Create dynamic tools for each Unity command
+    this.dynamicTools.clear();
+    const toolContext = { unityClient: this.unityClient };
+
+    for (const commandInfo of commandDetails) {
+      const commandName = (commandInfo as { name: string }).name;
+      const description =
+        (commandInfo as { description?: string }).description ||
+        `Execute Unity command: ${commandName}`;
+      const parameterSchema = (commandInfo as { parameterSchema?: unknown }).parameterSchema;
+
+      const toolName = commandName;
+
+      const dynamicTool = new DynamicUnityCommandTool(
+        toolContext,
+        commandName,
+        description,
+        parameterSchema, // Pass schema information
+      );
+
+      this.dynamicTools.set(toolName, dynamicTool);
     }
   }
 
@@ -192,7 +223,7 @@ class SimpleMcpServer {
       const clientInfo = request.params?.clientInfo;
       if (clientInfo?.name) {
         this.clientName = clientInfo.name;
-        infoToFile(`[Simple MCP] Client name received: ${this.clientName}`);
+        infoToFile(`[Unity MCP] Client name received: ${this.clientName}`);
 
         // Immediately send client name to Unity if connected
         if (this.unityClient) {
@@ -411,7 +442,7 @@ class SimpleMcpServer {
       try {
         await this.refreshDynamicToolsSafe();
       } catch (error) {
-        errorToFile('[Simple MCP] Failed to update dynamic tools via Unity notification:', error);
+        errorToFile('[Unity MCP] Failed to update dynamic tools via Unity notification:', error);
       }
     });
   }
@@ -426,7 +457,7 @@ class SimpleMcpServer {
         params: {},
       });
     } catch (error) {
-      errorToFile('[Simple MCP] Failed to send tools changed notification:', error);
+      errorToFile('[Unity MCP] Failed to send tools changed notification:', error);
     }
   }
 
@@ -436,19 +467,19 @@ class SimpleMcpServer {
   private setupSignalHandlers(): void {
     // Handle Ctrl+C (SIGINT)
     process.on('SIGINT', () => {
-      infoToFile('[Simple MCP] Received SIGINT, shutting down...');
+      infoToFile('[Unity MCP] Received SIGINT, shutting down...');
       this.gracefulShutdown();
     });
 
     // Handle kill command (SIGTERM)
     process.on('SIGTERM', () => {
-      infoToFile('[Simple MCP] Received SIGTERM, shutting down...');
+      infoToFile('[Unity MCP] Received SIGTERM, shutting down...');
       this.gracefulShutdown();
     });
 
     // Handle terminal close (SIGHUP)
     process.on('SIGHUP', () => {
-      infoToFile('[Simple MCP] Received SIGHUP, shutting down...');
+      infoToFile('[Unity MCP] Received SIGHUP, shutting down...');
       this.gracefulShutdown();
     });
 
@@ -456,24 +487,24 @@ class SimpleMcpServer {
     // BUG FIX: Added STDIN monitoring to detect when Cursor/parent MCP client disconnects
     // This prevents orphaned Node processes from remaining after IDE shutdown
     process.stdin.on('close', () => {
-      infoToFile('[Simple MCP] STDIN closed, shutting down...');
+      infoToFile('[Unity MCP] STDIN closed, shutting down...');
       this.gracefulShutdown();
     });
 
     process.stdin.on('end', () => {
-      infoToFile('[Simple MCP] STDIN ended, shutting down...');
+      infoToFile('[Unity MCP] STDIN ended, shutting down...');
       this.gracefulShutdown();
     });
 
     // Handle uncaught exceptions
     // BUG FIX: Added comprehensive error handling to prevent hanging processes
     process.on('uncaughtException', (error) => {
-      errorToFile('[Simple MCP] Uncaught exception:', error);
+      errorToFile('[Unity MCP] Uncaught exception:', error);
       this.gracefulShutdown();
     });
 
     process.on('unhandledRejection', (reason, promise) => {
-      errorToFile('[Simple MCP] Unhandled rejection at:', promise, 'reason:', reason);
+      errorToFile('[Unity MCP] Unhandled rejection at:', promise, 'reason:', reason);
       this.gracefulShutdown();
     });
   }
@@ -489,7 +520,7 @@ class SimpleMcpServer {
     }
 
     this.isShuttingDown = true;
-    infoToFile('[Simple MCP] Starting graceful shutdown...');
+    infoToFile('[Unity MCP] Starting graceful shutdown...');
 
     try {
       // Disconnect from Unity and stop all intervals
@@ -504,16 +535,16 @@ class SimpleMcpServer {
         global.gc();
       }
     } catch (error) {
-      errorToFile('[Simple MCP] Error during cleanup:', error);
+      errorToFile('[Unity MCP] Error during cleanup:', error);
     }
 
-    infoToFile('[Simple MCP] Graceful shutdown completed');
+    infoToFile('[Unity MCP] Graceful shutdown completed');
     process.exit(0);
   }
 }
 
 // Start server
-const server = new SimpleMcpServer();
+const server = new UnityMcpServer();
 
 server.start().catch((error) => {
   errorToFile('[FATAL] Server startup failed:', error);

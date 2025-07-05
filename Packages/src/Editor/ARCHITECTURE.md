@@ -4,6 +4,40 @@
 
 This document details the architecture of the C# code within the `Packages/src/Editor` directory. This code runs inside the Unity Editor and serves as the bridge between the Unity environment and the external TypeScript-based MCP (Model-Context-Protocol) server.
 
+### System Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "MCP Clients"
+        Claude[Claude]
+        Cursor[Cursor]
+        VSCode[VSCode]
+    end
+    
+    subgraph "TypeScript Server"
+        MCP[UnityMcpServer<br/>MCP Protocol]
+        UC[UnityClient<br/>TCP Client]
+    end
+    
+    subgraph "Unity Editor"
+        MB[McpBridgeServer<br/>TCP Server]
+        CMD[Command System]
+        UI[McpEditorWindow<br/>GUI]
+        API[Unity APIs]
+    end
+    
+    Claude -.->|MCP Protocol| MCP
+    Cursor -.->|MCP Protocol| MCP
+    VSCode -.->|MCP Protocol| MCP
+    
+    MCP <--> UC
+    UC <-->|TCP/JSON-RPC| MB
+    MB <--> CMD
+    CMD <--> API
+    UI --> MB
+    UI --> CMD
+```
+
 Its primary responsibilities are:
 1.  **Running a TCP Server (`McpBridgeServer`)**: Listens for connections from the TypeScript server to receive commands.
 2.  **Executing Unity Operations**: Processes received commands to perform actions within the Unity Editor, such as compiling the project, running tests, or retrieving logs.
@@ -24,7 +58,117 @@ The system is centered around the **Command Pattern**. Each action that can be t
 
 This pattern makes the system highly extensible. To add a new feature, a developer simply needs to create a new class that implements `IUnityCommand` and decorate it with the `[McpTool]` attribute. The system will automatically discover and expose it.
 
-### 2.2. Schema-Driven and Type-Safe Communication
+### 2.2. Command System Architecture
+
+```mermaid
+classDiagram
+    class IUnityCommand {
+        <<interface>>
+        +CommandName: string
+        +Description: string
+        +ParameterSchema: object
+        +ExecuteAsync(JToken): Task~object~
+    }
+
+    class AbstractUnityCommand {
+        <<abstract>>
+        +CommandName: string
+        +Description: string
+        +ParameterSchema: object
+        +ExecuteAsync(JToken): Task~object~
+        #ExecuteAsync(TSchema)*: Task~TResponse~
+    }
+
+    class UnityCommandRegistry {
+        -commands: Dictionary
+        +RegisterCommand(IUnityCommand)
+        +GetCommand(string): IUnityCommand
+        +GetAllCommands(): IEnumerable
+    }
+
+    class McpToolAttribute {
+        <<attribute>>
+        +AutoRegister: bool
+    }
+
+    class CompileCommand {
+        +ExecuteAsync(CompileSchema): Task~CompileResponse~
+    }
+
+    class RunTestsCommand {
+        +ExecuteAsync(RunTestsSchema): Task~RunTestsResponse~
+    }
+
+    IUnityCommand <|.. AbstractUnityCommand : implements
+    AbstractUnityCommand <|-- CompileCommand : extends
+    AbstractUnityCommand <|-- RunTestsCommand : extends
+    UnityCommandRegistry --> IUnityCommand : manages
+    CompileCommand ..|> McpToolAttribute : uses
+    RunTestsCommand ..|> McpToolAttribute : uses
+```
+
+### 2.3. MVP + Helper Architecture for UI
+
+```mermaid
+classDiagram
+    class McpEditorWindow {
+        <<Presenter>>
+        -model: McpEditorModel
+        -view: McpEditorWindowView
+        -eventHandler: McpEditorWindowEventHandler
+        -serverOperations: McpServerOperations
+        +OnEnable()
+        +OnGUI()
+        +OnDisable()
+    }
+
+    class McpEditorModel {
+        <<Model>>
+        -serverPort: int
+        -isServerRunning: bool
+        -selectedEditor: EditorType
+        +LoadState()
+        +SaveState()
+        +UpdateServerStatus()
+    }
+
+    class McpEditorWindowView {
+        <<View>>
+        +DrawServerSection(ViewData)
+        +DrawConfigSection(ViewData)
+        +DrawDeveloperTools(ViewData)
+    }
+
+    class McpEditorWindowViewData {
+        <<DTO>>
+        +ServerPort: int
+        +IsServerRunning: bool
+        +SelectedEditor: EditorType
+    }
+
+    class McpEditorWindowEventHandler {
+        <<Helper>>
+        +HandleEditorUpdate()
+        +HandleServerEvents()
+        +HandleLogUpdates()
+    }
+
+    class McpServerOperations {
+        <<Helper>>
+        +StartServer()
+        +StopServer()
+        +ValidateServerConfig()
+    }
+
+    McpEditorWindow --> McpEditorModel : manages state
+    McpEditorWindow --> McpEditorWindowView : delegates rendering
+    McpEditorWindow --> McpEditorWindowEventHandler : delegates events
+    McpEditorWindow --> McpServerOperations : delegates operations
+    McpEditorWindowView --> McpEditorWindowViewData : receives
+    McpEditorModel --> McpEditorWindowViewData : creates
+```
+
+### 2.4. Schema-Driven and Type-Safe Communication
 To avoid manual and error-prone JSON parsing, the system uses a schema-driven approach for commands.
 
 - **`*Schema.cs` files** (e.g., `CompileSchema.cs`, `GetLogsSchema.cs`): These classes define the expected parameters for a command using simple C# properties. Attributes like `[Description]` and default values are used to automatically generate a JSON Schema for the client.
@@ -145,17 +289,36 @@ Contains low-level, general-purpose helper classes.
 ## 4. Key Workflows
 
 ### Command Execution Flow
-1.  The `McpBridgeServer` receives a JSON string from the TypeScript client.
-2.  The string is passed to `JsonRpcProcessor.ProcessRequest`.
-3.  `JsonRpcProcessor` deserializes the JSON into a `JsonRpcRequest` object.
-4.  It calls `UnityApiHandler.ExecuteCommandAsync` with the command name and parameters (`JToken`).
-5.  `UnityApiHandler` uses `UnityCommandRegistry` to find the `IUnityCommand` instance matching the command name.
-6.  The `ExecuteAsync(JToken)` method of the command instance is invoked.
-7.  The `AbstractUnityCommand` base class deserializes the `JToken` into a strongly-typed `*Schema` object.
-8.  It then calls the command's specific, overridden `ExecuteAsync(*Schema parameters)` method.
-9.  The command performs its logic (e.g., calling `CompileController` or `PlayModeTestExecuter`).
-10. The command returns a strongly-typed `*Response` object.
-11. The response bubbles back up to `JsonRpcProcessor`, which serializes it into a JSON string and sends it back to the client via `McpBridgeServer`.
+
+```mermaid
+sequenceDiagram
+    participant TS as TypeScript Client
+    participant MB as McpBridgeServer
+    participant JP as JsonRpcProcessor
+    participant UA as UnityApiHandler
+    participant UR as UnityCommandRegistry
+    participant AC as AbstractUnityCommand
+    participant CC as ConcreteCommand
+    participant UT as Unity Tool<br/>(CompileController etc)
+
+    TS->>MB: JSON String
+    MB->>JP: ProcessRequest(json)
+    JP->>JP: Deserialize to JsonRpcRequest
+    JP->>UA: ExecuteCommandAsync(name, params)
+    UA->>UR: GetCommand(name)
+    UR-->>UA: IUnityCommand instance
+    UA->>AC: ExecuteAsync(JToken)
+    AC->>AC: Deserialize to Schema
+    AC->>CC: ExecuteAsync(Schema)
+    CC->>UT: Execute Unity API
+    UT-->>CC: Result
+    CC-->>AC: Response object
+    AC-->>UA: Response
+    UA-->>JP: Response
+    JP->>JP: Serialize to JSON
+    JP-->>MB: JSON Response
+    MB-->>TS: Send Response
+```
 
 ### UI Interaction Flow (MVP + Helper Pattern)
 1.  **User Interaction**: User interacts with the Unity Editor window (button clicks, field changes, etc.).
