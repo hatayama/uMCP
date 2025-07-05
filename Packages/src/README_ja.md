@@ -2,7 +2,12 @@
 
 [![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hatayama/uMCP)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hatayama/uMCP)  
+![ClaudeCode](https://img.shields.io/badge/Claude_Code-555?logo=claude)
+![Cursor](https://img.shields.io/badge/Cursor-111?logo=Cursor)
+![GitHubCopilot](https://img.shields.io/badge/GitHub_Copilot-111?logo=githubcopilot)
+![Windsurf](https://img.shields.io/badge/Windsurf-111?logo=Windsurf)
+![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
 # uMCP
 
@@ -13,25 +18,26 @@ Model Context Protocolを使用してUnity EditorをLLMツールに接続しま�
 AIによるコーディング時、Unityをコンパイルさせたり、logを取得する部分は人間がやる必要があります。それを可能な限り少なくするというコンセプトで作られました。
 uMCPを使えば、AIが人間の操作に頼らずに長時間自走してくれるでしょう。
 
-## ✨ 機能
+## 機能
 
-uMCPは8個のUnity MCPコマンドを提供し、コンパイル、ログ取得、テスト実行、Unity Search、MenuItems操作など包括的な機能を提供します。
+uMCPは10個のUnity MCPコマンドを提供し、コンパイル、ログ取得、テスト実行、Unity Search、GameObject検索、Hierarchy取得、MenuItems操作など包括的な機能を提供します。
 
 ### 主要機能
-現在 下記8個のコマンドが使えます。
 **Unity基本コマンド**:
 - リフレッシュ & コンパイル（compile）- コンパイル結果を返却します
-- ログ取得（getlogs）- logtype、文字列、取得件数などでのフィルタリング機能を備えています
-- テスト実行（runtests）- テスト結果をxmlで書き出し、書き出したpathを伝えます
-- コンソールクリア（clearconsole）
+- ログ取得（get-logs）- logtype、文字列、取得件数などでのフィルタリング機能を備えています
+- テスト実行（run-tests）- テスト結果をxmlで書き出し、書き出したpathを伝えます
+- コンソールクリア（clear-console）
 
 **Unity検索・発見機能**:
-- Unity Search API実行（unitysearch）
-- Unity Searchプロバイダー詳細取得（getproviderdetails）
-- MenuItems取得（getmenuitems）
-- MenuItems実行（executemenuitem）- AIがテストコードを作成し、実行させるのに便利です
+- Unity Search API実行（unity-search）
+- Unity Searchプロバイダー詳細取得（get-provider-details）
+- MenuItems取得（get-menu-items）
+- MenuItems実行（execute-menu-item）- AIがテストコードを作成し、実行させるのに便利です
+- GameObject検索（find-game-objects）- 高度な検索条件でGameObjectを検索
+- Hierarchy情報取得（get-hierarchy）- Unity Hierarchyの構造をAI向けフォーマットで取得
 
-**📖 詳細な機能仕様については [FEATURES_ja.md](FEATURES_ja.md) をご覧ください**
+**詳細な機能仕様については [FEATURES_ja.md](FEATURES_ja.md) をご覧ください**
 
 **高度な機能**:
 - 型安全パラメータ
@@ -57,7 +63,8 @@ uMCPは8個のUnity MCPコマンドを提供し、コンパイル、ログ取得
 <img width="657" alt="image" src="https://github.com/user-attachments/assets/14352ec0-c0a4-443d-98d5-35a6c86acd45" />
 
 4. 手動設定（通常は不要）
-必要に応じて、Cursorの設定ファイル（`.cursor/mcp.json`）を手動で編集できます：
+> [!NOTE]
+> 通常は自動設定で十分ですが、必要に応じて、Cursorの設定ファイル（`.cursor/mcp.json`）を手動で編集できます：
 
 ```json
 {
@@ -77,17 +84,20 @@ uMCPは8個のUnity MCPコマンドを提供し、コンパイル、ログ取得
 
 **パス例**:
 - **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
-> **注意**: Package Manager経由でインストールした場合、パッケージはハッシュ化されたディレクトリ名で`Library/PackageCache`に配置されます。「Auto Configure Cursor」ボタンを使用すると、正しいパスが自動的に設定されます。
+> [!NOTE]
+> Package Manager経由でインストールした場合、パッケージはハッシュ化されたディレクトリ名で`Library/PackageCache`に配置されます。「Auto Configure Cursor」ボタンを使用すると、正しいパスが自動的に設定されます。
 
 5. 複数のUnityインスタンスのサポート
-  - ポート番号を変更することで複数のUnityインスタンスをサポート
+> [!NOTE]
+> ポート番号を変更することで複数のUnityインスタンスをサポートできます。各インスタンスに異なるポート番号を割り当ててください。
 
 ## 前提条件
 
-⚠️ **重要**: 以下のソフトウェアが必要です
-- **Unity 2022.3以上**
-- **Node.js 18.0以上** ⭐ **必須** - MCPサーバー実行に必要
-- Node.jsを[こちら](https://nodejs.org/en/download)からインストールしてください
+> [!WARNING]
+> 以下のソフトウェアが必須です：
+> - **Unity 2022.3以上**
+> - **Node.js 18.0以上** - MCPサーバー実行に必要
+> - Node.jsを[こちら](https://nodejs.org/en/download)からインストールしてください
 
 ## インストール
 
@@ -116,20 +126,25 @@ Scope(s): io.github.hatayama.umcp
 3. Package Managerウィンドウを開き、My RegistriesセクションのhutayamaページからProject Settingsに移動
 
 ### Unity接続エラー
-- Unity MCP Bridgeが実行されていることを確認（Window > Unity MCP）
-- 設定されたポートが他のアプリケーションによって使用されていないことを確認
+> [!CAUTION]
+> 接続エラーが発生した場合：
+> - Unity MCP Bridgeが実行されていることを確認（Window > Unity MCP）
+> - 設定されたポートが他のアプリケーションによって使用されていないことを確認
 
 ### Cursor設定エラー
-- `.cursor/mcp.json`のパスが正しいことを確認
-- JSON形式が正しいことを確認
-- CursorのTools & Integrations > MCP Toolsで認識されているかを確認。「0 tool enable」や赤い円が表示される場合は、Cursorを再起動
+> [!WARNING]
+> 以下の点を確認してください：
+> - `.cursor/mcp.json`のパスが正しいことを確認
+> - JSON形式が正しいことを確認
+> - CursorのTools & Integrations > MCP Toolsで認識されているかを確認。「0 tool enable」や赤い円が表示される場合は、Cursorを再起動
 
 
-## 🔧 カスタムコマンド開発
+## カスタムコマンド開発
 
-uMCPは動的カスタムコマンド登録をサポートしています。開発者はコアパッケージを変更することなく独自のコマンドを追加できます。
+> [!NOTE]
+> uMCPは動的カスタムコマンド登録をサポートしています。開発者はコアパッケージを変更することなく独自のコマンドを追加できます。
 
-**📖 カスタムコマンド開発の詳細については [FEATURES_ja.md](FEATURES_ja.md#カスタムコマンド開発) をご覧ください**
+**カスタムコマンド開発の詳細については [FEATURES_ja.md](FEATURES_ja.md#-カスタムコマンド開発) をご覧ください**
 
 ### 開発方法
 - **方法1**: [McpTool]属性による自動登録（推奨）
