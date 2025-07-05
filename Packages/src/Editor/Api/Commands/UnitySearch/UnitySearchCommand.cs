@@ -15,7 +15,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class UnitySearchCommand : AbstractUnityCommand<UnitySearchSchema, UnitySearchResponse>
     {
-        public override string CommandName => "unitysearch";
+        public override string CommandName => "unity-search";
         public override string Description => "Search Unity project using Unity Search API with comprehensive filtering and export options";
 
         /// <summary>

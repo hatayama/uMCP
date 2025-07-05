@@ -12,7 +12,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class RunTestsCommand : AbstractUnityCommand<RunTestsSchema, RunTestsResponse>
     {
-        public override string CommandName => "runtests";
+        public override string CommandName => "run-tests";
         public override string Description => "Execute Unity tests using Test Runner";
 
         protected override async Task<RunTestsResponse> ExecuteAsync(RunTestsSchema parameters)

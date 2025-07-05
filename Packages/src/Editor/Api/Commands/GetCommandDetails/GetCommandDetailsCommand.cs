@@ -14,7 +14,7 @@ namespace io.github.hatayama.uMCP
     [McpTool(DisplayDevelopmentOnly = true)]
     public class GetCommandDetailsCommand : AbstractUnityCommand<GetCommandDetailsSchema, GetCommandDetailsResponse>
     {
-        public override string CommandName => "getCommandDetails";
+        public override string CommandName => "get-command-details";
         public override string Description => "Retrieve detailed information about all registered Unity MCP commands";
 
         protected override Task<GetCommandDetailsResponse> ExecuteAsync(GetCommandDetailsSchema parameters)

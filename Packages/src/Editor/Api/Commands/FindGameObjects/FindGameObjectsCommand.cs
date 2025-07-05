@@ -12,7 +12,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class FindGameObjectsCommand : AbstractUnityCommand<FindGameObjectsSchema, FindGameObjectsResponse>
     {
-        public override string CommandName => "findgameobjects";
+        public override string CommandName => "find-game-objects";
         public override string Description => "Find multiple GameObjects with advanced search criteria (component type, tag, layer, etc.)";
         
         protected override Task<FindGameObjectsResponse> ExecuteAsync(FindGameObjectsSchema parameters)

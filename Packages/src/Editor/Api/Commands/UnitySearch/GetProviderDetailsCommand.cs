@@ -19,7 +19,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Command name for MCP tool registration
         /// </summary>
-        public override string CommandName => "getproviderdetails";
+        public override string CommandName => "get-provider-details";
 
         /// <summary>
         /// Command description for MCP tool registration

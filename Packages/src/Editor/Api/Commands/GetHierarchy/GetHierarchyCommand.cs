@@ -12,7 +12,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class GetHierarchyCommand : AbstractUnityCommand<GetHierarchySchema, GetHierarchyResponse>
     {
-        public override string CommandName => "gethierarchy";
+        public override string CommandName => "get-hierarchy";
         public override string Description => "Get Unity Hierarchy structure in AI-friendly format";
         
         protected override Task<GetHierarchyResponse> ExecuteAsync(GetHierarchySchema parameters)

@@ -40,7 +40,7 @@ All commands automatically include the following timing information:
     - `Line` (number): Line number where warning occurred
   - `Message` (string): Optional message for additional information
 
-### 2. getlogs
+### 2. get-logs
 - **Description**: Retrieves log information from Unity console with filtering and search capabilities
 - **Parameters**: 
   - `LogType` (enum): Log type to filter - "Error", "Warning", "Log", "All" (default: "All")
@@ -60,7 +60,7 @@ All commands automatically include the following timing information:
     - `StackTrace` (string): Stack trace (if IncludeStackTrace is true)
     - `File` (string): File name where log occurred
 
-### 3. runtests
+### 3. run-tests
 - **Description**: Executes Unity Test Runner and retrieves test results with comprehensive reporting
 - **Parameters**: 
   - `FilterType` (enum): Type of test filter - "all", "fullclassname" (default: "all")
@@ -81,7 +81,7 @@ All commands automatically include the following timing information:
   - `SkippedCount` (number): Number of skipped tests
   - `XmlPath` (string): XML result file path (if SaveXml is true)
 
-### 4. clearconsole
+### 4. clear-console
 - **Description**: Clears Unity console logs for clean development workflow
 - **Parameters**: 
   - `AddConfirmationMessage` (boolean): Whether to add a confirmation log message after clearing (default: true)
@@ -95,11 +95,40 @@ All commands automatically include the following timing information:
   - `Message` (string): Message describing the clear operation result
   - `ErrorMessage` (string): Error message if the operation failed
 
+### 5. find-game-objects
+- **Description**: Find multiple GameObjects with advanced search criteria (component type, tag, layer, etc.)
+- **Parameters**: 
+  - `NamePattern` (string): GameObject name pattern to search for (default: "")
+  - `SearchMode` (enum): Search mode - "Exact", "Path", "Regex", "Contains" (default: "Exact")
+  - `RequiredComponents` (array): Array of component type names that GameObjects must have (default: [])
+  - `Tag` (string): Tag filter (default: "")
+  - `Layer` (number): Layer filter (default: null)
+  - `IncludeInactive` (boolean): Whether to include inactive GameObjects (default: false)
+  - `MaxResults` (number): Maximum number of results to return (default: 20)
+  - `IncludeInheritedProperties` (boolean): Whether to include inherited properties (default: false)
+- **Response**: 
+  - `Success` (boolean): Whether the search was successful
+  - `GameObjects` (array): Array of found GameObjects
+    - `Name` (string): GameObject name
+    - `Path` (string): Full hierarchy path
+    - `InstanceId` (number): Unity instance ID
+    - `IsActive` (boolean): Whether the GameObject is active
+    - `Tag` (string): GameObject tag
+    - `Layer` (number): GameObject layer
+    - `LayerName` (string): GameObject layer name
+    - `Components` (array): Array of components on the GameObject
+      - `TypeName` (string): Component type name
+      - `AssemblyQualifiedName` (string): Full assembly qualified name
+      - `Properties` (object): Component properties (if IncludeInheritedProperties is true)
+  - `TotalCount` (number): Total number of GameObjects found
+  - `Message` (string): Search operation message
+  - `ErrorMessage` (string): Error message if search failed
+
 ---
 
 ## 🔍 Unity Search & Discovery Commands
 
-### 5. unitysearch
+### 6. unity-search
 - **Description**: Search Unity project using Unity Search API with comprehensive filtering and export options
 - **Parameters**: 
   - `SearchQuery` (string): Search query string (supports Unity Search syntax) (default: "")
@@ -131,7 +160,31 @@ All commands automatically include the following timing information:
   - `SavedFileFormat` (string): File format of saved results
   - `SaveToFileReason` (string): Reason why results were saved to file
 
-### 6. getproviderdetails
+### 6. get-hierarchy
+- **Description**: Get Unity Hierarchy structure in AI-friendly format
+- **Parameters**: 
+  - `IncludeInactive` (boolean): Whether to include inactive GameObjects (default: true)
+  - `MaxDepth` (number): Maximum depth to traverse (-1 for unlimited) (default: -1)
+  - `RootPath` (string): Starting root path (null for all root objects) (default: null)
+  - `IncludeComponents` (boolean): Whether to include component information (default: true)
+- **Response**: 
+  - `Success` (boolean): Whether the operation was successful
+  - `Hierarchy` (object): Hierarchical structure of GameObjects
+    - `RootObjects` (array): Array of root level GameObjects
+      - `Name` (string): GameObject name
+      - `Path` (string): Full hierarchy path
+      - `IsActive` (boolean): Whether the GameObject is active
+      - `Tag` (string): GameObject tag
+      - `Layer` (number): GameObject layer
+      - `LayerName` (string): GameObject layer name
+      - `Components` (array): Array of component type names (if IncludeComponents is true)
+      - `Children` (array): Recursive array of child GameObjects with same structure
+  - `TotalGameObjectCount` (number): Total number of GameObjects in the hierarchy
+  - `MaxDepthReached` (number): The actual maximum depth reached during traversal
+  - `Message` (string): Operation message
+  - `ErrorMessage` (string): Error message if operation failed
+
+### 7. get-provider-details
 - **Description**: Get detailed information about Unity Search providers including display names, descriptions, active status, and capabilities
 - **Parameters**: 
   - `ProviderId` (string): Specific provider ID to get details for (empty = all providers) (default: "")
@@ -149,7 +202,7 @@ All commands automatically include the following timing information:
   - `AppliedFilter` (string): Filter applied (specific provider ID or "all")
   - `SortedByPriority` (boolean): Whether results are sorted by priority
 
-### 7. getmenuitems
+### 8. get-menu-items
 - **Description**: Retrieve Unity MenuItems with detailed metadata for programmatic execution. Unlike Unity Search menu provider, this provides implementation details (method names, assemblies, execution compatibility) needed for automation and debugging
 - **Parameters**: 
   - `FilterText` (string): Text to filter MenuItem paths (empty for all items) (default: "")
@@ -163,7 +216,7 @@ All commands automatically include the following timing information:
   - `AppliedFilter` (string): The filter text that was applied
   - `AppliedFilterType` (string): The filter type that was applied
 
-### 8. executemenuitem
+### 9. execute-menu-item
 - **Description**: Execute Unity MenuItem by path
 - **Parameters**: 
   - `MenuItemPath` (string): The menu item path to execute (e.g., "GameObject/Create Empty") (default: "")

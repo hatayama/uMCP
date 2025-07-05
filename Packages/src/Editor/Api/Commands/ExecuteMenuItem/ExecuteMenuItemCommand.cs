@@ -13,7 +13,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class ExecuteMenuItemCommand : AbstractUnityCommand<ExecuteMenuItemSchema, ExecuteMenuItemResponse>
     {
-        public override string CommandName => "executemenuitem";
+        public override string CommandName => "execute-menu-item";
         public override string Description => "Execute Unity MenuItem by path";
 
         protected override Task<ExecuteMenuItemResponse> ExecuteAsync(ExecuteMenuItemSchema parameters)

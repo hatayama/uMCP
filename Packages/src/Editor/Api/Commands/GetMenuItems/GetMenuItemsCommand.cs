@@ -12,7 +12,7 @@ namespace io.github.hatayama.uMCP
     [McpTool]
     public class GetMenuItemsCommand : AbstractUnityCommand<GetMenuItemsSchema, GetMenuItemsResponse>
     {
-        public override string CommandName => "getmenuitems";
+        public override string CommandName => "get-menu-items";
         public override string Description => "Retrieve Unity MenuItems with detailed metadata for programmatic execution. Unlike Unity Search menu provider, this provides implementation details (method names, assemblies, execution compatibility) needed for automation and debugging.";
 
         protected override Task<GetMenuItemsResponse> ExecuteAsync(GetMenuItemsSchema parameters)
