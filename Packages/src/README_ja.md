@@ -16,7 +16,7 @@
 # コンセプト
 
 AIによるコーディング時、Unityをコンパイルさせたり、logを取得する部分は人間がやる必要があります。それを可能な限り少なくするというコンセプトで作られました。
-uMCPを使えば、AIが人間の操作に頼らず、可能な限り長時間自走してくれるでしょう。
+uMCPを使えば、AIが人間の操作に頼らず、可能な限り長時間自走するようになります。
 
 ### 主要機能
 #### 1. compile - コンパイルの実行
@@ -276,12 +276,7 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 }
 ```
 
-[カスタムコマンドのサンプル](/Assets/Editor/CustomCommandSamples)も参考になります。
-
-### 開発方法
-- **方法1**: [McpTool]属性による自動登録（推奨）
-- **方法2**: CustomCommandManagerによる手動登録
-- **デバッグ**: 登録済みコマンドの確認機能
+[カスタムコマンドのサンプル](/Assets/Editor/CustomCommandSamples)も参考にして下さい。
 
 ## ライセンス
 MIT License
