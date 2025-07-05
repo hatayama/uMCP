@@ -360,5 +360,5 @@ public static void ShowCommands()
 
 - [Main README](README.md) - Project overview and setup
 - [Architecture Documentation](Editor/ARCHITECTURE.md) - Technical architecture details
-- [TypeScript Server Architecture](.TypeScriptServer/ARCHITECTURE.md) - TypeScript server implementation
+- [TypeScript Server Architecture](TypeScriptServer~/ARCHITECTURE.md) - TypeScript server implementation
 - [Changelog](CHANGELOG.md) - Version history and updates 

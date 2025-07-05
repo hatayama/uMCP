@@ -65,7 +65,7 @@ uMCPは8個のUnity MCPコマンドを提供し、コンパイル、ログ取得
     "uMcp-{port}": {
       "command": "node",
       "args": [
-        "[Unity Package Path]/.TypeScriptServer/dist/server.bundle.js"
+        "[Unity Package Path]/TypeScriptServer~/dist/server.bundle.js"
       ],
       "env": {
         "UNITY_TCP_PORT": "{port}"
@@ -76,7 +76,7 @@ uMCPは8個のUnity MCPコマンドを提供し、コンパイル、ログ取得
 ```
 
 **パス例**:
-- **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umcp@[hash]/.TypeScriptServer/dist/server.bundle.js"`
+- **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
 > **注意**: Package Manager経由でインストールした場合、パッケージはハッシュ化されたディレクトリ名で`Library/PackageCache`に配置されます。「Auto Configure Cursor」ボタンを使用すると、正しいパスが自動的に設定されます。
 
 5. 複数のUnityインスタンスのサポート

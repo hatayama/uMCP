@@ -66,7 +66,7 @@ If necessary, you can manually edit Cursor's configuration file (`.cursor/mcp.js
     "uMcp-{port}": {
       "command": "node",
       "args": [
-        "[Unity Package Path]/.TypeScriptServer/dist/server.bundle.js"
+        "[Unity Package Path]/TypeScriptServer~/dist/server.bundle.js"
       ],
       "env": {
         "UNITY_TCP_PORT": "{port}"
@@ -77,7 +77,7 @@ If necessary, you can manually edit Cursor's configuration file (`.cursor/mcp.js
 ```
 
 **Path examples**:
-- **Via Package Manager**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umcp@[hash]/.TypeScriptServer/dist/server.bundle.js"`
+- **Via Package Manager**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
 > **Note**: When installed via Package Manager, the package is placed in `Library/PackageCache` with a hashed directory name. Using the "Auto Configure Settings" button will automatically set the correct path.
 
 5. Support for multiple Unity instances

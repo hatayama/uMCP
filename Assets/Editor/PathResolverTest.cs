@@ -38,21 +38,21 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo($"Project root: {projectRoot}");
             
             // Check local path
-            string localPath = Path.Combine(projectRoot, "Packages", "src", ".TypeScriptServer", "dist", "server.bundle.js");
+            string localPath = Path.Combine(projectRoot, McpConstants.PACKAGES_DIR, McpConstants.SRC_DIR, McpConstants.TYPESCRIPT_SERVER_DIR, McpConstants.DIST_DIR, McpConstants.SERVER_BUNDLE_FILE);
             McpLogger.LogInfo($"Local path: {localPath} - {(File.Exists(localPath) ? "EXISTS" : "NOT FOUND")}");
             
             // Check Package Cache
-            string packageCacheDir = Path.Combine(projectRoot, "Library", "PackageCache");
+            string packageCacheDir = Path.Combine(projectRoot, McpConstants.LIBRARY_DIR, McpConstants.PACKAGE_CACHE_DIR);
             McpLogger.LogInfo($"Package cache dir: {packageCacheDir} - {(Directory.Exists(packageCacheDir) ? "EXISTS" : "NOT FOUND")}");
             
             if (Directory.Exists(packageCacheDir))
             {
-                string[] packageDirs = Directory.GetDirectories(packageCacheDir, "io.github.hatayama.unitymcp@*");
+                string[] packageDirs = Directory.GetDirectories(packageCacheDir, McpConstants.PACKAGE_NAME_PATTERN);
                 McpLogger.LogInfo($"Found {packageDirs.Length} matching package directories:");
                 
                 foreach (string packageDir in packageDirs)
                 {
-                    string serverPathInCache = Path.Combine(packageDir, ".TypeScriptServer", "dist", "server.bundle.js");
+                    string serverPathInCache = Path.Combine(packageDir, McpConstants.TYPESCRIPT_SERVER_DIR, McpConstants.DIST_DIR, McpConstants.SERVER_BUNDLE_FILE);
                     McpLogger.LogInfo($"  {packageDir} -> {(File.Exists(serverPathInCache) ? "HAS SERVER" : "NO SERVER")}");
                 }
             }
