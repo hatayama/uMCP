@@ -73,6 +73,18 @@ namespace io.github.hatayama.uMCP
         // Editor settings keys (development mode)
         public const string SETTINGS_KEY_ENABLE_DEVELOPMENT_MODE = "EnableDevelopmentMode";
         
+        // TypeScript server related constants
+        public const string TYPESCRIPT_SERVER_DIR = "TypeScriptServer~";
+        public const string DIST_DIR = "dist";
+        public const string SERVER_BUNDLE_FILE = "server.bundle.js";
+        
+        // Package path constants
+        public const string PACKAGES_DIR = "Packages";
+        public const string SRC_DIR = "src";
+        public const string LIBRARY_DIR = "Library";
+        public const string PACKAGE_CACHE_DIR = "PackageCache";
+        public const string PACKAGE_NAME_PATTERN = "io.github.hatayama.umcp@*";
+        
         // SessionState keys
         public const string SESSION_KEY_SERVER_RUNNING = "uMCP.ServerRunning";
         public const string SESSION_KEY_SERVER_PORT = "uMCP.ServerPort";

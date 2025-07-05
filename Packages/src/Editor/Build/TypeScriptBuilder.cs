@@ -10,9 +10,6 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class TypeScriptBuilder
     {
-        // Directory name constants
-        private const string TYPESCRIPT_SERVER_DIR = ".TypeScriptServer";
-        
         // npm command constants
         private const string NPM_COMMAND_CI = "ci";
         private const string NPM_COMMAND_BUILD_BUNDLE = "run build:bundle";
@@ -54,7 +51,7 @@ namespace io.github.hatayama.uMCP
                 return;
             }
             
-            string typeScriptDir = Path.Combine(packageBasePath, TYPESCRIPT_SERVER_DIR);
+            string typeScriptDir = Path.Combine(packageBasePath, McpConstants.TYPESCRIPT_SERVER_DIR);
             if (!Directory.Exists(typeScriptDir))
             {
                 Debug.LogError($"TypeScript directory not found: {typeScriptDir}");

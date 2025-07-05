@@ -110,16 +110,6 @@ namespace io.github.hatayama.uMCP
         private const string MCP_INSPECTOR_CONFIG_FILE = ".inspector.mcp.json";
 #endif
 
-        // TypeScript server related constants
-        private const string TYPESCRIPT_SERVER_DIR = ".TypeScriptServer";
-        private const string DIST_DIR = "dist";
-        private const string SERVER_BUNDLE_FILE = "server.bundle.js";
-        private const string PACKAGES_DIR = "Packages";
-        private const string SRC_DIR = "src";
-        private const string LIBRARY_DIR = "Library";
-        private const string PACKAGE_CACHE_DIR = "PackageCache";
-        private const string PACKAGE_NAME_PATTERN = "io.github.hatayama.umcp@*";
-
         /// <summary>
         /// Gets the path to the project root directory.
         /// </summary>
@@ -246,7 +236,7 @@ namespace io.github.hatayama.uMCP
         /// <returns>The relative path to server.bundle.js</returns>
         private static string GetTypeScriptServerRelativePath()
         {
-            return Path.Combine(TYPESCRIPT_SERVER_DIR, DIST_DIR, SERVER_BUNDLE_FILE);
+            return Path.Combine(McpConstants.TYPESCRIPT_SERVER_DIR, McpConstants.DIST_DIR, McpConstants.SERVER_BUNDLE_FILE);
         }
 
         /// <summary>
@@ -283,7 +273,7 @@ namespace io.github.hatayama.uMCP
             string projectRoot = GetProjectRoot();
             
             // 1. First, check the path for local development (Packages/src).
-            string localPath = Path.Combine(projectRoot, PACKAGES_DIR, SRC_DIR);
+            string localPath = Path.Combine(projectRoot, McpConstants.PACKAGES_DIR, McpConstants.SRC_DIR);
             string localServerPath = BuildTypeScriptServerPath(localPath);
             if (File.Exists(localServerPath))
             {
@@ -292,11 +282,11 @@ namespace io.github.hatayama.uMCP
             }
             
             // 2. Search for the path when installed via Package Manager.
-            string packageCacheDir = Path.Combine(projectRoot, LIBRARY_DIR, PACKAGE_CACHE_DIR);
+            string packageCacheDir = Path.Combine(projectRoot, McpConstants.LIBRARY_DIR, McpConstants.PACKAGE_CACHE_DIR);
             if (Directory.Exists(packageCacheDir))
             {
                 // Search for directories starting with io.github.hatayama.umcp@.
-                string[] packageDirs = Directory.GetDirectories(packageCacheDir, PACKAGE_NAME_PATTERN);
+                string[] packageDirs = Directory.GetDirectories(packageCacheDir, McpConstants.PACKAGE_NAME_PATTERN);
                 
                 foreach (string packageDir in packageDirs)
                 {
@@ -310,7 +300,7 @@ namespace io.github.hatayama.uMCP
             }
             
             // 3. If neither is found, return the local path (with an error log).
-            McpLogger.LogError($"Package base path not found. Checked paths:\n  Local: {localPath}\n  Package Cache: {packageCacheDir}/{PACKAGE_NAME_PATTERN}");
+            McpLogger.LogError($"Package base path not found. Checked paths:\n  Local: {localPath}\n  Package Cache: {packageCacheDir}/{McpConstants.PACKAGE_NAME_PATTERN}");
             
             return localPath;
         }

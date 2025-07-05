@@ -360,5 +360,5 @@ public static void ShowCommands()
 
 - [メインREADME](README_ja.md) - プロジェクト概要とセットアップ
 - [アーキテクチャドキュメント](Editor/ARCHITECTURE.md) - 技術アーキテクチャの詳細
-- [TypeScriptサーバーアーキテクチャ](.TypeScriptServer/ARCHITECTURE.md) - TypeScriptサーバー実装
+- [TypeScriptサーバーアーキテクチャ](TypeScriptServer~/ARCHITECTURE.md) - TypeScriptサーバー実装
 - [変更履歴](CHANGELOG.md) - バージョン履歴と更新 
