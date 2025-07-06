@@ -7,8 +7,9 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// GetLogs command handler - Type-safe implementation using Schema and Response
     /// Retrieves Unity console logs with filtering options
+    /// DEPRECATED: Use GetLogsTools static class instead
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration
     public class GetLogsCommand : AbstractUnityCommand<GetLogsSchema, GetLogsResponse>
     {
         public override string CommandName => "get-logs";

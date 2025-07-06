@@ -1,5 +1,7 @@
 using System;
+using System.ComponentModel;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using uMCP.Editor.Api.Commands.GetMenuItems;
@@ -7,22 +9,28 @@ using uMCP.Editor.Api.Commands.GetMenuItems;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// ExecuteMenuItem command handler - Executes Unity MenuItems by path
-    /// Supports both EditorApplication.ExecuteMenuItem and reflection-based execution
+    /// ExecuteMenuItem tools for MCP C# SDK format
+    /// Related classes:
+    /// - ExecuteMenuItemCommand: Legacy command version (will be deprecated)
+    /// - ExecuteMenuItemSchema: Legacy schema (will be deprecated)
+    /// - ExecuteMenuItemResponse: Legacy response (will be deprecated)
     /// </summary>
-    // [McpTool]  // Disabled to prevent registration - use ExecuteMenuItemTools instead
-    public class ExecuteMenuItemCommand : AbstractUnityCommand<ExecuteMenuItemSchema, ExecuteMenuItemResponse>
+    [McpServerToolType]
+    public static class ExecuteMenuItemTools
     {
-        public override string CommandName => "execute-menu-item";
-        public override string Description => "Execute Unity MenuItem by path";
-
-        protected override Task<ExecuteMenuItemResponse> ExecuteAsync(ExecuteMenuItemSchema parameters)
+        /// <summary>
+        /// Execute Unity MenuItem by path
+        /// </summary>
+        [McpServerTool(Name = "execute-menu-item")]
+        [Description("Execute Unity MenuItem by path")]
+        public static Task<ExecuteMenuItemToolResult> ExecuteMenuItem(
+            [Description("The menu item path to execute (e.g., \"GameObject/Create Empty\")")] 
+            string menuItemPath = "",
+            [Description("Whether to use reflection as fallback if EditorApplication.ExecuteMenuItem fails")] 
+            bool useReflectionFallback = true,
+            CancellationToken cancellationToken = default)
         {
-            // Type-safe parameter access
-            string menuItemPath = parameters.MenuItemPath;
-            bool useReflectionFallback = parameters.UseReflectionFallback;
-            
-            ExecuteMenuItemResponse response = new ExecuteMenuItemResponse
+            ExecuteMenuItemToolResult response = new ExecuteMenuItemToolResult
             {
                 MenuItemPath = menuItemPath
             };
@@ -60,7 +68,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Attempts to execute MenuItem using EditorApplication.ExecuteMenuItem
         /// </summary>
-        private bool TryExecuteViaEditorApplication(string menuItemPath, ExecuteMenuItemResponse response)
+        private static bool TryExecuteViaEditorApplication(string menuItemPath, ExecuteMenuItemToolResult response)
         {
             bool success = EditorApplication.ExecuteMenuItem(menuItemPath);
             
@@ -82,7 +90,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Attempts to execute MenuItem using reflection to find and invoke the method directly
         /// </summary>
-        private bool TryExecuteViaReflection(string menuItemPath, ExecuteMenuItemResponse response)
+        private static bool TryExecuteViaReflection(string menuItemPath, ExecuteMenuItemToolResult response)
         {
             // Find the MenuItem method using the service
             MenuItemInfo menuItemInfo = MenuItemDiscoveryService.FindMenuItemByPath(menuItemPath);
@@ -135,6 +143,39 @@ namespace io.github.hatayama.uMCP
             response.MenuItemFound = true;
             response.Details = $"MenuItem executed successfully via reflection ({menuItemInfo.TypeName}.{menuItemInfo.MethodName})";
             return true;
+        }
+        
+        /// <summary>
+        /// Result for ExecuteMenuItem tool
+        /// Compatible with legacy ExecuteMenuItemResponse structure
+        /// </summary>
+        public class ExecuteMenuItemToolResult : BaseCommandResponse
+        {
+            [Description("The menu item path that was executed")]
+            public string MenuItemPath { get; set; }
+
+            [Description("Whether the execution was successful")]
+            public bool Success { get; set; }
+
+            [Description("The execution method used (EditorApplication or Reflection)")]
+            public string ExecutionMethod { get; set; }
+
+            [Description("Error message if execution failed")]
+            public string ErrorMessage { get; set; }
+
+            [Description("Additional information about the execution")]
+            public string Details { get; set; }
+
+            [Description("Whether the menu item was found in the system")]
+            public bool MenuItemFound { get; set; }
+
+            public ExecuteMenuItemToolResult()
+            {
+                MenuItemPath = string.Empty;
+                ExecutionMethod = string.Empty;
+                ErrorMessage = string.Empty;
+                Details = string.Empty;
+            }
         }
     }
 }

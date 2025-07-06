@@ -425,7 +425,6 @@ namespace io.github.hatayama.uMCP
                     ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream, processId);
                     bool addResult = connectedClients.TryAdd(GenerateClientKey(clientEndpoint, processId), connectedClient);
                     
-                    McpLogger.LogInfo($"All connected clients: {string.Join(", ", connectedClients.Keys)}");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
                     string incompleteJson = string.Empty; // Buffer for incomplete JSON
                     

@@ -9,7 +9,7 @@ namespace io.github.hatayama.uMCP
     /// GetMenuItems command handler - Discovers Unity MenuItems with filtering
     /// Retrieves MenuItem information from all loaded assemblies
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration - use GetMenuItemsTools instead
     public class GetMenuItemsCommand : AbstractUnityCommand<GetMenuItemsSchema, GetMenuItemsResponse>
     {
         public override string CommandName => "get-menu-items";

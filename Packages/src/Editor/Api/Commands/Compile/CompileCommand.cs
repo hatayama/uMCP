@@ -6,8 +6,9 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Compile command handler - Type-safe implementation using Schema and Response
     /// Handles Unity project compilation with optional force recompile
+    /// DEPRECATED: Use CompileTools static class instead
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration
     public class CompileCommand : AbstractUnityCommand<CompileSchema, CompileResponse>
     {
         public override string CommandName => "compile";

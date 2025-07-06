@@ -72,6 +72,7 @@ namespace io.github.hatayama.uMCP
         {
             McpServerToolAttribute toolAttribute = method.GetCustomAttribute<McpServerToolAttribute>();
             string toolName = toolAttribute?.Name ?? ConvertToKebabCase(method.Name);
+            
 
             StaticToolInfo toolInfo = new StaticToolInfo(
                 name: toolName,
@@ -128,7 +129,6 @@ namespace io.github.hatayama.uMCP
             }
 
             object[] parameters = PrepareParameters(toolInfo, paramsToken);
-            
             object result = toolInfo.Method.Invoke(null, parameters);
             
             if (result is Task task)
@@ -140,7 +140,8 @@ namespace io.github.hatayama.uMCP
                 if (taskType.IsGenericType)
                 {
                     PropertyInfo resultProperty = taskType.GetProperty("Result");
-                    return resultProperty?.GetValue(task);
+                    object taskResult = resultProperty?.GetValue(task);
+                    return taskResult;
                 }
                 
                 return null;
@@ -178,9 +179,20 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private object GetParameterValue(StaticToolParameterInfo param, JObject paramsObject)
         {
+            // Try exact match first
             if (paramsObject.TryGetValue(param.Name, out JToken paramToken))
             {
                 return paramToken.ToObject(param.Type);
+            }
+            
+            // Try case-insensitive search for parameter
+            // This handles mismatched naming conventions between TypeScript and C#
+            JProperty matchingProperty = paramsObject.Properties()
+                .FirstOrDefault(p => string.Equals(p.Name, param.Name, StringComparison.OrdinalIgnoreCase));
+            
+            if (matchingProperty != null)
+            {
+                return matchingProperty.Value.ToObject(param.Type);
             }
             
             if (param.IsOptional)

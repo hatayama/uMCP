@@ -11,7 +11,7 @@ namespace io.github.hatayama.uMCP
     /// - ClearConsoleSchema: Type-safe parameter schema
     /// - ClearConsoleResponse: Type-safe response structure
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration - use ClearConsoleTools instead
     public class ClearConsoleCommand : AbstractUnityCommand<ClearConsoleSchema, ClearConsoleResponse>
     {
         public override string CommandName => "clear-console";

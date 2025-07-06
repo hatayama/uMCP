@@ -9,7 +9,7 @@ namespace io.github.hatayama.uMCP
     /// - GameObjectFinderService: Core logic for finding GameObjects
     /// - FindGameObjectsSchema: Search parameters
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration - use FindGameObjectsTools instead
     public class FindGameObjectsCommand : AbstractUnityCommand<FindGameObjectsSchema, FindGameObjectsResponse>
     {
         public override string CommandName => "find-game-objects";

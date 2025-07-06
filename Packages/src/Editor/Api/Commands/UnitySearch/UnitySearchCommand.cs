@@ -12,7 +12,7 @@ namespace io.github.hatayama.uMCP
     /// - UnitySearchSchema: Type-safe parameter schema
     /// - UnitySearchResponse: Type-safe response structure
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration - use UnitySearchTools instead
     public class UnitySearchCommand : AbstractUnityCommand<UnitySearchSchema, UnitySearchResponse>
     {
         public override string CommandName => "unity-search";

@@ -9,7 +9,7 @@ namespace io.github.hatayama.uMCP
     /// - HierarchySerializer: JSON formatting logic
     /// - HierarchyNode: Data structure for hierarchy nodes
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration - use GetHierarchyTools instead
     public class GetHierarchyCommand : AbstractUnityCommand<GetHierarchySchema, GetHierarchyResponse>
     {
         public override string CommandName => "get-hierarchy";

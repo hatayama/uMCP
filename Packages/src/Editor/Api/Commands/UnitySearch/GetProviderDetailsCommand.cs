@@ -13,7 +13,7 @@ namespace io.github.hatayama.uMCP
     /// - GetProviderDetailsSchema: Input parameters schema
     /// - GetProviderDetailsResponse: Output response schema
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration - use GetProviderDetailsTools instead
     public class GetProviderDetailsCommand : AbstractUnityCommand<GetProviderDetailsSchema, GetProviderDetailsResponse>
     {
         /// <summary>

@@ -99,20 +99,23 @@ namespace io.github.hatayama.uMCP
             //     RegisterCommand(new PingCommand());
             // }
 
-            if (!IsCommandTypeRegistered<CompileCommand>())
-            {
-                RegisterCommand(new CompileCommand());
-            }
+            // CompileCommand disabled - using CompileTools static class instead
+            // if (!IsCommandTypeRegistered<CompileCommand>())
+            // {
+            //     RegisterCommand(new CompileCommand());
+            // }
 
-            if (!IsCommandTypeRegistered<GetLogsCommand>())
-            {
-                RegisterCommand(new GetLogsCommand());
-            }
+            // GetLogsCommand disabled - using GetLogsTools static class instead
+            // if (!IsCommandTypeRegistered<GetLogsCommand>())
+            // {
+            //     RegisterCommand(new GetLogsCommand());
+            // }
 
-            if (!IsCommandTypeRegistered<RunTestsCommand>())
-            {
-                RegisterCommand(new RunTestsCommand());
-            }
+            // RunTestsCommand disabled - using RunTestsTools static class instead
+            // if (!IsCommandTypeRegistered<RunTestsCommand>())
+            // {
+            //     RegisterCommand(new RunTestsCommand());
+            // }
         }
 
         /// <summary>

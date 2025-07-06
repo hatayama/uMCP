@@ -8,8 +8,9 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Test execution command handler - Type-safe implementation using Schema and Response
     /// Executes tests using Unity Test Runner and returns the results
+    /// DEPRECATED: Use RunTestsTools static class instead
     /// </summary>
-    [McpTool]
+    // [McpTool]  // Disabled to prevent registration
     public class RunTestsCommand : AbstractUnityCommand<RunTestsSchema, RunTestsResponse>
     {
         public override string CommandName => "run-tests";
