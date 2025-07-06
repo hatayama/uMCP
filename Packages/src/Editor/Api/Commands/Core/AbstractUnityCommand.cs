@@ -81,8 +81,18 @@ namespace io.github.hatayama.uMCP
                 return new TSchema();
             }
             
-            // Try to deserialize from JToken
-            TSchema schema = paramsToken.ToObject<TSchema>();
+            // Create JsonSerializerSettings with CamelCasePropertyNamesContractResolver
+            // This allows TypeScript side to use camelCase while C# uses PascalCase
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+            };
+            
+            // Create JsonSerializer with custom settings
+            JsonSerializer serializer = JsonSerializer.Create(settings);
+            
+            // Try to deserialize from JToken with custom serializer
+            TSchema schema = paramsToken.ToObject<TSchema>(serializer);
 
             // If deserialization returns null, create default instance
             if (schema == null)
