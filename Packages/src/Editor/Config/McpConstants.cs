@@ -49,9 +49,7 @@ namespace io.github.hatayama.uMCP
         public const string CLIENT_NAME_VSCODE = "VSCode";
         public const string CLIENT_NAME_GEMINI_CLI = "Gemini CLI";
         public const string CLIENT_NAME_WINDSURF = "Windsurf";
-#if UMCP_DEBUG
         public const string CLIENT_NAME_MCP_INSPECTOR = "MCP Inspector";
-#endif
         public const string UNKNOWN_CLIENT_NAME = "Unknown Client";
         
         // Process ID constants

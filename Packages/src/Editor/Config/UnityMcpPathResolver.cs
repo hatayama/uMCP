@@ -13,9 +13,7 @@ namespace io.github.hatayama.uMCP
         VSCode,
         GeminiCLI,
         Windsurf,
-#if UMCP_DEBUG
-        McpInspector
-#endif
+        McpInspector,
     }
 
     /// <summary>
@@ -106,9 +104,7 @@ namespace io.github.hatayama.uMCP
         private const string CLAUDE_CODE_CONFIG_FILE = ".mcp.json";
         private const string GEMINI_CONFIG_FILE = "settings.json";
         private const string WINDSURF_CONFIG_FILE = "mcp_config.json";
-#if UMCP_DEBUG
         private const string MCP_INSPECTOR_CONFIG_FILE = ".inspector.mcp.json";
-#endif
 
         /// <summary>
         /// Gets the path to the project root directory.
@@ -163,7 +159,6 @@ namespace io.github.hatayama.uMCP
             return Path.Combine(homeDirectory, CODEIUM_CONFIG_DIR, WINDSURF_CONFIG_FILE);
         }
 
-#if UMCP_DEBUG
         /// <summary>
         /// Gets the path to the MCP Inspector configuration file (.inspector.mcp.json).
         /// </summary>
@@ -172,7 +167,6 @@ namespace io.github.hatayama.uMCP
             string projectRoot = GetProjectRoot();
             return Path.Combine(projectRoot, MCP_INSPECTOR_CONFIG_FILE);
         }
-#endif
 
         /// <summary>
         /// Gets the configuration file path for the specified editor.

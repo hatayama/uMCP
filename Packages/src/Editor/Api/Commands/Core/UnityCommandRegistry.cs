@@ -166,14 +166,6 @@ namespace io.github.hatayama.uMCP
             return await command.ExecuteAsync(paramsToken);
         }
 
-        /// <summary>
-        /// Get list of registered command names
-        /// </summary>
-        /// <returns>Array of command names</returns>
-        public string[] GetRegisteredCommandNames()
-        {
-            return commands.Keys.ToArray();
-        }
 
         /// <summary>
         /// Get detailed information of registered commands

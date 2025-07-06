@@ -7,9 +7,9 @@ import { MessageHandler } from './message-handler.js';
 
 /**
  * TCP/IP client for communication with Unity
- * 
+ *
  * Design document reference: Packages/src/Editor/ARCHITECTURE.md
- * 
+ *
  * Related classes:
  * - UnityMcpServer: The main server class that uses this client
  * - DynamicUnityCommandTool: Uses this client to execute commands in Unity
@@ -61,7 +61,6 @@ export class UnityClient {
   offReconnect(handler: () => void): void {
     this.reconnectHandlers.delete(handler);
   }
-
 
   /**
    * Actually test Unity's connection status
@@ -239,7 +238,7 @@ export class UnityClient {
   /**
    * Get command details from Unity
    */
-  async getCommandDetails(): Promise<
+  async getCommandDetails(includeDevelopmentOnly: boolean = false): Promise<
     Array<{ name: string; description: string; parameterSchema?: any }>
   > {
     await this.ensureConnected();
@@ -248,7 +247,7 @@ export class UnityClient {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
       method: 'get-command-details',
-      params: {},
+      params: { IncludeDevelopmentOnly: includeDevelopmentOnly },
     };
 
     const response = await this.sendRequest(request);
@@ -354,11 +353,15 @@ export class UnityClient {
         (error) => {
           timeoutTimer.stop(); // Clean up timer
           reject(error);
-        }
+        },
       );
 
       // Send the request
-      const requestStr = this.messageHandler.createRequest(request.method, request.params as Record<string, unknown>, request.id);
+      const requestStr = this.messageHandler.createRequest(
+        request.method,
+        request.params as Record<string, unknown>,
+        request.id,
+      );
       this.socket!.write(requestStr);
     });
   }

@@ -1,29 +1,23 @@
 import { ToolHandler, ToolContext, ToolDefinition } from '../types/tool-types.js';
-import { PingTool } from './ping-tool.js';
-import { UnityPingTool } from './unity-ping-tool.js';
-import { GetAvailableCommandsTool } from './get-available-commands-tool.js';
 import { DynamicUnityCommandTool } from './dynamic-unity-command-tool.js';
 
 /**
  * Tool registry
  * Responsible for tool registration, management, and execution
- * 
+ *
  * Design document reference: Packages/src/Editor/ARCHITECTURE.md
- * 
+ *
  * Related classes:
- * - BaseTool: Abstract base class for all tool implementations
- * - PingTool: TypeScript-side ping tool for health checks
- * - UnityPingTool: Unity-side ping tool for connection testing
- * - GetAvailableCommandsTool: Lists all available Unity commands
  * - DynamicUnityCommandTool: Dynamically creates tools for Unity commands
  * - ToolContext: Provides Unity client and server access to tools
  * - ToolHandler: Interface defining tool structure
- * 
+ *
  * Key features:
- * - Registers default tools and Unity command tools dynamically
+ * - Registers Unity command tools dynamically from C# definitions
  * - Listens for Unity command changes via event notifications
  * - Handles reconnection scenarios to restore tool state
  * - Manages tool lifecycle and execution
+ * - Acts as a pure proxy for C# side tool definitions
  */
 export class ToolRegistry {
   private tools: Map<string, ToolHandler> = new Map();
@@ -33,8 +27,6 @@ export class ToolRegistry {
   private isEventListenerSetup: boolean = false;
 
   constructor(context: ToolContext) {
-    this.registerDefaultTools(context);
-
     // Setup event-based updates
     this.setupEventListener(context);
 
@@ -82,22 +74,6 @@ export class ToolRegistry {
   }
 
   /**
-   * Register default tools
-   */
-  private registerDefaultTools(context: ToolContext): void {
-    // Register PingTool only during development (when NODE_ENV=development or ENABLE_PING_TOOL=true)
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const enablePingTool = process.env.ENABLE_PING_TOOL === 'true';
-
-    if (isDevelopment || enablePingTool) {
-      this.register(new PingTool(context));
-    }
-
-    this.register(new UnityPingTool(context));
-    this.register(new GetAvailableCommandsTool(context));
-  }
-
-  /**
    * Load dynamic tools from Unity commands
    */
   private async loadDynamicTools(context: ToolContext): Promise<void> {
@@ -105,10 +81,9 @@ export class ToolRegistry {
       // Wait a bit for Unity to be ready
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const commands = await context.unityClient.getCommandDetails();
-
-      // Skip standard commands that are already registered as specific tools
-      const standardCommands = ['ping', 'getavailablecommands'];
+      // Get command details including development-only commands if in development mode
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const commands = await context.unityClient.getCommandDetails(isDevelopment);
 
       for (const command of commands) {
         const commandName = command.name || command.Name;
@@ -116,7 +91,12 @@ export class ToolRegistry {
         const parameterSchema = command.parameterSchema || command.ParameterSchema;
         const displayDevelopmentOnly = command.displayDevelopmentOnly || false;
 
-        if (commandName && !standardCommands.includes(commandName.toLowerCase())) {
+        // Skip development-only commands in production mode
+        if (displayDevelopmentOnly && !isDevelopment) {
+          continue;
+        }
+
+        if (commandName) {
           const dynamicTool = new DynamicUnityCommandTool(
             context,
             commandName,
@@ -177,11 +157,8 @@ export class ToolRegistry {
    * Reload dynamic tools from Unity
    */
   async reloadDynamicTools(context: ToolContext): Promise<void> {
-    // Remove existing dynamic tools (exclude base tools)
-    const baseToolNames = ['mcp-ping', 'ping', 'get-available-commands'];
-    const toolsToRemove = Array.from(this.tools.keys()).filter(
-      (name) => !baseToolNames.includes(name),
-    );
+    // Remove all existing tools
+    const toolsToRemove = Array.from(this.tools.keys());
 
     for (const toolName of toolsToRemove) {
       this.tools.delete(toolName);
@@ -240,7 +217,8 @@ export class ToolRegistry {
    */
   private async checkForCommandChanges(context: ToolContext): Promise<void> {
     try {
-      const commands = await context.unityClient.getCommandDetails();
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const commands = await context.unityClient.getCommandDetails(isDevelopment);
       const currentCommandNames = commands
         .map((cmd: any) => (cmd.name || cmd.Name || '').toLowerCase())
         .filter((name: string) => name)

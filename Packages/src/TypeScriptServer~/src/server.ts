@@ -13,24 +13,18 @@ import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
 import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
 import {
   ENVIRONMENT,
-  DEFAULT_MESSAGES,
   MCP_PROTOCOL_VERSION,
   MCP_SERVER_NAME,
   TOOLS_LIST_CHANGED_CAPABILITY,
-  DEV_TOOL_PING_NAME,
-  DEV_TOOL_PING_DESCRIPTION,
-  DEV_TOOL_COMMANDS_NAME,
-  DEV_TOOL_COMMANDS_DESCRIPTION,
   DEFAULT_CLIENT_NAME,
 } from './constants.js';
 import packageJson from '../package.json' assert { type: 'json' };
-import { ToolResponse } from './types/tool-types.js';
 
 /**
  * Unity MCP Server - Bridge between MCP protocol and Unity Editor
- * 
+ *
  * Design document reference: Packages/src/Editor/ARCHITECTURE.md
- * 
+ *
  * Related classes:
  * - UnityClient: Handles the TCP connection to the Unity Editor
  * - DynamicUnityCommandTool: Dynamically creates tools based on commands from Unity
@@ -140,7 +134,9 @@ class UnityMcpServer {
    */
   private async fetchCommandDetailsFromUnity(): Promise<unknown[] | null> {
     // Get detailed command information including schemas
-    const commandDetailsResponse = await this.unityClient.executeCommand('get-command-details', {});
+    // Include development-only commands if in development mode
+    const params = { IncludeDevelopmentOnly: this.isDevelopment };
+    const commandDetailsResponse = await this.unityClient.executeCommand('get-command-details', params);
 
     // Handle new GetCommandDetailsResponse structure
     const commandDetails =
@@ -167,6 +163,12 @@ class UnityMcpServer {
         (commandInfo as { description?: string }).description ||
         `Execute Unity command: ${commandName}`;
       const parameterSchema = (commandInfo as { parameterSchema?: unknown }).parameterSchema;
+      const displayDevelopmentOnly = (commandInfo as { displayDevelopmentOnly?: boolean }).displayDevelopmentOnly || false;
+
+      // Skip development-only commands in production mode
+      if (displayDevelopmentOnly && !this.isDevelopment) {
+        continue;
+      }
 
       const toolName = commandName;
 
@@ -230,8 +232,10 @@ class UnityMcpServer {
       // Initialize Unity connection after receiving client name
       if (!this.isInitialized) {
         this.isInitialized = true;
-        infoToFile(`[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`);
-        
+        infoToFile(
+          `[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`,
+        );
+
         await this.initializeDynamicTools();
         infoToFile('[Unity MCP] Unity connection established successfully');
       }
@@ -263,33 +267,6 @@ class UnityMcpServer {
         });
       }
 
-      // Development tools (only in development mode)
-      if (this.isDevelopment) {
-        tools.push({
-          name: DEV_TOOL_PING_NAME,
-          description: DEV_TOOL_PING_DESCRIPTION,
-          inputSchema: {
-            type: 'object',
-            properties: {
-              message: {
-                type: 'string',
-                description: 'Test message',
-                default: DEFAULT_MESSAGES.PING,
-              },
-            },
-          },
-        });
-
-        tools.push({
-          name: DEV_TOOL_COMMANDS_NAME,
-          description: DEV_TOOL_COMMANDS_DESCRIPTION,
-          inputSchema: {
-            type: 'object',
-            properties: {},
-            additionalProperties: false,
-          },
-        });
-      }
 
       // Add test tools for notification testing
       // Commented out to reduce tool noise during development
@@ -328,21 +305,8 @@ class UnityMcpServer {
           return await dynamicTool.execute(args);
         }
 
-        switch (name) {
-          case DEV_TOOL_PING_NAME:
-            if (this.isDevelopment) {
-              return await this.handlePing(args as { message?: string });
-            }
-            throw new Error('Development tool not available in production');
-          case DEV_TOOL_COMMANDS_NAME:
-            if (this.isDevelopment) {
-              return await this.handleGetAvailableCommands();
-            }
-            throw new Error('Development tool not available in production');
-          default:
-            // Test tools removed - no longer needed for production
-            throw new Error(`Unknown tool: ${name}`);
-        }
+        // All tools should be handled by dynamic tools
+        throw new Error(`Unknown tool: ${name}`);
       } catch (error) {
         return {
           content: [
@@ -357,63 +321,7 @@ class UnityMcpServer {
     });
   }
 
-  /**
-   * Handle TypeScript ping command (dev only)
-   */
-  private async handlePing(args: { message?: string }): Promise<ToolResponse> {
-    const message = args?.message || DEFAULT_MESSAGES.PING;
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Unity MCP Server is running! Message: ${message}`,
-        },
-      ],
-    };
-  }
 
-  /**
-   * Handle get available commands (dev only)
-   */
-  private async handleGetAvailableCommands(): Promise<ToolResponse> {
-    try {
-      await this.unityClient.ensureConnected();
-
-      // Get command names only (avoid duplicate getCommandDetails call)
-      // BUG FIX: Previously called both getAvailableCommands and getCommandDetails,
-      // causing duplicate API calls when multiple MCP clients were connected
-      const commandsResponse = await this.unityClient.executeCommand('getAvailableCommands', {});
-      const commands = (commandsResponse as { Commands?: unknown })?.Commands || commandsResponse;
-
-      // Use already cached dynamic tools info instead of calling getCommandDetails again
-      // BUG FIX: Avoid redundant getCommandDetails call since data is already cached in initializeDynamicTools
-      const dynamicToolsInfo = Array.from(this.dynamicTools.entries()).map(([name, tool]) => ({
-        name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-      }));
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Available Unity Commands:\n${JSON.stringify(commands, null, 2)}\n\nCached Dynamic Tools:\n${JSON.stringify(dynamicToolsInfo, null, 2)}`,
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Failed to get Unity commands: ${errorMessage}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
 
   /**
    * Start the server
@@ -425,7 +333,7 @@ class UnityMcpServer {
     // Connect to MCP transport first - wait for client name before connecting to Unity
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    
+
     infoToFile('[Unity MCP] Server started, waiting for client initialization...');
   }
 

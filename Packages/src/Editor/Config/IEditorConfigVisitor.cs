@@ -45,12 +45,10 @@ namespace io.github.hatayama.uMCP
         /// <returns>Configuration result for Windsurf</returns>
         T VisitWindsurf();
 
-#if UMCP_DEBUG
         /// <summary>
-        /// Visits MCP Inspector configuration (development mode only).
+        /// Visits MCP Inspector configuration.
         /// </summary>
         /// <returns>Configuration result for MCP Inspector</returns>
         T VisitMcpInspector();
-#endif
     }
 }

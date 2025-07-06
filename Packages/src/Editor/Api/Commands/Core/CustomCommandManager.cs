@@ -81,14 +81,6 @@ namespace io.github.hatayama.uMCP
             return SharedRegistry;
         }
 
-        /// <summary>
-        /// Debug: Get array of registered command names
-        /// </summary>
-        /// <returns>Array of command names</returns>
-        public static string[] GetRegisteredCommandNames()
-        {
-            return SharedRegistry.GetRegisteredCommandNames();
-        }
 
         /// <summary>
         /// Debug: Get detailed registry information
@@ -96,7 +88,13 @@ namespace io.github.hatayama.uMCP
         /// <returns>Debug information</returns>
         public static string GetDebugInfo()
         {
-            return $"Registry instance: {SharedRegistry.GetHashCode()}, Commands: [{string.Join(", ", SharedRegistry.GetRegisteredCommandNames())}]";
+            CommandInfo[] commands = SharedRegistry.GetRegisteredCommands();
+            string[] commandNames = new string[commands.Length];
+            for (int i = 0; i < commands.Length; i++)
+            {
+                commandNames[i] = commands[i].Name;
+            }
+            return $"Registry instance: {SharedRegistry.GetHashCode()}, Commands: [{string.Join(", ", commandNames)}]";
         }
         
         /// <summary>

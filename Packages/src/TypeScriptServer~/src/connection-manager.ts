@@ -6,9 +6,9 @@ import { errorToFile } from './utils/log-to-file.js';
 /**
  * Manages TCP connection with reconnection polling
  * Follows Single Responsibility Principle - only handles connection state and polling
- * 
+ *
  * Design document reference: Packages/src/Editor/ARCHITECTURE.md
- * 
+ *
  * Related classes:
  * - UnityClient: Uses this class for connection polling management
  * - SafeTimer: Provides automatic cleanup for timers

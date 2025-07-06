@@ -255,9 +255,7 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.ClaudeCode => "Claude Code",
                 McpEditorType.VSCode => "VSCode",
                 McpEditorType.GeminiCLI => "Gemini CLI",
-#if UMCP_DEBUG
                 McpEditorType.McpInspector => "MCP Inspector",
-#endif
                 _ => editorType.ToString()
             };
         }
