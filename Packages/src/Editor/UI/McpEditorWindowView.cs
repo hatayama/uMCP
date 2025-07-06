@@ -139,30 +139,40 @@ namespace io.github.hatayama.uMCP
                 {
                     EditorGUILayout.HelpBox($"Error loading {editorName} configuration: {data.ConfigurationError}", MessageType.Error);
                 }
-                else if (data.IsConfigured)
+                else if (data.IsConfigured && data.HasPortMismatch)
                 {
-                    // Check for port mismatch
-                    if (data.HasPortMismatch)
-                    {
-                        EditorGUILayout.HelpBox($"Warning: {editorName} settings port number may not match current server port ({data.CurrentPort}).", MessageType.Warning);
-                    }
-                    else
-                    {
-                        EditorGUILayout.HelpBox($"{editorName} settings are already configured.", MessageType.Info);
-                    }
+                    // Only show port mismatch warning when necessary
+                    EditorGUILayout.HelpBox($"Warning: {editorName} settings port number may not match current server port ({data.CurrentPort}).", MessageType.Warning);
                 }
-                else
-                {
-                    EditorGUILayout.HelpBox($"{editorName} settings not found. Please run auto-configuration.", MessageType.Warning);
-                }
+                // Remove all other HelpBox messages
                 
                 EditorGUILayout.Space();
                 
-                string buttonText = data.IsServerRunning ? $"Configure {editorName}\n(Port {data.CurrentPort})" : $"Configure {editorName}";
+                // Determine button text based on configuration status
+                string buttonText;
+                if (data.IsConfigured)
+                {
+                    buttonText = data.IsServerRunning ? $"Update {editorName} Settings\n(Port {data.CurrentPort})" : $"Update {editorName} Settings";
+                }
+                else
+                {
+                    buttonText = $"Settings not found. Configure {editorName}";
+                }
+                
+                // Apply warning yellow color for unconfigured state
+                Color originalColor = GUI.backgroundColor;
+                if (!data.IsConfigured)
+                {
+                    GUI.backgroundColor = new Color(1f, 0.9f, 0.4f); // Warning yellow
+                }
+                
                 if (GUILayout.Button(buttonText, GUILayout.Height(data.IsServerRunning ? 40f : 25f)))
                 {
                     configureCallback?.Invoke(editorName);
                 }
+                
+                // Restore original color
+                GUI.backgroundColor = originalColor;
                 
                 EditorGUILayout.Space();
                 
