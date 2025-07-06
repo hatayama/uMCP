@@ -5,8 +5,9 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Ping command handler - Type-safe implementation using Schema and Response
     /// Connection test and message echo functionality
+    /// DEPRECATED: Use PingTools static class instead
     /// </summary>
-    [McpTool(DisplayDevelopmentOnly = true)]
+    // [McpTool(DisplayDevelopmentOnly = true)]  // Disabled to prevent registration
     public class PingCommand : AbstractUnityCommand<PingSchema, PingResponse>
     {
         public override string CommandName => "ping";

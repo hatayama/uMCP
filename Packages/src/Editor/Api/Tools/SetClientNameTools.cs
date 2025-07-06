@@ -90,12 +90,29 @@ namespace io.github.hatayama.uMCP
         
         /// <summary>
         /// Result for set-client-name tool
+        /// Compatible with legacy SetClientNameResponse structure
         /// </summary>
-        public record SetClientNameToolResult(
-            [property: Description("Success status message")] string message,
-            [property: Description("Registered client name")] string clientName,
-            [property: Description("Timestamp when the client name was set")] string timestamp,
-            [property: Description("Whether the operation was successful")] bool success
-        );
+        public class SetClientNameToolResult : BaseCommandResponse
+        {
+            [Description("Success status message")]
+            public string Message { get; set; }
+            
+            [Description("Registered client name")]
+            public string ClientName { get; set; }
+            
+            [Description("Timestamp when the client name was set")]
+            public string Timestamp { get; set; }
+            
+            [Description("Whether the operation was successful")]
+            public bool Success { get; set; }
+
+            public SetClientNameToolResult(string message, string clientName, string timestamp, bool success)
+            {
+                Message = message;
+                ClientName = clientName;
+                Timestamp = timestamp;
+                Success = success;
+            }
+        }
     }
 }

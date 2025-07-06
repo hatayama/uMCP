@@ -50,12 +50,29 @@ namespace io.github.hatayama.uMCP
         
         /// <summary>
         /// Result for get-command-details tool
+        /// Compatible with legacy GetCommandDetailsResponse structure
         /// </summary>
-        public record GetCommandDetailsToolResult(
-            [property: Description("Array of registered command information")] CommandInfo[] commands,
-            [property: Description("Total number of commands returned")] int totalCount,
-            [property: Description("Whether development-only commands were included")] bool includedDevelopmentOnly,
-            [property: Description("Timestamp when the command details were retrieved")] string timestamp
-        );
+        public class GetCommandDetailsToolResult : BaseCommandResponse
+        {
+            [Description("Array of registered command information")]
+            public CommandInfo[] Commands { get; set; }
+            
+            [Description("Total number of commands returned")]
+            public int TotalCount { get; set; }
+            
+            [Description("Whether development-only commands were included")]
+            public bool IncludedDevelopmentOnly { get; set; }
+            
+            [Description("Timestamp when the command details were retrieved")]
+            public string Timestamp { get; set; }
+
+            public GetCommandDetailsToolResult(CommandInfo[] commands, int totalCount, bool includedDevelopmentOnly, string timestamp)
+            {
+                Commands = commands;
+                TotalCount = totalCount;
+                IncludedDevelopmentOnly = includedDevelopmentOnly;
+                Timestamp = timestamp;
+            }
+        }
     }
 }

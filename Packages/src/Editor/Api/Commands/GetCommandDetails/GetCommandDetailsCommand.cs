@@ -10,8 +10,9 @@ namespace io.github.hatayama.uMCP
     /// - UnityCommandRegistry: Source of command information
     /// - CommandInfo: Data structure for command details
     /// - GetCommandDetailsResponse: Type-safe response structure
+    /// DEPRECATED: Use GetCommandDetailsTools static class instead
     /// </summary>
-    [McpTool(DisplayDevelopmentOnly = true)]
+    // [McpTool(DisplayDevelopmentOnly = true)]  // Disabled to prevent registration
     public class GetCommandDetailsCommand : AbstractUnityCommand<GetCommandDetailsSchema, GetCommandDetailsResponse>
     {
         public override string CommandName => "get-command-details";

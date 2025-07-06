@@ -6,8 +6,9 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// SetClientName command handler - Allows MCP clients to register their name
     /// This command is called by TypeScript clients to identify themselves
+    /// DEPRECATED: Use SetClientNameTools static class instead
     /// </summary>
-    [McpTool(DisplayDevelopmentOnly = true)]
+    // [McpTool(DisplayDevelopmentOnly = true)]  // Disabled to prevent registration
     public class SetClientNameCommand : AbstractUnityCommand<SetClientNameSchema, SetClientNameResponse>
     {
         public override string CommandName => "set-client-name";

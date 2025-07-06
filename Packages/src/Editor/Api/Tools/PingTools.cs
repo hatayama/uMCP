@@ -36,11 +36,25 @@ namespace io.github.hatayama.uMCP
         
         /// <summary>
         /// Result for ping tool
+        /// Compatible with legacy PingResponse structure
         /// </summary>
-        public record PingToolResult(
-            [property: Description("The response message from Unity")] string message,
-            [property: Description("The original message that was received")] string receivedMessage,
-            [property: Description("Timestamp when the ping was processed")] string timestamp
-        );
+        public class PingToolResult : BaseCommandResponse
+        {
+            [Description("The response message from Unity")]
+            public string Message { get; set; }
+            
+            [Description("The original message that was received")]
+            public string ReceivedMessage { get; set; }
+            
+            [Description("Timestamp when the ping was processed")]
+            public string Timestamp { get; set; }
+
+            public PingToolResult(string message, string receivedMessage, string timestamp)
+            {
+                Message = message;
+                ReceivedMessage = receivedMessage;
+                Timestamp = timestamp;
+            }
+        }
     }
 }
