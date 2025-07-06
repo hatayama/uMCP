@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/hatayama/uMCP/compare/v0.19.2...v0.20.0) (2025-07-06)
+
+
+### Features
+
+* add camelCase to PascalCase parameter conversion ([#145](https://github.com/hatayama/uMCP/issues/145)) ([d58653c](https://github.com/hatayama/uMCP/commit/d58653c1d2960aa861827060b3334f98331452e5))
+* Improvement of tool setting display ([#144](https://github.com/hatayama/uMCP/issues/144)) ([9ffde74](https://github.com/hatayama/uMCP/commit/9ffde747464a8708c05a10ce7a0e4b9f0bc2eb20))
+
+
+### Bug Fixes
+
+* rename ts directory ([#142](https://github.com/hatayama/uMCP/issues/142)) ([f287adf](https://github.com/hatayama/uMCP/commit/f287adfb47e577c1794c82f18e12b7fd6ba8de25))
+* simplify TypeScript server as pure proxy and enable MCP Inspector ([#146](https://github.com/hatayama/uMCP/issues/146)) ([45264bc](https://github.com/hatayama/uMCP/commit/45264bcec25b8810349e99bff0841151b562bf28))
+* update command-name, update document  ([#143](https://github.com/hatayama/uMCP/issues/143)) ([96333f9](https://github.com/hatayama/uMCP/commit/96333f95871cfb494ed259cc8f4f0110f2c8fbe6))
+
 ## [0.19.2](https://github.com/hatayama/uMCP/compare/v0.19.1...v0.19.2) (2025-07-05)
 
 
