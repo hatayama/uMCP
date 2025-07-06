@@ -306,39 +306,4 @@ namespace io.github.hatayama.uMCP
             McpServerController.TriggerCommandChangeNotification();
         }
     }
-
-    /// <summary>
-    /// Response wrapper for static tool results
-    /// </summary>
-    public class StaticToolCommandResponse : BaseCommandResponse
-    {
-        [JsonProperty("result")] public object Result { get; }
-
-        public StaticToolCommandResponse(object result)
-        {
-            Result = result;
-        }
-    }
-
-    /// <summary>
-    /// Class representing command information
-    /// </summary>
-    public class CommandInfo
-    {
-        [JsonProperty("name")] public string Name { get; }
-
-        [JsonProperty("description")] public string Description { get; }
-
-        [JsonProperty("parameterSchema")] public CommandParameterSchema ParameterSchema { get; }
-
-        [JsonProperty("displayDevelopmentOnly")] public bool DisplayDevelopmentOnly { get; }
-
-        public CommandInfo(string name, string description, CommandParameterSchema parameterSchema, bool displayDevelopmentOnly = false)
-        {
-            Name = name;
-            Description = description;
-            ParameterSchema = parameterSchema;
-            DisplayDevelopmentOnly = displayDevelopmentOnly;
-        }
-    }
 }
