@@ -111,7 +111,8 @@ namespace io.github.hatayama.uMCP
             {
                 Method = request["method"]?.ToString(),
                 Params = request["params"],
-                Id = request["id"]?.ToObject<object>()
+                Id = request["id"]?.ToObject<object>(),
+                Extensions = request["extensions"]
             };
         }
 
@@ -132,7 +133,14 @@ namespace io.github.hatayama.uMCP
             {
                 await MainThreadSwitcher.SwitchToMainThread();
                 await McpCommunicationLogger.LogRequest(originalJson);
-                BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
+                // Extract timeout from extensions if provided
+                int? timeoutMs = null;
+                if (request.Extensions != null && request.Extensions["timeout"] != null)
+                {
+                    timeoutMs = request.Extensions["timeout"].Value<int>();
+                }
+                
+                BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params, timeoutMs);
                 string response = CreateSuccessResponse(request.Id, result);
                 McpLogger.LogDebug($"Method: [{request.Method}], executed in {result.ExecutionTimeMs}ms");
                 _ = McpCommunicationLogger.RecordLogResponse(response);
@@ -217,9 +225,9 @@ namespace io.github.hatayama.uMCP
         /// Execute appropriate handler according to method name
         /// Use new command-based structure
         /// </summary>
-        private static async Task<BaseCommandResponse> ExecuteMethod(string method, JToken paramsToken)
+        private static async Task<BaseCommandResponse> ExecuteMethod(string method, JToken paramsToken, int? timeoutMs = null)
         {
-            return await UnityApiHandler.ExecuteCommandAsync(method, paramsToken);
+            return await UnityApiHandler.ExecuteCommandAsync(method, paramsToken, timeoutMs);
         }
     }
 } 

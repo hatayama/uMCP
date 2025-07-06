@@ -72,13 +72,15 @@ namespace io.github.hatayama.uMCP
         {
             McpServerToolAttribute toolAttribute = method.GetCustomAttribute<McpServerToolAttribute>();
             string toolName = toolAttribute?.Name ?? ConvertToKebabCase(method.Name);
+            int timeoutMs = toolAttribute?.TimeoutMs ?? 120000; // Default 2 minutes
             
 
             StaticToolInfo toolInfo = new StaticToolInfo(
                 name: toolName,
                 method: method,
                 description: GetMethodDescription(method),
-                parameters: GetMethodParameters(method)
+                parameters: GetMethodParameters(method),
+                timeoutMs: timeoutMs
             );
 
             tools[toolName] = toolInfo;
@@ -119,21 +121,42 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Execute a static tool
+        /// Execute a static tool with optional timeout
         /// </summary>
-        public async Task<object> ExecuteToolAsync(string toolName, JToken paramsToken)
+        public async Task<object> ExecuteToolAsync(string toolName, JToken paramsToken, int? timeoutMs = null)
         {
             if (!tools.TryGetValue(toolName, out StaticToolInfo toolInfo))
             {
                 throw new ArgumentException($"Unknown tool: {toolName}");
             }
 
+            // Use tool-specific timeout if available, otherwise use provided timeout, otherwise use default
+            int effectiveTimeout = timeoutMs ?? toolInfo.TimeoutMs;
+            
             object[] parameters = PrepareParameters(toolInfo, paramsToken);
             object result = toolInfo.Method.Invoke(null, parameters);
             
             if (result is Task task)
             {
-                await task;
+                // Apply timeout if specified
+                if (effectiveTimeout > 0)
+                {
+                    using (var cts = new System.Threading.CancellationTokenSource(effectiveTimeout))
+                    {
+                        try
+                        {
+                            await task.ConfigureAwait(false);
+                        }
+                        catch (System.Threading.Tasks.TaskCanceledException)
+                        {
+                            throw new TimeoutException($"Tool '{toolName}' execution timed out after {effectiveTimeout}ms");
+                        }
+                    }
+                }
+                else
+                {
+                    await task;
+                }
                 
                 // Get result from Task<T>
                 Type taskType = task.GetType();
@@ -242,13 +265,15 @@ namespace io.github.hatayama.uMCP
         public MethodInfo Method { get; }
         public string Description { get; }
         public StaticToolParameterInfo[] Parameters { get; }
+        public int TimeoutMs { get; }
 
-        public StaticToolInfo(string name, MethodInfo method, string description, StaticToolParameterInfo[] parameters)
+        public StaticToolInfo(string name, MethodInfo method, string description, StaticToolParameterInfo[] parameters, int timeoutMs = 120000)
         {
             Name = name;
             Method = method;
             Description = description;
             Parameters = parameters;
+            TimeoutMs = timeoutMs;
         }
     }
 

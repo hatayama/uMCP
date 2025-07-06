@@ -21,7 +21,7 @@ namespace io.github.hatayama.uMCP
         /// <param name="paramsToken">Parameters</param>
         /// <returns>Execution result</returns>
         /// <exception cref="ArgumentException">When command is unknown</exception>
-        public async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
+        public async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken, int? timeoutMs = null)
         {
             if (!staticToolRegistry.IsToolRegistered(commandName))
             {
@@ -31,7 +31,7 @@ namespace io.github.hatayama.uMCP
             DateTime startTime = DateTime.UtcNow;
             
             await MainThreadSwitcher.SwitchToMainThread();
-            object result = await staticToolRegistry.ExecuteToolAsync(commandName, paramsToken);
+            object result = await staticToolRegistry.ExecuteToolAsync(commandName, paramsToken, timeoutMs);
             
             DateTime endTime = DateTime.UtcNow;
             

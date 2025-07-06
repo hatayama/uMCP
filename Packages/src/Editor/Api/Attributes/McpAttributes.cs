@@ -23,6 +23,12 @@ namespace io.github.hatayama.uMCP
         /// If not specified, the method name will be used (converted to kebab-case)
         /// </summary>
         public string Name { get; set; }
+        
+        /// <summary>
+        /// Timeout in milliseconds for this specific tool
+        /// Can be overridden by dynamic timeout from client
+        /// </summary>
+        public int TimeoutMs { get; set; } = 120000; // Default 2 minutes
 
         public McpServerToolAttribute()
         {

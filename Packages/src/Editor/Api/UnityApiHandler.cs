@@ -49,7 +49,7 @@ namespace io.github.hatayama.uMCP
         /// <param name="commandName">Command name</param>
         /// <param name="paramsToken">Parameters</param>
         /// <returns>Execution result</returns>
-        public static async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
+        public static async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken, int? timeoutMs = null)
         {
             // Check for special meta commands
             if (commandName == "getAvailableCommands")
@@ -57,7 +57,7 @@ namespace io.github.hatayama.uMCP
                 return await HandleGetAvailableCommands(paramsToken);
             }
 
-            return await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
+            return await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken, timeoutMs);
         }
 
         /// <summary>

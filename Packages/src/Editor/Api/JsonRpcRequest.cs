@@ -24,5 +24,11 @@ namespace io.github.hatayama.uMCP
         /// Regular requests (with id) expect a response, notifications do not.
         /// </summary>
         public bool IsNotification => Id == null;
+        
+        /// <summary>
+        /// Extensions object for additional metadata (e.g., timeout)
+        /// Not part of JSON-RPC 2.0 spec but commonly used for metadata
+        /// </summary>
+        public JToken Extensions { get; set; }
     }
 }

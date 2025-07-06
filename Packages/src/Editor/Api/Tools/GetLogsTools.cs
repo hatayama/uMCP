@@ -22,7 +22,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Retrieve logs from Unity Console
         /// </summary>
-        [McpServerTool(Name = "get-logs")]
+        [McpServerTool(Name = "get-logs", TimeoutMs = 300000)] // 5 minutes timeout
         [Description("Retrieve logs from Unity Console")]
         public static Task<GetLogsToolResult> GetLogs(
             [Description("Log type to filter (Error, Warning, Log, All)")] 
@@ -33,6 +33,8 @@ namespace io.github.hatayama.uMCP
             string SearchText = "",
             [Description("Whether to display stack trace")]
             bool IncludeStackTrace = true,
+            [Description("Timeout in milliseconds (optional, default: 120000)")]
+            int? timeoutMs = null,
             CancellationToken cancellationToken = default)
         {
             // Get Unity Console Log using the LogGetter class.
