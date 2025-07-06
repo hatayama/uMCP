@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using uMCP.Editor.Api.Commands.GetMenuItems;
 
 namespace io.github.hatayama.uMCP
 {

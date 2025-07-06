@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
-using uMCP.Editor.Api.Commands.GetMenuItems;
 
 namespace io.github.hatayama.uMCP
 {

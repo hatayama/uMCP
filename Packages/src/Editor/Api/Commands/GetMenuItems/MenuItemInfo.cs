@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace uMCP.Editor.Api.Commands.GetMenuItems
+namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Represents information about a Unity MenuItem
