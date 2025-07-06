@@ -112,14 +112,13 @@ namespace io.github.hatayama.uMCP
             }
             
             // Create node
-            HierarchyNode node = new HierarchyNode(
-                id: obj.GetInstanceID(),
-                name: obj.name,
-                parent: parentId,
-                depth: depth,
-                isActive: obj.activeSelf,
-                components: componentNames
-            );
+            HierarchyNode node = new HierarchyNode
+            {
+                id = obj.GetInstanceID(),
+                Name = obj.name,
+                depth = depth,
+                IsActive = obj.activeSelf
+            };
             
             nodes.Add(node);
             

@@ -28,7 +28,7 @@ namespace io.github.hatayama.uMCP
             [Description("Test mode (EditMode or PlayMode)")] 
             TestMode TestMode = TestMode.EditMode,
             [Description("Type of test filter")]
-            TestFilterType FilterType = TestFilterType.all,
+            TestFilterType FilterType = TestFilterType.All,
             [Description("Filter value (specify when filterType is not all)\n• fullclassname: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)\n• namespace: Namespace (e.g.: io.github.hatayama.uMCP)\n• testname: Individual test name\n• assembly: Assembly name")]
             string FilterValue = "",
             [Description("Whether to save test results as XML file. Test results are saved to external files to avoid massive token consumption when returning results directly. Please read the file if you need detailed test results.")]
@@ -39,7 +39,7 @@ namespace io.github.hatayama.uMCP
         {
             // Create filter if specified
             TestExecutionFilter filter = null;
-            if (FilterType != TestFilterType.all)
+            if (FilterType != TestFilterType.All)
             {
                 filter = CreateFilter(FilterType.ToString(), FilterValue);
             }

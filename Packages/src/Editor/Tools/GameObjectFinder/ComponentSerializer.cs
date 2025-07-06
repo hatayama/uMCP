@@ -35,11 +35,12 @@ namespace io.github.hatayama.uMCP
                 string componentTypeName = component.GetType().Name;
                 ComponentPropertyInfo[] properties = propertySerializer.SerializeProperties(component);
                 
-                ComponentInfo info = new ComponentInfo
+                ComponentInfoExtended info = new ComponentInfoExtended
                 {
-                    type = componentTypeName,
-                    fullTypeName = component.GetType().FullName,
-                    properties = properties
+                    TypeName = componentTypeName,
+                    AssemblyName = component.GetType().Assembly.GetName().Name,
+                    IsEnabled = true,
+                    Properties = properties != null ? new List<ComponentPropertyInfo>(properties) : new List<ComponentPropertyInfo>()
                 };
                 
                 componentInfos.Add(info);

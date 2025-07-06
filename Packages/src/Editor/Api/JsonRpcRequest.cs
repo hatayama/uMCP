@@ -10,9 +10,7 @@ namespace io.github.hatayama.uMCP
         public string Method { get; set; }
         /// <summary>
         /// JSON-RPC 2.0 spec allows params to be object, array, or null.
-        /// We use JToken to accept any format, then convert to strongly-typed
-        /// schema classes (e.g. PingSchema) in AbstractUnityCommand.ConvertToSchema.
-        /// This provides flexibility at the protocol layer and type safety at the command layer.
+        /// We use JToken to accept any format for maximum flexibility.
         /// </summary>
         public JToken Params { get; set; }
         /// <summary>

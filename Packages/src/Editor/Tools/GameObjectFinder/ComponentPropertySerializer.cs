@@ -34,11 +34,12 @@ namespace io.github.hatayama.uMCP
                     object value = GetSerializedPropertyValue(iterator);
                     if (value != null)
                     {
-                        ComponentPropertyInfo info = new ComponentPropertyInfo
+                        ComponentPropertyInfoExtended info = new ComponentPropertyInfoExtended
                         {
-                            name = iterator.displayName,
-                            type = iterator.propertyType.ToString(),
-                            value = SerializeValue(value)
+                            Name = iterator.displayName,
+                            Type = iterator.propertyType.ToString(),
+                            Value = SerializeValue(value),
+                            IsReadOnly = false
                         };
                         
                         propertyInfos.Add(info);

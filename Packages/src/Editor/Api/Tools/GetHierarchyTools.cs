@@ -55,7 +55,9 @@ namespace io.github.hatayama.uMCP
             // Serialize to response format
             GetHierarchyResponse response = serializer.SerializeHierarchy(nodes, context);
             
-            GetHierarchyToolResult result = new GetHierarchyToolResult(response.hierarchy, response.context);
+            // Use extended response that has hierarchy and context properties
+            GetHierarchyResponseExtended extendedResponse = new GetHierarchyResponseExtended(response.RootNodes, context);
+            GetHierarchyToolResult result = new GetHierarchyToolResult(extendedResponse.hierarchy, context);
             
             return Task.FromResult(result);
         }

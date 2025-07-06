@@ -104,7 +104,8 @@ namespace io.github.hatayama.uMCP
             }
             
             // Don't execute validation functions
-            if (menuItemInfo.IsValidateFunction)
+            MenuItemInfoExtended extendedInfo = menuItemInfo as MenuItemInfoExtended;
+            if (extendedInfo != null && extendedInfo.IsValidateFunction)
             {
                 response.ExecutionMethod = "Reflection";
                 response.ErrorMessage = "Cannot execute validation function";

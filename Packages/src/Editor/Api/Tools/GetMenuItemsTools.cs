@@ -27,7 +27,7 @@ namespace io.github.hatayama.uMCP
             [Description("Text to filter MenuItem paths (empty for all items)")] 
             string filterText = "",
             [Description("Type of filter to apply (contains, exact, startswith)")] 
-            MenuItemFilterType filterType = MenuItemFilterType.contains,
+            MenuItemFilterType filterType = MenuItemFilterType.Contains,
             [Description("Include validation functions in the results")] 
             bool includeValidation = false,
             [Description("Maximum number of menu items to retrieve")] 
@@ -35,7 +35,7 @@ namespace io.github.hatayama.uMCP
             CancellationToken cancellationToken = default)
         {
             // Discover all MenuItems using the service
-            List<MenuItemInfo> allMenuItems = MenuItemDiscoveryService.DiscoverAllMenuItems();
+            List<MenuItemInfo> allMenuItems = MenuItemDiscoveryService.DiscoverAllMenuItems().ToList();
             
             // Apply filtering
             List<MenuItemInfo> filteredMenuItems = ApplyFiltering(allMenuItems, filterText, filterType, includeValidation);
@@ -72,7 +72,12 @@ namespace io.github.hatayama.uMCP
             // Filter by validation function inclusion
             if (!includeValidation)
             {
-                filtered = filtered.Where(item => !item.IsValidateFunction).ToList();
+                // Filter out validation functions - need to check if item is extended type
+                filtered = filtered.Where(item => 
+                {
+                    MenuItemInfoExtended extended = item as MenuItemInfoExtended;
+                    return extended == null || !extended.IsValidateFunction;
+                }).ToList();
             }
             
             // Apply text filtering if specified
@@ -94,13 +99,13 @@ namespace io.github.hatayama.uMCP
         {
             return filterType switch
             {
-                MenuItemFilterType.exact => menuItems.Where(item => 
+                MenuItemFilterType.Exact => menuItems.Where(item => 
                     string.Equals(item.Path, filterText, System.StringComparison.OrdinalIgnoreCase)).ToList(),
                     
-                MenuItemFilterType.startswith => menuItems.Where(item => 
+                MenuItemFilterType.StartsWith => menuItems.Where(item => 
                     item.Path.StartsWith(filterText, System.StringComparison.OrdinalIgnoreCase)).ToList(),
                     
-                MenuItemFilterType.contains => menuItems.Where(item => 
+                MenuItemFilterType.Contains => menuItems.Where(item => 
                     item.Path.IndexOf(filterText, System.StringComparison.OrdinalIgnoreCase) >= 0).ToList(),
                     
                 _ => menuItems

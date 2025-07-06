@@ -27,7 +27,7 @@ namespace io.github.hatayama.uMCP
             [Description("Parameter: NamePattern")] 
             string namePattern = "",
             [Description("Parameter: SearchMode")] 
-            SearchMode searchMode = SearchMode.Exact,
+            SearchMode searchMode = SearchMode.All,
             [Description("Parameter: RequiredComponents")] 
             string[] requiredComponents = null,
             [Description("Parameter: Tag")] 
@@ -95,12 +95,12 @@ namespace io.github.hatayama.uMCP
             {
                 FindGameObjectResult result = new FindGameObjectResult
                 {
-                    name = details.Name,
-                    path = details.Path,
-                    isActive = details.IsActive,
-                    tag = details.GameObject.tag,
-                    layer = details.GameObject.layer,
-                    components = serializer.SerializeComponents(details.GameObject)
+                    Name = details.Name,
+                    Path = details.Path,
+                    IsActive = details.IsActive,
+                    Tag = details.GameObject.tag,
+                    Layer = details.GameObject.layer,
+                    Components = new List<ComponentInfo>(serializer.SerializeComponents(details.GameObject))
                 };
                 
                 results.Add(result);

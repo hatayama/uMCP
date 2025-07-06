@@ -40,7 +40,14 @@ namespace io.github.hatayama.uMCP
             if (!string.IsNullOrWhiteSpace(providerId))
             {
                 // Get specific provider
-                ProviderInfo provider = UnitySearchService.GetProviderDetails(providerId);
+                // Call with all parameters
+                ProviderDetailsResponse providerResponse = UnitySearchService.GetProviderDetails(
+                    activeOnly: activeOnly,
+                    includeDescriptions: includeDescriptions,
+                    providerId: providerId,
+                    sortByPriority: sortByPriority
+                );
+                ProviderInfo provider = providerResponse?.Providers?.FirstOrDefault();
                 if (provider == null)
                 {
                     return Task.FromResult(new GetProviderDetailsToolResult(
@@ -60,7 +67,14 @@ namespace io.github.hatayama.uMCP
             else
             {
                 // Get all providers
-                providers = UnitySearchService.GetProviderDetails();
+                // Call with all parameters for all providers
+                ProviderDetailsResponse allProvidersResponse = UnitySearchService.GetProviderDetails(
+                    activeOnly: activeOnly,
+                    includeDescriptions: includeDescriptions,
+                    providerId: "",
+                    sortByPriority: sortByPriority
+                );
+                providers = allProvidersResponse?.Providers ?? System.Array.Empty<ProviderInfo>();
                 appliedFilter = "all";
             }
 

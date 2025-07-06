@@ -82,7 +82,7 @@ namespace io.github.hatayama.uMCP
             {
                 Success = success;
                 ClearedLogCount = clearedLogCount;
-                ClearedCounts = clearedCounts ?? new ClearedLogCounts();
+                ClearedCounts = clearedCounts ?? new ClearedLogCounts(0, 0, 0);
                 Message = message ?? string.Empty;
                 ErrorMessage = string.Empty;
             }
@@ -91,7 +91,7 @@ namespace io.github.hatayama.uMCP
             {
                 Success = false;
                 ClearedLogCount = 0;
-                ClearedCounts = new ClearedLogCounts();
+                ClearedCounts = new ClearedLogCounts(0, 0, 0);
                 Message = string.Empty;
                 ErrorMessage = errorMessage ?? string.Empty;
             }

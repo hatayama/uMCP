@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -60,9 +61,9 @@ namespace io.github.hatayama.uMCP
                 MaxResults = maxResults,
                 IncludeDescription = includeDescription,
                 IncludeMetadata = includeMetadata,
-                SearchFlags = searchFlags,
+                SearchFlags = (int)searchFlags,
                 SaveToFile = saveToFile,
-                OutputFormat = outputFormat,
+                OutputFormat = (int)outputFormat,
                 AutoSaveThreshold = autoSaveThreshold,
                 FileExtensions = fileExtensions ?? new string[0],
                 AssetTypes = assetTypes ?? new string[0],
@@ -78,23 +79,40 @@ namespace io.github.hatayama.uMCP
 
             // Execute search using service layer
             UnitySearchResponse response = await UnitySearchService.ExecuteSearchAsync(schema);
+            
+            // Cast to extended response for access to all properties
+            UnitySearchResponseExtended extendedResponse = response as UnitySearchResponseExtended;
+            if (extendedResponse == null)
+            {
+                // Create extended response if we didn't get one
+                extendedResponse = new UnitySearchResponseExtended();
+                extendedResponse.Results = response.Results;
+                extendedResponse.TotalCount = response.TotalCount;
+                extendedResponse.DisplayedCount = response.DisplayedCount;
+                extendedResponse.Query = response.Query;
+                extendedResponse.ProvidersUsed = response.ProvidersUsed;
+                extendedResponse.SavedToFile = response.SavedToFile;
+                extendedResponse.FilePath = response.FilePath;
+                extendedResponse.FilterInfo = response.FilterInfo;
+                extendedResponse.ExecutionTimeMs = response.ExecutionTimeMs;
+            }
 
             // Log search execution for debugging
-            if (response.Success)
+            if (extendedResponse.Success)
             {
-                string resultInfo = response.ResultsSavedToFile 
-                    ? $"Results saved to file: {response.ResultsFilePath} ({response.TotalCount} items)"
-                    : $"Returned {response.DisplayedCount} of {response.TotalCount} results inline";
+                string resultInfo = extendedResponse.ResultsSavedToFile 
+                    ? $"Results saved to file: {extendedResponse.ResultsFilePath} ({extendedResponse.TotalCount} items)"
+                    : $"Returned {extendedResponse.DisplayedCount} of {extendedResponse.TotalCount} results inline";
                     
-                McpLogger.LogDebug($"Unity Search completed: '{schema.SearchQuery}' - {resultInfo} in {response.SearchDurationMs}ms");
+                McpLogger.LogDebug($"Unity Search completed: '{extendedResponse.SearchQuery}' - {resultInfo} in {extendedResponse.SearchDurationMs}ms");
             }
             else
             {
-                McpLogger.LogError($"Unity Search failed: '{schema.SearchQuery}' - {response.ErrorMessage}");
+                McpLogger.LogError($"Unity Search failed: '{extendedResponse.SearchQuery}' - {extendedResponse.ErrorMessage}");
             }
 
             // Convert response to tool result
-            return new UnitySearchToolResult(response);
+            return new UnitySearchToolResult(extendedResponse);
         }
 
         /// <summary>
@@ -129,7 +147,7 @@ namespace io.github.hatayama.uMCP
         public class UnitySearchToolResult : BaseCommandResponse
         {
             [Description("Array of search result items (empty if results were saved to file)")]
-            public SearchResultItem[] Results { get; set; }
+            public List<SearchResultItem> Results { get; set; }
 
             [Description("Total number of search results found (before MaxResults limit)")]
             public int TotalCount { get; set; }
@@ -167,7 +185,7 @@ namespace io.github.hatayama.uMCP
             [Description("Applied filters information")]
             public SearchFilterInfo AppliedFilters { get; set; }
 
-            public UnitySearchToolResult(UnitySearchResponse response)
+            public UnitySearchToolResult(UnitySearchResponseExtended response)
             {
                 Results = response.Results;
                 TotalCount = response.TotalCount;
@@ -181,7 +199,7 @@ namespace io.github.hatayama.uMCP
                 ResultsSavedToFile = response.ResultsSavedToFile;
                 SavedFileFormat = response.SavedFileFormat;
                 SaveToFileReason = response.SaveToFileReason;
-                AppliedFilters = response.AppliedFilters;
+                AppliedFilters = response.FilterInfo;
             }
         }
     }

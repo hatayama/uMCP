@@ -61,11 +61,14 @@ namespace io.github.hatayama.uMCP
             }
             
             // Create log entries
-            LogEntry[] logs = limitedEntries.Select(entry => new LogEntry(
-                type: entry.LogType,
-                message: entry.Message,
-                stackTrace: IncludeStackTrace ? entry.StackTrace : null
-            )).ToArray();
+            LogEntry[] logs = limitedEntries.Select(entry => new LogEntry
+            {
+                LogType = entry.LogType,
+                Message = entry.Message,
+                StackTrace = IncludeStackTrace ? entry.StackTrace : null,
+                InstanceId = entry.InstanceId,
+                Timestamp = entry.Timestamp
+            }).ToArray();
             
             GetLogsToolResult result = new GetLogsToolResult(
                 totalCount: logData.TotalCount,
