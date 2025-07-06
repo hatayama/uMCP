@@ -3,15 +3,6 @@ using Newtonsoft.Json.Linq;
 
 namespace io.github.hatayama.uMCP
 {
-    /// <summary>
-    /// Response for getAvailableCommands meta command
-    /// </summary>
-    public class GetAvailableCommandsResponse : BaseCommandResponse
-    {
-        public string[] Commands { get; set; }
-    }
-
-
 
     /// <summary>
     /// Class specialized in handling Unity API calls
@@ -51,30 +42,8 @@ namespace io.github.hatayama.uMCP
         /// <returns>Execution result</returns>
         public static async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
-            // Check for special meta commands
-            if (commandName == "getAvailableCommands")
-            {
-                return await HandleGetAvailableCommands(paramsToken);
-            }
-
             return await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
         }
-
-        /// <summary>
-        /// Get list of available commands
-        /// </summary>
-        private static Task<GetAvailableCommandsResponse> HandleGetAvailableCommands(JToken request)
-        {
-            UnityCommandRegistry registry = CustomCommandManager.GetRegistry();
-            string[] commandNames = registry.GetRegisteredCommandNames();
-            
-            GetAvailableCommandsResponse response = new GetAvailableCommandsResponse
-            {
-                Commands = commandNames
-            };
-            return Task.FromResult(response);
-        }
-
 
     }
 } 

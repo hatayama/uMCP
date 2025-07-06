@@ -5502,14 +5502,6 @@ var TIMEOUTS = {
   GET_LOGS: 1e4,
   RUN_TESTS: 6e4
 };
-var DEV_TOOL_PING_NAME = "mcp-ping";
-var DEV_TOOL_PING_DESCRIPTION = "TypeScript side health check (dev only)";
-var DEV_TOOL_COMMANDS_NAME = "get-unity-commands";
-var DEV_TOOL_COMMANDS_DESCRIPTION = "Get Unity commands list (dev only)";
-var DEFAULT_MESSAGES = {
-  PING: "Hello Unity MCP!",
-  UNITY_PING: "Hello from TypeScript MCP Server"
-};
 var DEFAULT_CLIENT_NAME = "";
 var ENVIRONMENT = {
   NODE_ENV_DEVELOPMENT: "development",
@@ -6003,13 +5995,13 @@ var UnityClient = class {
   /**
    * Get command details from Unity
    */
-  async getCommandDetails() {
+  async getCommandDetails(includeDevelopmentOnly = false) {
     await this.ensureConnected();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
       method: "get-command-details",
-      params: {}
+      params: { IncludeDevelopmentOnly: includeDevelopmentOnly }
     };
     const response = await this.sendRequest(request);
     if (response.error) {
@@ -6084,7 +6076,11 @@ var UnityClient = class {
           reject(error);
         }
       );
-      const requestStr = this.messageHandler.createRequest(request.method, request.params, request.id);
+      const requestStr = this.messageHandler.createRequest(
+        request.method,
+        request.params,
+        request.id
+      );
       this.socket.write(requestStr);
     });
   }
@@ -6424,7 +6420,8 @@ var UnityMcpServer = class {
    * Fetch command details from Unity
    */
   async fetchCommandDetailsFromUnity() {
-    const commandDetailsResponse = await this.unityClient.executeCommand("get-command-details", {});
+    const params = { IncludeDevelopmentOnly: this.isDevelopment };
+    const commandDetailsResponse = await this.unityClient.executeCommand("get-command-details", params);
     const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
     if (!Array.isArray(commandDetails)) {
       errorToFile("[Unity MCP] Invalid command details response:", commandDetailsResponse);
@@ -6442,6 +6439,10 @@ var UnityMcpServer = class {
       const commandName = commandInfo.name;
       const description = commandInfo.description || `Execute Unity command: ${commandName}`;
       const parameterSchema = commandInfo.parameterSchema;
+      const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
+      if (displayDevelopmentOnly && !this.isDevelopment) {
+        continue;
+      }
       const toolName = commandName;
       const dynamicTool = new DynamicUnityCommandTool(
         toolContext,
@@ -6493,7 +6494,9 @@ var UnityMcpServer = class {
       }
       if (!this.isInitialized) {
         this.isInitialized = true;
-        infoToFile(`[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`);
+        infoToFile(
+          `[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`
+        );
         await this.initializeDynamicTools();
         infoToFile("[Unity MCP] Unity connection established successfully");
       }
@@ -6519,31 +6522,6 @@ var UnityMcpServer = class {
           inputSchema: dynamicTool.inputSchema
         });
       }
-      if (this.isDevelopment) {
-        tools.push({
-          name: DEV_TOOL_PING_NAME,
-          description: DEV_TOOL_PING_DESCRIPTION,
-          inputSchema: {
-            type: "object",
-            properties: {
-              message: {
-                type: "string",
-                description: "Test message",
-                default: DEFAULT_MESSAGES.PING
-              }
-            }
-          }
-        });
-        tools.push({
-          name: DEV_TOOL_COMMANDS_NAME,
-          description: DEV_TOOL_COMMANDS_DESCRIPTION,
-          inputSchema: {
-            type: "object",
-            properties: {},
-            additionalProperties: false
-          }
-        });
-      }
       debugToFile(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
       return { tools };
     });
@@ -6555,20 +6533,7 @@ var UnityMcpServer = class {
           const dynamicTool = this.dynamicTools.get(name);
           return await dynamicTool.execute(args);
         }
-        switch (name) {
-          case DEV_TOOL_PING_NAME:
-            if (this.isDevelopment) {
-              return await this.handlePing(args);
-            }
-            throw new Error("Development tool not available in production");
-          case DEV_TOOL_COMMANDS_NAME:
-            if (this.isDevelopment) {
-              return await this.handleGetAvailableCommands();
-            }
-            throw new Error("Development tool not available in production");
-          default:
-            throw new Error(`Unknown tool: ${name}`);
-        }
+        throw new Error(`Unknown tool: ${name}`);
       } catch (error) {
         return {
           content: [
@@ -6581,58 +6546,6 @@ var UnityMcpServer = class {
         };
       }
     });
-  }
-  /**
-   * Handle TypeScript ping command (dev only)
-   */
-  async handlePing(args) {
-    const message = args?.message || DEFAULT_MESSAGES.PING;
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Unity MCP Server is running! Message: ${message}`
-        }
-      ]
-    };
-  }
-  /**
-   * Handle get available commands (dev only)
-   */
-  async handleGetAvailableCommands() {
-    try {
-      await this.unityClient.ensureConnected();
-      const commandsResponse = await this.unityClient.executeCommand("getAvailableCommands", {});
-      const commands = commandsResponse?.Commands || commandsResponse;
-      const dynamicToolsInfo = Array.from(this.dynamicTools.entries()).map(([name, tool]) => ({
-        name,
-        description: tool.description,
-        inputSchema: tool.inputSchema
-      }));
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Available Unity Commands:
-${JSON.stringify(commands, null, 2)}
-
-Cached Dynamic Tools:
-${JSON.stringify(dynamicToolsInfo, null, 2)}`
-          }
-        ]
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Failed to get Unity commands: ${errorMessage}`
-          }
-        ],
-        isError: true
-      };
-    }
   }
   /**
    * Start the server

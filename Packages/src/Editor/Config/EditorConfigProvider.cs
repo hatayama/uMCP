@@ -113,7 +113,6 @@ namespace io.github.hatayama.uMCP
                 );
             }
 
-#if UMCP_DEBUG
             public EditorConfig VisitMcpInspector()
             {
                 return new EditorConfig(
@@ -122,7 +121,6 @@ namespace io.github.hatayama.uMCP
                     null // MCP Inspector config is in project root
                 );
             }
-#endif
         }
     }
 
@@ -149,9 +147,7 @@ namespace io.github.hatayama.uMCP
                 McpEditorType.VSCode => visitor.VisitVSCode(),
                 McpEditorType.GeminiCLI => visitor.VisitGeminiCLI(),
                 McpEditorType.Windsurf => visitor.VisitWindsurf(),
-#if UMCP_DEBUG
                 McpEditorType.McpInspector => visitor.VisitMcpInspector(),
-#endif
                 _ => throw new ArgumentException($"Unsupported editor type: {editorType}", nameof(editorType))
             };
         }

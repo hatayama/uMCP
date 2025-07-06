@@ -4,9 +4,9 @@ import { PARAMETER_SCHEMA } from '../constants.js';
 
 /**
  * Dynamically generated tool for Unity commands
- * 
+ *
  * Design document reference: Packages/src/Editor/ARCHITECTURE.md
- * 
+ *
  * Related classes:
  * - UnityMcpServer: Instantiates and uses this tool
  * - UnityClient: Used to execute the actual command in Unity

@@ -4,9 +4,9 @@ import { errorToFile, warnToFile } from './utils/log-to-file.js';
 /**
  * Handles JSON-RPC message processing
  * Follows Single Responsibility Principle - only handles message parsing and routing
- * 
+ *
  * Design document reference: Packages/src/Editor/ARCHITECTURE.md
- * 
+ *
  * Related classes:
  * - UnityClient: Uses this class for JSON-RPC message handling
  * - UnityMcpServer: Indirectly uses via UnityClient for Unity communication
@@ -38,7 +38,7 @@ export class MessageHandler {
   registerPendingRequest(
     id: number,
     resolve: (value: unknown) => void,
-    reject: (reason: unknown) => void
+    reject: (reason: unknown) => void,
   ): void {
     this.pendingRequests.set(id, { resolve, reject });
   }
