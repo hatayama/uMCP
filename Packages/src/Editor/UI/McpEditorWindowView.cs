@@ -156,7 +156,7 @@ namespace io.github.hatayama.uMCP
                 }
                 else
                 {
-                    buttonText = $"Settings not found. Configure {editorName}";
+                    buttonText = $"Settings not found. \nConfigure {editorName}";
                 }
                 
                 // Apply warning yellow color for unconfigured state
