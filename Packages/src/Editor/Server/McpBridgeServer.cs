@@ -119,7 +119,8 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         private string GenerateClientKey(string endpoint, int processId)
         {
-            return $"{processId}_{endpoint}";
+            // Use only ProcessID to prevent duplicate connections from same process
+            return processId.ToString();
         }
 
         /// <summary>
@@ -421,9 +422,18 @@ namespace io.github.hatayama.uMCP
                     int processId = GetClientProcessId(client.Client);
                     
                     
-                    // Add client to connected clients for notification broadcasting
+                    // Check for existing connection from same process and close it
+                    string clientKey = GenerateClientKey(clientEndpoint, processId);
+                    if (connectedClients.TryGetValue(clientKey, out ConnectedClient existingClient))
+                    {
+                        McpLogger.LogInfo($"Closing existing connection from PID {processId} (endpoint: {existingClient.Endpoint})");
+                        existingClient.Stream?.Close();
+                        connectedClients.TryRemove(clientKey, out _);
+                    }
+                    
+                    // Add new client to connected clients for notification broadcasting
                     ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream, processId);
-                    bool addResult = connectedClients.TryAdd(GenerateClientKey(clientEndpoint, processId), connectedClient);
+                    bool addResult = connectedClients.TryAdd(clientKey, connectedClient);
                     
                     McpLogger.LogInfo($"All connected clients: {string.Join(", ", connectedClients.Keys)}");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];

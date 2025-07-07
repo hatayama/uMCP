@@ -39,7 +39,7 @@ export class UnityDiscovery {
     // Set up periodic discovery
     this.discoveryInterval = setInterval(() => {
       this.discover();
-    }, POLLING.INTERVAL_MS * 2); // Use longer interval for discovery
+    }, POLLING.INTERVAL_MS); // Use standard interval for more frequent discovery
   }
 
   /**
@@ -63,7 +63,15 @@ export class UnityDiscovery {
     }
 
     const basePort = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
-    const portRange = [basePort, basePort + 100, basePort + 200]; // Check multiple ports
+    // Expanded port range for better Unity discovery
+    const portRange = [
+      basePort,
+      basePort + 100,
+      basePort + 200,
+      basePort + 300,
+      basePort + 400,
+      basePort - 100  // Also check lower ports
+    ];
     
     for (const port of portRange) {
       try {
@@ -78,9 +86,46 @@ export class UnityDiscovery {
           return;
         }
       } catch (error) {
-        // Silent polling - expected failures
+        // Silent polling - expected failures when Unity is not running on this port
+        // Continue checking other ports
       }
     }
+  }
+
+  /**
+   * Force immediate Unity discovery for connection recovery
+   */
+  async forceDiscovery(): Promise<boolean> {
+    if (this.unityClient.connected) {
+      return true;
+    }
+    
+    const basePort = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
+    const portRange = [
+      basePort,
+      basePort + 100,
+      basePort + 200,
+      basePort + 300,
+      basePort + 400,
+      basePort - 100
+    ];
+    
+    for (const port of portRange) {
+      try {
+        if (await this.isUnityAvailable(port)) {
+          this.unityClient.updatePort(port);
+          if (this.onDiscoveredCallback) {
+            await this.onDiscoveredCallback(port);
+          }
+          return true;
+        }
+      } catch (error) {
+        // Silent polling - expected failures when Unity is not running on this port
+        // Continue checking other ports
+      }
+    }
+    
+    return false;
   }
 
   /**
@@ -89,7 +134,7 @@ export class UnityDiscovery {
   private async isUnityAvailable(port: number): Promise<boolean> {
     return new Promise((resolve) => {
       const socket = new net.Socket();
-      const timeout = 1000; // Short timeout for discovery
+      const timeout = 500; // Shorter timeout for faster discovery
       
       const timer = setTimeout(() => {
         socket.destroy();

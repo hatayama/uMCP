@@ -79,7 +79,9 @@ class UnityMcpServer {
     });
 
     // Setup polling callback for connection recovery
-    this.unityClient.setReconnectedCallback(() => {
+    this.unityClient.setReconnectedCallback(async () => {
+      // Force Unity discovery for faster reconnection
+      await this.unityDiscovery.forceDiscovery();
       void this.refreshDynamicToolsSafe();
     });
 
@@ -248,8 +250,15 @@ class UnityMcpServer {
           `[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`,
         );
 
-        await this.initializeDynamicTools();
-        infoToFile('[Unity MCP] Unity connection established successfully');
+        // Start Unity connection initialization in background
+        // Don't await to prevent blocking Cursor's initialize response
+        void this.initializeDynamicTools().then(() => {
+          infoToFile('[Unity MCP] Unity connection established successfully');
+        }).catch((error) => {
+          errorToFile('[Unity MCP] Unity connection initialization failed:', error);
+          // Start Unity discovery to retry connection
+          this.unityDiscovery.start();
+        });
       }
 
       return {
@@ -348,8 +357,6 @@ class UnityMcpServer {
     // Connect to MCP transport first - wait for client name before connecting to Unity
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-
-    infoToFile('[Unity MCP] Server started, waiting for client initialization...');
   }
 
   /**
@@ -385,6 +392,9 @@ class UnityMcpServer {
       if (this.clientName) {
         await this.initializeDynamicTools();
         infoToFile('[Unity MCP] Unity connection established and tools initialized');
+        
+        // Send immediate tools changed notification for faster recovery
+        this.sendToolsChangedNotification();
       } else {
         infoToFile('[Unity MCP] Unity connection established, waiting for client name');
       }
