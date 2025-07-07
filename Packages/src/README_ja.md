@@ -112,20 +112,16 @@ UnitySearchが提供する検索プロバイダーを取得します
 機能詳細は[FEATURES_ja.md](FEATURES_ja.md)を御覧ください。
 
 ## 使用方法
-1. Window > uMCPを選択します。専用ウィンドウが開くので、「Start Server」ボタンを押してください。
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/0a1b5ed4-56a9-4209-b2e7-0acbca3cb9a9" />
+1. Window > uMCPを選択します。専用ウィンドウが開くので、「Start Server」ボタンを押してください。  
+<img width="335" alt="image" src="https://github.com/user-attachments/assets/4cfd7f26-7739-442d-bad9-b3f6d113a0d7" />
 
-以下のように表示が変わったら成功です。
+3. 次に、LLM Tool SettingsセクションでターゲットIDEを選択します。黄色い「Configure {LLM Tool名}」ボタンを押してIDEに自動接続してください。  
+<img width="335" alt="image" src="https://github.com/user-attachments/assets/25f1f4f9-e3c8-40a5-a2f3-903f9ed5f45b" />
 
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/9f5d8294-2cde-4d30-ab22-f527e6c3bf66" />
+4. IDE接続確認
+  - 例えばCursorの場合、設定ページのTools & Integrationsを確認し、uMCPを見つけてください。トグルをクリックしてMCPを有効にします。赤い円が表示される場合は、Cursorを再起動してください。  
+<img width="545" alt="image" src="https://github.com/user-attachments/assets/ed54d051-b78a-4bb4-bb2f-7ab23ebc1840" />
 
-2. 次に、LLM Tool SettingsセクションでターゲットIDEを選択します。「Auto Configure Settings」ボタンを押してIDEに自動接続してください。
-
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/379fe674-dee7-4962-9d93-6f43fca13227" />
-
-3. IDE接続確認
-  - 例えば、Cursorの場合、設定ページのTools & Integrationsを確認し、unity-mcp-{ポート番号}を見つけてください。トグルをクリックしてMCPを有効にします。黄色や赤い円が表示される場合は、Cursorを再起動してください。
-<img width="657" alt="image" src="https://github.com/user-attachments/assets/14352ec0-c0a4-443d-98d5-35a6c86acd45" />
 
 4. 手動設定（通常は不要）
 > [!NOTE]
