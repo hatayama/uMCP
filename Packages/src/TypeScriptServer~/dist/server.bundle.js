@@ -5515,7 +5515,8 @@ var ERROR_MESSAGES = {
 };
 var POLLING = {
   INTERVAL_MS: 3e3,
-  BUFFER_SECONDS: 10
+  BUFFER_SECONDS: 15
+  // Increased for safer Unity startup timing
 };
 
 // src/utils/log-to-file.ts
@@ -5829,6 +5830,12 @@ var UnityClient = class {
   messageHandler = new MessageHandler();
   constructor() {
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
+  }
+  /**
+   * Update Unity connection port (for discovery)
+   */
+  updatePort(newPort) {
+    this.port = newPort;
   }
   get connected() {
     return this._connected && this.socket !== null && !this.socket.destroyed;
@@ -6266,6 +6273,92 @@ var DynamicUnityCommandTool = class extends BaseTool {
   }
 };
 
+// src/unity-discovery.ts
+import * as net2 from "net";
+var UnityDiscovery = class {
+  discoveryInterval = null;
+  unityClient;
+  onDiscoveredCallback = null;
+  constructor(unityClient) {
+    this.unityClient = unityClient;
+  }
+  /**
+   * Set callback for when Unity is discovered
+   */
+  setOnDiscoveredCallback(callback) {
+    this.onDiscoveredCallback = callback;
+  }
+  /**
+   * Start Unity discovery polling
+   */
+  start() {
+    if (this.discoveryInterval) {
+      return;
+    }
+    infoToFile("[Unity Discovery] Starting Unity discovery...");
+    this.discover();
+    this.discoveryInterval = setInterval(() => {
+      this.discover();
+    }, POLLING.INTERVAL_MS * 2);
+  }
+  /**
+   * Stop Unity discovery polling
+   */
+  stop() {
+    if (this.discoveryInterval) {
+      clearInterval(this.discoveryInterval);
+      this.discoveryInterval = null;
+      infoToFile("[Unity Discovery] Unity discovery stopped");
+    }
+  }
+  /**
+   * Discover Unity by checking default port range
+   */
+  async discover() {
+    if (this.unityClient.connected) {
+      this.stop();
+      return;
+    }
+    const basePort = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
+    const portRange = [basePort, basePort + 100, basePort + 200];
+    for (const port of portRange) {
+      try {
+        if (await this.isUnityAvailable(port)) {
+          infoToFile(`[Unity Discovery] Unity discovered on port ${port}`);
+          this.unityClient.updatePort(port);
+          if (this.onDiscoveredCallback) {
+            await this.onDiscoveredCallback(port);
+          }
+          return;
+        }
+      } catch (error) {
+      }
+    }
+  }
+  /**
+   * Check if Unity is available on specific port
+   */
+  async isUnityAvailable(port) {
+    return new Promise((resolve) => {
+      const socket = new net2.Socket();
+      const timeout = 1e3;
+      const timer = setTimeout(() => {
+        socket.destroy();
+        resolve(false);
+      }, timeout);
+      socket.connect(port, UNITY_CONNECTION.DEFAULT_HOST, () => {
+        clearTimeout(timer);
+        socket.destroy();
+        resolve(true);
+      });
+      socket.on("error", () => {
+        clearTimeout(timer);
+        resolve(false);
+      });
+    });
+  }
+};
+
 // package.json
 var package_default = {
   name: "umcp-server",
@@ -6353,6 +6446,8 @@ var UnityMcpServer = class {
   isRefreshing = false;
   clientName = DEFAULT_CLIENT_NAME;
   isInitialized = false;
+  isNotifying = false;
+  unityDiscovery;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     infoToFile("Unity MCP Server Starting");
@@ -6372,6 +6467,10 @@ var UnityMcpServer = class {
       }
     );
     this.unityClient = new UnityClient();
+    this.unityDiscovery = new UnityDiscovery(this.unityClient);
+    this.unityDiscovery.setOnDiscoveredCallback(async (port) => {
+      await this.handleUnityDiscovered();
+    });
     this.unityClient.setReconnectedCallback(() => {
       void this.refreshDynamicToolsSafe();
     });
@@ -6552,6 +6651,7 @@ var UnityMcpServer = class {
    */
   async start() {
     this.setupUnityEventListener();
+    this.unityDiscovery.start();
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     infoToFile("[Unity MCP] Server started, waiting for client initialization...");
@@ -6576,16 +6676,45 @@ var UnityMcpServer = class {
     });
   }
   /**
-   * Send tools changed notification
+   * Handle Unity discovery and establish connection
+   */
+  async handleUnityDiscovered() {
+    try {
+      await this.unityClient.ensureConnected();
+      if (this.clientName) {
+        await this.initializeDynamicTools();
+        infoToFile("[Unity MCP] Unity connection established and tools initialized");
+      } else {
+        infoToFile("[Unity MCP] Unity connection established, waiting for client name");
+      }
+      this.unityDiscovery.stop();
+    } catch (error) {
+      errorToFile("[Unity MCP] Failed to establish Unity connection after discovery:", error);
+    }
+  }
+  /**
+   * Send tools changed notification (with duplicate prevention)
    */
   sendToolsChangedNotification() {
+    if (this.isNotifying) {
+      if (this.isDevelopment) {
+        debugToFile("[TRACE] sendToolsChangedNotification skipped: already notifying");
+      }
+      return;
+    }
+    this.isNotifying = true;
     try {
       this.server.notification({
         method: "notifications/tools/list_changed",
         params: {}
       });
+      if (this.isDevelopment) {
+        debugToFile("[TRACE] tools/list_changed notification sent");
+      }
     } catch (error) {
       errorToFile("[Unity MCP] Failed to send tools changed notification:", error);
+    } finally {
+      this.isNotifying = false;
     }
   }
   /**
@@ -6632,6 +6761,7 @@ var UnityMcpServer = class {
     this.isShuttingDown = true;
     infoToFile("[Unity MCP] Starting graceful shutdown...");
     try {
+      this.unityDiscovery.stop();
       if (this.unityClient) {
         this.unityClient.disconnect();
       }

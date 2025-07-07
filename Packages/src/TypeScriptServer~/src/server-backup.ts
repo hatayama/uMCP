@@ -10,8 +10,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
-import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
-import { UnityDiscovery } from './unity-discovery.js';
+import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';\nimport { UnityDiscovery } from './unity-discovery.js';
 import {
   ENVIRONMENT,
   MCP_PROTOCOL_VERSION,
@@ -70,13 +69,7 @@ class UnityMcpServer {
       },
     );
 
-    this.unityClient = new UnityClient();
-
-    // Initialize Unity discovery service
-    this.unityDiscovery = new UnityDiscovery(this.unityClient);
-    this.unityDiscovery.setOnDiscoveredCallback(async (port) => {
-      await this.handleUnityDiscovered();
-    });
+    this.unityClient = new UnityClient();\n\n    // Initialize Unity discovery service\n    this.unityDiscovery = new UnityDiscovery(this.unityClient);\n    this.unityDiscovery.setOnDiscoveredCallback(async (port) => {\n      await this.handleUnityDiscovered();\n    });
 
     // Setup polling callback for connection recovery
     this.unityClient.setReconnectedCallback(() => {
@@ -375,27 +368,6 @@ class UnityMcpServer {
   }
 
   /**
-   * Handle Unity discovery and establish connection
-   */
-  private async handleUnityDiscovered(): Promise<void> {
-    try {
-      await this.unityClient.ensureConnected();
-      
-      // If we have a client name, initialize tools immediately
-      if (this.clientName) {
-        await this.initializeDynamicTools();
-        infoToFile('[Unity MCP] Unity connection established and tools initialized');
-      } else {
-        infoToFile('[Unity MCP] Unity connection established, waiting for client name');
-      }
-      
-      this.unityDiscovery.stop();
-    } catch (error) {
-      errorToFile('[Unity MCP] Failed to establish Unity connection after discovery:', error);
-    }
-  }
-
-  /**
    * Send tools changed notification (with duplicate prevention)
    */
   private sendToolsChangedNotification(): void {
@@ -486,7 +458,6 @@ class UnityMcpServer {
     try {
       // Disconnect from Unity and stop all intervals
       // BUG FIX: Ensure polling intervals are stopped to prevent hanging event loop
-      this.unityDiscovery.stop();
       if (this.unityClient) {
         this.unityClient.disconnect();
       }

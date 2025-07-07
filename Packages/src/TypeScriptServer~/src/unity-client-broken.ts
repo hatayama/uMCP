@@ -30,14 +30,7 @@ export class UnityClient {
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
   }
 
-  /**
-   * Update Unity connection port (for discovery)
-   */
-  updatePort(newPort: number): void {
-    this.port = newPort;
-  }
-
-  get connected(): boolean {
+  /**\n   * Update Unity connection port (for discovery)\n   */\n  updatePort(newPort: number): void {\n    this.port = newPort;\n  }\n\n  get connected(): boolean {
     return this._connected && this.socket !== null && !this.socket.destroyed;
   }
 
