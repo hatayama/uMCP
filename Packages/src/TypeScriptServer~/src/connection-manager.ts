@@ -1,21 +1,21 @@
-import * as net from 'net';
-import { POLLING } from './constants.js';
-import { SafeTimer, safeSetInterval } from './utils/safe-timer.js';
 import { errorToFile } from './utils/log-to-file.js';
 
 /**
- * Manages TCP connection with reconnection polling
- * Follows Single Responsibility Principle - only handles connection state and polling
+ * Manages TCP connection state without polling
+ * Follows Single Responsibility Principle - only handles connection state monitoring
+ *
+ * NOTE: Polling functionality has been moved to UnityDiscovery to prevent multiple
+ * concurrent timers and improve connection stability.
  *
  * Design document reference: Packages/src/Editor/ARCHITECTURE.md
  *
  * Related classes:
- * - UnityClient: Uses this class for connection polling management
- * - SafeTimer: Provides automatic cleanup for timers
+ * - UnityClient: Uses this class for connection state management
+ * - UnityDiscovery: Handles connection polling (moved from this class)
  */
 export class ConnectionManager {
-  private pollingTimer: SafeTimer | null = null;
   private onReconnectedCallback: (() => void) | null = null;
+  private onConnectionLostCallback: (() => void) | null = null;
 
   /**
    * Set callback for when connection is restored
@@ -25,35 +25,53 @@ export class ConnectionManager {
   }
 
   /**
-   * Start polling for connection recovery
+   * Set callback for when connection is lost
    */
-  startPolling(connectFn: () => Promise<void>): void {
-    if (this.pollingTimer && this.pollingTimer.active) {
-      return; // Already polling
-    }
-
-    this.pollingTimer = safeSetInterval(async () => {
-      try {
-        await connectFn();
-        this.stopPolling();
-
-        // Notify about reconnection
-        if (this.onReconnectedCallback) {
-          this.onReconnectedCallback();
-        }
-      } catch (error) {
-        // Silent polling - don't spam logs for expected connection failures
-      }
-    }, POLLING.INTERVAL_MS);
+  setConnectionLostCallback(callback: () => void): void {
+    this.onConnectionLostCallback = callback;
   }
 
   /**
-   * Stop polling
+   * Trigger reconnection callback
+   */
+  triggerReconnected(): void {
+    if (this.onReconnectedCallback) {
+      try {
+        this.onReconnectedCallback();
+      } catch (error) {
+        errorToFile('[ConnectionManager] Error in reconnection callback:', error);
+      }
+    }
+  }
+
+  /**
+   * Trigger connection lost callback
+   */
+  triggerConnectionLost(): void {
+    if (this.onConnectionLostCallback) {
+      try {
+        this.onConnectionLostCallback();
+      } catch (error) {
+        errorToFile('[ConnectionManager] Error in connection lost callback:', error);
+      }
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility - now does nothing
+   * @deprecated Use UnityDiscovery for connection polling instead
+   */
+  startPolling(_connectFn: () => Promise<void>): void {
+    // No-op: polling is now handled by UnityDiscovery
+    // This method is kept for backward compatibility
+  }
+
+  /**
+   * Legacy method for backward compatibility - now does nothing
+   * @deprecated Polling is now handled by UnityDiscovery
    */
   stopPolling(): void {
-    if (this.pollingTimer) {
-      this.pollingTimer.stop();
-      this.pollingTimer = null;
-    }
+    // No-op: polling is now handled by UnityDiscovery
+    // This method is kept for backward compatibility
   }
 }

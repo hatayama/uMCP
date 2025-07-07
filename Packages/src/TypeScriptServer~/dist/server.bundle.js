@@ -5514,7 +5514,8 @@ var ERROR_MESSAGES = {
   INVALID_RESPONSE: "Invalid response from Unity"
 };
 var POLLING = {
-  INTERVAL_MS: 3e3,
+  INTERVAL_MS: 1e3,
+  // Reduced from 3000ms to 1000ms for better responsiveness
   BUFFER_SECONDS: 15
   // Increased for safer Unity startup timing
 };
@@ -5682,14 +5683,11 @@ var SafeTimer = class _SafeTimer {
 function safeSetTimeout(callback, delay) {
   return new SafeTimer(callback, delay, false);
 }
-function safeSetInterval(callback, delay) {
-  return new SafeTimer(callback, delay, true);
-}
 
 // src/connection-manager.ts
 var ConnectionManager = class {
-  pollingTimer = null;
   onReconnectedCallback = null;
+  onConnectionLostCallback = null;
   /**
    * Set callback for when connection is restored
    */
@@ -5697,31 +5695,46 @@ var ConnectionManager = class {
     this.onReconnectedCallback = callback;
   }
   /**
-   * Start polling for connection recovery
+   * Set callback for when connection is lost
    */
-  startPolling(connectFn) {
-    if (this.pollingTimer && this.pollingTimer.active) {
-      return;
-    }
-    this.pollingTimer = safeSetInterval(async () => {
-      try {
-        await connectFn();
-        this.stopPolling();
-        if (this.onReconnectedCallback) {
-          this.onReconnectedCallback();
-        }
-      } catch (error) {
-      }
-    }, POLLING.INTERVAL_MS);
+  setConnectionLostCallback(callback) {
+    this.onConnectionLostCallback = callback;
   }
   /**
-   * Stop polling
+   * Trigger reconnection callback
+   */
+  triggerReconnected() {
+    if (this.onReconnectedCallback) {
+      try {
+        this.onReconnectedCallback();
+      } catch (error) {
+        errorToFile("[ConnectionManager] Error in reconnection callback:", error);
+      }
+    }
+  }
+  /**
+   * Trigger connection lost callback
+   */
+  triggerConnectionLost() {
+    if (this.onConnectionLostCallback) {
+      try {
+        this.onConnectionLostCallback();
+      } catch (error) {
+        errorToFile("[ConnectionManager] Error in connection lost callback:", error);
+      }
+    }
+  }
+  /**
+   * Legacy method for backward compatibility - now does nothing
+   * @deprecated Use UnityDiscovery for connection polling instead
+   */
+  startPolling(_connectFn) {
+  }
+  /**
+   * Legacy method for backward compatibility - now does nothing
+   * @deprecated Polling is now handled by UnityDiscovery
    */
   stopPolling() {
-    if (this.pollingTimer) {
-      this.pollingTimer.stop();
-      this.pollingTimer = null;
-    }
   }
 };
 
@@ -5828,6 +5841,8 @@ var UnityClient = class {
   reconnectHandlers = /* @__PURE__ */ new Set();
   connectionManager = new ConnectionManager();
   messageHandler = new MessageHandler();
+  unityDiscovery = null;
+  // Reference to UnityDiscovery for connection loss handling
   constructor() {
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
   }
@@ -5836,6 +5851,12 @@ var UnityClient = class {
    */
   updatePort(newPort) {
     this.port = newPort;
+  }
+  /**
+   * Set Unity Discovery reference for connection loss handling
+   */
+  setUnityDiscovery(unityDiscovery) {
+    this.unityDiscovery = unityDiscovery;
   }
   get connected() {
     return this._connected && this.socket !== null && !this.socket.destroyed;
@@ -5912,17 +5933,17 @@ var UnityClient = class {
           reject(new Error(`Unity connection failed: ${error.message}`));
         } else {
           errorToFile("[UnityClient] Connection error:", error);
-          this.connectionManager.startPolling(() => this.connect());
+          this.handleConnectionLoss();
         }
       });
       this.socket.on("close", () => {
         this._connected = false;
-        this.connectionManager.startPolling(() => this.connect());
+        this.handleConnectionLoss();
       });
       this.socket.on("end", () => {
         errorToFile("[UnityClient] Connection ended by server");
         this._connected = false;
-        this.connectionManager.startPolling(() => this.connect());
+        this.handleConnectionLoss();
       });
       this.socket.on("data", (data) => {
         this.messageHandler.handleIncomingData(data.toString());
@@ -6108,6 +6129,15 @@ var UnityClient = class {
     this._connected = false;
   }
   /**
+   * Handle connection loss by delegating to UnityDiscovery
+   */
+  handleConnectionLoss() {
+    this.connectionManager.triggerConnectionLost();
+    if (this.unityDiscovery && this.unityDiscovery.handleConnectionLost) {
+      this.unityDiscovery.handleConnectionLost();
+    }
+  }
+  /**
    * Set callback for when connection is restored
    */
   setReconnectedCallback(callback) {
@@ -6275,12 +6305,30 @@ var DynamicUnityCommandTool = class extends BaseTool {
 
 // src/unity-discovery.ts
 import * as net2 from "net";
-var UnityDiscovery = class {
+var UnityDiscovery = class _UnityDiscovery {
   discoveryInterval = null;
   unityClient;
   onDiscoveredCallback = null;
+  onConnectionLostCallback = null;
+  isDiscovering = false;
+  isDevelopment = false;
+  // Singleton pattern to prevent multiple instances
+  static instance = null;
+  static activeTimerCount = 0;
+  // Track active timers for debugging
   constructor(unityClient) {
     this.unityClient = unityClient;
+    this.isDevelopment = process.env.NODE_ENV === "development";
+    if (_UnityDiscovery.instance) {
+      if (this.isDevelopment) {
+        debugToFile(
+          "[UnityDiscovery] WARNING: Multiple instances detected. Using singleton pattern."
+        );
+        debugToFile(`[UnityDiscovery] Active timer count: ${_UnityDiscovery.activeTimerCount}`);
+      }
+      return _UnityDiscovery.instance;
+    }
+    _UnityDiscovery.instance = this;
   }
   /**
    * Set callback for when Unity is discovered
@@ -6289,17 +6337,38 @@ var UnityDiscovery = class {
     this.onDiscoveredCallback = callback;
   }
   /**
-   * Start Unity discovery polling
+   * Set callback for when connection is lost
+   */
+  setOnConnectionLostCallback(callback) {
+    this.onConnectionLostCallback = callback;
+  }
+  /**
+   * Start Unity discovery polling with unified connection management
    */
   start() {
     if (this.discoveryInterval) {
+      if (this.isDevelopment) {
+        debugToFile("[UnityDiscovery] Timer already running - skipping duplicate start");
+      }
       return;
     }
-    infoToFile("[Unity Discovery] Starting Unity discovery...");
-    this.discover();
+    if (this.isDiscovering) {
+      if (this.isDevelopment) {
+        debugToFile("[UnityDiscovery] Discovery already in progress - skipping start");
+      }
+      return;
+    }
+    infoToFile("[Unity Discovery] Starting unified discovery and connection management...");
+    void this.unifiedDiscoveryAndConnectionCheck();
     this.discoveryInterval = setInterval(() => {
-      this.discover();
+      void this.unifiedDiscoveryAndConnectionCheck();
     }, POLLING.INTERVAL_MS);
+    _UnityDiscovery.activeTimerCount++;
+    if (this.isDevelopment) {
+      debugToFile(`[UnityDiscovery] Timer started with ${POLLING.INTERVAL_MS}ms interval`);
+      debugToFile(`[UnityDiscovery] Active timer count: ${_UnityDiscovery.activeTimerCount}`);
+      this.logTimerStatus();
+    }
   }
   /**
    * Stop Unity discovery polling
@@ -6308,17 +6377,62 @@ var UnityDiscovery = class {
     if (this.discoveryInterval) {
       clearInterval(this.discoveryInterval);
       this.discoveryInterval = null;
-      infoToFile("[Unity Discovery] Unity discovery stopped");
+      this.isDiscovering = false;
+      _UnityDiscovery.activeTimerCount = Math.max(0, _UnityDiscovery.activeTimerCount - 1);
+      infoToFile("[Unity Discovery] Unity discovery and connection management stopped");
+      if (this.isDevelopment) {
+        debugToFile("[UnityDiscovery] Timer stopped and cleanup completed");
+        debugToFile(`[UnityDiscovery] Active timer count: ${_UnityDiscovery.activeTimerCount}`);
+        this.logTimerStatus();
+      }
+    }
+  }
+  /**
+   * Unified discovery and connection checking
+   * Handles both Unity discovery and connection health monitoring
+   */
+  async unifiedDiscoveryAndConnectionCheck() {
+    if (this.isDiscovering) {
+      if (this.isDevelopment) {
+        debugToFile("[UnityDiscovery] Discovery already in progress - skipping");
+      }
+      return;
+    }
+    this.isDiscovering = true;
+    try {
+      if (this.unityClient.connected) {
+        const isConnectionHealthy = await this.checkConnectionHealth();
+        if (isConnectionHealthy) {
+          this.stop();
+          return;
+        } else {
+          if (this.isDevelopment) {
+            debugToFile("[UnityDiscovery] Connection lost - resuming discovery");
+          }
+          if (this.onConnectionLostCallback) {
+            this.onConnectionLostCallback();
+          }
+        }
+      }
+      await this.discoverUnityOnPorts();
+    } finally {
+      this.isDiscovering = false;
+    }
+  }
+  /**
+   * Check if the current connection is healthy
+   */
+  async checkConnectionHealth() {
+    try {
+      return await this.unityClient.testConnection();
+    } catch (error) {
+      return false;
     }
   }
   /**
    * Discover Unity by checking default port range
    */
-  async discover() {
-    if (this.unityClient.connected) {
-      this.stop();
-      return;
-    }
+  async discoverUnityOnPorts() {
     const basePort = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
     const portRange = [
       basePort,
@@ -6350,28 +6464,23 @@ var UnityDiscovery = class {
     if (this.unityClient.connected) {
       return true;
     }
-    const basePort = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
-    const portRange = [
-      basePort,
-      basePort + 100,
-      basePort + 200,
-      basePort + 300,
-      basePort + 400,
-      basePort - 100
-    ];
-    for (const port of portRange) {
-      try {
-        if (await this.isUnityAvailable(port)) {
-          this.unityClient.updatePort(port);
-          if (this.onDiscoveredCallback) {
-            await this.onDiscoveredCallback(port);
-          }
-          return true;
-        }
-      } catch (error) {
-      }
+    infoToFile("[Unity Discovery] Force discovery initiated");
+    await this.unifiedDiscoveryAndConnectionCheck();
+    return this.unityClient.connected;
+  }
+  /**
+   * Handle connection lost event (called by UnityClient)
+   */
+  handleConnectionLost() {
+    if (this.isDevelopment) {
+      debugToFile("[UnityDiscovery] Connection lost event received - restarting discovery");
     }
-    return false;
+    if (!this.discoveryInterval) {
+      this.start();
+    }
+    if (this.onConnectionLostCallback) {
+      this.onConnectionLostCallback();
+    }
   }
   /**
    * Check if Unity is available on specific port
@@ -6394,6 +6503,41 @@ var UnityDiscovery = class {
         resolve(false);
       });
     });
+  }
+  /**
+   * Log current timer status for debugging (development mode only)
+   */
+  logTimerStatus() {
+    if (!this.isDevelopment) {
+      return;
+    }
+    const status = {
+      isTimerActive: this.discoveryInterval !== null,
+      isDiscovering: this.isDiscovering,
+      activeTimerCount: _UnityDiscovery.activeTimerCount,
+      isConnected: this.unityClient.connected,
+      intervalMs: POLLING.INTERVAL_MS,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    debugToFile("[UnityDiscovery] Timer Status:", status);
+    if (_UnityDiscovery.activeTimerCount > 1) {
+      errorToFile(
+        `[UnityDiscovery] WARNING: Multiple timers detected! Count: ${_UnityDiscovery.activeTimerCount}`
+      );
+    }
+  }
+  /**
+   * Get debugging information about current timer state
+   */
+  getDebugInfo() {
+    return {
+      isTimerActive: this.discoveryInterval !== null,
+      isDiscovering: this.isDiscovering,
+      activeTimerCount: _UnityDiscovery.activeTimerCount,
+      isConnected: this.unityClient.connected,
+      intervalMs: POLLING.INTERVAL_MS,
+      hasSingleton: _UnityDiscovery.instance !== null
+    };
   }
 };
 
@@ -6506,9 +6650,17 @@ var UnityMcpServer = class {
     );
     this.unityClient = new UnityClient();
     this.unityDiscovery = new UnityDiscovery(this.unityClient);
-    this.unityDiscovery.setOnDiscoveredCallback(async (port) => {
+    this.unityDiscovery.setOnDiscoveredCallback(async () => {
       await this.handleUnityDiscovered();
     });
+    this.unityDiscovery.setOnConnectionLostCallback(() => {
+      if (this.isDevelopment) {
+        debugToFile(
+          "[Unity MCP] Connection lost detected - tools will be refreshed after reconnection"
+        );
+      }
+    });
+    this.unityClient.setUnityDiscovery(this.unityDiscovery);
     this.unityClient.setReconnectedCallback(async () => {
       await this.unityDiscovery.forceDiscovery();
       void this.refreshDynamicToolsSafe();
@@ -6559,7 +6711,10 @@ var UnityMcpServer = class {
    */
   async fetchCommandDetailsFromUnity() {
     const params = { IncludeDevelopmentOnly: this.isDevelopment };
-    const commandDetailsResponse = await this.unityClient.executeCommand("get-command-details", params);
+    const commandDetailsResponse = await this.unityClient.executeCommand(
+      "get-command-details",
+      params
+    );
     const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
     if (!Array.isArray(commandDetails)) {
       errorToFile("[Unity MCP] Invalid command details response:", commandDetailsResponse);
@@ -6695,6 +6850,9 @@ var UnityMcpServer = class {
   async start() {
     this.setupUnityEventListener();
     this.unityDiscovery.start();
+    if (this.isDevelopment) {
+      debugToFile("[Unity MCP] Server starting with unified discovery service");
+    }
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
   }

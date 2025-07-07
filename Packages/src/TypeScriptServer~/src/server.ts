@@ -18,10 +18,7 @@ import {
   MCP_SERVER_NAME,
   TOOLS_LIST_CHANGED_CAPABILITY,
   DEFAULT_CLIENT_NAME,
-  UNITY_CONNECTION,
-  POLLING,
 } from './constants.js';
-import * as net from 'net';
 import packageJson from '../package.json' assert { type: 'json' };
 
 /**
@@ -72,11 +69,23 @@ class UnityMcpServer {
 
     this.unityClient = new UnityClient();
 
-    // Initialize Unity discovery service
+    // Initialize Unity discovery service (singleton pattern prevents duplicates)
     this.unityDiscovery = new UnityDiscovery(this.unityClient);
-    this.unityDiscovery.setOnDiscoveredCallback(async (port) => {
+    this.unityDiscovery.setOnDiscoveredCallback(async () => {
       await this.handleUnityDiscovered();
     });
+
+    // Setup connection lost callback for connection recovery
+    this.unityDiscovery.setOnConnectionLostCallback(() => {
+      if (this.isDevelopment) {
+        debugToFile(
+          '[Unity MCP] Connection lost detected - tools will be refreshed after reconnection',
+        );
+      }
+    });
+
+    // Set UnityDiscovery reference in UnityClient for unified connection management
+    this.unityClient.setUnityDiscovery(this.unityDiscovery);
 
     // Setup polling callback for connection recovery
     this.unityClient.setReconnectedCallback(async () => {
@@ -150,7 +159,10 @@ class UnityMcpServer {
     // Get detailed command information including schemas
     // Include development-only commands if in development mode
     const params = { IncludeDevelopmentOnly: this.isDevelopment };
-    const commandDetailsResponse = await this.unityClient.executeCommand('get-command-details', params);
+    const commandDetailsResponse = await this.unityClient.executeCommand(
+      'get-command-details',
+      params,
+    );
 
     // Handle new GetCommandDetailsResponse structure
     const commandDetails =
@@ -177,7 +189,8 @@ class UnityMcpServer {
         (commandInfo as { description?: string }).description ||
         `Execute Unity command: ${commandName}`;
       const parameterSchema = (commandInfo as { parameterSchema?: unknown }).parameterSchema;
-      const displayDevelopmentOnly = (commandInfo as { displayDevelopmentOnly?: boolean }).displayDevelopmentOnly || false;
+      const displayDevelopmentOnly =
+        (commandInfo as { displayDevelopmentOnly?: boolean }).displayDevelopmentOnly || false;
 
       // Skip development-only commands in production mode
       if (displayDevelopmentOnly && !this.isDevelopment) {
@@ -252,13 +265,15 @@ class UnityMcpServer {
 
         // Start Unity connection initialization in background
         // Don't await to prevent blocking Cursor's initialize response
-        void this.initializeDynamicTools().then(() => {
-          infoToFile('[Unity MCP] Unity connection established successfully');
-        }).catch((error) => {
-          errorToFile('[Unity MCP] Unity connection initialization failed:', error);
-          // Start Unity discovery to retry connection
-          this.unityDiscovery.start();
-        });
+        void this.initializeDynamicTools()
+          .then(() => {
+            infoToFile('[Unity MCP] Unity connection established successfully');
+          })
+          .catch((error) => {
+            errorToFile('[Unity MCP] Unity connection initialization failed:', error);
+            // Start Unity discovery to retry connection (singleton pattern prevents duplicates)
+            this.unityDiscovery.start();
+          });
       }
 
       return {
@@ -287,7 +302,6 @@ class UnityMcpServer {
           inputSchema: dynamicTool.inputSchema,
         });
       }
-
 
       // Add test tools for notification testing
       // Commented out to reduce tool noise during development
@@ -342,8 +356,6 @@ class UnityMcpServer {
     });
   }
 
-
-
   /**
    * Start the server
    */
@@ -351,8 +363,12 @@ class UnityMcpServer {
     // Setup Unity event notification listener (will be used after Unity connection)
     this.setupUnityEventListener();
 
-    // Start Unity discovery immediately
+    // Start Unity discovery immediately (singleton pattern prevents duplicates)
     this.unityDiscovery.start();
+
+    if (this.isDevelopment) {
+      debugToFile('[Unity MCP] Server starting with unified discovery service');
+    }
 
     // Connect to MCP transport first - wait for client name before connecting to Unity
     const transport = new StdioServerTransport();
@@ -387,18 +403,18 @@ class UnityMcpServer {
   private async handleUnityDiscovered(): Promise<void> {
     try {
       await this.unityClient.ensureConnected();
-      
+
       // If we have a client name, initialize tools immediately
       if (this.clientName) {
         await this.initializeDynamicTools();
         infoToFile('[Unity MCP] Unity connection established and tools initialized');
-        
+
         // Send immediate tools changed notification for faster recovery
         this.sendToolsChangedNotification();
       } else {
         infoToFile('[Unity MCP] Unity connection established, waiting for client name');
       }
-      
+
       this.unityDiscovery.stop();
     } catch (error) {
       errorToFile('[Unity MCP] Failed to establish Unity connection after discovery:', error);

@@ -24,6 +24,7 @@ export class UnityClient {
   private reconnectHandlers: Set<() => void> = new Set();
   private connectionManager: ConnectionManager = new ConnectionManager();
   private messageHandler: MessageHandler = new MessageHandler();
+  private unityDiscovery: any = null; // Reference to UnityDiscovery for connection loss handling
 
   constructor() {
     // Get port number from environment variable UNITY_TCP_PORT, default is 7400
@@ -35,6 +36,13 @@ export class UnityClient {
    */
   updatePort(newPort: number): void {
     this.port = newPort;
+  }
+
+  /**
+   * Set Unity Discovery reference for connection loss handling
+   */
+  setUnityDiscovery(unityDiscovery: any): void {
+    this.unityDiscovery = unityDiscovery;
   }
 
   get connected(): boolean {
@@ -132,20 +140,20 @@ export class UnityClient {
         } else {
           // Error after connection was established
           errorToFile('[UnityClient] Connection error:', error);
-          this.connectionManager.startPolling(() => this.connect());
+          this.handleConnectionLoss();
         }
       });
 
       this.socket.on('close', () => {
         this._connected = false;
-        this.connectionManager.startPolling(() => this.connect());
+        this.handleConnectionLoss();
       });
 
       // Handle graceful end of connection
       this.socket.on('end', () => {
         errorToFile('[UnityClient] Connection ended by server');
         this._connected = false;
-        this.connectionManager.startPolling(() => this.connect());
+        this.handleConnectionLoss();
       });
 
       // Handle incoming data (both notifications and responses)
@@ -245,9 +253,9 @@ export class UnityClient {
   /**
    * Get command details from Unity
    */
-  async getCommandDetails(includeDevelopmentOnly: boolean = false): Promise<
-    Array<{ name: string; description: string; parameterSchema?: any }>
-  > {
+  async getCommandDetails(
+    includeDevelopmentOnly: boolean = false,
+  ): Promise<Array<{ name: string; description: string; parameterSchema?: any }>> {
     await this.ensureConnected();
 
     const request = {
@@ -392,6 +400,19 @@ export class UnityClient {
       this.socket = null;
     }
     this._connected = false;
+  }
+
+  /**
+   * Handle connection loss by delegating to UnityDiscovery
+   */
+  private handleConnectionLoss(): void {
+    // Trigger ConnectionManager callback for backward compatibility
+    this.connectionManager.triggerConnectionLost();
+
+    // Delegate to UnityDiscovery for unified connection management
+    if (this.unityDiscovery && this.unityDiscovery.handleConnectionLost) {
+      this.unityDiscovery.handleConnectionLost();
+    }
   }
 
   /**

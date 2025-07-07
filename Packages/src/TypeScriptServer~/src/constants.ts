@@ -108,7 +108,7 @@ export const ERROR_MESSAGES = {
 
 // Polling configuration
 export const POLLING = {
-  INTERVAL_MS: 3000,
+  INTERVAL_MS: 1000, // Reduced from 3000ms to 1000ms for better responsiveness
   BUFFER_SECONDS: 15, // Increased for safer Unity startup timing
 } as const;
 
