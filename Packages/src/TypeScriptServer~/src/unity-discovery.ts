@@ -7,6 +7,13 @@ import { UnityClient } from './unity-client.js';
  * Unity Discovery Service with Unified Connection Management
  * Handles both Unity discovery and connection polling in a single timer
  * to prevent multiple concurrent timers and improve stability.
+ *
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ *
+ * Related classes:
+ * - UnityClient: TCP client that this service manages discovery for
+ * - UnityConnectionManager: Higher-level connection manager that uses this service
+ * - UnityMcpServer: Main server that initiates discovery
  */
 export class UnityDiscovery {
   private discoveryInterval: NodeJS.Timeout | null = null;

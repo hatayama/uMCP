@@ -6,6 +6,10 @@
  *
  * Related files:
  * - server.ts: Main server that uses these constants
+ * - unity-connection-manager.ts: Uses connection and polling constants
+ * - unity-tool-manager.ts: Uses timeout and configuration constants
+ * - mcp-client-compatibility.ts: Uses client compatibility constants
+ * - unity-event-handler.ts: Uses environment constants
  * - unity-client.ts: Unity TCP client that uses connection constants
  * - tools/*-tool.ts: Tool implementations that use timeout and configuration constants
  *
@@ -16,6 +20,7 @@
  * - JSON-RPC protocol constants
  * - Tool-specific timeouts and configurations
  * - Error messages and logging configuration
+ * - Client compatibility definitions
  */
 
 // MCP Protocol Constants

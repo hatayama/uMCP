@@ -1,6 +1,17 @@
 /**
  * File-based Logger for MCP Server
  *
+ * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ *
+ * Related classes:
+ * - All server classes use this utility for safe logging
+ * - UnityMcpServer: Uses for main server logging
+ * - UnityClient: Uses for connection and communication logging
+ * - UnityConnectionManager: Uses for connection management logging
+ * - UnityToolManager: Uses for tool lifecycle logging
+ * - McpClientCompatibility: Uses for client compatibility logging
+ * - UnityEventHandler: Uses for event and shutdown logging
+ *
  * Why file output?
  * MCP (Model Context Protocol) servers communicate with clients via JSON-RPC over stdout/stdin.
  * This means we CANNOT use console.log() or any stdout output for debugging, as it would
