@@ -136,6 +136,15 @@ coverage/
 # ESLint cache
 .eslintcache
 
+# セキュリティスキャン結果
+security-results.sarif
+*.sarif
+*security-results*
+
+# ESLint結果
+eslint-results.json
+eslint-results.xml
+
 # Optional npm cache directory
 .npm
 

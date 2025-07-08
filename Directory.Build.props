@@ -1,0 +1,26 @@
+<Project>
+  <!-- Global properties for all projects -->
+  <PropertyGroup>
+    <!-- Security Code Scan -->
+    <EnableSecurityCodeScan>true</EnableSecurityCodeScan>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Security Code Scan Analyzer -->
+  <ItemGroup>
+    <PackageReference Include="SecurityCodeScan.VS2019" Version="5.6.7" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Security rules configuration -->
+  <PropertyGroup>
+    <!-- Enable specific security rules -->
+    <WarningsAsErrors>$(WarningsAsErrors);SCS0001;SCS0002;SCS0003;SCS0004;SCS0005</WarningsAsErrors>
+    <!-- SCS0001: SQL Injection -->
+    <!-- SCS0002: XPath Injection -->  
+    <!-- SCS0003: XSS -->
+    <!-- SCS0004: Certificate Validation Disabled -->
+    <!-- SCS0005: Weak random number generator -->
+  </PropertyGroup>
+</Project>
