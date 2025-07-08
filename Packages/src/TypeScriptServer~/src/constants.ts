@@ -108,8 +108,8 @@ export const ERROR_MESSAGES = {
 
 // Polling configuration
 export const POLLING = {
-  INTERVAL_MS: 3000,
-  BUFFER_SECONDS: 10,
+  INTERVAL_MS: 1000, // Reduced from 3000ms to 1000ms for better responsiveness
+  BUFFER_SECONDS: 15, // Increased for safer Unity startup timing
 } as const;
 
 // Test timeouts (milliseconds)
@@ -124,3 +124,11 @@ export const LOG_MESSAGES = {
   SERVER_LOG_START_PREFIX: '=== Unity MCP Server Log Started at',
   CONNECTION_RECOVERY_POLLING: 'Starting connection recovery polling',
 } as const;
+
+// List of clients that don't support list_changed notifications
+export const LIST_CHANGED_UNSUPPORTED_CLIENTS = [
+  'claude',
+  'claude-code', 
+  'gemini',
+  'codeium',
+] as const;

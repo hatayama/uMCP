@@ -10,16 +10,17 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
-import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
-import { UnityDiscovery } from './unity-discovery.js';
+import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';\nimport { UnityDiscovery } from './unity-discovery.js';
 import {
   ENVIRONMENT,
   MCP_PROTOCOL_VERSION,
   MCP_SERVER_NAME,
   TOOLS_LIST_CHANGED_CAPABILITY,
   DEFAULT_CLIENT_NAME,
-  LIST_CHANGED_UNSUPPORTED_CLIENTS,
+  UNITY_CONNECTION,
+  POLLING,
 } from './constants.js';
+import * as net from 'net';
 import packageJson from '../package.json' assert { type: 'json' };
 
 /**
@@ -68,116 +69,15 @@ class UnityMcpServer {
       },
     );
 
-    this.unityClient = new UnityClient();
-
-    // Initialize Unity discovery service (singleton pattern prevents duplicates)
-    this.unityDiscovery = new UnityDiscovery(this.unityClient);
-    this.unityDiscovery.setOnDiscoveredCallback(async () => {
-      await this.handleUnityDiscovered();
-    });
-
-    // Setup connection lost callback for connection recovery
-    this.unityDiscovery.setOnConnectionLostCallback(() => {
-      if (this.isDevelopment) {
-        debugToFile(
-          '[Unity MCP] Connection lost detected - tools will be refreshed after reconnection',
-        );
-      }
-    });
-
-    // Set UnityDiscovery reference in UnityClient for unified connection management
-    this.unityClient.setUnityDiscovery(this.unityDiscovery);
+    this.unityClient = new UnityClient();\n\n    // Initialize Unity discovery service\n    this.unityDiscovery = new UnityDiscovery(this.unityClient);\n    this.unityDiscovery.setOnDiscoveredCallback(async (port) => {\n      await this.handleUnityDiscovered();\n    });
 
     // Setup polling callback for connection recovery
-    this.unityClient.setReconnectedCallback(async () => {
-      // Force Unity discovery for faster reconnection
-      await this.unityDiscovery.forceDiscovery();
+    this.unityClient.setReconnectedCallback(() => {
       void this.refreshDynamicToolsSafe();
     });
 
     this.setupHandlers();
     this.setupSignalHandlers();
-  }
-
-  /**
-   * Check if client doesn't support list_changed notifications
-   */
-  private isListChangedUnsupported(clientName: string): boolean {
-    if (!clientName) {
-      return false;
-    }
-
-    const normalizedName = clientName.toLowerCase();
-    return LIST_CHANGED_UNSUPPORTED_CLIENTS.some((unsupported) =>
-      normalizedName.includes(unsupported),
-    );
-  }
-
-  /**
-   * Wait for Unity connection with timeout
-   */
-  private async waitForUnityConnectionWithTimeout(timeoutMs: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error(`Unity connection timeout after ${timeoutMs}ms`));
-      }, timeoutMs);
-
-      const checkConnection = async () => {
-        if (this.unityClient.connected) {
-          clearTimeout(timeout);
-          resolve();
-          return;
-        }
-
-        // Start Unity discovery if not already running
-        this.unityDiscovery.start();
-
-        // Set up callback for when Unity is discovered
-        this.unityDiscovery.setOnDiscoveredCallback(async () => {
-          // Wait for actual connection establishment
-          await this.unityClient.ensureConnected();
-          clearTimeout(timeout);
-          resolve();
-        });
-      };
-
-      void checkConnection();
-    });
-  }
-
-  /**
-   * Get tools from Unity
-   */
-  private async getToolsFromUnity(): Promise<Tool[]> {
-    if (!this.unityClient.connected) {
-      return [];
-    }
-
-    try {
-      await this.handleClientNameInitialization();
-      const commandDetails = await this.fetchCommandDetailsFromUnity();
-
-      if (!commandDetails) {
-        return [];
-      }
-
-      this.createDynamicToolsFromCommands(commandDetails);
-
-      // Convert dynamic tools to Tool array
-      const tools: Tool[] = [];
-      for (const [toolName, dynamicTool] of this.dynamicTools) {
-        tools.push({
-          name: toolName,
-          description: dynamicTool.description,
-          inputSchema: dynamicTool.inputSchema,
-        });
-      }
-
-      return tools;
-    } catch (error) {
-      errorToFile('[Unity MCP] Failed to get tools from Unity:', error);
-      return [];
-    }
   }
 
   /**
@@ -241,10 +141,7 @@ class UnityMcpServer {
     // Get detailed command information including schemas
     // Include development-only commands if in development mode
     const params = { IncludeDevelopmentOnly: this.isDevelopment };
-    const commandDetailsResponse = await this.unityClient.executeCommand(
-      'get-command-details',
-      params,
-    );
+    const commandDetailsResponse = await this.unityClient.executeCommand('get-command-details', params);
 
     // Handle new GetCommandDetailsResponse structure
     const commandDetails =
@@ -271,8 +168,7 @@ class UnityMcpServer {
         (commandInfo as { description?: string }).description ||
         `Execute Unity command: ${commandName}`;
       const parameterSchema = (commandInfo as { parameterSchema?: unknown }).parameterSchema;
-      const displayDevelopmentOnly =
-        (commandInfo as { displayDevelopmentOnly?: boolean }).displayDevelopmentOnly || false;
+      const displayDevelopmentOnly = (commandInfo as { displayDevelopmentOnly?: boolean }).displayDevelopmentOnly || false;
 
       // Skip development-only commands in production mode
       if (displayDevelopmentOnly && !this.isDevelopment) {
@@ -333,74 +229,20 @@ class UnityMcpServer {
     // Handle initialize request to get client information
     this.server.setRequestHandler(InitializeRequestSchema, async (request) => {
       const clientInfo = request.params?.clientInfo;
-      const clientName = clientInfo?.name || '';
-
-      if (clientName) {
-        this.clientName = clientName;
+      if (clientInfo?.name) {
+        this.clientName = clientInfo.name;
         infoToFile(`[Unity MCP] Client name received: ${this.clientName}`);
       }
 
       // Initialize Unity connection after receiving client name
       if (!this.isInitialized) {
         this.isInitialized = true;
+        infoToFile(
+          `[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`,
+        );
 
-        if (this.isListChangedUnsupported(clientName)) {
-          // list_changed非対応クライアント: Unity接続を待つ
-          infoToFile(
-            `[Unity MCP] Sync initialization for list_changed unsupported client: ${clientName}`,
-          );
-
-          try {
-            await this.waitForUnityConnectionWithTimeout(10000);
-            const tools = await this.getToolsFromUnity();
-
-            infoToFile(`[Unity MCP] Returning ${tools.length} tools for ${clientName}`);
-            return {
-              protocolVersion: MCP_PROTOCOL_VERSION,
-              capabilities: {
-                tools: {
-                  listChanged: TOOLS_LIST_CHANGED_CAPABILITY,
-                },
-              },
-              serverInfo: {
-                name: MCP_SERVER_NAME,
-                version: packageJson.version,
-              },
-              tools,
-            };
-          } catch (error) {
-            errorToFile(`[Unity MCP] Unity connection timeout for ${clientName}:`, error);
-            return {
-              protocolVersion: MCP_PROTOCOL_VERSION,
-              capabilities: {
-                tools: {
-                  listChanged: TOOLS_LIST_CHANGED_CAPABILITY,
-                },
-              },
-              serverInfo: {
-                name: MCP_SERVER_NAME,
-                version: packageJson.version,
-              },
-              tools: [],
-            };
-          }
-        } else {
-          // list_changed対応クライアント: 非同期方式
-          infoToFile(
-            `[Unity MCP] Async initialization for list_changed supported client: ${clientName}`,
-          );
-
-          // Start Unity connection initialization in background
-          void this.initializeDynamicTools()
-            .then(() => {
-              infoToFile('[Unity MCP] Unity connection established successfully');
-            })
-            .catch((error) => {
-              errorToFile('[Unity MCP] Unity connection initialization failed:', error);
-              // Start Unity discovery to retry connection (singleton pattern prevents duplicates)
-              this.unityDiscovery.start();
-            });
-        }
+        await this.initializeDynamicTools();
+        infoToFile('[Unity MCP] Unity connection established successfully');
       }
 
       return {
@@ -429,6 +271,7 @@ class UnityMcpServer {
           inputSchema: dynamicTool.inputSchema,
         });
       }
+
 
       // Add test tools for notification testing
       // Commented out to reduce tool noise during development
@@ -483,6 +326,8 @@ class UnityMcpServer {
     });
   }
 
+
+
   /**
    * Start the server
    */
@@ -490,16 +335,14 @@ class UnityMcpServer {
     // Setup Unity event notification listener (will be used after Unity connection)
     this.setupUnityEventListener();
 
-    // Start Unity discovery immediately (singleton pattern prevents duplicates)
+    // Start Unity discovery immediately
     this.unityDiscovery.start();
-
-    if (this.isDevelopment) {
-      debugToFile('[Unity MCP] Server starting with unified discovery service');
-    }
 
     // Connect to MCP transport first - wait for client name before connecting to Unity
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
+
+    infoToFile('[Unity MCP] Server started, waiting for client initialization...');
   }
 
   /**
@@ -522,30 +365,6 @@ class UnityMcpServer {
         errorToFile('[Unity MCP] Failed to update dynamic tools via Unity notification:', error);
       }
     });
-  }
-
-  /**
-   * Handle Unity discovery and establish connection
-   */
-  private async handleUnityDiscovered(): Promise<void> {
-    try {
-      await this.unityClient.ensureConnected();
-
-      // If we have a client name, initialize tools immediately
-      if (this.clientName) {
-        await this.initializeDynamicTools();
-        infoToFile('[Unity MCP] Unity connection established and tools initialized');
-
-        // Send immediate tools changed notification for faster recovery
-        this.sendToolsChangedNotification();
-      } else {
-        infoToFile('[Unity MCP] Unity connection established, waiting for client name');
-      }
-
-      this.unityDiscovery.stop();
-    } catch (error) {
-      errorToFile('[Unity MCP] Failed to establish Unity connection after discovery:', error);
-    }
   }
 
   /**
@@ -639,7 +458,6 @@ class UnityMcpServer {
     try {
       // Disconnect from Unity and stop all intervals
       // BUG FIX: Ensure polling intervals are stopped to prevent hanging event loop
-      this.unityDiscovery.stop();
       if (this.unityClient) {
         this.unityClient.disconnect();
       }

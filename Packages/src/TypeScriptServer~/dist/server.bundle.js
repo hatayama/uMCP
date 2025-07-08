@@ -5514,9 +5514,17 @@ var ERROR_MESSAGES = {
   INVALID_RESPONSE: "Invalid response from Unity"
 };
 var POLLING = {
-  INTERVAL_MS: 3e3,
-  BUFFER_SECONDS: 10
+  INTERVAL_MS: 1e3,
+  // Reduced from 3000ms to 1000ms for better responsiveness
+  BUFFER_SECONDS: 15
+  // Increased for safer Unity startup timing
 };
+var LIST_CHANGED_UNSUPPORTED_CLIENTS = [
+  "claude",
+  "claude-code",
+  "gemini",
+  "codeium"
+];
 
 // src/utils/log-to-file.ts
 import * as fs from "fs";
@@ -5681,14 +5689,11 @@ var SafeTimer = class _SafeTimer {
 function safeSetTimeout(callback, delay) {
   return new SafeTimer(callback, delay, false);
 }
-function safeSetInterval(callback, delay) {
-  return new SafeTimer(callback, delay, true);
-}
 
 // src/connection-manager.ts
 var ConnectionManager = class {
-  pollingTimer = null;
   onReconnectedCallback = null;
+  onConnectionLostCallback = null;
   /**
    * Set callback for when connection is restored
    */
@@ -5696,31 +5701,46 @@ var ConnectionManager = class {
     this.onReconnectedCallback = callback;
   }
   /**
-   * Start polling for connection recovery
+   * Set callback for when connection is lost
    */
-  startPolling(connectFn) {
-    if (this.pollingTimer && this.pollingTimer.active) {
-      return;
-    }
-    this.pollingTimer = safeSetInterval(async () => {
-      try {
-        await connectFn();
-        this.stopPolling();
-        if (this.onReconnectedCallback) {
-          this.onReconnectedCallback();
-        }
-      } catch (error) {
-      }
-    }, POLLING.INTERVAL_MS);
+  setConnectionLostCallback(callback) {
+    this.onConnectionLostCallback = callback;
   }
   /**
-   * Stop polling
+   * Trigger reconnection callback
+   */
+  triggerReconnected() {
+    if (this.onReconnectedCallback) {
+      try {
+        this.onReconnectedCallback();
+      } catch (error) {
+        errorToFile("[ConnectionManager] Error in reconnection callback:", error);
+      }
+    }
+  }
+  /**
+   * Trigger connection lost callback
+   */
+  triggerConnectionLost() {
+    if (this.onConnectionLostCallback) {
+      try {
+        this.onConnectionLostCallback();
+      } catch (error) {
+        errorToFile("[ConnectionManager] Error in connection lost callback:", error);
+      }
+    }
+  }
+  /**
+   * Legacy method for backward compatibility - now does nothing
+   * @deprecated Use UnityDiscovery for connection polling instead
+   */
+  startPolling(_connectFn) {
+  }
+  /**
+   * Legacy method for backward compatibility - now does nothing
+   * @deprecated Polling is now handled by UnityDiscovery
    */
   stopPolling() {
-    if (this.pollingTimer) {
-      this.pollingTimer.stop();
-      this.pollingTimer = null;
-    }
   }
 };
 
@@ -5827,8 +5847,22 @@ var UnityClient = class {
   reconnectHandlers = /* @__PURE__ */ new Set();
   connectionManager = new ConnectionManager();
   messageHandler = new MessageHandler();
+  unityDiscovery = null;
+  // Reference to UnityDiscovery for connection loss handling
   constructor() {
     this.port = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
+  }
+  /**
+   * Update Unity connection port (for discovery)
+   */
+  updatePort(newPort) {
+    this.port = newPort;
+  }
+  /**
+   * Set Unity Discovery reference for connection loss handling
+   */
+  setUnityDiscovery(unityDiscovery) {
+    this.unityDiscovery = unityDiscovery;
   }
   get connected() {
     return this._connected && this.socket !== null && !this.socket.destroyed;
@@ -5905,17 +5939,17 @@ var UnityClient = class {
           reject(new Error(`Unity connection failed: ${error.message}`));
         } else {
           errorToFile("[UnityClient] Connection error:", error);
-          this.connectionManager.startPolling(() => this.connect());
+          this.handleConnectionLoss();
         }
       });
       this.socket.on("close", () => {
         this._connected = false;
-        this.connectionManager.startPolling(() => this.connect());
+        this.handleConnectionLoss();
       });
       this.socket.on("end", () => {
         errorToFile("[UnityClient] Connection ended by server");
         this._connected = false;
-        this.connectionManager.startPolling(() => this.connect());
+        this.handleConnectionLoss();
       });
       this.socket.on("data", (data) => {
         this.messageHandler.handleIncomingData(data.toString());
@@ -6101,6 +6135,15 @@ var UnityClient = class {
     this._connected = false;
   }
   /**
+   * Handle connection loss by delegating to UnityDiscovery
+   */
+  handleConnectionLoss() {
+    this.connectionManager.triggerConnectionLost();
+    if (this.unityDiscovery && this.unityDiscovery.handleConnectionLost) {
+      this.unityDiscovery.handleConnectionLost();
+    }
+  }
+  /**
    * Set callback for when connection is restored
    */
   setReconnectedCallback(callback) {
@@ -6266,6 +6309,244 @@ var DynamicUnityCommandTool = class extends BaseTool {
   }
 };
 
+// src/unity-discovery.ts
+import * as net2 from "net";
+var UnityDiscovery = class _UnityDiscovery {
+  discoveryInterval = null;
+  unityClient;
+  onDiscoveredCallback = null;
+  onConnectionLostCallback = null;
+  isDiscovering = false;
+  isDevelopment = false;
+  // Singleton pattern to prevent multiple instances
+  static instance = null;
+  static activeTimerCount = 0;
+  // Track active timers for debugging
+  constructor(unityClient) {
+    this.unityClient = unityClient;
+    this.isDevelopment = process.env.NODE_ENV === "development";
+    if (_UnityDiscovery.instance) {
+      if (this.isDevelopment) {
+        debugToFile(
+          "[UnityDiscovery] WARNING: Multiple instances detected. Using singleton pattern."
+        );
+        debugToFile(`[UnityDiscovery] Active timer count: ${_UnityDiscovery.activeTimerCount}`);
+      }
+      return _UnityDiscovery.instance;
+    }
+    _UnityDiscovery.instance = this;
+  }
+  /**
+   * Set callback for when Unity is discovered
+   */
+  setOnDiscoveredCallback(callback) {
+    this.onDiscoveredCallback = callback;
+  }
+  /**
+   * Set callback for when connection is lost
+   */
+  setOnConnectionLostCallback(callback) {
+    this.onConnectionLostCallback = callback;
+  }
+  /**
+   * Start Unity discovery polling with unified connection management
+   */
+  start() {
+    if (this.discoveryInterval) {
+      if (this.isDevelopment) {
+        debugToFile("[UnityDiscovery] Timer already running - skipping duplicate start");
+      }
+      return;
+    }
+    if (this.isDiscovering) {
+      if (this.isDevelopment) {
+        debugToFile("[UnityDiscovery] Discovery already in progress - skipping start");
+      }
+      return;
+    }
+    infoToFile("[Unity Discovery] Starting unified discovery and connection management...");
+    void this.unifiedDiscoveryAndConnectionCheck();
+    this.discoveryInterval = setInterval(() => {
+      void this.unifiedDiscoveryAndConnectionCheck();
+    }, POLLING.INTERVAL_MS);
+    _UnityDiscovery.activeTimerCount++;
+    if (this.isDevelopment) {
+      debugToFile(`[UnityDiscovery] Timer started with ${POLLING.INTERVAL_MS}ms interval`);
+      debugToFile(`[UnityDiscovery] Active timer count: ${_UnityDiscovery.activeTimerCount}`);
+      this.logTimerStatus();
+    }
+  }
+  /**
+   * Stop Unity discovery polling
+   */
+  stop() {
+    if (this.discoveryInterval) {
+      clearInterval(this.discoveryInterval);
+      this.discoveryInterval = null;
+      this.isDiscovering = false;
+      _UnityDiscovery.activeTimerCount = Math.max(0, _UnityDiscovery.activeTimerCount - 1);
+      infoToFile("[Unity Discovery] Unity discovery and connection management stopped");
+      if (this.isDevelopment) {
+        debugToFile("[UnityDiscovery] Timer stopped and cleanup completed");
+        debugToFile(`[UnityDiscovery] Active timer count: ${_UnityDiscovery.activeTimerCount}`);
+        this.logTimerStatus();
+      }
+    }
+  }
+  /**
+   * Unified discovery and connection checking
+   * Handles both Unity discovery and connection health monitoring
+   */
+  async unifiedDiscoveryAndConnectionCheck() {
+    if (this.isDiscovering) {
+      if (this.isDevelopment) {
+        debugToFile("[UnityDiscovery] Discovery already in progress - skipping");
+      }
+      return;
+    }
+    this.isDiscovering = true;
+    try {
+      if (this.unityClient.connected) {
+        const isConnectionHealthy = await this.checkConnectionHealth();
+        if (isConnectionHealthy) {
+          this.stop();
+          return;
+        } else {
+          if (this.isDevelopment) {
+            debugToFile("[UnityDiscovery] Connection lost - resuming discovery");
+          }
+          if (this.onConnectionLostCallback) {
+            this.onConnectionLostCallback();
+          }
+        }
+      }
+      await this.discoverUnityOnPorts();
+    } finally {
+      this.isDiscovering = false;
+    }
+  }
+  /**
+   * Check if the current connection is healthy
+   */
+  async checkConnectionHealth() {
+    try {
+      return await this.unityClient.testConnection();
+    } catch (error) {
+      return false;
+    }
+  }
+  /**
+   * Discover Unity by checking default port range
+   */
+  async discoverUnityOnPorts() {
+    const basePort = parseInt(process.env.UNITY_TCP_PORT || UNITY_CONNECTION.DEFAULT_PORT, 10);
+    const portRange = [
+      basePort,
+      basePort + 100,
+      basePort + 200,
+      basePort + 300,
+      basePort + 400,
+      basePort - 100
+      // Also check lower ports
+    ];
+    for (const port of portRange) {
+      try {
+        if (await this.isUnityAvailable(port)) {
+          infoToFile(`[Unity Discovery] Unity discovered on port ${port}`);
+          this.unityClient.updatePort(port);
+          if (this.onDiscoveredCallback) {
+            await this.onDiscoveredCallback(port);
+          }
+          return;
+        }
+      } catch (error) {
+      }
+    }
+  }
+  /**
+   * Force immediate Unity discovery for connection recovery
+   */
+  async forceDiscovery() {
+    if (this.unityClient.connected) {
+      return true;
+    }
+    infoToFile("[Unity Discovery] Force discovery initiated");
+    await this.unifiedDiscoveryAndConnectionCheck();
+    return this.unityClient.connected;
+  }
+  /**
+   * Handle connection lost event (called by UnityClient)
+   */
+  handleConnectionLost() {
+    if (this.isDevelopment) {
+      debugToFile("[UnityDiscovery] Connection lost event received - restarting discovery");
+    }
+    if (!this.discoveryInterval) {
+      this.start();
+    }
+    if (this.onConnectionLostCallback) {
+      this.onConnectionLostCallback();
+    }
+  }
+  /**
+   * Check if Unity is available on specific port
+   */
+  async isUnityAvailable(port) {
+    return new Promise((resolve) => {
+      const socket = new net2.Socket();
+      const timeout = 500;
+      const timer = setTimeout(() => {
+        socket.destroy();
+        resolve(false);
+      }, timeout);
+      socket.connect(port, UNITY_CONNECTION.DEFAULT_HOST, () => {
+        clearTimeout(timer);
+        socket.destroy();
+        resolve(true);
+      });
+      socket.on("error", () => {
+        clearTimeout(timer);
+        resolve(false);
+      });
+    });
+  }
+  /**
+   * Log current timer status for debugging (development mode only)
+   */
+  logTimerStatus() {
+    if (!this.isDevelopment) {
+      return;
+    }
+    const status = {
+      isTimerActive: this.discoveryInterval !== null,
+      isDiscovering: this.isDiscovering,
+      activeTimerCount: _UnityDiscovery.activeTimerCount,
+      isConnected: this.unityClient.connected,
+      intervalMs: POLLING.INTERVAL_MS,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    debugToFile("[UnityDiscovery] Timer Status:", status);
+    if (_UnityDiscovery.activeTimerCount > 1) {
+      errorToFile(
+        `[UnityDiscovery] WARNING: Multiple timers detected! Count: ${_UnityDiscovery.activeTimerCount}`
+      );
+    }
+  }
+  /**
+   * Get debugging information about current timer state
+   */
+  getDebugInfo() {
+    return {
+      isTimerActive: this.discoveryInterval !== null,
+      isDiscovering: this.isDiscovering,
+      activeTimerCount: _UnityDiscovery.activeTimerCount,
+      isConnected: this.unityClient.connected,
+      intervalMs: POLLING.INTERVAL_MS,
+      hasSingleton: _UnityDiscovery.instance !== null
+    };
+  }
+};
+
 // package.json
 var package_default = {
   name: "umcp-server",
@@ -6353,6 +6634,8 @@ var UnityMcpServer = class {
   isRefreshing = false;
   clientName = DEFAULT_CLIENT_NAME;
   isInitialized = false;
+  isNotifying = false;
+  unityDiscovery;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     infoToFile("Unity MCP Server Starting");
@@ -6372,11 +6655,88 @@ var UnityMcpServer = class {
       }
     );
     this.unityClient = new UnityClient();
-    this.unityClient.setReconnectedCallback(() => {
+    this.unityDiscovery = new UnityDiscovery(this.unityClient);
+    this.unityDiscovery.setOnDiscoveredCallback(async () => {
+      await this.handleUnityDiscovered();
+    });
+    this.unityDiscovery.setOnConnectionLostCallback(() => {
+      if (this.isDevelopment) {
+        debugToFile(
+          "[Unity MCP] Connection lost detected - tools will be refreshed after reconnection"
+        );
+      }
+    });
+    this.unityClient.setUnityDiscovery(this.unityDiscovery);
+    this.unityClient.setReconnectedCallback(async () => {
+      await this.unityDiscovery.forceDiscovery();
       void this.refreshDynamicToolsSafe();
     });
     this.setupHandlers();
     this.setupSignalHandlers();
+  }
+  /**
+   * Check if client doesn't support list_changed notifications
+   */
+  isListChangedUnsupported(clientName) {
+    if (!clientName) {
+      return false;
+    }
+    const normalizedName = clientName.toLowerCase();
+    return LIST_CHANGED_UNSUPPORTED_CLIENTS.some(
+      (unsupported) => normalizedName.includes(unsupported)
+    );
+  }
+  /**
+   * Wait for Unity connection with timeout
+   */
+  async waitForUnityConnectionWithTimeout(timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Unity connection timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+      const checkConnection = async () => {
+        if (this.unityClient.connected) {
+          clearTimeout(timeout);
+          resolve();
+          return;
+        }
+        this.unityDiscovery.start();
+        this.unityDiscovery.setOnDiscoveredCallback(async () => {
+          await this.unityClient.ensureConnected();
+          clearTimeout(timeout);
+          resolve();
+        });
+      };
+      void checkConnection();
+    });
+  }
+  /**
+   * Get tools from Unity
+   */
+  async getToolsFromUnity() {
+    if (!this.unityClient.connected) {
+      return [];
+    }
+    try {
+      await this.handleClientNameInitialization();
+      const commandDetails = await this.fetchCommandDetailsFromUnity();
+      if (!commandDetails) {
+        return [];
+      }
+      this.createDynamicToolsFromCommands(commandDetails);
+      const tools = [];
+      for (const [toolName, dynamicTool] of this.dynamicTools) {
+        tools.push({
+          name: toolName,
+          description: dynamicTool.description,
+          inputSchema: dynamicTool.inputSchema
+        });
+      }
+      return tools;
+    } catch (error) {
+      errorToFile("[Unity MCP] Failed to get tools from Unity:", error);
+      return [];
+    }
   }
   /**
    * Initialize dynamic Unity command tools
@@ -6421,7 +6781,10 @@ var UnityMcpServer = class {
    */
   async fetchCommandDetailsFromUnity() {
     const params = { IncludeDevelopmentOnly: this.isDevelopment };
-    const commandDetailsResponse = await this.unityClient.executeCommand("get-command-details", params);
+    const commandDetailsResponse = await this.unityClient.executeCommand(
+      "get-command-details",
+      params
+    );
     const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
     if (!Array.isArray(commandDetails)) {
       errorToFile("[Unity MCP] Invalid command details response:", commandDetailsResponse);
@@ -6488,17 +6851,61 @@ var UnityMcpServer = class {
   setupHandlers() {
     this.server.setRequestHandler(InitializeRequestSchema, async (request) => {
       const clientInfo = request.params?.clientInfo;
-      if (clientInfo?.name) {
-        this.clientName = clientInfo.name;
+      const clientName = clientInfo?.name || "";
+      if (clientName) {
+        this.clientName = clientName;
         infoToFile(`[Unity MCP] Client name received: ${this.clientName}`);
       }
       if (!this.isInitialized) {
         this.isInitialized = true;
-        infoToFile(
-          `[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`
-        );
-        await this.initializeDynamicTools();
-        infoToFile("[Unity MCP] Unity connection established successfully");
+        if (this.isListChangedUnsupported(clientName)) {
+          infoToFile(
+            `[Unity MCP] Sync initialization for list_changed unsupported client: ${clientName}`
+          );
+          try {
+            await this.waitForUnityConnectionWithTimeout(1e4);
+            const tools = await this.getToolsFromUnity();
+            infoToFile(`[Unity MCP] Returning ${tools.length} tools for ${clientName}`);
+            return {
+              protocolVersion: MCP_PROTOCOL_VERSION,
+              capabilities: {
+                tools: {
+                  listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+                }
+              },
+              serverInfo: {
+                name: MCP_SERVER_NAME,
+                version: package_default.version
+              },
+              tools
+            };
+          } catch (error) {
+            errorToFile(`[Unity MCP] Unity connection timeout for ${clientName}:`, error);
+            return {
+              protocolVersion: MCP_PROTOCOL_VERSION,
+              capabilities: {
+                tools: {
+                  listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+                }
+              },
+              serverInfo: {
+                name: MCP_SERVER_NAME,
+                version: package_default.version
+              },
+              tools: []
+            };
+          }
+        } else {
+          infoToFile(
+            `[Unity MCP] Async initialization for list_changed supported client: ${clientName}`
+          );
+          void this.initializeDynamicTools().then(() => {
+            infoToFile("[Unity MCP] Unity connection established successfully");
+          }).catch((error) => {
+            errorToFile("[Unity MCP] Unity connection initialization failed:", error);
+            this.unityDiscovery.start();
+          });
+        }
       }
       return {
         protocolVersion: MCP_PROTOCOL_VERSION,
@@ -6552,9 +6959,12 @@ var UnityMcpServer = class {
    */
   async start() {
     this.setupUnityEventListener();
+    this.unityDiscovery.start();
+    if (this.isDevelopment) {
+      debugToFile("[Unity MCP] Server starting with unified discovery service");
+    }
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    infoToFile("[Unity MCP] Server started, waiting for client initialization...");
   }
   /**
    * Setup Unity event listener for automatic tool updates
@@ -6576,16 +6986,46 @@ var UnityMcpServer = class {
     });
   }
   /**
-   * Send tools changed notification
+   * Handle Unity discovery and establish connection
+   */
+  async handleUnityDiscovered() {
+    try {
+      await this.unityClient.ensureConnected();
+      if (this.clientName) {
+        await this.initializeDynamicTools();
+        infoToFile("[Unity MCP] Unity connection established and tools initialized");
+        this.sendToolsChangedNotification();
+      } else {
+        infoToFile("[Unity MCP] Unity connection established, waiting for client name");
+      }
+      this.unityDiscovery.stop();
+    } catch (error) {
+      errorToFile("[Unity MCP] Failed to establish Unity connection after discovery:", error);
+    }
+  }
+  /**
+   * Send tools changed notification (with duplicate prevention)
    */
   sendToolsChangedNotification() {
+    if (this.isNotifying) {
+      if (this.isDevelopment) {
+        debugToFile("[TRACE] sendToolsChangedNotification skipped: already notifying");
+      }
+      return;
+    }
+    this.isNotifying = true;
     try {
       this.server.notification({
         method: "notifications/tools/list_changed",
         params: {}
       });
+      if (this.isDevelopment) {
+        debugToFile("[TRACE] tools/list_changed notification sent");
+      }
     } catch (error) {
       errorToFile("[Unity MCP] Failed to send tools changed notification:", error);
+    } finally {
+      this.isNotifying = false;
     }
   }
   /**
@@ -6632,6 +7072,7 @@ var UnityMcpServer = class {
     this.isShuttingDown = true;
     infoToFile("[Unity MCP] Starting graceful shutdown...");
     try {
+      this.unityDiscovery.stop();
       if (this.unityClient) {
         this.unityClient.disconnect();
       }
