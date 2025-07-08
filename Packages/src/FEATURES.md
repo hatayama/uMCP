@@ -4,7 +4,7 @@
 
 This document provides detailed information about all Unity MCP (Model Context Protocol) commands and features.
 
-## 📋 Common Parameters & Response Format
+## Common Parameters & Response Format
 
 All Unity MCP commands share the following common elements:
 
@@ -19,7 +19,7 @@ All commands automatically include the following timing information:
 
 ---
 
-## 🛠️ Unity Core Commands
+## Unity Core Commands
 
 ### 1. compile
 - **Description**: Executes compilation after AssetDatabase.Refresh(). Returns compilation results with detailed timing information.
@@ -107,26 +107,22 @@ All commands automatically include the following timing information:
   - `MaxResults` (number): Maximum number of results to return (default: 20)
   - `IncludeInheritedProperties` (boolean): Whether to include inherited properties (default: false)
 - **Response**: 
-  - `Success` (boolean): Whether the search was successful
-  - `GameObjects` (array): Array of found GameObjects
-    - `Name` (string): GameObject name
-    - `Path` (string): Full hierarchy path
-    - `InstanceId` (number): Unity instance ID
-    - `IsActive` (boolean): Whether the GameObject is active
-    - `Tag` (string): GameObject tag
-    - `Layer` (number): GameObject layer
-    - `LayerName` (string): GameObject layer name
-    - `Components` (array): Array of components on the GameObject
+  - `results` (array): Array of found GameObjects
+    - `name` (string): GameObject name
+    - `path` (string): Full hierarchy path
+    - `isActive` (boolean): Whether the GameObject is active
+    - `tag` (string): GameObject tag
+    - `layer` (number): GameObject layer
+    - `components` (array): Array of components on the GameObject
       - `TypeName` (string): Component type name
       - `AssemblyQualifiedName` (string): Full assembly qualified name
       - `Properties` (object): Component properties (if IncludeInheritedProperties is true)
-  - `TotalCount` (number): Total number of GameObjects found
-  - `Message` (string): Search operation message
-  - `ErrorMessage` (string): Error message if search failed
+  - `totalFound` (number): Total number of GameObjects found
+  - `errorMessage` (string): Error message if search failed
 
 ---
 
-## 🔍 Unity Search & Discovery Commands
+## Unity Search & Discovery Commands
 
 ### 6. unity-search
 - **Description**: Search Unity project using Unity Search API with comprehensive filtering and export options
@@ -159,7 +155,7 @@ All commands automatically include the following timing information:
   - `SavedFileFormat` (string): File format of saved results
   - `SaveToFileReason` (string): Reason why results were saved to file
 
-### 6. get-hierarchy
+### 7. get-hierarchy
 - **Description**: Get Unity Hierarchy structure in AI-friendly format
 - **Parameters**: 
   - `IncludeInactive` (boolean): Whether to include inactive GameObjects (default: true)
@@ -183,7 +179,7 @@ All commands automatically include the following timing information:
   - `Message` (string): Operation message
   - `ErrorMessage` (string): Error message if operation failed
 
-### 7. get-provider-details
+### 8. get-provider-details
 - **Description**: Get detailed information about Unity Search providers including display names, descriptions, active status, and capabilities
 - **Parameters**: 
   - `ProviderId` (string): Specific provider ID to get details for (empty = all providers) (default: "")
@@ -201,7 +197,7 @@ All commands automatically include the following timing information:
   - `AppliedFilter` (string): Filter applied (specific provider ID or "all")
   - `SortedByPriority` (boolean): Whether results are sorted by priority
 
-### 8. get-menu-items
+### 9. get-menu-items
 - **Description**: Retrieve Unity MenuItems with detailed metadata for programmatic execution. Unlike Unity Search menu provider, this provides implementation details (method names, assemblies, execution compatibility) needed for automation and debugging
 - **Parameters**: 
   - `FilterText` (string): Text to filter MenuItem paths (empty for all items) (default: "")
@@ -210,12 +206,18 @@ All commands automatically include the following timing information:
   - `MaxCount` (number): Maximum number of menu items to retrieve (default: 200)
 - **Response**: 
   - `MenuItems` (array): List of discovered MenuItems matching the filter criteria
+    - `Path` (string): MenuItem path
+    - `MethodName` (string): Execution method name
+    - `TypeName` (string): Implementation class name
+    - `AssemblyName` (string): Assembly name
+    - `Priority` (number): Menu item priority
+    - `IsValidateFunction` (boolean): Whether it's a validation function
   - `TotalCount` (number): Total number of MenuItems discovered before filtering
   - `FilteredCount` (number): Number of MenuItems returned after filtering
   - `AppliedFilter` (string): The filter text that was applied
   - `AppliedFilterType` (string): The filter type that was applied
 
-### 9. execute-menu-item
+### 10. execute-menu-item
 - **Description**: Execute Unity MenuItem by path
 - **Parameters**: 
   - `MenuItemPath` (string): The menu item path to execute (e.g., "GameObject/Create Empty") (default: "")
@@ -230,7 +232,7 @@ All commands automatically include the following timing information:
 
 ---
 
-## ⚡ Advanced Features
+## Advanced Features
 
 ### Type-Safe Parameter System
 - All commands use strongly typed parameter schemas with automatic validation
@@ -263,7 +265,7 @@ All commands automatically include the following timing information:
 
 ---
 
-## 📚 Related Documentation
+## Related Documentation
 
 - [Main README](README_ja.md) - Project overview and setup
 - [Architecture Documentation](Editor/ARCHITECTURE.md) - Technical architecture details

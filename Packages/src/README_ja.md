@@ -18,7 +18,14 @@
 AIによるコーディング時、Unityをコンパイルさせたり、logを取得する部分は人間がやる必要があります。それを可能な限り少なくするというコンセプトで作られました。
 uMCPを使えば、AIが人間の操作に頼らず、可能な限り長時間自走するようになります。
 
-### 主要機能
+# ツールwindow
+<img width="300" alt="uMCP-window" src="https://github.com/user-attachments/assets/a71b8f80-f77a-4ef6-8779-5a09b6fdeea6" />
+
+ - サーバーの状態を管理・モニターします
+ - LLMツールの接続状況を把握できます
+ - LLMツールの設定ボタンを押すことで、簡単にツールとの接続が可能です
+
+# 主要機能
 #### 1. compile - コンパイルの実行
 AssetDatabase.Refresh()をした後、コンパイルします。内蔵のLinterでは発見できないエラー・警告を見つける事ができます。  
 差分コンパイルと強制全体コンパイルを選択できます。
@@ -273,6 +280,18 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 ```
 
 [カスタムコマンドのサンプル](/Assets/Editor/CustomCommandSamples)も参考にして下さい。
+
+## WindowsでClaude Codeを使う際、WSL2の対応
+WSL2のミラーモードを有効化します。`C:/Users/[username]/.wslconfig` に、下記を記述します。
+```
+[wsl2]
+networkingMode=mirrored
+```
+その後、下記コマンドを実行して設定を反映させます。
+```bash
+wsl --shutdown
+wsl
+```
 
 ## ライセンス
 MIT License

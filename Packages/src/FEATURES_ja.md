@@ -4,7 +4,7 @@
 
 このドキュメントでは、Unity MCP（Model Context Protocol）の全コマンドと機能について詳細に説明します。
 
-## 📋 共通パラメータ・レスポンス形式
+## 共通パラメータ・レスポンス形式
 
 すべてのUnity MCPコマンドは以下の共通要素を持ちます：
 
@@ -19,7 +19,7 @@
 
 ---
 
-## 🛠️ Unity コアコマンド
+## Unity コアコマンド
 
 ### 1. compile
 - **説明**: AssetDatabase.Refresh()を実行後、コンパイルを行います。詳細なタイミング情報付きでコンパイル結果を返します。
@@ -107,26 +107,22 @@
   - `MaxResults` (number): 返す結果の最大数（デフォルト: 20）
   - `IncludeInheritedProperties` (boolean): 継承プロパティを含めるかどうか（デフォルト: false）
 - **レスポンス**: 
-  - `Success` (boolean): 検索が成功したかどうか
-  - `GameObjects` (array): 見つかったGameObjectの配列
-    - `Name` (string): GameObject名
-    - `Path` (string): 完全な階層パス
-    - `InstanceId` (number): UnityインスタンスID
-    - `IsActive` (boolean): GameObjectがアクティブかどうか
-    - `Tag` (string): GameObjectタグ
-    - `Layer` (number): GameObjectレイヤー
-    - `LayerName` (string): GameObjectレイヤー名
-    - `Components` (array): GameObject上のコンポーネントの配列
+  - `results` (array): 見つかったGameObjectの配列
+    - `name` (string): GameObject名
+    - `path` (string): 完全な階層パス
+    - `isActive` (boolean): GameObjectがアクティブかどうか
+    - `tag` (string): GameObjectタグ
+    - `layer` (number): GameObjectレイヤー
+    - `components` (array): GameObject上のコンポーネントの配列
       - `TypeName` (string): コンポーネントタイプ名
       - `AssemblyQualifiedName` (string): 完全なアセンブリ修飾名
       - `Properties` (object): コンポーネントプロパティ（IncludeInheritedPropertiesがtrueの場合）
-  - `TotalCount` (number): 見つかったGameObjectの総数
-  - `Message` (string): 検索操作メッセージ
-  - `ErrorMessage` (string): 検索が失敗した場合のエラーメッセージ
+  - `totalFound` (number): 見つかったGameObjectの総数
+  - `errorMessage` (string): 検索が失敗した場合のエラーメッセージ
 
 ---
 
-## 🔍 Unity 検索・発見コマンド
+## Unity 検索・発見コマンド
 
 ### 6. unity-search
 - **説明**: Unity Search APIを使用してUnityプロジェクトを検索し、包括的なフィルタリングとエクスポートオプションを提供します
@@ -160,7 +156,7 @@
   - `SavedFileFormat` (string): 保存された結果のファイル形式
   - `SaveToFileReason` (string): 結果がファイルに保存された理由
 
-### 6. get-hierarchy
+### 7. get-hierarchy
 - **説明**: Unity階層構造をAIフレンドリーな形式で取得します
 - **パラメータ**: 
   - `IncludeInactive` (boolean): 非アクティブなGameObjectを含めるかどうか（デフォルト: true）
@@ -184,7 +180,7 @@
   - `Message` (string): 操作メッセージ
   - `ErrorMessage` (string): 操作が失敗した場合のエラーメッセージ
 
-### 7. get-provider-details
+### 8. get-provider-details
 - **説明**: 表示名、説明、アクティブ状態、機能を含むUnity Searchプロバイダーの詳細情報を取得します
 - **パラメータ**: 
   - `ProviderId` (string): 詳細を取得する特定のプロバイダーID（空 = すべてのプロバイダー）（デフォルト: ""）
@@ -202,7 +198,7 @@
   - `AppliedFilter` (string): 適用されたフィルタ（特定のプロバイダーIDまたは"all"）
   - `SortedByPriority` (boolean): 結果が優先度でソートされているかどうか
 
-### 8. get-menu-items
+### 9. get-menu-items
 - **説明**: プログラム実行のための詳細なメタデータ付きでUnity MenuItemsを取得します。Unity Searchのメニュープロバイダーとは異なり、自動化とデバッグに必要な実装詳細（メソッド名、アセンブリ、実行互換性）を提供します
 - **パラメータ**: 
   - `FilterText` (string): MenuItemパスをフィルタするテキスト（すべてのアイテムの場合は空）（デフォルト: ""）
@@ -211,12 +207,18 @@
   - `MaxCount` (number): 取得するメニューアイテムの最大数（デフォルト: 200）
 - **レスポンス**: 
   - `MenuItems` (array): フィルタ条件に一致する発見されたMenuItemsのリスト
+    - `Path` (string): MenuItemパス
+    - `MethodName` (string): 実行メソッド名
+    - `TypeName` (string): 実装クラス名
+    - `AssemblyName` (string): アセンブリ名
+    - `Priority` (number): メニューアイテムの優先度
+    - `IsValidateFunction` (boolean): 検証関数かどうか
   - `TotalCount` (number): フィルタリング前に発見されたMenuItemsの総数
   - `FilteredCount` (number): フィルタリング後に返されたMenuItemsの数
   - `AppliedFilter` (string): 適用されたフィルタテキスト
   - `AppliedFilterType` (string): 適用されたフィルタタイプ
 
-### 9. execute-menu-item
+### 10. execute-menu-item
 - **説明**: パスによってUnity MenuItemを実行します
 - **パラメータ**: 
   - `MenuItemPath` (string): 実行するメニューアイテムパス（例: "GameObject/Create Empty"）（デフォルト: ""）
@@ -231,40 +233,7 @@
 
 ---
 
-## ⚡ 高度な機能
-
-### 型安全パラメータシステム
-- すべてのコマンドは自動検証付きの強く型付けされたパラメータスキーマを使用
-- Enumパラメータにより、より良いユーザー体験のための事前定義された値オプションを提供
-- オプションパラメータにはデフォルト値が自動的に適用
-- 包括的なパラメータ説明により適切な使用方法をガイド
-
-### BaseCommandResponseシステム
-- **自動タイミング測定**: すべてのコマンドが実行時間を自動測定・報告
-- **一貫したレスポンス形式**: すべてのレスポンスに標準化されたタイミング情報を含む
-- **ローカル時間表示**: より良い可読性のためタイムスタンプをローカル時間に変換
-- **パフォーマンス監視**: 実行時間によりパフォーマンスボトルネックの特定を支援
-
-### 動的タイムアウト設定
-- **コマンド別タイムアウト**: 各コマンドは`TimeoutSeconds`パラメータによる個別タイムアウト設定をサポート
-- **インテリジェントデフォルト**: コマンドの複雑さに基づく合理的なデフォルトタイムアウト（ping: 5秒、テスト: 30秒）
-- **バッファ管理**: Unity側のタイムアウトが先に発動するようTypeScriptクライアントが10秒のバッファを追加
-- **タイムアウト処理**: 詳細なエラー情報付きの適切なタイムアウトレスポンス
-
-### リアルタイムツール発見
-- **イベント駆動更新**: Unityコマンドの変更が自動的に検出され、LLMツールに伝播
-- **動的ツール登録**: 新しいカスタムコマンドがサーバー再起動なしでLLMツールに表示
-- **ドメインリロード復旧**: Unityコンパイル後の自動再接続とツール同期
-
-### ファイルエクスポートシステム
-- **大規模結果管理**: トークン消費を避けるため大きな検索結果の自動ファイルエクスポート
-- **複数フォーマット**: JSON、CSV、TSVエクスポート形式をサポート
-- **自動クリーンアップ**: ディスク容量問題を防ぐため古いエクスポートファイルを自動クリーンアップ
-- **閾値ベースエクスポート**: 自動ファイル保存のための設定可能な閾値
-
----
-
-## 📚 関連ドキュメント
+## 関連ドキュメント
 
 - [メインREADME](README_ja.md) - プロジェクト概要とセットアップ
 - [アーキテクチャドキュメント](Editor/ARCHITECTURE.md) - 技術アーキテクチャの詳細
