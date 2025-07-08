@@ -7,7 +7,7 @@ import { errorToFile } from './utils/log-to-file.js';
  * NOTE: Polling functionality has been moved to UnityDiscovery to prevent multiple
  * concurrent timers and improve connection stability.
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityClient: Uses this class for connection state management

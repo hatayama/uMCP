@@ -5,7 +5,7 @@ import { errorToFile, warnToFile } from './utils/log-to-file.js';
  * Handles JSON-RPC message processing
  * Follows Single Responsibility Principle - only handles message parsing and routing
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityClient: Uses this class for JSON-RPC message handling

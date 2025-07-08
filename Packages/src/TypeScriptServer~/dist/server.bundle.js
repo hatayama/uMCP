@@ -6151,164 +6151,6 @@ var UnityClient = class {
   }
 };
 
-// src/tools/base-tool.ts
-var BaseTool = class {
-  context;
-  constructor(context) {
-    this.context = context;
-  }
-  /**
-   * Main method for tool execution
-   */
-  async handle(args) {
-    try {
-      const validatedArgs = this.validateArgs(args);
-      const result = await this.execute(validatedArgs);
-      return this.formatResponse(result);
-    } catch (error) {
-      return this.formatErrorResponse(error);
-    }
-  }
-  /**
-   * Format success response (can be overridden in subclass)
-   */
-  formatResponse(result) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: typeof result === "string" ? result : JSON.stringify(result, null, 2)
-        }
-      ]
-    };
-  }
-  /**
-   * Format error response
-   */
-  formatErrorResponse(error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error in ${this.name}: ${errorMessage}`
-        }
-      ]
-    };
-  }
-};
-
-// src/tools/dynamic-unity-command-tool.ts
-var DynamicUnityCommandTool = class extends BaseTool {
-  name;
-  description;
-  inputSchema;
-  commandName;
-  constructor(context, commandName, description, parameterSchema) {
-    super(context);
-    this.commandName = commandName;
-    this.name = commandName;
-    this.description = description;
-    this.inputSchema = this.generateInputSchema(parameterSchema);
-  }
-  generateInputSchema(parameterSchema) {
-    if (this.hasNoParameters(parameterSchema)) {
-      return {
-        type: "object",
-        properties: {},
-        additionalProperties: false
-      };
-    }
-    const properties = {};
-    const required = [];
-    for (const [propName, propInfo] of Object.entries(
-      parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]
-    )) {
-      const info = propInfo;
-      const property = {
-        type: this.convertType(info[PARAMETER_SCHEMA.TYPE_PROPERTY]),
-        description: info[PARAMETER_SCHEMA.DESCRIPTION_PROPERTY] || `Parameter: ${propName}`
-      };
-      if (info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== void 0 && info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== null) {
-        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
-      }
-      if (info[PARAMETER_SCHEMA.ENUM_PROPERTY] && Array.isArray(info[PARAMETER_SCHEMA.ENUM_PROPERTY]) && info[PARAMETER_SCHEMA.ENUM_PROPERTY].length > 0) {
-        property.enum = info[PARAMETER_SCHEMA.ENUM_PROPERTY];
-      }
-      if (info[PARAMETER_SCHEMA.TYPE_PROPERTY] === "array" && info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] && Array.isArray(info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY])) {
-        property.items = {
-          type: "string"
-        };
-        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
-      }
-      properties[propName] = property;
-    }
-    if (parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY] && Array.isArray(parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY])) {
-      required.push(...parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY]);
-    }
-    const schema = {
-      type: "object",
-      properties,
-      required: required.length > 0 ? required : void 0
-    };
-    return schema;
-  }
-  convertType(unityType) {
-    switch (unityType?.toLowerCase()) {
-      case "string":
-        return "string";
-      case "number":
-      case "int":
-      case "float":
-      case "double":
-        return "number";
-      case "boolean":
-      case "bool":
-        return "boolean";
-      case "array":
-        return "array";
-      default:
-        return "string";
-    }
-  }
-  hasNoParameters(parameterSchema) {
-    return !parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0;
-  }
-  validateArgs(args) {
-    if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 0) {
-      return {};
-    }
-    return args || {};
-  }
-  async execute(args) {
-    try {
-      const actualArgs = this.validateArgs(args);
-      const result = await this.context.unityClient.executeCommand(this.commandName, actualArgs);
-      return {
-        content: [
-          {
-            type: "text",
-            text: typeof result === "string" ? result : JSON.stringify(result, null, 2)
-          }
-        ]
-      };
-    } catch (error) {
-      return this.formatErrorResponse(error);
-    }
-  }
-  formatErrorResponse(error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Failed to execute command '${this.commandName}': ${errorMessage}`
-        }
-      ]
-    };
-  }
-};
-
 // src/unity-discovery.ts
 import * as net2 from "net";
 var UnityDiscovery = class _UnityDiscovery {
@@ -6547,6 +6389,640 @@ var UnityDiscovery = class _UnityDiscovery {
   }
 };
 
+// src/unity-connection-manager.ts
+var UnityConnectionManager = class {
+  unityClient;
+  unityDiscovery;
+  isDevelopment;
+  isInitialized = false;
+  constructor(unityClient) {
+    this.unityClient = unityClient;
+    this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
+    this.unityDiscovery = new UnityDiscovery(this.unityClient);
+    this.unityClient.setUnityDiscovery(this.unityDiscovery);
+  }
+  /**
+   * Get Unity discovery instance
+   */
+  getUnityDiscovery() {
+    return this.unityDiscovery;
+  }
+  /**
+   * Wait for Unity connection with timeout
+   */
+  async waitForUnityConnectionWithTimeout(timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Unity connection timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+      const checkConnection = async () => {
+        if (this.unityClient.connected) {
+          clearTimeout(timeout);
+          resolve();
+          return;
+        }
+        this.unityDiscovery.start();
+        this.unityDiscovery.setOnDiscoveredCallback(async () => {
+          await this.unityClient.ensureConnected();
+          clearTimeout(timeout);
+          resolve();
+        });
+      };
+      void checkConnection();
+    });
+  }
+  /**
+   * Handle Unity discovery and establish connection
+   */
+  async handleUnityDiscovered(onConnectionEstablished) {
+    try {
+      await this.unityClient.ensureConnected();
+      infoToFile("[Unity Connection] Unity connection established");
+      if (onConnectionEstablished) {
+        await onConnectionEstablished();
+      }
+      this.unityDiscovery.stop();
+    } catch (error) {
+      errorToFile("[Unity Connection] Failed to establish Unity connection after discovery:", error);
+    }
+  }
+  /**
+   * Initialize connection manager
+   */
+  async initialize(onConnectionEstablished) {
+    if (this.isInitialized) {
+      return;
+    }
+    this.isInitialized = true;
+    this.unityDiscovery.setOnDiscoveredCallback(async () => {
+      await this.handleUnityDiscovered(onConnectionEstablished);
+    });
+    this.unityDiscovery.setOnConnectionLostCallback(() => {
+      if (this.isDevelopment) {
+        debugToFile("[Unity Connection] Connection lost detected - ready for reconnection");
+      }
+    });
+    this.unityDiscovery.start();
+    if (this.isDevelopment) {
+      debugToFile("[Unity Connection] Connection manager initialized");
+    }
+  }
+  /**
+   * Setup reconnection callback
+   */
+  setupReconnectionCallback(callback) {
+    this.unityClient.setReconnectedCallback(async () => {
+      await this.unityDiscovery.forceDiscovery();
+      await callback();
+    });
+  }
+  /**
+   * Check if Unity is connected
+   */
+  isConnected() {
+    return this.unityClient.connected;
+  }
+  /**
+   * Disconnect from Unity
+   */
+  disconnect() {
+    this.unityDiscovery.stop();
+    this.unityClient.disconnect();
+  }
+};
+
+// src/tools/base-tool.ts
+var BaseTool = class {
+  context;
+  constructor(context) {
+    this.context = context;
+  }
+  /**
+   * Main method for tool execution
+   */
+  async handle(args) {
+    try {
+      const validatedArgs = this.validateArgs(args);
+      const result = await this.execute(validatedArgs);
+      return this.formatResponse(result);
+    } catch (error) {
+      return this.formatErrorResponse(error);
+    }
+  }
+  /**
+   * Format success response (can be overridden in subclass)
+   */
+  formatResponse(result) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: typeof result === "string" ? result : JSON.stringify(result, null, 2)
+        }
+      ]
+    };
+  }
+  /**
+   * Format error response
+   */
+  formatErrorResponse(error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error in ${this.name}: ${errorMessage}`
+        }
+      ]
+    };
+  }
+};
+
+// src/tools/dynamic-unity-command-tool.ts
+var DynamicUnityCommandTool = class extends BaseTool {
+  name;
+  description;
+  inputSchema;
+  commandName;
+  constructor(context, commandName, description, parameterSchema) {
+    super(context);
+    this.commandName = commandName;
+    this.name = commandName;
+    this.description = description;
+    this.inputSchema = this.generateInputSchema(parameterSchema);
+  }
+  generateInputSchema(parameterSchema) {
+    if (this.hasNoParameters(parameterSchema)) {
+      return {
+        type: "object",
+        properties: {},
+        additionalProperties: false
+      };
+    }
+    const properties = {};
+    const required = [];
+    for (const [propName, propInfo] of Object.entries(
+      parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]
+    )) {
+      const info = propInfo;
+      const property = {
+        type: this.convertType(info[PARAMETER_SCHEMA.TYPE_PROPERTY]),
+        description: info[PARAMETER_SCHEMA.DESCRIPTION_PROPERTY] || `Parameter: ${propName}`
+      };
+      if (info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== void 0 && info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== null) {
+        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
+      }
+      if (info[PARAMETER_SCHEMA.ENUM_PROPERTY] && Array.isArray(info[PARAMETER_SCHEMA.ENUM_PROPERTY]) && info[PARAMETER_SCHEMA.ENUM_PROPERTY].length > 0) {
+        property.enum = info[PARAMETER_SCHEMA.ENUM_PROPERTY];
+      }
+      if (info[PARAMETER_SCHEMA.TYPE_PROPERTY] === "array" && info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] && Array.isArray(info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY])) {
+        property.items = {
+          type: "string"
+        };
+        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
+      }
+      properties[propName] = property;
+    }
+    if (parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY] && Array.isArray(parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY])) {
+      required.push(...parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY]);
+    }
+    const schema = {
+      type: "object",
+      properties,
+      required: required.length > 0 ? required : void 0
+    };
+    return schema;
+  }
+  convertType(unityType) {
+    switch (unityType?.toLowerCase()) {
+      case "string":
+        return "string";
+      case "number":
+      case "int":
+      case "float":
+      case "double":
+        return "number";
+      case "boolean":
+      case "bool":
+        return "boolean";
+      case "array":
+        return "array";
+      default:
+        return "string";
+    }
+  }
+  hasNoParameters(parameterSchema) {
+    return !parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0;
+  }
+  validateArgs(args) {
+    if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 0) {
+      return {};
+    }
+    return args || {};
+  }
+  async execute(args) {
+    try {
+      const actualArgs = this.validateArgs(args);
+      const result = await this.context.unityClient.executeCommand(this.commandName, actualArgs);
+      return {
+        content: [
+          {
+            type: "text",
+            text: typeof result === "string" ? result : JSON.stringify(result, null, 2)
+          }
+        ]
+      };
+    } catch (error) {
+      return this.formatErrorResponse(error);
+    }
+  }
+  formatErrorResponse(error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Failed to execute command '${this.commandName}': ${errorMessage}`
+        }
+      ]
+    };
+  }
+};
+
+// src/unity-tool-manager.ts
+var UnityToolManager = class {
+  unityClient;
+  isDevelopment;
+  dynamicTools = /* @__PURE__ */ new Map();
+  isRefreshing = false;
+  clientName = "";
+  constructor(unityClient) {
+    this.unityClient = unityClient;
+    this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
+  }
+  /**
+   * Set client name for Unity communication
+   */
+  setClientName(clientName) {
+    this.clientName = clientName;
+  }
+  /**
+   * Get dynamic tools map
+   */
+  getDynamicTools() {
+    return this.dynamicTools;
+  }
+  /**
+   * Get tools from Unity
+   */
+  async getToolsFromUnity() {
+    if (!this.unityClient.connected) {
+      return [];
+    }
+    try {
+      const commandDetails = await this.fetchCommandDetailsFromUnity();
+      if (!commandDetails) {
+        return [];
+      }
+      this.createDynamicToolsFromCommands(commandDetails);
+      const tools = [];
+      for (const [toolName, dynamicTool] of this.dynamicTools) {
+        tools.push({
+          name: toolName,
+          description: dynamicTool.description,
+          inputSchema: dynamicTool.inputSchema
+        });
+      }
+      return tools;
+    } catch (error) {
+      errorToFile("[Unity Tool Manager] Failed to get tools from Unity:", error);
+      return [];
+    }
+  }
+  /**
+   * Initialize dynamic Unity command tools
+   */
+  async initializeDynamicTools() {
+    try {
+      await this.unityClient.ensureConnected();
+      const commandDetails = await this.fetchCommandDetailsFromUnity();
+      if (!commandDetails) {
+        return;
+      }
+      this.createDynamicToolsFromCommands(commandDetails);
+    } catch (error) {
+      errorToFile("[Unity Tool Manager] Failed to initialize dynamic tools:", error);
+    }
+  }
+  /**
+   * Fetch command details from Unity
+   */
+  async fetchCommandDetailsFromUnity() {
+    const params = { IncludeDevelopmentOnly: this.isDevelopment };
+    const commandDetailsResponse = await this.unityClient.executeCommand(
+      "get-command-details",
+      params
+    );
+    const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
+    if (!Array.isArray(commandDetails)) {
+      errorToFile("[Unity Tool Manager] Invalid command details response:", commandDetailsResponse);
+      return null;
+    }
+    return commandDetails;
+  }
+  /**
+   * Create dynamic tools from Unity command details
+   */
+  createDynamicToolsFromCommands(commandDetails) {
+    this.dynamicTools.clear();
+    const toolContext = { unityClient: this.unityClient };
+    for (const commandInfo of commandDetails) {
+      const commandName = commandInfo.name;
+      const description = commandInfo.description || `Execute Unity command: ${commandName}`;
+      const parameterSchema = commandInfo.parameterSchema;
+      const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
+      if (displayDevelopmentOnly && !this.isDevelopment) {
+        continue;
+      }
+      const toolName = commandName;
+      const dynamicTool = new DynamicUnityCommandTool(
+        toolContext,
+        commandName,
+        description,
+        parameterSchema
+        // Pass schema information
+      );
+      this.dynamicTools.set(toolName, dynamicTool);
+    }
+  }
+  /**
+   * Refresh dynamic tools by re-fetching from Unity
+   * This method can be called to update the tool list when Unity commands change
+   */
+  async refreshDynamicTools(sendNotification) {
+    await this.initializeDynamicTools();
+    if (sendNotification) {
+      sendNotification();
+    }
+  }
+  /**
+   * Safe version of refreshDynamicTools that prevents duplicate execution
+   */
+  async refreshDynamicToolsSafe(sendNotification) {
+    if (this.isRefreshing) {
+      if (this.isDevelopment) {
+        debugToFile("[Unity Tool Manager] refreshDynamicToolsSafe skipped: already in progress");
+      }
+      return;
+    }
+    this.isRefreshing = true;
+    try {
+      if (this.isDevelopment) {
+        const stack = new Error().stack;
+        const callerLine = stack?.split("\n")[2]?.trim() || "Unknown caller";
+        const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
+        debugToFile(`[Unity Tool Manager] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`);
+      }
+      await this.refreshDynamicTools(sendNotification);
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+  /**
+   * Check if tool exists
+   */
+  hasTool(toolName) {
+    return this.dynamicTools.has(toolName);
+  }
+  /**
+   * Get tool by name
+   */
+  getTool(toolName) {
+    return this.dynamicTools.get(toolName);
+  }
+  /**
+   * Get all tools as array
+   */
+  getAllTools() {
+    const tools = [];
+    for (const [toolName, dynamicTool] of this.dynamicTools) {
+      tools.push({
+        name: toolName,
+        description: dynamicTool.description,
+        inputSchema: dynamicTool.inputSchema
+      });
+    }
+    return tools;
+  }
+  /**
+   * Get tools count
+   */
+  getToolsCount() {
+    return this.dynamicTools.size;
+  }
+};
+
+// src/mcp-client-compatibility.ts
+var McpClientCompatibility = class {
+  unityClient;
+  clientName = DEFAULT_CLIENT_NAME;
+  constructor(unityClient) {
+    this.unityClient = unityClient;
+  }
+  /**
+   * Set client name
+   */
+  setClientName(clientName) {
+    this.clientName = clientName;
+  }
+  /**
+   * Get client name
+   */
+  getClientName() {
+    return this.clientName;
+  }
+  /**
+   * Check if client doesn't support list_changed notifications
+   */
+  isListChangedUnsupported(clientName) {
+    if (!clientName) {
+      return false;
+    }
+    const normalizedName = clientName.toLowerCase();
+    return LIST_CHANGED_UNSUPPORTED_CLIENTS.some(
+      (unsupported) => normalizedName.includes(unsupported)
+    );
+  }
+  /**
+   * Handle client name initialization and setup
+   */
+  async handleClientNameInitialization() {
+    if (!this.clientName) {
+      const fallbackName = process.env.MCP_CLIENT_NAME;
+      if (fallbackName) {
+        this.clientName = fallbackName;
+        await this.unityClient.setClientName(fallbackName);
+        infoToFile(`[MCP Client Compatibility] Fallback client name set to Unity: ${fallbackName}`);
+      } else {
+        infoToFile("[MCP Client Compatibility] No client name set, waiting for initialize request");
+      }
+    } else {
+      await this.unityClient.setClientName(this.clientName);
+      infoToFile(`[MCP Client Compatibility] Client name already set, sending to Unity: ${this.clientName}`);
+    }
+    this.unityClient.onReconnect(() => {
+      infoToFile(`[MCP Client Compatibility] Reconnected - resending client name: ${this.clientName}`);
+      void this.unityClient.setClientName(this.clientName);
+    });
+  }
+  /**
+   * Initialize client with name
+   */
+  async initializeClient(clientName) {
+    this.setClientName(clientName);
+    await this.handleClientNameInitialization();
+  }
+  /**
+   * Check if client supports list_changed notifications
+   */
+  isListChangedSupported(clientName) {
+    return !this.isListChangedUnsupported(clientName);
+  }
+  /**
+   * Log client compatibility information
+   */
+  logClientCompatibility(clientName) {
+    const isSupported = this.isListChangedSupported(clientName);
+    const compatibilityType = isSupported ? "list_changed supported" : "list_changed unsupported";
+    infoToFile(`[MCP Client Compatibility] Client: ${clientName} - ${compatibilityType}`);
+    if (!isSupported) {
+      debugToFile(`[MCP Client Compatibility] Client ${clientName} will use synchronous initialization`);
+    } else {
+      debugToFile(`[MCP Client Compatibility] Client ${clientName} will use asynchronous initialization`);
+    }
+  }
+};
+
+// src/unity-event-handler.ts
+var UnityEventHandler = class {
+  server;
+  unityClient;
+  connectionManager;
+  isDevelopment;
+  isShuttingDown = false;
+  isNotifying = false;
+  constructor(server2, unityClient, connectionManager) {
+    this.server = server2;
+    this.unityClient = unityClient;
+    this.connectionManager = connectionManager;
+    this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
+  }
+  /**
+   * Setup Unity event listener for automatic tool updates
+   */
+  setupUnityEventListener(onToolsChanged) {
+    this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
+      if (this.isDevelopment) {
+        const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
+        debugToFile(
+          `[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`
+        );
+        debugToFile(`[TRACE] Notification params: ${JSON.stringify(params)}`);
+      }
+      try {
+        await onToolsChanged();
+      } catch (error) {
+        errorToFile("[Unity Event Handler] Failed to update dynamic tools via Unity notification:", error);
+      }
+    });
+  }
+  /**
+   * Send tools changed notification (with duplicate prevention)
+   */
+  sendToolsChangedNotification() {
+    if (this.isNotifying) {
+      if (this.isDevelopment) {
+        debugToFile("[Unity Event Handler] sendToolsChangedNotification skipped: already notifying");
+      }
+      return;
+    }
+    this.isNotifying = true;
+    try {
+      this.server.notification({
+        method: "notifications/tools/list_changed",
+        params: {}
+      });
+      if (this.isDevelopment) {
+        debugToFile("[Unity Event Handler] tools/list_changed notification sent");
+      }
+    } catch (error) {
+      errorToFile("[Unity Event Handler] Failed to send tools changed notification:", error);
+    } finally {
+      this.isNotifying = false;
+    }
+  }
+  /**
+   * Setup signal handlers for graceful shutdown
+   */
+  setupSignalHandlers() {
+    process.on("SIGINT", () => {
+      infoToFile("[Unity Event Handler] Received SIGINT, shutting down...");
+      this.gracefulShutdown();
+    });
+    process.on("SIGTERM", () => {
+      infoToFile("[Unity Event Handler] Received SIGTERM, shutting down...");
+      this.gracefulShutdown();
+    });
+    process.on("SIGHUP", () => {
+      infoToFile("[Unity Event Handler] Received SIGHUP, shutting down...");
+      this.gracefulShutdown();
+    });
+    process.stdin.on("close", () => {
+      infoToFile("[Unity Event Handler] STDIN closed, shutting down...");
+      this.gracefulShutdown();
+    });
+    process.stdin.on("end", () => {
+      infoToFile("[Unity Event Handler] STDIN ended, shutting down...");
+      this.gracefulShutdown();
+    });
+    process.on("uncaughtException", (error) => {
+      errorToFile("[Unity Event Handler] Uncaught exception:", error);
+      this.gracefulShutdown();
+    });
+    process.on("unhandledRejection", (reason, promise) => {
+      errorToFile("[Unity Event Handler] Unhandled rejection at:", promise, "reason:", reason);
+      this.gracefulShutdown();
+    });
+  }
+  /**
+   * Graceful shutdown with proper cleanup
+   * BUG FIX: Enhanced shutdown process to prevent orphaned Node processes
+   */
+  gracefulShutdown() {
+    if (this.isShuttingDown) {
+      return;
+    }
+    this.isShuttingDown = true;
+    infoToFile("[Unity Event Handler] Starting graceful shutdown...");
+    try {
+      this.connectionManager.disconnect();
+      if (global.gc) {
+        global.gc();
+      }
+    } catch (error) {
+      errorToFile("[Unity Event Handler] Error during cleanup:", error);
+    }
+    infoToFile("[Unity Event Handler] Graceful shutdown completed");
+    process.exit(0);
+  }
+  /**
+   * Check if shutdown is in progress
+   */
+  isShuttingDownCheck() {
+    return this.isShuttingDown;
+  }
+};
+
 // package.json
 var package_default = {
   name: "umcp-server",
@@ -6629,13 +7105,12 @@ var UnityMcpServer = class {
   server;
   unityClient;
   isDevelopment;
-  dynamicTools = /* @__PURE__ */ new Map();
-  isShuttingDown = false;
-  isRefreshing = false;
-  clientName = DEFAULT_CLIENT_NAME;
   isInitialized = false;
-  isNotifying = false;
   unityDiscovery;
+  connectionManager;
+  toolManager;
+  clientCompatibility;
+  eventHandler;
   constructor() {
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
     infoToFile("Unity MCP Server Starting");
@@ -6655,216 +7130,39 @@ var UnityMcpServer = class {
       }
     );
     this.unityClient = new UnityClient();
-    this.unityDiscovery = new UnityDiscovery(this.unityClient);
-    this.unityDiscovery.setOnDiscoveredCallback(async () => {
-      await this.handleUnityDiscovered();
-    });
-    this.unityDiscovery.setOnConnectionLostCallback(() => {
-      if (this.isDevelopment) {
-        debugToFile(
-          "[Unity MCP] Connection lost detected - tools will be refreshed after reconnection"
-        );
-      }
-    });
-    this.unityClient.setUnityDiscovery(this.unityDiscovery);
-    this.unityClient.setReconnectedCallback(async () => {
-      await this.unityDiscovery.forceDiscovery();
-      void this.refreshDynamicToolsSafe();
+    this.connectionManager = new UnityConnectionManager(this.unityClient);
+    this.unityDiscovery = this.connectionManager.getUnityDiscovery();
+    this.toolManager = new UnityToolManager(this.unityClient);
+    this.clientCompatibility = new McpClientCompatibility(this.unityClient);
+    this.eventHandler = new UnityEventHandler(this.server, this.unityClient, this.connectionManager);
+    this.connectionManager.setupReconnectionCallback(async () => {
+      await this.toolManager.refreshDynamicToolsSafe(() => {
+        this.eventHandler.sendToolsChangedNotification();
+      });
     });
     this.setupHandlers();
-    this.setupSignalHandlers();
-  }
-  /**
-   * Check if client doesn't support list_changed notifications
-   */
-  isListChangedUnsupported(clientName) {
-    if (!clientName) {
-      return false;
-    }
-    const normalizedName = clientName.toLowerCase();
-    return LIST_CHANGED_UNSUPPORTED_CLIENTS.some(
-      (unsupported) => normalizedName.includes(unsupported)
-    );
-  }
-  /**
-   * Wait for Unity connection with timeout
-   */
-  async waitForUnityConnectionWithTimeout(timeoutMs) {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error(`Unity connection timeout after ${timeoutMs}ms`));
-      }, timeoutMs);
-      const checkConnection = async () => {
-        if (this.unityClient.connected) {
-          clearTimeout(timeout);
-          resolve();
-          return;
-        }
-        this.unityDiscovery.start();
-        this.unityDiscovery.setOnDiscoveredCallback(async () => {
-          await this.unityClient.ensureConnected();
-          clearTimeout(timeout);
-          resolve();
-        });
-      };
-      void checkConnection();
-    });
-  }
-  /**
-   * Get tools from Unity
-   */
-  async getToolsFromUnity() {
-    if (!this.unityClient.connected) {
-      return [];
-    }
-    try {
-      await this.handleClientNameInitialization();
-      const commandDetails = await this.fetchCommandDetailsFromUnity();
-      if (!commandDetails) {
-        return [];
-      }
-      this.createDynamicToolsFromCommands(commandDetails);
-      const tools = [];
-      for (const [toolName, dynamicTool] of this.dynamicTools) {
-        tools.push({
-          name: toolName,
-          description: dynamicTool.description,
-          inputSchema: dynamicTool.inputSchema
-        });
-      }
-      return tools;
-    } catch (error) {
-      errorToFile("[Unity MCP] Failed to get tools from Unity:", error);
-      return [];
-    }
-  }
-  /**
-   * Initialize dynamic Unity command tools
-   */
-  async initializeDynamicTools() {
-    try {
-      await this.unityClient.ensureConnected();
-      await this.handleClientNameInitialization();
-      const commandDetails = await this.fetchCommandDetailsFromUnity();
-      if (!commandDetails) {
-        return;
-      }
-      this.createDynamicToolsFromCommands(commandDetails);
-    } catch (error) {
-      errorToFile("[Unity MCP] Failed to initialize dynamic tools:", error);
-    }
-  }
-  /**
-   * Handle client name initialization and setup
-   */
-  async handleClientNameInitialization() {
-    if (!this.clientName) {
-      const fallbackName = process.env.MCP_CLIENT_NAME;
-      if (fallbackName) {
-        this.clientName = fallbackName;
-        await this.unityClient.setClientName(fallbackName);
-        infoToFile(`[Unity MCP] Fallback client name set to Unity: ${fallbackName}`);
-      } else {
-        infoToFile("[Unity MCP] No client name set, waiting for initialize request");
-      }
-    } else {
-      await this.unityClient.setClientName(this.clientName);
-      infoToFile(`[Unity MCP] Client name already set, sending to Unity: ${this.clientName}`);
-    }
-    this.unityClient.onReconnect(() => {
-      infoToFile(`[Unity MCP] Reconnected - resending client name: ${this.clientName}`);
-      void this.unityClient.setClientName(this.clientName);
-    });
-  }
-  /**
-   * Fetch command details from Unity
-   */
-  async fetchCommandDetailsFromUnity() {
-    const params = { IncludeDevelopmentOnly: this.isDevelopment };
-    const commandDetailsResponse = await this.unityClient.executeCommand(
-      "get-command-details",
-      params
-    );
-    const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
-    if (!Array.isArray(commandDetails)) {
-      errorToFile("[Unity MCP] Invalid command details response:", commandDetailsResponse);
-      return null;
-    }
-    return commandDetails;
-  }
-  /**
-   * Create dynamic tools from Unity command details
-   */
-  createDynamicToolsFromCommands(commandDetails) {
-    this.dynamicTools.clear();
-    const toolContext = { unityClient: this.unityClient };
-    for (const commandInfo of commandDetails) {
-      const commandName = commandInfo.name;
-      const description = commandInfo.description || `Execute Unity command: ${commandName}`;
-      const parameterSchema = commandInfo.parameterSchema;
-      const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
-      if (displayDevelopmentOnly && !this.isDevelopment) {
-        continue;
-      }
-      const toolName = commandName;
-      const dynamicTool = new DynamicUnityCommandTool(
-        toolContext,
-        commandName,
-        description,
-        parameterSchema
-        // Pass schema information
-      );
-      this.dynamicTools.set(toolName, dynamicTool);
-    }
-  }
-  /**
-   * Refresh dynamic tools by re-fetching from Unity
-   * This method can be called to update the tool list when Unity commands change
-   */
-  async refreshDynamicTools() {
-    await this.initializeDynamicTools();
-    this.sendToolsChangedNotification();
-  }
-  /**
-   * Safe version of refreshDynamicTools that prevents duplicate execution
-   */
-  async refreshDynamicToolsSafe() {
-    if (this.isRefreshing) {
-      if (this.isDevelopment) {
-        debugToFile("[TRACE] refreshDynamicToolsSafe skipped: already in progress");
-      }
-      return;
-    }
-    this.isRefreshing = true;
-    try {
-      if (this.isDevelopment) {
-        const stack = new Error().stack;
-        const callerLine = stack?.split("\n")[2]?.trim() || "Unknown caller";
-        const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
-        debugToFile(`[TRACE] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`);
-      }
-      await this.refreshDynamicTools();
-    } finally {
-      this.isRefreshing = false;
-    }
+    this.eventHandler.setupSignalHandlers();
   }
   setupHandlers() {
     this.server.setRequestHandler(InitializeRequestSchema, async (request) => {
       const clientInfo = request.params?.clientInfo;
       const clientName = clientInfo?.name || "";
       if (clientName) {
-        this.clientName = clientName;
-        infoToFile(`[Unity MCP] Client name received: ${this.clientName}`);
+        this.clientCompatibility.setClientName(clientName);
+        this.clientCompatibility.logClientCompatibility(clientName);
+        infoToFile(`[Unity MCP] Client name received: ${clientName}`);
       }
       if (!this.isInitialized) {
         this.isInitialized = true;
-        if (this.isListChangedUnsupported(clientName)) {
+        if (this.clientCompatibility.isListChangedUnsupported(clientName)) {
           infoToFile(
             `[Unity MCP] Sync initialization for list_changed unsupported client: ${clientName}`
           );
           try {
-            await this.waitForUnityConnectionWithTimeout(1e4);
-            const tools = await this.getToolsFromUnity();
+            await this.clientCompatibility.initializeClient(clientName);
+            this.toolManager.setClientName(clientName);
+            await this.connectionManager.waitForUnityConnectionWithTimeout(1e4);
+            const tools = await this.toolManager.getToolsFromUnity();
             infoToFile(`[Unity MCP] Returning ${tools.length} tools for ${clientName}`);
             return {
               protocolVersion: MCP_PROTOCOL_VERSION,
@@ -6899,7 +7197,9 @@ var UnityMcpServer = class {
           infoToFile(
             `[Unity MCP] Async initialization for list_changed supported client: ${clientName}`
           );
-          void this.initializeDynamicTools().then(() => {
+          void this.clientCompatibility.initializeClient(clientName);
+          this.toolManager.setClientName(clientName);
+          void this.toolManager.initializeDynamicTools().then(() => {
             infoToFile("[Unity MCP] Unity connection established successfully");
           }).catch((error) => {
             errorToFile("[Unity MCP] Unity connection initialization failed:", error);
@@ -6921,14 +7221,7 @@ var UnityMcpServer = class {
       };
     });
     this.server.setRequestHandler(ListToolsRequestSchema, () => {
-      const tools = [];
-      for (const [toolName, dynamicTool] of this.dynamicTools) {
-        tools.push({
-          name: toolName,
-          description: dynamicTool.description,
-          inputSchema: dynamicTool.inputSchema
-        });
-      }
+      const tools = this.toolManager.getAllTools();
       debugToFile(`Providing ${tools.length} tools`, { toolNames: tools.map((t) => t.name) });
       return { tools };
     });
@@ -6936,8 +7229,8 @@ var UnityMcpServer = class {
       const { name, arguments: args } = request.params;
       debugToFile(`Tool executed: ${name}`, { args });
       try {
-        if (this.dynamicTools.has(name)) {
-          const dynamicTool = this.dynamicTools.get(name);
+        if (this.toolManager.hasTool(name)) {
+          const dynamicTool = this.toolManager.getTool(name);
           return await dynamicTool.execute(args);
         }
         throw new Error(`Unknown tool: ${name}`);
@@ -6958,132 +7251,27 @@ var UnityMcpServer = class {
    * Start the server
    */
   async start() {
-    this.setupUnityEventListener();
-    this.unityDiscovery.start();
+    this.eventHandler.setupUnityEventListener(async () => {
+      await this.toolManager.refreshDynamicToolsSafe(() => {
+        this.eventHandler.sendToolsChangedNotification();
+      });
+    });
+    await this.connectionManager.initialize(async () => {
+      const clientName = this.clientCompatibility.getClientName();
+      if (clientName) {
+        this.toolManager.setClientName(clientName);
+        await this.toolManager.initializeDynamicTools();
+        infoToFile("[Unity MCP] Unity connection established and tools initialized");
+        this.eventHandler.sendToolsChangedNotification();
+      } else {
+        infoToFile("[Unity MCP] Unity connection established, waiting for client name");
+      }
+    });
     if (this.isDevelopment) {
       debugToFile("[Unity MCP] Server starting with unified discovery service");
     }
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-  }
-  /**
-   * Setup Unity event listener for automatic tool updates
-   */
-  setupUnityEventListener() {
-    this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
-      if (this.isDevelopment) {
-        const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
-        debugToFile(
-          `[TRACE] Unity notification received at ${timestamp2}: notifications/tools/list_changed`
-        );
-        debugToFile(`[TRACE] Notification params: ${JSON.stringify(params)}`);
-      }
-      try {
-        await this.refreshDynamicToolsSafe();
-      } catch (error) {
-        errorToFile("[Unity MCP] Failed to update dynamic tools via Unity notification:", error);
-      }
-    });
-  }
-  /**
-   * Handle Unity discovery and establish connection
-   */
-  async handleUnityDiscovered() {
-    try {
-      await this.unityClient.ensureConnected();
-      if (this.clientName) {
-        await this.initializeDynamicTools();
-        infoToFile("[Unity MCP] Unity connection established and tools initialized");
-        this.sendToolsChangedNotification();
-      } else {
-        infoToFile("[Unity MCP] Unity connection established, waiting for client name");
-      }
-      this.unityDiscovery.stop();
-    } catch (error) {
-      errorToFile("[Unity MCP] Failed to establish Unity connection after discovery:", error);
-    }
-  }
-  /**
-   * Send tools changed notification (with duplicate prevention)
-   */
-  sendToolsChangedNotification() {
-    if (this.isNotifying) {
-      if (this.isDevelopment) {
-        debugToFile("[TRACE] sendToolsChangedNotification skipped: already notifying");
-      }
-      return;
-    }
-    this.isNotifying = true;
-    try {
-      this.server.notification({
-        method: "notifications/tools/list_changed",
-        params: {}
-      });
-      if (this.isDevelopment) {
-        debugToFile("[TRACE] tools/list_changed notification sent");
-      }
-    } catch (error) {
-      errorToFile("[Unity MCP] Failed to send tools changed notification:", error);
-    } finally {
-      this.isNotifying = false;
-    }
-  }
-  /**
-   * Setup signal handlers for graceful shutdown
-   */
-  setupSignalHandlers() {
-    process.on("SIGINT", () => {
-      infoToFile("[Unity MCP] Received SIGINT, shutting down...");
-      this.gracefulShutdown();
-    });
-    process.on("SIGTERM", () => {
-      infoToFile("[Unity MCP] Received SIGTERM, shutting down...");
-      this.gracefulShutdown();
-    });
-    process.on("SIGHUP", () => {
-      infoToFile("[Unity MCP] Received SIGHUP, shutting down...");
-      this.gracefulShutdown();
-    });
-    process.stdin.on("close", () => {
-      infoToFile("[Unity MCP] STDIN closed, shutting down...");
-      this.gracefulShutdown();
-    });
-    process.stdin.on("end", () => {
-      infoToFile("[Unity MCP] STDIN ended, shutting down...");
-      this.gracefulShutdown();
-    });
-    process.on("uncaughtException", (error) => {
-      errorToFile("[Unity MCP] Uncaught exception:", error);
-      this.gracefulShutdown();
-    });
-    process.on("unhandledRejection", (reason, promise) => {
-      errorToFile("[Unity MCP] Unhandled rejection at:", promise, "reason:", reason);
-      this.gracefulShutdown();
-    });
-  }
-  /**
-   * Graceful shutdown with proper cleanup
-   * BUG FIX: Enhanced shutdown process to prevent orphaned Node processes
-   */
-  gracefulShutdown() {
-    if (this.isShuttingDown) {
-      return;
-    }
-    this.isShuttingDown = true;
-    infoToFile("[Unity MCP] Starting graceful shutdown...");
-    try {
-      this.unityDiscovery.stop();
-      if (this.unityClient) {
-        this.unityClient.disconnect();
-      }
-      if (global.gc) {
-        global.gc();
-      }
-    } catch (error) {
-      errorToFile("[Unity MCP] Error during cleanup:", error);
-    }
-    infoToFile("[Unity MCP] Graceful shutdown completed");
-    process.exit(0);
   }
 };
 var server = new UnityMcpServer();

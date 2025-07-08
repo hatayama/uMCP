@@ -1,6 +1,13 @@
 /**
  * Safe Timer Utility - Prevents orphaned processes by ensuring automatic cleanup
  *
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
+ *
+ * Related classes:
+ * - UnityClient: Uses safeSetTimeout function from this utility
+ * - UnityDiscovery: Could potentially use this for safer timer management
+ * - UnityEventHandler: Handles cleanup scenarios this utility addresses
+ *
  * This class provides a foolproof way to manage timers that automatically
  * clean themselves up when the object is destroyed or when the process exits.
  *
