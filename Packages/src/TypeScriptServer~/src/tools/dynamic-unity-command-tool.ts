@@ -1,6 +1,30 @@
 import { BaseTool } from './base-tool.js';
-import { ToolContext } from '../types/tool-types.js';
+import { ToolContext, ToolResponse } from '../types/tool-types.js';
 import { PARAMETER_SCHEMA } from '../constants.js';
+
+// Type definitions for Unity parameter schema
+interface UnityParameterInfo {
+  [key: string]: unknown;
+}
+
+interface UnityParameterSchema {
+  [key: string]: unknown;
+}
+
+interface JsonSchemaProperty {
+  type: string;
+  description?: string;
+  default?: unknown;
+  enum?: string[];
+  items?: { type: string };
+}
+
+interface InputSchema {
+  type: string;
+  properties: Record<string, JsonSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean;
+}
 
 /**
  * Dynamically generated tool for Unity commands
@@ -15,14 +39,14 @@ import { PARAMETER_SCHEMA } from '../constants.js';
 export class DynamicUnityCommandTool extends BaseTool {
   public readonly name: string;
   public readonly description: string;
-  public readonly inputSchema: any;
+  public readonly inputSchema: InputSchema;
   private readonly commandName: string;
 
   constructor(
     context: ToolContext,
     commandName: string,
     description: string,
-    parameterSchema?: any,
+    parameterSchema?: UnityParameterSchema,
   ) {
     super(context);
     this.commandName = commandName;
@@ -31,7 +55,7 @@ export class DynamicUnityCommandTool extends BaseTool {
     this.inputSchema = this.generateInputSchema(parameterSchema);
   }
 
-  private generateInputSchema(parameterSchema?: any): any {
+  private generateInputSchema(parameterSchema?: UnityParameterSchema): InputSchema {
     if (this.hasNoParameters(parameterSchema)) {
       // For commands without parameters, return minimal schema without dummy parameters
       return {
@@ -41,58 +65,56 @@ export class DynamicUnityCommandTool extends BaseTool {
       };
     }
 
-    const properties: any = {};
+    const properties: Record<string, JsonSchemaProperty> = {};
     const required: string[] = [];
 
     // Convert Unity parameter schema to JSON Schema format using constants
-    for (const [propName, propInfo] of Object.entries(
-      parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY],
-    )) {
-      const info = propInfo as any;
+    const propertiesObj = parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] as Record<
+      string,
+      UnityParameterInfo
+    >;
+    for (const [propName, propInfo] of Object.entries(propertiesObj)) {
+      const info = propInfo;
 
-      const property: any = {
-        type: this.convertType(info[PARAMETER_SCHEMA.TYPE_PROPERTY]),
-        description: info[PARAMETER_SCHEMA.DESCRIPTION_PROPERTY] || `Parameter: ${propName}`,
+      const property: JsonSchemaProperty = {
+        type: this.convertType(String(info[PARAMETER_SCHEMA.TYPE_PROPERTY] || 'string')),
+        description: String(
+          info[PARAMETER_SCHEMA.DESCRIPTION_PROPERTY] || `Parameter: ${propName}`,
+        ),
       };
 
       // Add default value if provided
-      if (
-        info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== undefined &&
-        info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== null
-      ) {
-        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
+      const defaultValue = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
+      if (defaultValue !== undefined && defaultValue !== null) {
+        property.default = defaultValue;
       }
 
       // Add enum values if provided using constants
-      if (
-        info[PARAMETER_SCHEMA.ENUM_PROPERTY] &&
-        Array.isArray(info[PARAMETER_SCHEMA.ENUM_PROPERTY]) &&
-        info[PARAMETER_SCHEMA.ENUM_PROPERTY].length > 0
-      ) {
-        property.enum = info[PARAMETER_SCHEMA.ENUM_PROPERTY];
+      const enumValues = info[PARAMETER_SCHEMA.ENUM_PROPERTY];
+      if (enumValues && Array.isArray(enumValues) && enumValues.length > 0) {
+        property.enum = enumValues as string[];
       }
 
       // Handle array type
       if (
         info[PARAMETER_SCHEMA.TYPE_PROPERTY] === 'array' &&
-        info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] &&
-        Array.isArray(info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY])
+        defaultValue &&
+        Array.isArray(defaultValue)
       ) {
         property.items = {
           type: 'string',
         };
-        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
+        property.default = defaultValue;
       }
 
+      // eslint-disable-next-line security/detect-object-injection
       properties[propName] = property;
     }
 
     // Add required parameters using constants
-    if (
-      parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY] &&
-      Array.isArray(parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY])
-    ) {
-      required.push(...parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY]);
+    const requiredParams = parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY];
+    if (requiredParams && Array.isArray(requiredParams)) {
+      required.push(...(requiredParams as string[]));
     }
 
     const schema = {
@@ -123,29 +145,37 @@ export class DynamicUnityCommandTool extends BaseTool {
     }
   }
 
-  private hasNoParameters(parameterSchema?: any): boolean {
-    return (
-      !parameterSchema ||
-      !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] ||
-      Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0
-    );
+  private hasNoParameters(parameterSchema?: UnityParameterSchema): boolean {
+    if (!parameterSchema) {
+      return true;
+    }
+
+    const properties = parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY];
+    if (!properties || typeof properties !== 'object') {
+      return true;
+    }
+
+    return Object.keys(properties).length === 0;
   }
 
-  validateArgs(args: unknown): any {
+  validateArgs(args: unknown): Record<string, unknown> {
     // If no real parameters are defined, return empty object
     if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 0) {
       return {};
     }
 
-    return args || {};
+    return (args as Record<string, unknown>) || {};
   }
 
-  async execute(args: unknown): Promise<any> {
+  async execute(args: Record<string, unknown>): Promise<ToolResponse> {
     try {
       // Validate and use the provided arguments
-      const actualArgs = this.validateArgs(args);
+      const actualArgs: Record<string, unknown> = this.validateArgs(args);
 
-      const result = await this.context.unityClient.executeCommand(this.commandName, actualArgs);
+      const result: unknown = await this.context.unityClient.executeCommand(
+        this.commandName,
+        actualArgs,
+      );
 
       return {
         content: [
@@ -160,7 +190,7 @@ export class DynamicUnityCommandTool extends BaseTool {
     }
   }
 
-  protected formatErrorResponse(error: unknown) {
+  protected formatErrorResponse(error: unknown): ToolResponse {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return {
       content: [

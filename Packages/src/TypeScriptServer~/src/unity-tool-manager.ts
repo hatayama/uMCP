@@ -1,7 +1,7 @@
 import { UnityClient } from './unity-client.js';
 import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
+import { errorToFile, debugToFile } from './utils/log-to-file.js';
 import { ENVIRONMENT } from './constants.js';
 
 /**
@@ -121,7 +121,7 @@ export class UnityToolManager {
       return null;
     }
 
-    return commandDetails;
+    return commandDetails as unknown[];
   }
 
   /**

@@ -1,6 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { infoToFile, errorToFile } from '../../utils/log-to-file.js';
 
 /**
  * Contract: MCP Server Connection Validator
@@ -32,7 +32,7 @@ export class McpConnectionValidator {
         throw new Error('Contract violation: Server creation returned null');
       }
     } catch (error) {
-      throw new Error(`Contract violation: Server creation failed - ${error}`);
+      throw new Error(`Contract violation: Server creation failed - ${String(error)}`);
     }
   }
 
@@ -47,12 +47,12 @@ export class McpConnectionValidator {
 
     try {
       // List tools handler
-      this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      this.server.setRequestHandler(ListToolsRequestSchema, () => {
         return { tools: [] };
       });
 
       // Call tool handler
-      this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      this.server.setRequestHandler(CallToolRequestSchema, (request) => {
         return {
           content: [
             {
@@ -63,7 +63,7 @@ export class McpConnectionValidator {
         };
       });
     } catch (error) {
-      throw new Error(`Contract violation: Handler registration failed - ${error}`);
+      throw new Error(`Contract violation: Handler registration failed - ${String(error)}`);
     }
   }
 
@@ -77,12 +77,12 @@ export class McpConnectionValidator {
     }
 
     try {
-      this.server.notification({
+      void this.server.notification({
         method: 'notifications/tools/list_changed',
         params: {},
       });
     } catch (error) {
-      throw new Error(`Contract violation: Notification sending failed - ${error}`);
+      throw new Error(`Contract violation: Notification sending failed - ${String(error)}`);
     }
   }
 
@@ -100,13 +100,13 @@ export class McpConnectionValidator {
 
     try {
       const jsonString = JSON.stringify(testMessage);
-      const parsed = JSON.parse(jsonString);
+      const parsed = JSON.parse(jsonString) as { method?: string; jsonrpc?: string };
 
       if (!parsed.method || !parsed.jsonrpc) {
         throw new Error('Contract violation: Invalid JSON RPC structure');
       }
     } catch (error) {
-      throw new Error(`Contract violation: JSON RPC compliance failed - ${error}`);
+      throw new Error(`Contract violation: JSON RPC compliance failed - ${String(error)}`);
     }
   }
 
@@ -115,24 +115,24 @@ export class McpConnectionValidator {
    * @throws {Error} On first validation failure
    */
   runAllValidations(): void {
-    console.log('Starting MCP Connection Validation Tests...');
+    infoToFile('Starting MCP Connection Validation Tests...');
 
     try {
-      console.log('Testing server creation...');
+      infoToFile('Testing server creation...');
       this.createServer();
 
-      console.log('Testing handler registration...');
+      infoToFile('Testing handler registration...');
       this.registerHandlers();
 
-      console.log('Testing notification capability...');
+      infoToFile('Testing notification capability...');
       this.testNotification();
 
-      console.log('Testing JSON RPC compliance...');
+      infoToFile('Testing JSON RPC compliance...');
       this.validateJsonRpcCompliance();
 
-      console.log('All MCP connection tests passed!');
+      infoToFile('All MCP connection tests passed!');
     } catch (error) {
-      console.error('MCP Connection Test Failed:', error);
+      errorToFile('MCP Connection Test Failed:', error);
       throw error; // Fail fast
     }
   }

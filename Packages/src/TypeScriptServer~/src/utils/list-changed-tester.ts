@@ -1,5 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { infoToFile, warnToFile, errorToFile, debugToFile } from './log-to-file.js';
+import { NOTIFICATION_METHODS } from '../constants.js';
 
 /**
  * Development/Debug utility for testing MCP notification system
@@ -91,8 +92,8 @@ export class NotificationTester {
 
     try {
       // Send tools/list_changed notification
-      this.server.notification({
-        method: 'notifications/tools/list_changed',
+      void this.server.notification({
+        method: NOTIFICATION_METHODS.TOOLS_LIST_CHANGED,
         params: {},
       });
 

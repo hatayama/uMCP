@@ -23,7 +23,7 @@ describe('MCP Stdio Integration Tests', () => {
     let stdoutData = '';
     let hasReceivedValidJson = false;
 
-    serverProcess.stdout?.on('data', (data) => {
+    serverProcess.stdout?.on('data', (data: Buffer) => {
       stdoutData += data.toString();
 
       // Check if output contains console.log pollution
@@ -37,7 +37,7 @@ describe('MCP Stdio Integration Tests', () => {
           // Every line should be valid JSON
           JSON.parse(line);
           hasReceivedValidJson = true;
-        } catch (error) {
+        } catch {
           // If we get invalid JSON, it's likely console.log pollution
           if (line.includes('[Simple MCP]') || line.includes('===')) {
             done(new Error(`Console.log pollution detected: ${line}`));
@@ -47,7 +47,7 @@ describe('MCP Stdio Integration Tests', () => {
       }
     });
 
-    serverProcess.stderr?.on('data', (data) => {
+    serverProcess.stderr?.on('data', (data: Buffer) => {
       const errorOutput = data.toString();
       if (errorOutput.includes('[Simple MCP]')) {
         done(new Error(`Console.error pollution detected: ${errorOutput}`));
@@ -87,10 +87,9 @@ describe('MCP Stdio Integration Tests', () => {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-    let responseCount = 0;
     let hasToolsResponse = false;
 
-    serverProcess.stdout?.on('data', (data) => {
+    serverProcess.stdout?.on('data', (data: Buffer) => {
       const lines = data.toString().split('\n');
 
       for (const line of lines) {
@@ -99,13 +98,12 @@ describe('MCP Stdio Integration Tests', () => {
         }
 
         try {
-          const response = JSON.parse(line);
-          responseCount++;
+          const response = JSON.parse(line) as { result?: { tools?: unknown[] } };
 
           if (response.result && response.result.tools) {
             hasToolsResponse = true;
           }
-        } catch (error) {
+        } catch {
           done(new Error(`Invalid JSON in response: ${line}`));
           return;
         }

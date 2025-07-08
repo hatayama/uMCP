@@ -52,7 +52,7 @@ export class UnityConnectionManager {
         reject(new Error(`Unity connection timeout after ${timeoutMs}ms`));
       }, timeoutMs);
 
-      const checkConnection = async () => {
+      const checkConnection = (): void => {
         if (this.unityClient.connected) {
           clearTimeout(timeout);
           resolve();
@@ -63,11 +63,12 @@ export class UnityConnectionManager {
         this.unityDiscovery.start();
 
         // Set up callback for when Unity is discovered
-        this.unityDiscovery.setOnDiscoveredCallback(async () => {
+        this.unityDiscovery.setOnDiscoveredCallback(() => {
           // Wait for actual connection establishment
-          await this.unityClient.ensureConnected();
-          clearTimeout(timeout);
-          resolve();
+          void this.unityClient.ensureConnected().then(() => {
+            clearTimeout(timeout);
+            resolve();
+          });
         });
       };
 
@@ -101,7 +102,7 @@ export class UnityConnectionManager {
   /**
    * Initialize connection manager
    */
-  async initialize(onConnectionEstablished?: () => Promise<void>): Promise<void> {
+  initialize(onConnectionEstablished?: () => Promise<void>): void {
     if (this.isInitialized) {
       return;
     }
@@ -109,8 +110,8 @@ export class UnityConnectionManager {
     this.isInitialized = true;
 
     // Setup discovery callback
-    this.unityDiscovery.setOnDiscoveredCallback(async () => {
-      await this.handleUnityDiscovered(onConnectionEstablished);
+    this.unityDiscovery.setOnDiscoveredCallback(() => {
+      void this.handleUnityDiscovered(onConnectionEstablished);
     });
 
     // Setup connection lost callback for connection recovery
@@ -132,10 +133,11 @@ export class UnityConnectionManager {
    * Setup reconnection callback
    */
   setupReconnectionCallback(callback: () => Promise<void>): void {
-    this.unityClient.setReconnectedCallback(async () => {
+    this.unityClient.setReconnectedCallback(() => {
       // Force Unity discovery for faster reconnection
-      await this.unityDiscovery.forceDiscovery();
-      await callback();
+      void this.unityDiscovery.forceDiscovery().then(() => {
+        return callback();
+      });
     });
   }
 

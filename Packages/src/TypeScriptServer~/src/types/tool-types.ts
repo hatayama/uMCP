@@ -1,4 +1,4 @@
-import { z } from 'zod';
+// Remove unused import
 
 /**
  * Tool Type Definitions - Core interfaces for tool system
@@ -8,8 +8,7 @@ import { z } from 'zod';
  * Related classes:
  * - BaseTool: Base class that implements ToolHandler interface
  * - DynamicUnityCommandTool: Specific tool implementation
- * - UnityToolManager: Manages tools that use these types
- * - ToolRegistry: Manages tool registration using these interfaces
+ * - UnityToolManager: Manages dynamic tool registration from Unity commands
  *
  * Key features:
  * - ToolHandler interface for all tools
@@ -40,10 +39,17 @@ export interface ToolResponse {
 }
 
 /**
+ * Unity client interface for tool execution
+ */
+export interface UnityClient {
+  executeCommand(commandName: string, params?: Record<string, unknown>): Promise<unknown>;
+}
+
+/**
  * Tool execution context
  */
 export interface ToolContext {
-  unityClient: any; // UnityClient type will be defined later
+  unityClient: UnityClient;
 }
 
 /**
