@@ -12,6 +12,14 @@ namespace io.github.hatayama.uMCP
     public class McpConfigRepository
     {
         private readonly McpEditorType _editorType;
+        
+        // Security: Safe JSON serializer settings
+        private static readonly JsonSerializerSettings SafeJsonSettings = new JsonSerializerSettings
+        {
+            TypeNameHandling = TypeNameHandling.None, // Disable type information
+            DateParseHandling = DateParseHandling.None,
+            FloatParseHandling = FloatParseHandling.Double
+        };
 
         public McpConfigRepository(McpEditorType editorType = McpEditorType.Cursor)
         {
@@ -73,16 +81,23 @@ namespace io.github.hatayama.uMCP
             {
                 string jsonContent = File.ReadAllText(configPath);
                 
-                // First, load the existing JSON as a dictionary.
-                Dictionary<string, object> rootObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonContent);
+                // Security: Validate JSON content before deserialization
+                if (string.IsNullOrWhiteSpace(jsonContent) || jsonContent.Length > McpConstants.MAX_JSON_SIZE_BYTES)
+                {
+                    McpLogger.LogError($"Invalid JSON content in config file: {configPath}");
+                    return new McpConfig(new Dictionary<string, McpServerConfigData>());
+                }
+                
+                // First, load the existing JSON as a dictionary with safe settings.
+                Dictionary<string, object> rootObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonContent, SafeJsonSettings);
                 Dictionary<string, McpServerConfigData> servers = new();
             
             // Check if the mcpServers section exists.
             if (rootObject != null && rootObject.ContainsKey(McpConstants.JSON_KEY_MCP_SERVERS))
             {
-                // Get mcpServers as a dictionary.
-                string mcpServersJson = JsonConvert.SerializeObject(rootObject[McpConstants.JSON_KEY_MCP_SERVERS]);
-                Dictionary<string, object> mcpServersObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(mcpServersJson);
+                // Get mcpServers as a dictionary with safe settings.
+                string mcpServersJson = JsonConvert.SerializeObject(rootObject[McpConstants.JSON_KEY_MCP_SERVERS], SafeJsonSettings);
+                Dictionary<string, object> mcpServersObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(mcpServersJson, SafeJsonSettings);
                 
                 if (mcpServersObject != null)
                 {
@@ -90,9 +105,9 @@ namespace io.github.hatayama.uMCP
                     {
                         string serverName = serverEntry.Key;
                         
-                        // Get each server's settings as a dictionary.
-                        string serverConfigJson = JsonConvert.SerializeObject(serverEntry.Value);
-                        Dictionary<string, object> serverConfigObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(serverConfigJson);
+                        // Get each server's settings as a dictionary with safe settings.
+                        string serverConfigJson = JsonConvert.SerializeObject(serverEntry.Value, SafeJsonSettings);
+                        Dictionary<string, object> serverConfigObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(serverConfigJson, SafeJsonSettings);
                         
                         if (serverConfigObject != null)
                         {
@@ -101,15 +116,15 @@ namespace io.github.hatayama.uMCP
                             string[] args = new string[0];
                             if (serverConfigObject.ContainsKey(McpConstants.JSON_KEY_ARGS))
                             {
-                                string argsJson = JsonConvert.SerializeObject(serverConfigObject[McpConstants.JSON_KEY_ARGS]);
-                                args = JsonConvert.DeserializeObject<string[]>(argsJson) ?? new string[0];
+                                string argsJson = JsonConvert.SerializeObject(serverConfigObject[McpConstants.JSON_KEY_ARGS], SafeJsonSettings);
+                                args = JsonConvert.DeserializeObject<string[]>(argsJson, SafeJsonSettings) ?? new string[0];
                             }
                             
                             Dictionary<string, string> env = new();
                             if (serverConfigObject.ContainsKey(McpConstants.JSON_KEY_ENV))
                             {
-                                string envJson = JsonConvert.SerializeObject(serverConfigObject[McpConstants.JSON_KEY_ENV]);
-                                env = JsonConvert.DeserializeObject<Dictionary<string, string>>(envJson) ?? new Dictionary<string, string>();
+                                string envJson = JsonConvert.SerializeObject(serverConfigObject[McpConstants.JSON_KEY_ENV], SafeJsonSettings);
+                                env = JsonConvert.DeserializeObject<Dictionary<string, string>>(envJson, SafeJsonSettings) ?? new Dictionary<string, string>();
                             }
                             
                             servers[serverName] = new McpServerConfigData(command, args, env);
@@ -147,7 +162,8 @@ namespace io.github.hatayama.uMCP
             if (File.Exists(configPath))
             {
                 string existingContent = File.ReadAllText(configPath);
-                jsonStructure = JsonConvert.DeserializeObject<Dictionary<string, object>>(existingContent) ?? new Dictionary<string, object>();
+                // Security: Use safe settings for deserialization
+                jsonStructure = JsonConvert.DeserializeObject<Dictionary<string, object>>(existingContent, SafeJsonSettings) ?? new Dictionary<string, object>();
             }
             else
             {
@@ -165,7 +181,8 @@ namespace io.github.hatayama.uMCP
                 }
             );
 
-            string jsonContent = JsonConvert.SerializeObject(jsonStructure, Formatting.Indented);
+            // Security: Use safe settings for serialization
+            string jsonContent = JsonConvert.SerializeObject(jsonStructure, Formatting.Indented, SafeJsonSettings);
             File.WriteAllText(configPath, jsonContent);
         }
 

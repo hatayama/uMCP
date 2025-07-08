@@ -69,6 +69,13 @@ namespace io.github.hatayama.uMCP
                 // Register all commands - filtering will be handled by TypeScript side
                 foreach (Type type in commandTypes)
                 {
+                    // Security: Validate type before creating instance
+                    if (!IsValidCommandType(type))
+                    {
+                        UnityEngine.Debug.LogWarning($"{McpConstants.SECURITY_LOG_PREFIX} Skipping invalid command type: {type.FullName}");
+                        continue;
+                    }
+                    
                     IUnityCommand command = (IUnityCommand)Activator.CreateInstance(type);
                     RegisterCommand(command);
                 }
@@ -118,6 +125,52 @@ namespace io.github.hatayama.uMCP
         private bool IsCommandTypeRegistered<T>() where T : IUnityCommand
         {
             return commands.Values.Any(cmd => cmd.GetType() == typeof(T));
+        }
+        
+        /// <summary>
+        /// Security: Validate if the type is safe to instantiate
+        /// </summary>
+        private bool IsValidCommandType(Type type)
+        {
+            try
+            {
+                // Must implement IUnityCommand
+                if (!typeof(IUnityCommand).IsAssignableFrom(type))
+                {
+                    return false;
+                }
+                
+                // Must not be abstract or interface
+                if (type.IsAbstract || type.IsInterface)
+                {
+                    return false;
+                }
+                
+                // Must have McpTool attribute
+                if (type.GetCustomAttribute<McpToolAttribute>() == null)
+                {
+                    return false;
+                }
+                
+                // Must be in uMCP namespace (security restriction)
+                if (!type.Namespace?.StartsWith(McpConstants.UMCP_NAMESPACE_PREFIX) == true)
+                {
+                    return false;
+                }
+                
+                // Must have parameterless constructor
+                if (type.GetConstructor(Type.EmptyTypes) == null)
+                {
+                    return false;
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"{McpConstants.SECURITY_LOG_PREFIX} Error validating command type {type?.FullName}: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>

@@ -61,9 +61,10 @@ export class ConnectionManager {
    * Legacy method for backward compatibility - now does nothing
    * @deprecated Use UnityDiscovery for connection polling instead
    */
-  startPolling(_connectFn: () => Promise<void>): void {
+  startPolling(_connectFn?: () => Promise<void>): void {
     // No-op: polling is now handled by UnityDiscovery
     // This method is kept for backward compatibility
+    // The _connectFn parameter is intentionally unused and kept for backward compatibility
   }
 
   /**

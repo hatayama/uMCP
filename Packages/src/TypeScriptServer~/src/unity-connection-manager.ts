@@ -28,10 +28,10 @@ export class UnityConnectionManager {
   constructor(unityClient: UnityClient) {
     this.unityClient = unityClient;
     this.isDevelopment = process.env.NODE_ENV === ENVIRONMENT.NODE_ENV_DEVELOPMENT;
-    
+
     // Initialize Unity discovery service (singleton pattern prevents duplicates)
     this.unityDiscovery = new UnityDiscovery(this.unityClient);
-    
+
     // Set UnityDiscovery reference in UnityClient for unified connection management
     this.unityClient.setUnityDiscovery(this.unityDiscovery);
   }
@@ -82,16 +82,19 @@ export class UnityConnectionManager {
     try {
       await this.unityClient.ensureConnected();
       infoToFile('[Unity Connection] Unity connection established');
-      
+
       // Execute callback if provided
       if (onConnectionEstablished) {
         await onConnectionEstablished();
       }
-      
+
       // Stop discovery after successful connection
       this.unityDiscovery.stop();
     } catch (error) {
-      errorToFile('[Unity Connection] Failed to establish Unity connection after discovery:', error);
+      errorToFile(
+        '[Unity Connection] Failed to establish Unity connection after discovery:',
+        error,
+      );
     }
   }
 

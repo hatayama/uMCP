@@ -165,7 +165,7 @@ export class UnityToolManager {
    */
   async refreshDynamicTools(sendNotification?: () => void): Promise<void> {
     await this.initializeDynamicTools();
-    
+
     // Send tools changed notification to MCP client if callback provided
     if (sendNotification) {
       sendNotification();
@@ -189,7 +189,9 @@ export class UnityToolManager {
         const stack = new Error().stack;
         const callerLine = stack?.split('\n')[2]?.trim() || 'Unknown caller';
         const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
-        debugToFile(`[Unity Tool Manager] refreshDynamicToolsSafe called at ${timestamp} from: ${callerLine}`);
+        debugToFile(
+          `[Unity Tool Manager] refreshDynamicToolsSafe called at ${timestamp} from: ${callerLine}`,
+        );
       }
 
       await this.refreshDynamicTools(sendNotification);

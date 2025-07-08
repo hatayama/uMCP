@@ -53,7 +53,10 @@ export class UnityEventHandler {
       try {
         await onToolsChanged();
       } catch (error) {
-        errorToFile('[Unity Event Handler] Failed to update dynamic tools via Unity notification:', error);
+        errorToFile(
+          '[Unity Event Handler] Failed to update dynamic tools via Unity notification:',
+          error,
+        );
       }
     });
   }
@@ -64,7 +67,9 @@ export class UnityEventHandler {
   sendToolsChangedNotification(): void {
     if (this.isNotifying) {
       if (this.isDevelopment) {
-        debugToFile('[Unity Event Handler] sendToolsChangedNotification skipped: already notifying');
+        debugToFile(
+          '[Unity Event Handler] sendToolsChangedNotification skipped: already notifying',
+        );
       }
       return;
     }
