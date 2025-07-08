@@ -5,7 +5,7 @@ import { ToolHandler, ToolResponse, ToolContext } from '../types/tool-types.js';
  * Base class for tools
  * Provides common processing and template method pattern
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - DynamicUnityCommandTool: Extends this class for Unity command tools

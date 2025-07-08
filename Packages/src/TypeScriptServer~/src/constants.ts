@@ -2,7 +2,7 @@
  * Unity MCP Server common constants
  * Centralized management of constants used across all files
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related files:
  * - server.ts: Main server that uses these constants

@@ -1,7 +1,7 @@
 /**
  * Safe Timer Utility - Prevents orphaned processes by ensuring automatic cleanup
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityClient: Uses safeSetTimeout function from this utility

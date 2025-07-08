@@ -29,7 +29,7 @@ import packageJson from '../package.json' assert { type: 'json' };
 /**
  * Unity MCP Server - Bridge between MCP protocol and Unity Editor
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityConnectionManager: Manages Unity connection and discovery

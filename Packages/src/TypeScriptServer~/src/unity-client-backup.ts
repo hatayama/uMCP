@@ -8,7 +8,7 @@ import { MessageHandler } from './message-handler.js';
 /**
  * TCP/IP client for communication with Unity
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityMcpServer: The main server class that uses this client

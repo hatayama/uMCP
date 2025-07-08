@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * Tool Type Definitions - Core interfaces for tool system
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - BaseTool: Base class that implements ToolHandler interface

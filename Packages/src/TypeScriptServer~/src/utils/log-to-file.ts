@@ -1,7 +1,7 @@
 /**
  * File-based Logger for MCP Server
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - All server classes use this utility for safe logging

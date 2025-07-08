@@ -5,7 +5,7 @@ import { LIST_CHANGED_UNSUPPORTED_CLIENTS, DEFAULT_CLIENT_NAME } from './constan
 /**
  * MCP Client Compatibility Manager - Manages client-specific compatibility and list_changed handling
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityClient: Manages communication with Unity Editor

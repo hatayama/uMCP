@@ -6,7 +6,7 @@ import { ENVIRONMENT } from './constants.js';
 /**
  * Unity Connection Manager - Manages Unity connection and discovery functionality
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityClient: Manages TCP connection to Unity Editor

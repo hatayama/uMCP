@@ -7,7 +7,7 @@ import { ENVIRONMENT } from './constants.js';
 /**
  * Unity Tool Manager - Manages dynamic tool generation and management
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityClient: Manages communication with Unity Editor

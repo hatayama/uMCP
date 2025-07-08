@@ -5,7 +5,7 @@ import { DynamicUnityCommandTool } from './dynamic-unity-command-tool.js';
  * Tool registry
  * Responsible for tool registration, management, and execution
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - DynamicUnityCommandTool: Dynamically creates tools for Unity commands

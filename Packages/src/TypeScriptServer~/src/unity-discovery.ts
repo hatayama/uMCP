@@ -8,7 +8,7 @@ import { UnityClient } from './unity-client.js';
  * Handles both Unity discovery and connection polling in a single timer
  * to prevent multiple concurrent timers and improve stability.
  *
- * Design document reference: Packages/src/Editor/ARCHITECTURE.md
+ * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityClient: TCP client that this service manages discovery for
