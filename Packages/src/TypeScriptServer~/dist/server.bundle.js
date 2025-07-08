@@ -5522,7 +5522,8 @@ var POLLING = {
 var LIST_CHANGED_UNSUPPORTED_CLIENTS = [
   "claude",
   "claude-code",
-  "gemini"
+  "gemini",
+  "windsurf"
 ];
 
 // src/utils/log-to-file.ts

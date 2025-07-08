@@ -130,4 +130,5 @@ export const LIST_CHANGED_UNSUPPORTED_CLIENTS = [
   'claude',
   'claude-code', 
   'gemini',
+  'windsurf',
 ] as const;
