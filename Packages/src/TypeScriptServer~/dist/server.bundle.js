@@ -5519,6 +5519,10 @@ var POLLING = {
   BUFFER_SECONDS: 15
   // Increased for safer Unity startup timing
 };
+var LIST_CHANGED_UNSUPPORTED_CLIENTS = [
+  "claude",
+  "claude-code"
+];
 
 // src/utils/log-to-file.ts
 import * as fs from "fs";
@@ -6669,6 +6673,67 @@ var UnityMcpServer = class {
     this.setupSignalHandlers();
   }
   /**
+   * Check if client doesn't support list_changed notifications
+   */
+  isListChangedUnsupported(clientName) {
+    if (!clientName) return false;
+    const normalizedName = clientName.toLowerCase();
+    return LIST_CHANGED_UNSUPPORTED_CLIENTS.some(
+      (unsupported) => normalizedName.includes(unsupported)
+    );
+  }
+  /**
+   * Wait for Unity connection with timeout
+   */
+  async waitForUnityConnectionWithTimeout(timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Unity connection timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+      const checkConnection = async () => {
+        if (this.unityClient.connected) {
+          clearTimeout(timeout);
+          resolve();
+          return;
+        }
+        this.unityDiscovery.start();
+        this.unityDiscovery.setOnDiscoveredCallback(async () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      };
+      void checkConnection();
+    });
+  }
+  /**
+   * Get tools from Unity
+   */
+  async getToolsFromUnity() {
+    if (!this.unityClient.connected) {
+      return [];
+    }
+    try {
+      await this.handleClientNameInitialization();
+      const commandDetails = await this.fetchCommandDetailsFromUnity();
+      if (!commandDetails) {
+        return [];
+      }
+      this.createDynamicToolsFromCommands(commandDetails);
+      const tools = [];
+      for (const [toolName, dynamicTool] of this.dynamicTools) {
+        tools.push({
+          name: toolName,
+          description: dynamicTool.description,
+          inputSchema: dynamicTool.inputSchema
+        });
+      }
+      return tools;
+    } catch (error) {
+      errorToFile("[Unity MCP] Failed to get tools from Unity:", error);
+      return [];
+    }
+  }
+  /**
    * Initialize dynamic Unity command tools
    */
   async initializeDynamicTools() {
@@ -6781,21 +6846,57 @@ var UnityMcpServer = class {
   setupHandlers() {
     this.server.setRequestHandler(InitializeRequestSchema, async (request) => {
       const clientInfo = request.params?.clientInfo;
-      if (clientInfo?.name) {
-        this.clientName = clientInfo.name;
+      const clientName = clientInfo?.name || "";
+      if (clientName) {
+        this.clientName = clientName;
         infoToFile(`[Unity MCP] Client name received: ${this.clientName}`);
       }
       if (!this.isInitialized) {
         this.isInitialized = true;
-        infoToFile(
-          `[Unity MCP] Initializing Unity connection with client name: ${this.clientName}`
-        );
-        void this.initializeDynamicTools().then(() => {
-          infoToFile("[Unity MCP] Unity connection established successfully");
-        }).catch((error) => {
-          errorToFile("[Unity MCP] Unity connection initialization failed:", error);
-          this.unityDiscovery.start();
-        });
+        if (this.isListChangedUnsupported(clientName)) {
+          infoToFile(`[Unity MCP] Sync initialization for list_changed unsupported client: ${clientName}`);
+          try {
+            await this.waitForUnityConnectionWithTimeout(1e4);
+            const tools = await this.getToolsFromUnity();
+            infoToFile(`[Unity MCP] Returning ${tools.length} tools for ${clientName}`);
+            return {
+              protocolVersion: MCP_PROTOCOL_VERSION,
+              capabilities: {
+                tools: {
+                  listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+                }
+              },
+              serverInfo: {
+                name: MCP_SERVER_NAME,
+                version: package_default.version
+              },
+              tools
+            };
+          } catch (error) {
+            errorToFile(`[Unity MCP] Unity connection timeout for ${clientName}:`, error);
+            return {
+              protocolVersion: MCP_PROTOCOL_VERSION,
+              capabilities: {
+                tools: {
+                  listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+                }
+              },
+              serverInfo: {
+                name: MCP_SERVER_NAME,
+                version: package_default.version
+              },
+              tools: []
+            };
+          }
+        } else {
+          infoToFile(`[Unity MCP] Async initialization for list_changed supported client: ${clientName}`);
+          void this.initializeDynamicTools().then(() => {
+            infoToFile("[Unity MCP] Unity connection established successfully");
+          }).catch((error) => {
+            errorToFile("[Unity MCP] Unity connection initialization failed:", error);
+            this.unityDiscovery.start();
+          });
+        }
       }
       return {
         protocolVersion: MCP_PROTOCOL_VERSION,

@@ -124,3 +124,6 @@ export const LOG_MESSAGES = {
   SERVER_LOG_START_PREFIX: '=== Unity MCP Server Log Started at',
   CONNECTION_RECOVERY_POLLING: 'Starting connection recovery polling',
 } as const;
+
+// List of clients that don't support list_changed notifications
+export const LIST_CHANGED_UNSUPPORTED_CLIENTS = ['claude', 'claude-code'] as const;
