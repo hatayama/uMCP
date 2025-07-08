@@ -40,6 +40,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
+// Security: Path validation to ensure paths are within expected directories
+const isValidPath = (filePath: string): boolean => {
+  const normalized = path.normalize(filePath);
+  return !normalized.includes('..') && path.isAbsolute(normalized);
+};
+
 // Create log file path with timestamp
 // Find project root by looking for specific Unity project files
 const findProjectRoot = (): string => {
@@ -61,7 +67,9 @@ const findProjectRoot = (): string => {
 
     const hasUnityFiles = unityIndicators.every((indicator) => {
       try {
-        return fs.existsSync(path.join(currentDir, indicator));
+        const checkPath = path.join(currentDir, indicator);
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        return isValidPath(checkPath) && fs.existsSync(checkPath);
       } catch {
         return false;
       }
@@ -93,11 +101,19 @@ const writeToFile = (message: string): void => {
   try {
     // Create directory only when first write attempt is made
     if (!directoryCreated) {
+      if (!isValidPath(logDir)) {
+        return; // Security: Invalid path detected
+      }
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.mkdirSync(logDir, { recursive: true });
       directoryCreated = true;
     }
 
+    if (!isValidPath(logFile)) {
+      return; // Security: Invalid file path detected
+    }
     const timestamp = new Date().toISOString();
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.appendFileSync(logFile, `${timestamp} ${message}\n`);
   } catch (error) {
     // Silent failure - no fallback needed since stderr is not visible

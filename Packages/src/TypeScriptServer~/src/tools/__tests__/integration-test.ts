@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { McpConnectionValidator } from './mcp-connection.test.js';
+import { infoToFile, errorToFile } from '../../utils/log-to-file.js';
 
 /**
  * TDD Integration Test Suite
@@ -15,14 +16,14 @@ class IntegrationTestSuite {
    */
   private runTest(testName: string, testFn: () => void): void {
     try {
-      console.log(`${testName}...`);
+      infoToFile(`${testName}...`);
       testFn();
       this.testResults.push({ name: testName, passed: true });
-      console.log(`${testName} PASSED`);
+      infoToFile(`${testName} PASSED`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.testResults.push({ name: testName, passed: false, error: errorMsg });
-      console.error(`${testName} FAILED: ${errorMsg}`);
+      errorToFile(`${testName} FAILED: ${errorMsg}`);
       throw error; // Fail fast
     }
   }
@@ -51,9 +52,14 @@ class IntegrationTestSuite {
 
     for (const msg of testMessages) {
       const jsonStr = JSON.stringify(msg);
-      const parsed = JSON.parse(jsonStr);
+      const parsed: unknown = JSON.parse(jsonStr);
 
-      if (!parsed.method || !parsed.jsonrpc) {
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        !('method' in parsed) ||
+        !('jsonrpc' in parsed)
+      ) {
         throw new Error(`Invalid JSON RPC message: ${jsonStr}`);
       }
     }
@@ -81,9 +87,8 @@ class IntegrationTestSuite {
     const expectedInterval = 5000; // 5 seconds
 
     // Create a test timer to verify timing
-    let callCount = 0;
     const testTimer = setInterval(() => {
-      callCount++;
+      // Timer callback for testing purposes
     }, expectedInterval);
 
     // Verify timer was created
@@ -117,11 +122,11 @@ class IntegrationTestSuite {
   /**
    * Run all integration tests
    */
-  async runAllTests(): Promise<void> {
-    console.log('Starting TDD Integration Test Suite');
-    console.log('Contract-based testing with fail-fast approach');
-    console.log('5-second notification interval validation');
-    console.log('='.repeat(60));
+  runAllTests(): void {
+    infoToFile('Starting TDD Integration Test Suite');
+    infoToFile('Contract-based testing with fail-fast approach');
+    infoToFile('5-second notification interval validation');
+    infoToFile('='.repeat(60));
 
     try {
       this.runTest('MCP Server Setup & Configuration', () => this.testMcpServerSetup());
@@ -131,26 +136,26 @@ class IntegrationTestSuite {
       this.runTest('Tool Count Toggle Logic', () => this.testToolCountLogic());
 
       // Success summary
-      console.log('='.repeat(60));
-      console.log('ALL INTEGRATION TESTS PASSED');
-      console.log('MCP Server ready for Cursor deployment');
-      console.log('5-second notification interval confirmed');
-      console.log('Contract-based validation successful');
+      infoToFile('='.repeat(60));
+      infoToFile('ALL INTEGRATION TESTS PASSED');
+      infoToFile('MCP Server ready for Cursor deployment');
+      infoToFile('5-second notification interval confirmed');
+      infoToFile('Contract-based validation successful');
 
       process.exit(0);
     } catch (error) {
       // Failure summary
-      console.log('='.repeat(60));
-      console.error('INTEGRATION TESTS FAILED');
-      console.error('Fail-fast triggered - deployment blocked');
+      errorToFile('='.repeat(60));
+      errorToFile('INTEGRATION TESTS FAILED');
+      errorToFile('Fail-fast triggered - deployment blocked');
 
       // Show test results
-      console.log('\nTest Results:');
+      errorToFile('\nTest Results:');
       for (const result of this.testResults) {
         const status = result.passed ? 'PASSED' : 'FAILED';
-        console.log(`${status} ${result.name}`);
+        errorToFile(`${status} ${result.name}`);
         if (result.error) {
-          console.log(`   Error: ${result.error}`);
+          errorToFile(`   Error: ${result.error}`);
         }
       }
 
@@ -162,8 +167,10 @@ class IntegrationTestSuite {
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const suite = new IntegrationTestSuite();
-  suite.runAllTests().catch((error) => {
-    console.error('Fatal integration test error:', error);
+  try {
+    suite.runAllTests();
+  } catch (error) {
+    errorToFile('Fatal integration test error:', error);
     process.exit(1);
-  });
+  }
 }

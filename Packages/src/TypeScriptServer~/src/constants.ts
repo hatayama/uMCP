@@ -30,6 +30,11 @@ export const MCP_SERVER_NAME = 'umcp-server';
 // MCP Capabilities
 export const TOOLS_LIST_CHANGED_CAPABILITY = true;
 
+// MCP Notification methods
+export const NOTIFICATION_METHODS = {
+  TOOLS_LIST_CHANGED: 'notifications/tools/list_changed',
+} as const;
+
 // Server configuration (legacy - kept for backward compatibility)
 export const SERVER_CONFIG = {
   NAME: 'unity-mcp-server',

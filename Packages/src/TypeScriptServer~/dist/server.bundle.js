@@ -5480,6 +5480,9 @@ import * as net from "net";
 var MCP_PROTOCOL_VERSION = "2024-11-05";
 var MCP_SERVER_NAME = "umcp-server";
 var TOOLS_LIST_CHANGED_CAPABILITY = true;
+var NOTIFICATION_METHODS = {
+  TOOLS_LIST_CHANGED: "notifications/tools/list_changed"
+};
 var UNITY_CONNECTION = {
   DEFAULT_PORT: "8700",
   DEFAULT_HOST: "localhost",
@@ -5530,6 +5533,10 @@ var LIST_CHANGED_UNSUPPORTED_CLIENTS = [
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+var isValidPath = (filePath) => {
+  const normalized = path.normalize(filePath);
+  return !normalized.includes("..") && path.isAbsolute(normalized);
+};
 var findProjectRoot = () => {
   const __filename = fileURLToPath(import.meta.url);
   let currentDir = path.dirname(__filename);
@@ -5543,7 +5550,8 @@ var findProjectRoot = () => {
     const unityIndicators = ["ProjectSettings", "Assets", "Packages"];
     const hasUnityFiles = unityIndicators.every((indicator) => {
       try {
-        return fs.existsSync(path.join(currentDir, indicator));
+        const checkPath = path.join(currentDir, indicator);
+        return isValidPath(checkPath) && fs.existsSync(checkPath);
       } catch {
         return false;
       }
@@ -5565,8 +5573,14 @@ var directoryCreated = false;
 var writeToFile = (message) => {
   try {
     if (!directoryCreated) {
+      if (!isValidPath(logDir)) {
+        return;
+      }
       fs.mkdirSync(logDir, { recursive: true });
       directoryCreated = true;
+    }
+    if (!isValidPath(logFile)) {
+      return;
     }
     const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
     fs.appendFileSync(logFile, `${timestamp2} ${message}
@@ -5745,6 +5759,15 @@ var ConnectionManager = class {
 };
 
 // src/message-handler.ts
+var isJsonRpcNotification = (msg) => {
+  return typeof msg === "object" && msg !== null && "method" in msg && typeof msg.method === "string" && !("id" in msg);
+};
+var isJsonRpcResponse = (msg) => {
+  return typeof msg === "object" && msg !== null && "id" in msg && typeof msg.id === "number" && !("method" in msg);
+};
+var hasValidId = (msg) => {
+  return typeof msg === "object" && msg !== null && "id" in msg && typeof msg.id === "number";
+};
 var MessageHandler = class {
   notificationHandlers = /* @__PURE__ */ new Map();
   pendingRequests = /* @__PURE__ */ new Map();
@@ -5774,9 +5797,11 @@ var MessageHandler = class {
       const lines = data.split("\n").filter((line) => line.trim());
       for (const line of lines) {
         const message = JSON.parse(line);
-        if (message.method && !message.hasOwnProperty("id")) {
+        if (isJsonRpcNotification(message)) {
           this.handleNotification(message);
-        } else if (message.id) {
+        } else if (isJsonRpcResponse(message)) {
+          this.handleResponse(message);
+        } else if (hasValidId(message)) {
           this.handleResponse(message);
         }
       }
@@ -5819,7 +5844,7 @@ var MessageHandler = class {
    * Clear all pending requests (used during disconnect)
    */
   clearPendingRequests(reason) {
-    for (const [id, pending] of this.pendingRequests) {
+    for (const [, pending] of this.pendingRequests) {
       pending.reject(new Error(reason));
     }
     this.pendingRequests.clear();
@@ -6053,35 +6078,12 @@ var UnityClient = class {
       method: commandName,
       params
     };
-    const timeoutMs = this.getTimeoutForCommand(commandName, params);
+    const timeoutMs = params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0 ? (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1e3 : TIMEOUTS.PING;
     const response = await this.sendRequest(request, timeoutMs);
     if (response.error) {
       throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
     }
     return response.result;
-  }
-  /**
-   * Get timeout duration for specific command
-   * Now supports dynamic TimeoutSeconds parameter for all commands
-   */
-  getTimeoutForCommand(commandName, params) {
-    if (params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0) {
-      const calculatedTimeout = (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1e3;
-      return calculatedTimeout;
-    }
-    switch (commandName) {
-      case "runtests":
-        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1e3 + POLLING.BUFFER_SECONDS) * 1e3;
-        return defaultTimeout;
-      case "compile":
-        return TIMEOUTS.COMPILE;
-      case "getlogs":
-        return TIMEOUTS.GET_LOGS;
-      case "ping":
-        return TIMEOUTS.PING;
-      default:
-        return TIMEOUTS.PING;
-    }
   }
   /**
    * Generate unique request ID
@@ -6115,7 +6117,9 @@ var UnityClient = class {
         request.params,
         request.id
       );
-      this.socket.write(requestStr);
+      if (this.socket) {
+        this.socket.write(requestStr);
+      }
     });
   }
   /**
@@ -6139,7 +6143,7 @@ var UnityClient = class {
    */
   handleConnectionLoss() {
     this.connectionManager.triggerConnectionLost();
-    if (this.unityDiscovery && this.unityDiscovery.handleConnectionLost) {
+    if (this.unityDiscovery) {
       this.unityDiscovery.handleConnectionLost();
     }
   }
@@ -6415,17 +6419,18 @@ var UnityConnectionManager = class {
       const timeout = setTimeout(() => {
         reject(new Error(`Unity connection timeout after ${timeoutMs}ms`));
       }, timeoutMs);
-      const checkConnection = async () => {
+      const checkConnection = () => {
         if (this.unityClient.connected) {
           clearTimeout(timeout);
           resolve();
           return;
         }
         this.unityDiscovery.start();
-        this.unityDiscovery.setOnDiscoveredCallback(async () => {
-          await this.unityClient.ensureConnected();
-          clearTimeout(timeout);
-          resolve();
+        this.unityDiscovery.setOnDiscoveredCallback(() => {
+          void this.unityClient.ensureConnected().then(() => {
+            clearTimeout(timeout);
+            resolve();
+          });
         });
       };
       void checkConnection();
@@ -6452,13 +6457,13 @@ var UnityConnectionManager = class {
   /**
    * Initialize connection manager
    */
-  async initialize(onConnectionEstablished) {
+  initialize(onConnectionEstablished) {
     if (this.isInitialized) {
       return;
     }
     this.isInitialized = true;
-    this.unityDiscovery.setOnDiscoveredCallback(async () => {
-      await this.handleUnityDiscovered(onConnectionEstablished);
+    this.unityDiscovery.setOnDiscoveredCallback(() => {
+      void this.handleUnityDiscovered(onConnectionEstablished);
     });
     this.unityDiscovery.setOnConnectionLostCallback(() => {
       if (this.isDevelopment) {
@@ -6474,9 +6479,10 @@ var UnityConnectionManager = class {
    * Setup reconnection callback
    */
   setupReconnectionCallback(callback) {
-    this.unityClient.setReconnectedCallback(async () => {
-      await this.unityDiscovery.forceDiscovery();
-      await callback();
+    this.unityClient.setReconnectedCallback(() => {
+      void this.unityDiscovery.forceDiscovery().then(() => {
+        return callback();
+      });
     });
   }
   /**
@@ -6516,6 +6522,9 @@ var BaseTool = class {
    * Format success response (can be overridden in subclass)
    */
   formatResponse(result) {
+    if (typeof result === "object" && result !== null && "content" in result) {
+      return result;
+    }
     return {
       content: [
         {
@@ -6564,30 +6573,34 @@ var DynamicUnityCommandTool = class extends BaseTool {
     }
     const properties = {};
     const required = [];
-    for (const [propName, propInfo] of Object.entries(
-      parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]
-    )) {
+    const propertiesObj = parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY];
+    for (const [propName, propInfo] of Object.entries(propertiesObj)) {
       const info = propInfo;
       const property = {
-        type: this.convertType(info[PARAMETER_SCHEMA.TYPE_PROPERTY]),
-        description: info[PARAMETER_SCHEMA.DESCRIPTION_PROPERTY] || `Parameter: ${propName}`
+        type: this.convertType(String(info[PARAMETER_SCHEMA.TYPE_PROPERTY] || "string")),
+        description: String(
+          info[PARAMETER_SCHEMA.DESCRIPTION_PROPERTY] || `Parameter: ${propName}`
+        )
       };
-      if (info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== void 0 && info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] !== null) {
-        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
+      const defaultValue = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
+      if (defaultValue !== void 0 && defaultValue !== null) {
+        property.default = defaultValue;
       }
-      if (info[PARAMETER_SCHEMA.ENUM_PROPERTY] && Array.isArray(info[PARAMETER_SCHEMA.ENUM_PROPERTY]) && info[PARAMETER_SCHEMA.ENUM_PROPERTY].length > 0) {
-        property.enum = info[PARAMETER_SCHEMA.ENUM_PROPERTY];
+      const enumValues = info[PARAMETER_SCHEMA.ENUM_PROPERTY];
+      if (enumValues && Array.isArray(enumValues) && enumValues.length > 0) {
+        property.enum = enumValues;
       }
-      if (info[PARAMETER_SCHEMA.TYPE_PROPERTY] === "array" && info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY] && Array.isArray(info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY])) {
+      if (info[PARAMETER_SCHEMA.TYPE_PROPERTY] === "array" && defaultValue && Array.isArray(defaultValue)) {
         property.items = {
           type: "string"
         };
-        property.default = info[PARAMETER_SCHEMA.DEFAULT_VALUE_PROPERTY];
+        property.default = defaultValue;
       }
       properties[propName] = property;
     }
-    if (parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY] && Array.isArray(parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY])) {
-      required.push(...parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY]);
+    const requiredParams = parameterSchema[PARAMETER_SCHEMA.REQUIRED_PROPERTY];
+    if (requiredParams && Array.isArray(requiredParams)) {
+      required.push(...requiredParams);
     }
     const schema = {
       type: "object",
@@ -6615,7 +6628,14 @@ var DynamicUnityCommandTool = class extends BaseTool {
     }
   }
   hasNoParameters(parameterSchema) {
-    return !parameterSchema || !parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY] || Object.keys(parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY]).length === 0;
+    if (!parameterSchema) {
+      return true;
+    }
+    const properties = parameterSchema[PARAMETER_SCHEMA.PROPERTIES_PROPERTY];
+    if (!properties || typeof properties !== "object") {
+      return true;
+    }
+    return Object.keys(properties).length === 0;
   }
   validateArgs(args) {
     if (!this.inputSchema.properties || Object.keys(this.inputSchema.properties).length === 0) {
@@ -6626,7 +6646,10 @@ var DynamicUnityCommandTool = class extends BaseTool {
   async execute(args) {
     try {
       const actualArgs = this.validateArgs(args);
-      const result = await this.context.unityClient.executeCommand(this.commandName, actualArgs);
+      const result = await this.context.unityClient.executeCommand(
+        this.commandName,
+        actualArgs
+      );
       return {
         content: [
           {
@@ -6934,7 +6957,7 @@ var UnityEventHandler = class {
    * Setup Unity event listener for automatic tool updates
    */
   setupUnityEventListener(onToolsChanged) {
-    this.unityClient.onNotification("notifications/tools/list_changed", async (params) => {
+    this.unityClient.onNotification("notifications/tools/list_changed", (params) => {
       if (this.isDevelopment) {
         const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
         debugToFile(
@@ -6943,7 +6966,7 @@ var UnityEventHandler = class {
         debugToFile(`[TRACE] Notification params: ${JSON.stringify(params)}`);
       }
       try {
-        await onToolsChanged();
+        void onToolsChanged();
       } catch (error) {
         errorToFile(
           "[Unity Event Handler] Failed to update dynamic tools via Unity notification:",
@@ -6966,8 +6989,8 @@ var UnityEventHandler = class {
     }
     this.isNotifying = true;
     try {
-      this.server.notification({
-        method: "notifications/tools/list_changed",
+      void this.server.notification({
+        method: NOTIFICATION_METHODS.TOOLS_LIST_CHANGED,
         params: {}
       });
       if (this.isDevelopment) {
@@ -7062,7 +7085,9 @@ var package_default = {
     "lint:fix": "eslint src --ext .ts --fix",
     "security:check": "eslint src --ext .ts",
     "security:fix": "eslint src --ext .ts --fix",
+    "security:only": "eslint src --ext .ts --config .eslintrc.security.json",
     "security:sarif": "eslint src --ext .ts -f @microsoft/eslint-formatter-sarif -o security-results.sarif",
+    "security:sarif-only": "eslint src --ext .ts --config .eslintrc.security.json -f @microsoft/eslint-formatter-sarif -o typescript-security.sarif",
     format: "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "lint:check": "npm run lint && npm run format:check",
@@ -7258,7 +7283,11 @@ var UnityMcpServer = class {
       try {
         if (this.toolManager.hasTool(name)) {
           const dynamicTool = this.toolManager.getTool(name);
-          return await dynamicTool.execute(args);
+          if (!dynamicTool) {
+            throw new Error(`Tool ${name} is not available`);
+          }
+          const result = await dynamicTool.execute(args);
+          return result;
         }
         throw new Error(`Unknown tool: ${name}`);
       } catch (error) {
@@ -7283,7 +7312,7 @@ var UnityMcpServer = class {
         this.eventHandler.sendToolsChangedNotification();
       });
     });
-    await this.connectionManager.initialize(async () => {
+    this.connectionManager.initialize(async () => {
       const clientName = this.clientCompatibility.getClientName();
       if (clientName) {
         this.toolManager.setClientName(clientName);
@@ -7304,9 +7333,9 @@ var UnityMcpServer = class {
 var server = new UnityMcpServer();
 server.start().catch((error) => {
   errorToFile("[FATAL] Server startup failed:", error);
-  console.error("[FATAL] Unity MCP Server startup failed:");
-  console.error("Error details:", error instanceof Error ? error.message : String(error));
-  console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace available");
-  console.error("Make sure Unity is running and the MCP bridge is properly configured.");
+  errorToFile("[FATAL] Unity MCP Server startup failed:");
+  errorToFile("Error details:", error instanceof Error ? error.message : String(error));
+  errorToFile("Stack trace:", error instanceof Error ? error.stack : "No stack trace available");
+  errorToFile("Make sure Unity is running and the MCP bridge is properly configured.");
   process.exit(1);
 });

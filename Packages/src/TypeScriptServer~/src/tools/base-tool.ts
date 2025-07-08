@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { ToolHandler, ToolResponse, ToolContext } from '../types/tool-types.js';
 
 /**
@@ -28,8 +27,8 @@ export abstract class BaseTool implements ToolHandler {
    */
   async handle(args: unknown): Promise<ToolResponse> {
     try {
-      const validatedArgs = this.validateArgs(args);
-      const result = await this.execute(validatedArgs);
+      const validatedArgs: Record<string, unknown> = this.validateArgs(args);
+      const result: ToolResponse | string = await this.execute(validatedArgs);
       return this.formatResponse(result);
     } catch (error) {
       return this.formatErrorResponse(error);
@@ -39,17 +38,20 @@ export abstract class BaseTool implements ToolHandler {
   /**
    * Argument validation (implemented in subclass)
    */
-  protected abstract validateArgs(args: unknown): any;
+  protected abstract validateArgs(args: unknown): Record<string, unknown>;
 
   /**
    * Actual processing (implemented in subclass)
    */
-  protected abstract execute(args: any): Promise<any>;
+  protected abstract execute(args: Record<string, unknown>): Promise<ToolResponse | string>;
 
   /**
    * Format success response (can be overridden in subclass)
    */
-  protected formatResponse(result: any): ToolResponse {
+  protected formatResponse(result: ToolResponse | string): ToolResponse {
+    if (typeof result === 'object' && result !== null && 'content' in result) {
+      return result;
+    }
     return {
       content: [
         {

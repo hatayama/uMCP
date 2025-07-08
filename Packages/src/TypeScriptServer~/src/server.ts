@@ -14,6 +14,7 @@ import { UnityConnectionManager } from './unity-connection-manager.js';
 import { UnityToolManager } from './unity-tool-manager.js';
 import { McpClientCompatibility } from './mcp-client-compatibility.js';
 import { UnityEventHandler } from './unity-event-handler.js';
+import { ToolResponse } from './types/tool-types.js';
 import {
   ENVIRONMENT,
   MCP_PROTOCOL_VERSION,
@@ -210,8 +211,12 @@ class UnityMcpServer {
       try {
         // Check if it's a dynamic Unity command tool
         if (this.toolManager.hasTool(name)) {
-          const dynamicTool = this.toolManager.getTool(name)!;
-          return await dynamicTool.execute(args);
+          const dynamicTool = this.toolManager.getTool(name);
+          if (!dynamicTool) {
+            throw new Error(`Tool ${name} is not available`);
+          }
+          const result: ToolResponse = await dynamicTool.execute(args);
+          return result;
         }
 
         // All tools should be handled by dynamic tools
@@ -242,7 +247,7 @@ class UnityMcpServer {
     });
 
     // Initialize connection manager with callback for tool initialization
-    await this.connectionManager.initialize(async () => {
+    this.connectionManager.initialize(async () => {
       // If we have a client name, initialize tools immediately
       const clientName = this.clientCompatibility.getClientName();
       if (clientName) {
@@ -272,9 +277,9 @@ const server = new UnityMcpServer();
 
 server.start().catch((error) => {
   errorToFile('[FATAL] Server startup failed:', error);
-  console.error('[FATAL] Unity MCP Server startup failed:');
-  console.error('Error details:', error instanceof Error ? error.message : String(error));
-  console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
-  console.error('Make sure Unity is running and the MCP bridge is properly configured.');
+  errorToFile('[FATAL] Unity MCP Server startup failed:');
+  errorToFile('Error details:', error instanceof Error ? error.message : String(error));
+  errorToFile('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
+  errorToFile('Make sure Unity is running and the MCP bridge is properly configured.');
   process.exit(1);
 });

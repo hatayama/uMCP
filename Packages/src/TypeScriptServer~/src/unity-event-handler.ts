@@ -2,7 +2,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { UnityClient } from './unity-client.js';
 import { UnityConnectionManager } from './unity-connection-manager.js';
 import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
-import { ENVIRONMENT } from './constants.js';
+import { ENVIRONMENT, NOTIFICATION_METHODS } from './constants.js';
 
 /**
  * Unity Event Handler - Manages Unity notifications and event processing
@@ -41,7 +41,7 @@ export class UnityEventHandler {
    */
   setupUnityEventListener(onToolsChanged: () => Promise<void>): void {
     // Listen for MCP standard notifications from Unity
-    this.unityClient.onNotification('notifications/tools/list_changed', async (params: unknown) => {
+    this.unityClient.onNotification('notifications/tools/list_changed', (params: unknown) => {
       if (this.isDevelopment) {
         const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
         debugToFile(
@@ -51,7 +51,7 @@ export class UnityEventHandler {
       }
 
       try {
-        await onToolsChanged();
+        void onToolsChanged();
       } catch (error) {
         errorToFile(
           '[Unity Event Handler] Failed to update dynamic tools via Unity notification:',
@@ -76,8 +76,8 @@ export class UnityEventHandler {
 
     this.isNotifying = true;
     try {
-      this.server.notification({
-        method: 'notifications/tools/list_changed',
+      void this.server.notification({
+        method: NOTIFICATION_METHODS.TOOLS_LIST_CHANGED,
         params: {},
       });
       if (this.isDevelopment) {

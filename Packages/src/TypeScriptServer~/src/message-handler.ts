@@ -1,6 +1,50 @@
 import { JSONRPC } from './constants.js';
 import { errorToFile, warnToFile } from './utils/log-to-file.js';
 
+// Type definitions for JSON-RPC messages
+interface JsonRpcNotification {
+  method: string;
+  params?: unknown;
+  jsonrpc?: string;
+}
+
+interface JsonRpcResponse {
+  id: number;
+  result?: unknown;
+  error?: { message: string };
+  jsonrpc?: string;
+}
+
+// Type guard functions
+const isJsonRpcNotification = (msg: unknown): msg is JsonRpcNotification => {
+  return (
+    typeof msg === 'object' &&
+    msg !== null &&
+    'method' in msg &&
+    typeof (msg as JsonRpcNotification).method === 'string' &&
+    !('id' in msg)
+  );
+};
+
+const isJsonRpcResponse = (msg: unknown): msg is JsonRpcResponse => {
+  return (
+    typeof msg === 'object' &&
+    msg !== null &&
+    'id' in msg &&
+    typeof (msg as JsonRpcResponse).id === 'number' &&
+    !('method' in msg)
+  );
+};
+
+const hasValidId = (msg: unknown): msg is { id: number } => {
+  return (
+    typeof msg === 'object' &&
+    msg !== null &&
+    'id' in msg &&
+    typeof (msg as { id: number }).id === 'number'
+  );
+};
+
 /**
  * Handles JSON-RPC message processing
  * Follows Single Responsibility Principle - only handles message parsing and routing
@@ -51,14 +95,17 @@ export class MessageHandler {
       const lines = data.split('\n').filter((line) => line.trim());
 
       for (const line of lines) {
-        const message = JSON.parse(line);
+        const message: unknown = JSON.parse(line);
 
         // Check if this is a notification (no id field)
-        if (message.method && !message.hasOwnProperty('id')) {
+        if (isJsonRpcNotification(message)) {
           this.handleNotification(message);
-        } else if (message.id) {
+        } else if (isJsonRpcResponse(message)) {
           // This is a response to a request
           this.handleResponse(message);
+        } else if (hasValidId(message)) {
+          // Fallback for other messages with valid id
+          this.handleResponse(message as JsonRpcResponse);
         }
       }
     } catch (error) {
@@ -69,7 +116,7 @@ export class MessageHandler {
   /**
    * Handle notification from Unity
    */
-  private handleNotification(notification: { method: string; params: unknown }): void {
+  private handleNotification(notification: JsonRpcNotification): void {
     const { method, params } = notification;
 
     const handler = this.notificationHandlers.get(method);
@@ -85,11 +132,7 @@ export class MessageHandler {
   /**
    * Handle response from Unity
    */
-  private handleResponse(response: {
-    id: number;
-    error?: { message: string };
-    result?: unknown;
-  }): void {
+  private handleResponse(response: JsonRpcResponse): void {
     const { id } = response;
     const pending = this.pendingRequests.get(id);
 
@@ -110,7 +153,7 @@ export class MessageHandler {
    * Clear all pending requests (used during disconnect)
    */
   clearPendingRequests(reason: string): void {
-    for (const [id, pending] of this.pendingRequests) {
+    for (const [, pending] of this.pendingRequests) {
       pending.reject(new Error(reason));
     }
     this.pendingRequests.clear();

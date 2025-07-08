@@ -6,6 +6,13 @@ import { ConnectionManager } from './connection-manager.js';
 import { MessageHandler } from './message-handler.js';
 
 /**
+ * Unity client interface for external dependencies
+ */
+interface UnityDiscovery {
+  handleConnectionLost(): void;
+}
+
+/**
  * TCP/IP client for communication with Unity
  *
  * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
@@ -24,7 +31,7 @@ export class UnityClient {
   private reconnectHandlers: Set<() => void> = new Set();
   private connectionManager: ConnectionManager = new ConnectionManager();
   private messageHandler: MessageHandler = new MessageHandler();
-  private unityDiscovery: any = null; // Reference to UnityDiscovery for connection loss handling
+  private unityDiscovery: UnityDiscovery | null = null; // Reference to UnityDiscovery for connection loss handling
 
   constructor() {
     // Get port number from environment variable UNITY_TCP_PORT, default is 7400
@@ -41,7 +48,7 @@ export class UnityClient {
   /**
    * Set Unity Discovery reference for connection loss handling
    */
-  setUnityDiscovery(unityDiscovery: any): void {
+  setUnityDiscovery(unityDiscovery: UnityDiscovery): void {
     this.unityDiscovery = unityDiscovery;
   }
 
@@ -255,7 +262,7 @@ export class UnityClient {
    */
   async getCommandDetails(
     includeDevelopmentOnly: boolean = false,
-  ): Promise<Array<{ name: string; description: string; parameterSchema?: any }>> {
+  ): Promise<Array<{ name: string; description: string; parameterSchema?: unknown }>> {
     await this.ensureConnected();
 
     const request = {
@@ -272,7 +279,11 @@ export class UnityClient {
     }
 
     return (
-      (response.result as Array<{ name: string; description: string; parameterSchema?: any }>) || []
+      (response.result as Array<{
+        name: string;
+        description: string;
+        parameterSchema?: unknown;
+      }>) || []
     );
   }
 
@@ -290,8 +301,13 @@ export class UnityClient {
       params: params,
     };
 
-    // Determine timeout based on command type and parameters
-    const timeoutMs = this.getTimeoutForCommand(commandName, params);
+    // Use TimeoutSeconds parameter or default timeout
+    const timeoutMs =
+      params?.TimeoutSeconds &&
+      typeof params.TimeoutSeconds === 'number' &&
+      params.TimeoutSeconds > 0
+        ? (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1000
+        : TIMEOUTS.PING;
 
     const response = await this.sendRequest(request, timeoutMs);
 
@@ -300,38 +316,6 @@ export class UnityClient {
     }
 
     return response.result;
-  }
-
-  /**
-   * Get timeout duration for specific command
-   * Now supports dynamic TimeoutSeconds parameter for all commands
-   */
-  private getTimeoutForCommand(commandName: string, params: Record<string, unknown>): number {
-    // Check if TimeoutSeconds parameter is provided (from BaseCommandSchema)
-    if (
-      params?.TimeoutSeconds &&
-      typeof params.TimeoutSeconds === 'number' &&
-      params.TimeoutSeconds > 0
-    ) {
-      // Add buffer to Unity timeout to ensure Unity timeout triggers first
-      const calculatedTimeout = (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1000;
-      return calculatedTimeout;
-    }
-
-    // Fallback to command-specific defaults
-    switch (commandName) {
-      case 'runtests':
-        const defaultTimeout = (TIMEOUTS.RUN_TESTS / 1000 + POLLING.BUFFER_SECONDS) * 1000;
-        return defaultTimeout;
-      case 'compile':
-        return TIMEOUTS.COMPILE;
-      case 'getlogs':
-        return TIMEOUTS.GET_LOGS;
-      case 'ping':
-        return TIMEOUTS.PING;
-      default:
-        return TIMEOUTS.PING;
-    }
   }
 
   /**
@@ -377,7 +361,9 @@ export class UnityClient {
         request.params as Record<string, unknown>,
         request.id,
       );
-      this.socket!.write(requestStr);
+      if (this.socket) {
+        this.socket.write(requestStr);
+      }
     });
   }
 
@@ -410,7 +396,7 @@ export class UnityClient {
     this.connectionManager.triggerConnectionLost();
 
     // Delegate to UnityDiscovery for unified connection management
-    if (this.unityDiscovery && this.unityDiscovery.handleConnectionLost) {
+    if (this.unityDiscovery) {
       this.unityDiscovery.handleConnectionLost();
     }
   }
