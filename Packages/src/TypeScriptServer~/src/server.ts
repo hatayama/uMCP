@@ -134,8 +134,14 @@ class UnityMcpServer {
 
         // Set up callback for when Unity is discovered
         this.unityDiscovery.setOnDiscoveredCallback(async () => {
-          clearTimeout(timeout);
-          resolve();
+          // Wait for actual connection establishment
+          try {
+            await this.unityClient.ensureConnected();
+            clearTimeout(timeout);
+            resolve();
+          } catch (error) {
+            // Connection failed, let timeout handle it
+          }
         });
       };
 

@@ -6701,8 +6701,12 @@ var UnityMcpServer = class {
         }
         this.unityDiscovery.start();
         this.unityDiscovery.setOnDiscoveredCallback(async () => {
-          clearTimeout(timeout);
-          resolve();
+          try {
+            await this.unityClient.ensureConnected();
+            clearTimeout(timeout);
+            resolve();
+          } catch (error) {
+          }
         });
       };
       void checkConnection();
