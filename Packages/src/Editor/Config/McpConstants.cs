@@ -16,7 +16,7 @@ namespace io.github.hatayama.uMCP
     {
         public const string PROJECT_NAME = "uMCP";
 
-        public const string MCP_DEBUG = "MCP_DEBUG";
+        public const string MCP_DEBUG = "UMCP_DEBUG";
         
         // JSON configuration keys
         public const string JSON_KEY_MCP_SERVERS = "mcpServers";
@@ -51,16 +51,6 @@ namespace io.github.hatayama.uMCP
         public const string CLIENT_NAME_WINDSURF = "Windsurf";
         public const string CLIENT_NAME_MCP_INSPECTOR = "MCP Inspector";
         public const string UNKNOWN_CLIENT_NAME = "Unknown Client";
-        
-        // Process ID constants
-        public const int UNKNOWN_PROCESS_ID = -1;
-        public const int LSOF_PID_COLUMN_INDEX = 1;
-        public const int LSOF_PID_ARRAY_MIN_LENGTH = 2;
-        
-        // System commands and arguments
-        public const string LSOF_COMMAND = "lsof";
-        public const string LSOF_ARGS_TEMPLATE = "-i :{0}";
-        public const string LSOF_HEADER_COMMAND = "COMMAND";
         
         // Command messages
         public const string CLIENT_SUCCESS_MESSAGE_TEMPLATE = "Client name registered successfully: {0}";

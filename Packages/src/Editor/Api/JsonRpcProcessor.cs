@@ -12,12 +12,10 @@ namespace io.github.hatayama.uMCP
     public class ClientExecutionContext
     {
         public string Endpoint { get; }
-        public int ProcessId { get; }
         
-        public ClientExecutionContext(string endpoint, int processId)
+        public ClientExecutionContext(string endpoint)
         {
             Endpoint = endpoint;
-            ProcessId = processId;
         }
     }
 
@@ -57,9 +55,9 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Process JSON-RPC request and generate response with client context
         /// </summary>
-        public static async Task<string> ProcessRequest(string jsonRequest, string clientEndpoint, int processId)
+        public static async Task<string> ProcessRequest(string jsonRequest, string clientEndpoint)
         {
-            var context = new ClientExecutionContext(clientEndpoint, processId);
+            var context = new ClientExecutionContext(clientEndpoint);
             _currentClientContext.Value = context;
             
             try

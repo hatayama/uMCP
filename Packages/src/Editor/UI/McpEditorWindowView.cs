@@ -238,8 +238,7 @@ namespace io.github.hatayama.uMCP
             GUIStyle endpointStyle = new GUIStyle(EditorStyles.miniLabel);
             endpointStyle.normal.textColor = Color.gray;
             endpointStyle.wordWrap = true;
-            string pidInfo = client.ProcessId > McpConstants.UNKNOWN_PROCESS_ID ? $" (PID: {client.ProcessId})" : "";
-            EditorGUILayout.LabelField(McpUIConstants.ENDPOINT_ARROW + client.Endpoint + pidInfo, endpointStyle, GUILayout.ExpandWidth(true));
+            EditorGUILayout.LabelField(McpUIConstants.ENDPOINT_ARROW + client.Endpoint, endpointStyle, GUILayout.ExpandWidth(true));
             EditorGUILayout.EndHorizontal();
             
             EditorGUILayout.EndVertical();
