@@ -149,10 +149,17 @@ namespace io.github.hatayama.uMCP
         /// <returns>Client process ID, or UNKNOWN_PROCESS_ID if not found</returns>
         private static int GetClientProcessIdWindows(int serverPort, int remotePort, int currentUnityPid)
         {
+            // Security: Validate port numbers
+            if (!IsValidPort(serverPort, "serverPort") || !IsValidPort(remotePort, "remotePort"))
+            {
+                UnityEngine.Debug.LogError($"{McpConstants.SECURITY_LOG_PREFIX} Invalid port numbers: serverPort={serverPort}, remotePort={remotePort}");
+                return McpConstants.UNKNOWN_PROCESS_ID;
+            }
+            
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "netstat",
-                Arguments = "-ano",
+                Arguments = "-ano", // Fixed arguments - no user input
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -225,6 +232,20 @@ namespace io.github.hatayama.uMCP
         /// <returns>Client process ID, or UNKNOWN_PROCESS_ID if not found</returns>
         private static int GetClientProcessIdUnix(int serverPort, int remotePort, int currentUnityPid)
         {
+            // Security: Validate port numbers
+            if (!IsValidPort(serverPort, "serverPort") || !IsValidPort(remotePort, "remotePort"))
+            {
+                UnityEngine.Debug.LogError($"{McpConstants.SECURITY_LOG_PREFIX} Invalid port numbers: serverPort={serverPort}, remotePort={remotePort}");
+                return McpConstants.UNKNOWN_PROCESS_ID;
+            }
+            
+            // Security: Validate lsof command and arguments template
+            if (string.IsNullOrEmpty(McpConstants.LSOF_COMMAND) || string.IsNullOrEmpty(McpConstants.LSOF_ARGS_TEMPLATE))
+            {
+                UnityEngine.Debug.LogError($"{McpConstants.SECURITY_LOG_PREFIX} LSOF command or arguments template is null or empty");
+                return McpConstants.UNKNOWN_PROCESS_ID;
+            }
+            
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = McpConstants.LSOF_COMMAND,

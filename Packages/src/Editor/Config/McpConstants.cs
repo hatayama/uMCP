@@ -95,6 +95,29 @@ namespace io.github.hatayama.uMCP
         public const string SESSION_KEY_RECONNECTING = "uMCP.Reconnecting";
         public const string SESSION_KEY_SHOW_RECONNECTING_UI = "uMCP.ShowReconnectingUI";
         
+        // Security constants
+        public const int MAX_JSON_SIZE_BYTES = 1024 * 1024; // 1MB limit for JSON files
+        public const int MAX_SETTINGS_SIZE_BYTES = 1024 * 16; // 16KB limit for settings files
+        public const string UMCP_NAMESPACE_PREFIX = "io.github.hatayama.uMCP";
+        public const string SECURITY_LOG_PREFIX = "[uMCP Security]";
+        
+        // Security: Allowed namespaces for reflection operations
+        public static readonly string[] ALLOWED_NAMESPACES = {
+            "UnityEditor",
+            "Unity.EditorCoroutines", 
+            "Unity.VisualScripting",
+            UMCP_NAMESPACE_PREFIX
+        };
+        
+        // Security: Denied types for reflection operations
+        public static readonly string[] DENIED_SYSTEM_TYPES = {
+            "System.Diagnostics.Process",
+            "System.IO.File",
+            "System.IO.Directory", 
+            "System.Reflection.Assembly",
+            "System.Activator"
+        };
+        
         /// <summary>
         /// Gets the client name for the specified editor type
         /// </summary>

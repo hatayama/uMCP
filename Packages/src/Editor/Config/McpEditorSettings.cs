@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Security;
 using UnityEngine;
 
 namespace io.github.hatayama.uMCP
@@ -47,7 +48,27 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public static void SaveSettings(McpEditorSettingsData settings)
         {
+            // Security: Validate settings file path
+            if (!IsValidSettingsPath(SettingsFilePath))
+            {
+                throw new SecurityException($"Invalid settings file path: {SettingsFilePath}");
+            }
+            
+            // Security: Ensure directory exists and create it safely
+            string directory = Path.GetDirectoryName(SettingsFilePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+            
             string json = JsonUtility.ToJson(settings, true);
+            
+            // Security: Validate JSON content size
+            if (json.Length > McpConstants.MAX_SETTINGS_SIZE_BYTES)
+            {
+                throw new SecurityException("Settings JSON content exceeds size limit");
+            }
+            
             File.WriteAllText(SettingsFilePath, json);
             _cachedSettings = settings;
 
@@ -172,9 +193,29 @@ namespace io.github.hatayama.uMCP
         {
             try
             {
+                // Security: Validate settings file path
+                if (!IsValidSettingsPath(SettingsFilePath))
+                {
+                    throw new SecurityException($"Invalid settings file path: {SettingsFilePath}");
+                }
+                
                 if (File.Exists(SettingsFilePath))
                 {
+                    // Security: Check file size before reading
+                    FileInfo fileInfo = new FileInfo(SettingsFilePath);
+                    if (fileInfo.Length > McpConstants.MAX_SETTINGS_SIZE_BYTES)
+                    {
+                        throw new SecurityException("Settings file exceeds size limit");
+                    }
+                    
                     string json = File.ReadAllText(SettingsFilePath);
+                    
+                    // Security: Validate JSON content
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        throw new InvalidDataException("Settings file contains invalid JSON content");
+                    }
+                    
                     _cachedSettings = JsonUtility.FromJson<McpEditorSettingsData>(json);
                     // MCP Editor settings loaded
                 }
@@ -192,6 +233,30 @@ namespace io.github.hatayama.uMCP
                 // Don't suppress this exception - corrupted settings should be reported
                 throw new InvalidOperationException(
                     $"Failed to load MCP Editor settings from: {SettingsFilePath}. Settings file may be corrupted.", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Security: Validate if the settings file path is safe
+        /// </summary>
+        private static bool IsValidSettingsPath(string path)
+        {
+            try
+            {
+                // Normalize the path to prevent path traversal
+                string normalizedPath = Path.GetFullPath(path);
+                
+                // Must be under UserSettings directory
+                string expectedUserSettingsPath = Path.GetFullPath(McpConstants.USER_SETTINGS_FOLDER);
+                
+                // Check if path is within the expected directory
+                return normalizedPath.StartsWith(expectedUserSettingsPath, StringComparison.OrdinalIgnoreCase) &&
+                       normalizedPath.EndsWith(McpConstants.SETTINGS_FILE_NAME, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"{McpConstants.SECURITY_LOG_PREFIX} Error validating settings path {path}: {ex.Message}");
+                return false;
             }
         }
     }

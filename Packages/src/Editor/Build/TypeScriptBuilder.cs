@@ -281,6 +281,24 @@ namespace io.github.hatayama.uMCP
 
         private void RunCommand(string command, string arguments, string workingDirectory)
         {
+            // Security: Validate command and arguments
+            if (string.IsNullOrEmpty(command) || string.IsNullOrEmpty(arguments) || string.IsNullOrEmpty(workingDirectory))
+            {
+                throw new System.ArgumentException("Command, arguments, and working directory cannot be null or empty");
+            }
+            
+            // Security: Only allow predefined npm commands
+            if (!IsValidNpmCommand(arguments))
+            {
+                throw new System.ArgumentException($"Invalid npm command: {arguments}. Only predefined commands are allowed.");
+            }
+            
+            // Security: Validate working directory path
+            if (!IsValidWorkingDirectory(workingDirectory))
+            {
+                throw new System.ArgumentException($"Invalid working directory: {workingDirectory}");
+            }
+            
             Debug.Log($"Running command: {command} {arguments} in directory: {workingDirectory}");
             
             SystemDiagnostics.ProcessStartInfo startInfo = new SystemDiagnostics.ProcessStartInfo
@@ -340,6 +358,49 @@ namespace io.github.hatayama.uMCP
                 throw new System.InvalidOperationException(
                     $"TypeScript build command failed: {command} {arguments}. " +
                     "Ensure Node.js and npm are properly installed and accessible from Unity Editor.", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Security: Validate npm command arguments
+        /// </summary>
+        private bool IsValidNpmCommand(string arguments)
+        {
+            // Only allow predefined npm commands
+            return arguments == NPM_COMMAND_CI || 
+                   arguments == NPM_COMMAND_BUILD_BUNDLE || 
+                   arguments == NPM_COMMAND_INSTALL;
+        }
+        
+        /// <summary>
+        /// Security: Validate working directory path
+        /// </summary>
+        private bool IsValidWorkingDirectory(string workingDirectory)
+        {
+            try
+            {
+                // Normalize the path to prevent path traversal attacks
+                string normalizedPath = Path.GetFullPath(workingDirectory);
+                
+                // Check if the path exists
+                if (!Directory.Exists(normalizedPath))
+                {
+                    return false;
+                }
+                
+                // Ensure the path is within the package directory
+                string packageBasePath = UnityMcpPathResolver.GetPackageBasePath();
+                if (string.IsNullOrEmpty(packageBasePath))
+                {
+                    return false;
+                }
+                
+                string normalizedPackagePath = Path.GetFullPath(packageBasePath);
+                return normalizedPath.StartsWith(normalizedPackagePath, System.StringComparison.OrdinalIgnoreCase);
+            }
+            catch (System.Exception)
+            {
+                return false;
             }
         }
     }

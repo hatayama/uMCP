@@ -106,6 +106,16 @@ namespace io.github.hatayama.uMCP
                 return false;
             }
             
+            // Security: Validate type name before loading
+            if (!IsValidMenuItemTypeName(menuItemInfo.TypeName))
+            {
+                response.ExecutionMethod = "Reflection";
+                response.ErrorMessage = "Invalid or restricted type name";
+                response.MenuItemFound = true;
+                response.Details = $"{McpConstants.SECURITY_LOG_PREFIX} Type name is not allowed for security reasons: {menuItemInfo.TypeName}";
+                return false;
+            }
+            
             // Get the method and invoke it
             Type type = Type.GetType(menuItemInfo.TypeName);
             if (type == null)
@@ -135,6 +145,37 @@ namespace io.github.hatayama.uMCP
             response.MenuItemFound = true;
             response.Details = $"MenuItem executed successfully via reflection ({menuItemInfo.TypeName}.{menuItemInfo.MethodName})";
             return true;
+        }
+        
+        /// <summary>
+        /// Security: Validate if the type name is safe to load
+        /// </summary>
+        private bool IsValidMenuItemTypeName(string typeName)
+        {
+            if (string.IsNullOrWhiteSpace(typeName))
+            {
+                return false;
+            }
+            
+            // Check if type starts with allowed namespace
+            foreach (string allowedNamespace in McpConstants.ALLOWED_NAMESPACES)
+            {
+                if (typeName.StartsWith(allowedNamespace, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            
+            // Deny dangerous system types
+            foreach (string deniedType in McpConstants.DENIED_SYSTEM_TYPES)
+            {
+                if (typeName.StartsWith(deniedType, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+            
+            return false; // Default deny for security
         }
     }
 }
