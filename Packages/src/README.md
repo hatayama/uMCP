@@ -18,7 +18,14 @@ Control Unity Editor from various LLM tools.
 When AI is coding, humans need to handle Unity compilation and log retrieval. uMCP was created with the concept of minimizing this as much as possible.
 With uMCP, AI can run autonomously for extended periods without relying on human operations.
 
-### Key Features
+# Tool Window
+<img width="300" alt="uMCP-window" src="https://github.com/user-attachments/assets/a71b8f80-f77a-4ef6-8779-5a09b6fdeea6" />
+
+- Manages and monitors server status
+- Provides visibility into LLM tool connection status
+- Enables easy connection to tools by pressing the LLM tool configuration button
+
+# Main Features
 #### 1. compile - Execute Compilation
 Compiles after executing AssetDatabase.Refresh(). Can find errors and warnings that built-in linters cannot detect.  
 Choose between differential compilation and forced full compilation.
@@ -273,6 +280,18 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 ```
 
 See [Custom Command Samples](/Assets/Editor/CustomCommandSamples) for reference.
+
+## WSL2 Support for Claude Code on Windows
+Enable WSL2 mirror mode. Write the following in `C:/Users/[username]/.wslconfig`:
+```
+[wsl2]
+networkingMode=mirrored
+```
+Then execute the following commands to apply the configuration:
+```bash
+wsl --shutdown
+wsl
+```
 
 ## License
 MIT License

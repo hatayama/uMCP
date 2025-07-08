@@ -282,7 +282,16 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 [カスタムコマンドのサンプル](/Assets/Editor/CustomCommandSamples)も参考にして下さい。
 
 ## WindowsでClaude Codeを使う際、WSL2の対応
-
+WSL2のミラーモードを有効化します。`C:/Users/[username]/.wslconfig` に、下記を記述します。
+```
+[wsl2]
+networkingMode=mirrored
+```
+その後、下記コマンドを実行して設定を反映させます。
+```bash
+wsl --shutdown
+wsl
+```
 
 ## ライセンス
 MIT License
