@@ -5521,7 +5521,8 @@ var POLLING = {
 };
 var LIST_CHANGED_UNSUPPORTED_CLIENTS = [
   "claude",
-  "claude-code"
+  "claude-code",
+  "gemini"
 ];
 
 // src/utils/log-to-file.ts
@@ -6676,7 +6677,9 @@ var UnityMcpServer = class {
    * Check if client doesn't support list_changed notifications
    */
   isListChangedUnsupported(clientName) {
-    if (!clientName) return false;
+    if (!clientName) {
+      return false;
+    }
     const normalizedName = clientName.toLowerCase();
     return LIST_CHANGED_UNSUPPORTED_CLIENTS.some(
       (unsupported) => normalizedName.includes(unsupported)
@@ -6854,7 +6857,9 @@ var UnityMcpServer = class {
       if (!this.isInitialized) {
         this.isInitialized = true;
         if (this.isListChangedUnsupported(clientName)) {
-          infoToFile(`[Unity MCP] Sync initialization for list_changed unsupported client: ${clientName}`);
+          infoToFile(
+            `[Unity MCP] Sync initialization for list_changed unsupported client: ${clientName}`
+          );
           try {
             await this.waitForUnityConnectionWithTimeout(1e4);
             const tools = await this.getToolsFromUnity();
@@ -6889,7 +6894,9 @@ var UnityMcpServer = class {
             };
           }
         } else {
-          infoToFile(`[Unity MCP] Async initialization for list_changed supported client: ${clientName}`);
+          infoToFile(
+            `[Unity MCP] Async initialization for list_changed supported client: ${clientName}`
+          );
           void this.initializeDynamicTools().then(() => {
             infoToFile("[Unity MCP] Unity connection established successfully");
           }).catch((error) => {
