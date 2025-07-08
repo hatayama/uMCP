@@ -5523,7 +5523,7 @@ var LIST_CHANGED_UNSUPPORTED_CLIENTS = [
   "claude",
   "claude-code",
   "gemini",
-  "windsurf"
+  "codeium"
 ];
 
 // src/utils/log-to-file.ts
