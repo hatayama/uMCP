@@ -1,5 +1,5 @@
 import { UnityClient } from './unity-client.js';
-import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
+import { debugToFile, infoToFile } from './utils/log-to-file.js';
 import { LIST_CHANGED_UNSUPPORTED_CLIENTS, DEFAULT_CLIENT_NAME } from './constants.js';
 
 /**
@@ -74,12 +74,16 @@ export class McpClientCompatibility {
     } else {
       // Send the already set client name to Unity
       await this.unityClient.setClientName(this.clientName);
-      infoToFile(`[MCP Client Compatibility] Client name already set, sending to Unity: ${this.clientName}`);
+      infoToFile(
+        `[MCP Client Compatibility] Client name already set, sending to Unity: ${this.clientName}`,
+      );
     }
 
     // Register reconnect handler to re-send client name after reconnection
     this.unityClient.onReconnect(() => {
-      infoToFile(`[MCP Client Compatibility] Reconnected - resending client name: ${this.clientName}`);
+      infoToFile(
+        `[MCP Client Compatibility] Reconnected - resending client name: ${this.clientName}`,
+      );
       void this.unityClient.setClientName(this.clientName);
     });
   }
@@ -105,13 +109,17 @@ export class McpClientCompatibility {
   logClientCompatibility(clientName: string): void {
     const isSupported = this.isListChangedSupported(clientName);
     const compatibilityType = isSupported ? 'list_changed supported' : 'list_changed unsupported';
-    
+
     infoToFile(`[MCP Client Compatibility] Client: ${clientName} - ${compatibilityType}`);
-    
+
     if (!isSupported) {
-      debugToFile(`[MCP Client Compatibility] Client ${clientName} will use synchronous initialization`);
+      debugToFile(
+        `[MCP Client Compatibility] Client ${clientName} will use synchronous initialization`,
+      );
     } else {
-      debugToFile(`[MCP Client Compatibility] Client ${clientName} will use asynchronous initialization`);
+      debugToFile(
+        `[MCP Client Compatibility] Client ${clientName} will use asynchronous initialization`,
+      );
     }
   }
 }

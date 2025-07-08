@@ -6,10 +6,8 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   InitializeRequestSchema,
-  Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { UnityClient } from './unity-client.js';
-import { DynamicUnityCommandTool } from './tools/dynamic-unity-command-tool.js';
 import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
 import { UnityDiscovery } from './unity-discovery.js';
 import { UnityConnectionManager } from './unity-connection-manager.js';
@@ -21,8 +19,6 @@ import {
   MCP_PROTOCOL_VERSION,
   MCP_SERVER_NAME,
   TOOLS_LIST_CHANGED_CAPABILITY,
-  DEFAULT_CLIENT_NAME,
-  LIST_CHANGED_UNSUPPORTED_CLIENTS,
 } from './constants.js';
 import packageJson from '../package.json' assert { type: 'json' };
 
@@ -86,7 +82,11 @@ class UnityMcpServer {
     this.clientCompatibility = new McpClientCompatibility(this.unityClient);
 
     // Initialize Unity event handler
-    this.eventHandler = new UnityEventHandler(this.server, this.unityClient, this.connectionManager);
+    this.eventHandler = new UnityEventHandler(
+      this.server,
+      this.unityClient,
+      this.connectionManager,
+    );
 
     // Setup reconnection callback for tool refresh
     this.connectionManager.setupReconnectionCallback(async () => {
@@ -166,7 +166,8 @@ class UnityMcpServer {
           // Start Unity connection initialization in background
           void this.clientCompatibility.initializeClient(clientName);
           this.toolManager.setClientName(clientName);
-          void this.toolManager.initializeDynamicTools()
+          void this.toolManager
+            .initializeDynamicTools()
             .then(() => {
               infoToFile('[Unity MCP] Unity connection established successfully');
             })
@@ -264,11 +265,6 @@ class UnityMcpServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
   }
-
-
-
-
-
 }
 
 // Start server

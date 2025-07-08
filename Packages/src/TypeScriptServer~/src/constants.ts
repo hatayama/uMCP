@@ -133,7 +133,7 @@ export const LOG_MESSAGES = {
 // List of clients that don't support list_changed notifications
 export const LIST_CHANGED_UNSUPPORTED_CLIENTS = [
   'claude',
-  'claude-code', 
+  'claude-code',
   'gemini',
   'codeium',
 ] as const;
