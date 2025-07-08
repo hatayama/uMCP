@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.22.2](https://github.com/hatayama/uMCP/compare/v0.22.1...v0.22.2) (2025-07-08)
+
+
+### Bug Fixes
+
+* update README.md ([#150](https://github.com/hatayama/uMCP/issues/150)) ([2031dbe](https://github.com/hatayama/uMCP/commit/2031dbeee29dfb53e9d6706fb3f01e3aa23a7ade))
+
 ## [0.22.1](https://github.com/hatayama/uMCP/compare/v0.22.0...v0.22.1) (2025-07-08)
 
 
