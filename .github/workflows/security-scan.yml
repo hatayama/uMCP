@@ -111,16 +111,9 @@ jobs:
       working-directory: Packages/src/TypeScriptServer~
       run: npm ci
 
-    - name: Run TypeScript security check
+    - name: Run TypeScript security-only check
       working-directory: Packages/src/TypeScriptServer~
-      run: npm run security:check || true
-
-    - name: Upload ESLint results
-      if: always()
-      working-directory: Packages/src/TypeScriptServer~
-      run: |
-        # Generate SARIF output for ESLint security results
-        npx eslint src --ext .ts -f @microsoft/eslint-formatter-sarif -o typescript-security.sarif || true
+      run: npm run security:sarif-only || echo "Security ESLint completed with issues - SARIF file generated"
 
     - name: Upload TypeScript SARIF results
       uses: github/codeql-action/upload-sarif@v3
