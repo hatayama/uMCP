@@ -6443,7 +6443,10 @@ var UnityConnectionManager = class {
       }
       this.unityDiscovery.stop();
     } catch (error) {
-      errorToFile("[Unity Connection] Failed to establish Unity connection after discovery:", error);
+      errorToFile(
+        "[Unity Connection] Failed to establish Unity connection after discovery:",
+        error
+      );
     }
   }
   /**
@@ -6781,7 +6784,9 @@ var UnityToolManager = class {
         const stack = new Error().stack;
         const callerLine = stack?.split("\n")[2]?.trim() || "Unknown caller";
         const timestamp2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].slice(0, 12);
-        debugToFile(`[Unity Tool Manager] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`);
+        debugToFile(
+          `[Unity Tool Manager] refreshDynamicToolsSafe called at ${timestamp2} from: ${callerLine}`
+        );
       }
       await this.refreshDynamicTools(sendNotification);
     } finally {
@@ -6868,10 +6873,14 @@ var McpClientCompatibility = class {
       }
     } else {
       await this.unityClient.setClientName(this.clientName);
-      infoToFile(`[MCP Client Compatibility] Client name already set, sending to Unity: ${this.clientName}`);
+      infoToFile(
+        `[MCP Client Compatibility] Client name already set, sending to Unity: ${this.clientName}`
+      );
     }
     this.unityClient.onReconnect(() => {
-      infoToFile(`[MCP Client Compatibility] Reconnected - resending client name: ${this.clientName}`);
+      infoToFile(
+        `[MCP Client Compatibility] Reconnected - resending client name: ${this.clientName}`
+      );
       void this.unityClient.setClientName(this.clientName);
     });
   }
@@ -6896,9 +6905,13 @@ var McpClientCompatibility = class {
     const compatibilityType = isSupported ? "list_changed supported" : "list_changed unsupported";
     infoToFile(`[MCP Client Compatibility] Client: ${clientName} - ${compatibilityType}`);
     if (!isSupported) {
-      debugToFile(`[MCP Client Compatibility] Client ${clientName} will use synchronous initialization`);
+      debugToFile(
+        `[MCP Client Compatibility] Client ${clientName} will use synchronous initialization`
+      );
     } else {
-      debugToFile(`[MCP Client Compatibility] Client ${clientName} will use asynchronous initialization`);
+      debugToFile(
+        `[MCP Client Compatibility] Client ${clientName} will use asynchronous initialization`
+      );
     }
   }
 };
@@ -6932,7 +6945,10 @@ var UnityEventHandler = class {
       try {
         await onToolsChanged();
       } catch (error) {
-        errorToFile("[Unity Event Handler] Failed to update dynamic tools via Unity notification:", error);
+        errorToFile(
+          "[Unity Event Handler] Failed to update dynamic tools via Unity notification:",
+          error
+        );
       }
     });
   }
@@ -6942,7 +6958,9 @@ var UnityEventHandler = class {
   sendToolsChangedNotification() {
     if (this.isNotifying) {
       if (this.isDevelopment) {
-        debugToFile("[Unity Event Handler] sendToolsChangedNotification skipped: already notifying");
+        debugToFile(
+          "[Unity Event Handler] sendToolsChangedNotification skipped: already notifying"
+        );
       }
       return;
     }
@@ -7042,6 +7060,9 @@ var package_default = {
     "start:dev": "NODE_ENV=development node dist/server.bundle.js",
     lint: "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
+    "security:check": "eslint src --ext .ts",
+    "security:fix": "eslint src --ext .ts --fix",
+    "security:sarif": "eslint src --ext .ts -f @microsoft/eslint-formatter-sarif -o security-results.sarif",
     format: "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "lint:check": "npm run lint && npm run format:check",
@@ -7082,6 +7103,7 @@ var package_default = {
     zod: "3.25.64"
   },
   devDependencies: {
+    "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@types/jest": "^29.5.14",
     "@types/node": "20.19.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
@@ -7090,6 +7112,7 @@ var package_default = {
     eslint: "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-security": "^3.0.1",
     husky: "^9.0.0",
     jest: "^30.0.0",
     "lint-staged": "^15.0.0",
@@ -7134,7 +7157,11 @@ var UnityMcpServer = class {
     this.unityDiscovery = this.connectionManager.getUnityDiscovery();
     this.toolManager = new UnityToolManager(this.unityClient);
     this.clientCompatibility = new McpClientCompatibility(this.unityClient);
-    this.eventHandler = new UnityEventHandler(this.server, this.unityClient, this.connectionManager);
+    this.eventHandler = new UnityEventHandler(
+      this.server,
+      this.unityClient,
+      this.connectionManager
+    );
     this.connectionManager.setupReconnectionCallback(async () => {
       await this.toolManager.refreshDynamicToolsSafe(() => {
         this.eventHandler.sendToolsChangedNotification();
