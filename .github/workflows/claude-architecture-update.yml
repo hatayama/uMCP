@@ -13,6 +13,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,7 +25,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           timeout_minutes: "60"
-          prompt: |
+          direct_prompt: |
             I need you to analyze the recent code changes and update the architecture documentation files accordingly.
             
             ## Task
