@@ -2,7 +2,6 @@ name: Build and Release uMCP
 
 on:
   push:
-    branches: [ main ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
@@ -65,7 +64,7 @@ jobs:
         echo "Note: node_modules will be automatically cleaned up when GitHub Actions environment is destroyed"
         
     - name: Commit built files (if changed)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'pull_request'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
@@ -84,7 +83,7 @@ jobs:
           - dist/server.bundle.js
           
           Note: node_modules/ is excluded by .gitignore"
-          git push
+          git push origin HEAD:${{ github.head_ref }}
           echo "Built files committed successfully"
         fi
         
