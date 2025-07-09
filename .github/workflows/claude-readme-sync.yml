@@ -1,0 +1,57 @@
+name: Claude README Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Packages/src/README_ja.md'
+
+jobs:
+  readme-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Translate README to English
+        uses: anthropics/claude-code-action@beta
+        with:
+          timeout_minutes: "30"
+          prompt: |
+            I need you to translate the Japanese README file to English and update the English README file.
+            
+            ## Task
+            1. Read the content of `/Packages/src/README_ja.md`
+            2. Translate it to English, maintaining the same structure and formatting
+            3. Write the translated content to `/Packages/src/README.md`
+            4. Ensure all links, badges, and markdown formatting are preserved
+            5. Make sure the translation is natural and professional
+            6. Update the language toggle link at the top to point to the Japanese version
+            
+            ## Important Notes
+            - Keep all code examples exactly as they are
+            - Preserve all image links and badges
+            - Maintain the same document structure
+            - Ensure technical terms are translated appropriately
+            - Keep the tone professional and clear
+            
+            Please complete this translation task and save the result to the appropriate file.
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Packages/src/README.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: sync English README from Japanese version"
+            git push
+          fi

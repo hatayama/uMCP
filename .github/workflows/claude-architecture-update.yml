@@ -1,0 +1,72 @@
+name: Claude Architecture Update
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Packages/src/Editor/**'
+      - 'Packages/src/TypeScriptServer~/**'
+
+jobs:
+  architecture-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Architecture Documentation
+        uses: anthropics/claude-code-action@beta
+        with:
+          timeout_minutes: "60"
+          prompt: |
+            I need you to analyze the recent code changes and update the architecture documentation files accordingly.
+            
+            ## Task
+            1. Analyze the changes in the Editor/ and TypeScriptServer~/ directories
+            2. Review the current architecture documentation:
+               - `/Packages/src/Editor/ARCHITECTURE.md` (Unity Editor-Side Architecture)
+               - `/Packages/src/TypeScriptServer~/ARCHITECTURE.md` (TypeScript Server Architecture)
+            3. Update both documentation files to reflect any architectural changes, new patterns, or structural modifications
+            4. Ensure consistency between the two architecture documents
+            5. Update diagrams, class relationships, and workflow descriptions as needed
+            
+            ## Analysis Guidelines
+            - Focus on significant architectural changes, not minor code tweaks
+            - Look for new classes, interfaces, or design patterns
+            - Check for changes in component relationships and responsibilities
+            - Verify that the documented workflows still match the current implementation
+            - Update any outdated class diagrams or sequence diagrams
+            
+            ## Documentation Standards
+            - Keep the existing structure and formatting style
+            - Use clear, professional language
+            - Include mermaid diagrams where appropriate
+            - Ensure technical accuracy and completeness
+            - Maintain consistency with the existing architectural principles
+            
+            ## Important Notes
+            - Only update sections that are actually affected by the code changes
+            - If no significant architectural changes are found, you may skip the update
+            - Ensure both architecture documents remain synchronized where they describe related components
+            - Focus on the "why" and "how" of architectural decisions, not just the "what"
+            
+            Please analyze the codebase and update the architecture documentation as needed.
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Packages/src/Editor/ARCHITECTURE.md Packages/src/TypeScriptServer~/ARCHITECTURE.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: update architecture documentation"
+            git push
+          fi
