@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using UnityEngine;
 
 namespace io.github.hatayama.uMCP
@@ -16,6 +17,9 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class McpSecurityChecker
     {
+        // Security setting constants
+        private const string EnableTestsExecutionSetting = "enableTestsExecution";
+        private const string AllowMenuItemExecutionSetting = "allowMenuItemExecution";
         /// <summary>
         /// Checks if a command is allowed based on current security settings
         /// </summary>
@@ -31,15 +35,15 @@ namespace io.github.hatayama.uMCP
             // Get command info from registry
             var commandInfo = GetCommandSecurityInfoFromRegistry(commandName);
             
-            if (commandInfo == null)
+            if (!commandInfo.HasValue)
             {
-                // Unknown command - default to allow for backward compatibility
-                McpLogger.LogWarning($"Unknown command '{commandName}' - allowing by default. Consider adding security rules.");
-                return true;
+                // Unknown command - default to block for security
+                McpLogger.LogWarning($"Unknown command '{commandName}' - blocking by default for security. Consider adding security rules.");
+                return false;
             }
 
             // Check if command requires specific permission
-            return IsCommandAllowedByAttribute(commandInfo);
+            return IsCommandAllowedByAttribute(commandInfo.Value);
         }
 
         /// <summary>
@@ -47,7 +51,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="commandName">The name of the command</param>
         /// <returns>Command security info or null if not found</returns>
-        private static CommandAttributeInfo GetCommandSecurityInfoFromRegistry(string commandName)
+        private static CommandAttributeInfo? GetCommandSecurityInfoFromRegistry(string commandName)
         {
             // Get the command registry instance
             var registry = UnityCommandRegistry.Instance;
@@ -66,7 +70,7 @@ namespace io.github.hatayama.uMCP
             var attribute = commandType.GetCustomAttribute<McpToolAttribute>();
             if (attribute == null)
             {
-                return new CommandAttributeInfo(commandName, SecurityRiskLevel.Safe, null);
+                return new CommandAttributeInfo(commandName, SecurityRiskLevel.High, null);
             }
 
             return new CommandAttributeInfo(commandName, attribute.SecurityLevel, attribute.RequiredSecuritySetting);
@@ -77,34 +81,38 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="commandInfo">Command attribute information</param>
         /// <returns>True if command is allowed</returns>
-        private static bool IsCommandAllowedByAttribute(CommandAttributeInfo commandInfo)
+        private static bool IsCommandAllowedByAttribute(CommandAttributeInfo? commandInfo)
         {
             // Check by security level first
-            switch (commandInfo.SecurityLevel)
+            switch (commandInfo.Value.SecurityLevel)
             {
                 case SecurityRiskLevel.Safe:
                 case SecurityRiskLevel.Low:
                     return true;
                     
+                case SecurityRiskLevel.Medium:
+                    // Medium risk commands are blocked by default for safe-by-default approach
+                    return false;
+                    
                 case SecurityRiskLevel.High:
                     // For high-risk commands, check specific settings
-                    if (commandInfo.RequiredSecuritySetting == "enableTestsExecution")
+                    if (commandInfo.Value.RequiredSecuritySetting == EnableTestsExecutionSetting)
                     {
                         return IsTestsExecutionAllowed();
                     }
-                    break;
+                    return false;
                     
                 case SecurityRiskLevel.Critical:
                     // For critical commands, check specific settings
-                    if (commandInfo.RequiredSecuritySetting == "allowMenuItemExecution")
+                    if (commandInfo.Value.RequiredSecuritySetting == AllowMenuItemExecutionSetting)
                     {
                         return IsMenuItemExecutionAllowed();
                     }
-                    break;
+                    return false;
             }
 
-            // If no specific setting is defined, check by security level
-            return commandInfo.SecurityLevel <= SecurityRiskLevel.Medium;
+            // Default to block for unknown security levels
+            return false;
         }
 
         /// <summary>
@@ -139,20 +147,23 @@ namespace io.github.hatayama.uMCP
         /// <returns>Human-readable reason string</returns>
         public static string GetBlockReason(string commandName)
         {
-            switch (commandName.ToLowerInvariant())
+            var commandInfo = GetCommandSecurityInfoFromRegistry(commandName);
+            if (!commandInfo.HasValue)
             {
-                case "run-tests":
-                case "run-test":
-                case "execute-tests":
+                return $"Command '{commandName}' is not allowed by security policy.";
+            }
+
+            // Generate block reason based on required security setting
+            switch (commandInfo.Value.RequiredSecuritySetting)
+            {
+                case EnableTestsExecutionSetting:
                     return "Tests execution is disabled. Enable 'Enable Tests Execution' in uMCP Security Settings.";
                     
-                case "execute-menu-item":
-                case "execute-menuitem":
-                case "invoke-menu":
+                case AllowMenuItemExecutionSetting:
                     return "Menu item execution is disabled. Enable 'Allow Menu Item Execution' in uMCP Security Settings.";
                     
                 default:
-                    return $"Command '{commandName}' is not allowed by security policy.";
+                    return $"Command '{commandName}' is not allowed by security policy (Risk Level: {commandInfo.Value.SecurityLevel}).";
             }
         }
 
@@ -177,30 +188,13 @@ namespace io.github.hatayama.uMCP
         /// <returns>Risk level enum</returns>
         private static SecurityRiskLevel GetCommandRiskLevel(string commandName)
         {
-            switch (commandName.ToLowerInvariant())
+            var commandInfo = GetCommandSecurityInfoFromRegistry(commandName);
+            if (!commandInfo.HasValue)
             {
-                case "run-tests":
-                case "run-test":
-                case "execute-tests":
-                    return SecurityRiskLevel.High;
-                    
-                case "execute-menu-item":
-                case "execute-menuitem":
-                case "invoke-menu":
-                    return SecurityRiskLevel.Critical;
-                    
-                case "compile":
-                case "get-logs":
-                case "get-compilation-errors":
-                    return SecurityRiskLevel.Low;
-                    
-                case "list-assets":
-                case "get-project-info":
-                    return SecurityRiskLevel.Safe;
-                    
-                default:
-                    return SecurityRiskLevel.Medium;
+                return SecurityRiskLevel.High; // Default to high risk for unknown commands
             }
+
+            return commandInfo.Value.SecurityLevel;
         }
 
         /// <summary>
