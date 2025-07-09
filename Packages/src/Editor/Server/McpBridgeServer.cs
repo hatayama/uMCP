@@ -29,30 +29,27 @@ namespace io.github.hatayama.uMCP
         public readonly string ClientName; 
         public readonly DateTime ConnectedAt;
         public readonly NetworkStream Stream;
-        public readonly int ProcessId;
 
-        public ConnectedClient(string endpoint, NetworkStream stream, int processId, string clientName = McpConstants.UNKNOWN_CLIENT_NAME)
+        public ConnectedClient(string endpoint, NetworkStream stream, string clientName = McpConstants.UNKNOWN_CLIENT_NAME)
         {
             Endpoint = endpoint;
             Stream = stream;
-            ProcessId = processId;
             ClientName = clientName;
             ConnectedAt = DateTime.Now;
         }
         
         // Private constructor for WithClientName to preserve ConnectedAt
-        private ConnectedClient(string endpoint, NetworkStream stream, int processId, string clientName, DateTime connectedAt)
+        private ConnectedClient(string endpoint, NetworkStream stream, string clientName, DateTime connectedAt)
         {
             Endpoint = endpoint;
             Stream = stream;
-            ProcessId = processId;
             ClientName = clientName;
             ConnectedAt = connectedAt;
         }
         
         public ConnectedClient WithClientName(string clientName)
         {
-            return new ConnectedClient(Endpoint, Stream, ProcessId, clientName, ConnectedAt);
+            return new ConnectedClient(Endpoint, Stream, clientName, ConnectedAt);
         }
     }
 
@@ -115,12 +112,12 @@ namespace io.github.hatayama.uMCP
         public event Action<string> OnError;
 
         /// <summary>
-        /// Generate unique client key using ProcessID and Endpoint
+        /// Generate unique client key using Endpoint
         /// </summary>
-        private string GenerateClientKey(string endpoint, int processId)
+        private string GenerateClientKey(string endpoint)
         {
-            // Use only ProcessID to prevent duplicate connections from same process
-            return processId.ToString();
+            // Use endpoint as unique identifier
+            return endpoint;
         }
 
         /// <summary>
@@ -142,11 +139,11 @@ namespace io.github.hatayama.uMCP
                 
             if (targetClient != null)
             {
-                string clientKey = GenerateClientKey(targetClient.Endpoint, targetClient.ProcessId);
+                string clientKey = GenerateClientKey(targetClient.Endpoint);
                 ConnectedClient updatedClient = targetClient.WithClientName(clientName);
                 bool updateResult = connectedClients.TryUpdate(clientKey, updatedClient, targetClient);
                 
-                McpLogger.LogInfo($"[UpdateClientName] {clientEndpoint} (PID: {targetClient.ProcessId}): '{targetClient.ClientName}' → '{clientName}' (Success: {updateResult})");
+                McpLogger.LogInfo($"[UpdateClientName] {clientEndpoint}: '{targetClient.ClientName}' → '{clientName}' (Success: {updateResult})");
                 McpLogger.LogInfo($"[UpdateClientName] ConnectedAt preserved: {updatedClient.ConnectedAt:HH:mm:ss.fff}");
                 
                 // Clear reconnecting flags when client name is successfully set (client is now fully connected)
@@ -161,26 +158,6 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        /// <summary>
-        /// Get the process ID of the client connected to this socket
-        /// </summary>
-        private int GetClientProcessId(Socket clientSocket)
-        {
-            if (clientSocket?.RemoteEndPoint is not IPEndPoint remoteEndPoint)
-            {
-                return McpConstants.UNKNOWN_PROCESS_ID;
-            }
-            
-            int remotePort = remoteEndPoint.Port;
-            string endpoint = remoteEndPoint.ToString();
-            int currentUnityPid = Process.GetCurrentProcess().Id;
-            
-            // Get server port for connection lookup
-            int serverPort = tcpListener?.LocalEndpoint is IPEndPoint serverEndpoint ? serverEndpoint.Port : McpServerConfig.DEFAULT_PORT;
-            
-            // Use NetworkUtility for cross-platform process ID detection
-            return NetworkUtility.GetClientProcessId(serverPort, remotePort, currentUnityPid);
-        }
 
 
 
@@ -418,24 +395,18 @@ namespace io.github.hatayama.uMCP
                 using (client)
                 using (NetworkStream stream = client.GetStream())
                 {
-                    // Get client process ID from remote endpoint
-                    int processId = GetClientProcessId(client.Client);
-                    
-                    
-                    // Check for existing connection from same process and close it
-                    string clientKey = GenerateClientKey(clientEndpoint, processId);
+                    // Check for existing connection from same endpoint and close it
+                    string clientKey = GenerateClientKey(clientEndpoint);
                     if (connectedClients.TryGetValue(clientKey, out ConnectedClient existingClient))
                     {
-                        McpLogger.LogInfo($"Closing existing connection from PID {processId} (endpoint: {existingClient.Endpoint})");
                         existingClient.Stream?.Close();
                         connectedClients.TryRemove(clientKey, out _);
                     }
                     
                     // Add new client to connected clients for notification broadcasting
-                    ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream, processId);
+                    ConnectedClient connectedClient = new ConnectedClient(clientEndpoint, stream);
                     bool addResult = connectedClients.TryAdd(clientKey, connectedClient);
                     
-                    McpLogger.LogInfo($"All connected clients: {string.Join(", ", connectedClients.Keys)}");
                     byte[] buffer = new byte[McpServerConfig.BUFFER_SIZE];
                     string incompleteJson = string.Empty; // Buffer for incomplete JSON
                     
@@ -464,7 +435,7 @@ namespace io.github.hatayama.uMCP
                             if (string.IsNullOrWhiteSpace(requestJson)) continue;
                             
                             // JSON-RPC processing and response sending with client context.
-                            string responseJson = await JsonRpcProcessor.ProcessRequest(requestJson, clientEndpoint, processId);
+                            string responseJson = await JsonRpcProcessor.ProcessRequest(requestJson, clientEndpoint);
                             
                             // Only send response if it's not null (notifications return null)
                             if (!string.IsNullOrEmpty(responseJson))
@@ -488,10 +459,13 @@ namespace io.github.hatayama.uMCP
             }
             catch (IOException ex)
             {
-                // I/O errors are usually normal disconnections - only log warnings for unexpected errors
-                if (!ex.Message.Contains("Connection reset by peer") && 
-                    !ex.Message.Contains("socket has been shut down") &&
-                    !ex.Message.Contains("Operation aborted"))
+                // I/O errors are usually normal disconnections - only log as info instead of warning
+                if (IsNormalDisconnectionException(ex))
+                {
+                    // Log normal disconnections as info level
+                    McpLogger.LogInfo($"Client {clientEndpoint} disconnected normally");
+                }
+                else
                 {
                     McpLogger.LogWarning($"I/O error with client {clientEndpoint}: {ex.Message}");
                 }
@@ -512,23 +486,13 @@ namespace io.github.hatayama.uMCP
                 bool removeResult = false;
                 if (clientToRemove != null)
                 {
-                    string clientKey = GenerateClientKey(clientToRemove.Endpoint, clientToRemove.ProcessId);
+                    string clientKey = GenerateClientKey(clientToRemove.Endpoint);
                     removeResult = connectedClients.TryRemove(clientKey, out ConnectedClient removedClient);
                     
-                    if (removeResult)
-                    {
-                        McpLogger.LogInfo($"Successfully removed client {clientEndpoint} (PID: {clientToRemove.ProcessId}). Remaining clients: {connectedClients.Count}");
-                    }
-                    else
-                    {
-                        // Only log warning if client was expected to be in the collection
-                        McpLogger.LogInfo($"Client {clientEndpoint} (PID: {clientToRemove.ProcessId}) was already removed. Remaining clients: {connectedClients.Count}");
-                    }
                 }
                 else
                 {
                     // Client not found in collection - might have been removed concurrently
-                    McpLogger.LogInfo($"Client {clientEndpoint} not found in connected clients list. Current clients: {connectedClients.Count}");
                 }
                 
                 
@@ -611,10 +575,7 @@ namespace io.github.hatayama.uMCP
             // Remove disconnected clients
             foreach (string clientKey in clientsToRemove)
             {
-                if (connectedClients.TryRemove(clientKey, out ConnectedClient removedClient))
-                {
-                    McpLogger.LogInfo($"Removed disconnected client {removedClient.Endpoint} (PID: {removedClient.ProcessId})");
-                }
+                connectedClients.TryRemove(clientKey, out _);
             }
         }
 
@@ -687,6 +648,35 @@ namespace io.github.hatayama.uMCP
             {
                 // Incomplete or malformed JSON - this is expected behavior
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines if the given exception represents a normal client disconnection.
+        /// </summary>
+        /// <param name="ex">The exception to evaluate</param>
+        /// <returns>True if the exception represents a normal disconnection, false otherwise</returns>
+        private static bool IsNormalDisconnectionException(Exception ex)
+        {
+            switch (ex)
+            {
+                case SocketException sockEx:
+                    return sockEx.SocketErrorCode == SocketError.ConnectionReset ||
+                           sockEx.SocketErrorCode == SocketError.ConnectionAborted ||
+                           sockEx.SocketErrorCode == SocketError.Shutdown ||
+                           sockEx.SocketErrorCode == SocketError.NotConnected;
+                    
+                case ObjectDisposedException:
+                    return true;
+                    
+                case IOException ioEx when ioEx.InnerException is SocketException innerSockEx:
+                    return innerSockEx.SocketErrorCode == SocketError.ConnectionReset ||
+                           innerSockEx.SocketErrorCode == SocketError.ConnectionAborted ||
+                           innerSockEx.SocketErrorCode == SocketError.Shutdown ||
+                           innerSockEx.SocketErrorCode == SocketError.NotConnected;
+                    
+                default:
+                    return false;
             }
         }
 

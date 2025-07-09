@@ -108,16 +108,6 @@ namespace io.github.hatayama.uMCP
             var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
             int totalCount = connectedClients?.Count ?? 0;
             
-            McpLogger.LogInfo($"[CLIENT_CONNECT] Client connected: {clientEndpoint}");
-            McpLogger.LogInfo($"[CLIENT_CONNECT] Total clients: {totalCount}");
-            
-            if (connectedClients != null && connectedClients.Count > 0)
-            {
-                foreach (var client in connectedClients)
-                {
-                    McpLogger.LogInfo($"[CLIENT_CONNECT] Connected: {client.ClientName} ({client.Endpoint}, PID: {client.ProcessId})");
-                }
-            }
             
             // Clear reconnecting flags when client connects
             McpServerController.ClearReconnectingFlag();
@@ -141,16 +131,7 @@ namespace io.github.hatayama.uMCP
             var connectedClients = McpServerController.CurrentServer?.GetConnectedClients();
             int remainingCount = connectedClients?.Count ?? 0;
             
-            McpLogger.LogInfo($"[CLIENT_DISCONNECT] Client disconnected: {clientEndpoint}");
-            McpLogger.LogInfo($"[CLIENT_DISCONNECT] Remaining clients: {remainingCount}");
             
-            if (connectedClients != null && connectedClients.Count > 0)
-            {
-                foreach (var client in connectedClients)
-                {
-                    McpLogger.LogInfo($"[CLIENT_DISCONNECT] Still connected: {client.ClientName} ({client.Endpoint}, PID: {client.ProcessId})");
-                }
-            }
             
             // Mark that repaint is needed since events are called from background thread
             _model.RequestRepaint();
@@ -212,8 +193,8 @@ namespace io.github.hatayama.uMCP
                 return "empty";
             }
 
-            // Create a hash based on endpoint, client name, and process ID for unique identification
-            var info = clients.Select(c => $"{c.Endpoint}:{c.ClientName}:{c.ProcessId}").OrderBy(s => s);
+            // Create a hash based on endpoint and client name for unique identification
+            var info = clients.Select(c => $"{c.Endpoint}:{c.ClientName}").OrderBy(s => s);
             return string.Join("|", info);
         }
 

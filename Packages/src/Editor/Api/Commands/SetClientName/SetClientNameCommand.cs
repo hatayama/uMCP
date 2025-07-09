@@ -32,7 +32,7 @@ namespace io.github.hatayama.uMCP
             var connectedClients = server.GetConnectedClients();
             if (connectedClients.Count == 0) return;
             
-            // Get current client context (ProcessID of the caller)
+            // Get current client context
             var clientContext = JsonRpcProcessor.CurrentClientContext;
             if (clientContext == null)
             {
@@ -40,37 +40,18 @@ namespace io.github.hatayama.uMCP
                 return;
             }
             
-            // Debug: Log all connected clients and the caller info
-            McpLogger.LogInfo($"[SetClientName] Setting name '{clientName}' for caller PID: {clientContext.ProcessId} ({clientContext.Endpoint})");
-            McpLogger.LogInfo($"[SetClientName] Current clients:");
-            foreach (var client in connectedClients)
-            {
-                McpLogger.LogInfo($"[SetClientName]   {client.Endpoint} (PID: {client.ProcessId}) - '{client.ClientName}'");
-            }
             
-            // Find client by ProcessID (direct match with caller)
+            // Find client by endpoint
             ConnectedClient targetClient = connectedClients
-                .FirstOrDefault(c => c.ProcessId == clientContext.ProcessId);
+                .FirstOrDefault(c => c.Endpoint == clientContext.Endpoint);
             
             if (targetClient != null)
             {
-                McpLogger.LogInfo($"[SetClientName] Found target client by ProcessID: {targetClient.Endpoint} (PID: {targetClient.ProcessId})");
                 server.UpdateClientName(targetClient.Endpoint, clientName);
                 return;
             }
             
-            // Fallback: find by endpoint if ProcessID doesn't match (shouldn't happen)
-            ConnectedClient fallbackClient = connectedClients
-                .FirstOrDefault(c => c.Endpoint == clientContext.Endpoint);
-            
-            if (fallbackClient != null)
-            {
-                McpLogger.LogWarning($"[SetClientName] Fallback to endpoint match: {fallbackClient.Endpoint} (PID: {fallbackClient.ProcessId})");
-                server.UpdateClientName(fallbackClient.Endpoint, clientName);
-                return;
-            }
-            
-            McpLogger.LogError($"[SetClientName] Could not find client for PID: {clientContext.ProcessId}, Endpoint: {clientContext.Endpoint}");
+            McpLogger.LogError($"[SetClientName] Could not find client for Endpoint: {clientContext.Endpoint}");
         }
     }
 }
