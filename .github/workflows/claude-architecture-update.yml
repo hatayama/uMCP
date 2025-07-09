@@ -13,7 +13,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,7 +59,7 @@ jobs:
             Please analyze the codebase and update the architecture documentation as needed.
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "docs: update architecture documentation"

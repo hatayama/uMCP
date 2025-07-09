@@ -12,7 +12,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,7 +44,7 @@ jobs:
             Please complete this translation task and save the result to the appropriate file.
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "docs: sync English README from Japanese version"
