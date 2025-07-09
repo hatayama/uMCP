@@ -6,6 +6,7 @@ on:
     paths:
       - 'Packages/src/Editor/**'
       - 'Packages/src/TypeScriptServer~/**'
+  workflow_dispatch:
 
 jobs:
   architecture-update:

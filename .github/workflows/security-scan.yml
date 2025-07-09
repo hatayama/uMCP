@@ -11,6 +11,7 @@ on:
     paths:
       - 'Packages/src/**/*.cs'
       - 'Assets/**/*.cs'
+  workflow_dispatch:
 
 jobs:
   security-scan:

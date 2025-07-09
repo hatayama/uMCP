@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'Packages/src/README_ja.md'
+  workflow_dispatch:
 
 jobs:
   readme-sync:
