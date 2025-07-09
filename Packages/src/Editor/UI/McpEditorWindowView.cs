@@ -528,6 +528,61 @@ namespace io.github.hatayama.uMCP
 #endif
 
         /// <summary>
+        /// Draw security settings section
+        /// </summary>
+        public void DrawSecuritySettings(SecuritySettingsData data, Action<bool> foldoutCallback, Action<bool> enableTestsCallback, Action<bool> allowMenuCallback)
+        {
+            EditorGUILayout.BeginVertical("box");
+            
+            bool showFoldout = EditorGUILayout.Foldout(data.ShowSecuritySettings, "Security Settings", true);
+            if (showFoldout != data.ShowSecuritySettings)
+            {
+                foldoutCallback?.Invoke(showFoldout);
+            }
+            
+            if (showFoldout)
+            {
+                EditorGUILayout.Space();
+                
+                // Security warning with combined message and custom padding
+                GUIStyle helpBoxStyle = new GUIStyle(EditorStyles.helpBox);
+                helpBoxStyle.padding = new RectOffset(12, 12, 8, 8);
+                helpBoxStyle.margin = new RectOffset(4, 4, 4, 4);
+                
+                EditorGUILayout.LabelField("These settings control dangerous MCP operations. Only enable if you trust the AI system.\n\nChanges take effect immediately - no server restart required.", helpBoxStyle);
+                
+                EditorGUILayout.Space();
+                
+                // Enable Tests Execution
+                EditorGUILayout.BeginHorizontal();
+                bool newEnableTests = EditorGUILayout.Toggle(data.EnableTestsExecution, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Enable Tests Execution", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
+                if (newEnableTests != data.EnableTestsExecution)
+                {
+                    enableTestsCallback?.Invoke(newEnableTests);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.Space(2);
+                
+                // Allow Menu Item Execution
+                EditorGUILayout.BeginHorizontal();
+                bool newAllowMenu = EditorGUILayout.Toggle(data.AllowMenuItemExecution, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Allow Menu Item Execution", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
+                if (newAllowMenu != data.AllowMenuItemExecution)
+                {
+                    allowMenuCallback?.Invoke(newAllowMenu);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.Space();
+            }
+            
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space();
+        }
+
+        /// <summary>
         /// Check if client name is valid for display
         /// </summary>
         private bool IsValidClientName(string clientName)

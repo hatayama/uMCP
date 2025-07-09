@@ -222,6 +222,13 @@ namespace io.github.hatayama.uMCP
                 configureCallback: (editor) => ConfigureEditor(),
                 foldoutCallback: UpdateShowLLMToolSettings);
 
+            SecuritySettingsData securityData = CreateSecuritySettingsData();
+            _view.DrawSecuritySettings(
+                data: securityData,
+                foldoutCallback: UpdateShowSecuritySettings,
+                enableTestsCallback: UpdateEnableTestsExecution,
+                allowMenuCallback: UpdateAllowMenuItemExecution);
+
 #if UMCP_DEBUG
             DrawDeveloperTools();
 #endif
@@ -359,6 +366,17 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
+        /// Create security settings data for view rendering
+        /// </summary>
+        private SecuritySettingsData CreateSecuritySettingsData()
+        {
+            return new SecuritySettingsData(
+                _model.UI.ShowSecuritySettings,
+                McpEditorSettings.GetEnableTestsExecution(),
+                McpEditorSettings.GetAllowMenuItemExecution());
+        }
+
+        /// <summary>
         /// Configure editor settings
         /// </summary>
         private void ConfigureEditor()
@@ -451,6 +469,31 @@ namespace io.github.hatayama.uMCP
         {
             _model.UpdateMainScrollPosition(position);
         }
+
+        /// <summary>
+        /// Update ShowSecuritySettings setting
+        /// </summary>
+        private void UpdateShowSecuritySettings(bool show)
+        {
+            _model.UpdateShowSecuritySettings(show);
+        }
+
+        /// <summary>
+        /// Update EnableTestsExecution setting with persistence
+        /// </summary>
+        private void UpdateEnableTestsExecution(bool enable)
+        {
+            _model.UpdateEnableTestsExecution(enable);
+        }
+
+        /// <summary>
+        /// Update AllowMenuItemExecution setting with persistence
+        /// </summary>
+        private void UpdateAllowMenuItemExecution(bool allow)
+        {
+            _model.UpdateAllowMenuItemExecution(allow);
+        }
+
 
         /// <summary>
         /// Toggle server state (start if stopped, stop if running)

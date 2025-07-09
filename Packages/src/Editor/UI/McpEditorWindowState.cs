@@ -24,6 +24,7 @@ namespace io.github.hatayama.uMCP
         public bool ShowConnectedTools { get; }
         public McpEditorType SelectedEditorType { get; }
         public Vector2 MainScrollPosition { get; }
+        public bool ShowSecuritySettings { get; }
 
         public UIState(
             int customPort = McpServerConfig.DEFAULT_PORT,
@@ -31,7 +32,8 @@ namespace io.github.hatayama.uMCP
             bool showLLMToolSettings = true,
             bool showConnectedTools = true,
             McpEditorType selectedEditorType = McpEditorType.Cursor,
-            Vector2 mainScrollPosition = default)
+            Vector2 mainScrollPosition = default,
+            bool showSecuritySettings = false)
         {
             CustomPort = customPort;
             AutoStartServer = autoStartServer;
@@ -39,6 +41,7 @@ namespace io.github.hatayama.uMCP
             ShowConnectedTools = showConnectedTools;
             SelectedEditorType = selectedEditorType;
             MainScrollPosition = mainScrollPosition;
+            ShowSecuritySettings = showSecuritySettings;
         }
     }
 

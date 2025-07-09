@@ -73,7 +73,8 @@ namespace io.github.hatayama.uMCP
                 showLLMToolSettings: ui.ShowLLMToolSettings,
                 showConnectedTools: ui.ShowConnectedTools,
                 selectedEditorType: ui.SelectedEditorType,
-                mainScrollPosition: ui.MainScrollPosition));
+                mainScrollPosition: ui.MainScrollPosition,
+                showSecuritySettings: ui.ShowSecuritySettings));
 
 #if UMCP_DEBUG
             UpdateDebugState(debug => new DebugState(
@@ -122,7 +123,8 @@ namespace io.github.hatayama.uMCP
                 showLLMToolSettings: ui.ShowLLMToolSettings,
                 showConnectedTools: ui.ShowConnectedTools,
                 selectedEditorType: selectedEditor,
-                mainScrollPosition: ui.MainScrollPosition));
+                mainScrollPosition: ui.MainScrollPosition,
+                showSecuritySettings: ui.ShowSecuritySettings));
 
 #if UMCP_DEBUG
             float communicationLogHeight = sessionManager.CommunicationLogHeight;
@@ -236,7 +238,8 @@ namespace io.github.hatayama.uMCP
                 showLLMToolSettings: ui.ShowLLMToolSettings,
                 showConnectedTools: ui.ShowConnectedTools,
                 selectedEditorType: ui.SelectedEditorType,
-                mainScrollPosition: ui.MainScrollPosition));
+                mainScrollPosition: ui.MainScrollPosition,
+                showSecuritySettings: ui.ShowSecuritySettings));
             McpEditorSettings.SetAutoStartServer(autoStart);
         }
 
@@ -251,7 +254,8 @@ namespace io.github.hatayama.uMCP
                 showLLMToolSettings: ui.ShowLLMToolSettings,
                 showConnectedTools: ui.ShowConnectedTools,
                 selectedEditorType: ui.SelectedEditorType,
-                mainScrollPosition: ui.MainScrollPosition));
+                mainScrollPosition: ui.MainScrollPosition,
+                showSecuritySettings: ui.ShowSecuritySettings));
             McpEditorSettings.SetCustomPort(port);
         }
 
@@ -266,7 +270,8 @@ namespace io.github.hatayama.uMCP
                 showLLMToolSettings: ui.ShowLLMToolSettings,
                 showConnectedTools: show,
                 selectedEditorType: ui.SelectedEditorType,
-                mainScrollPosition: ui.MainScrollPosition));
+                mainScrollPosition: ui.MainScrollPosition,
+                showSecuritySettings: ui.ShowSecuritySettings));
         }
 
         /// <summary>
@@ -280,7 +285,8 @@ namespace io.github.hatayama.uMCP
                 showLLMToolSettings: show,
                 showConnectedTools: ui.ShowConnectedTools,
                 selectedEditorType: ui.SelectedEditorType,
-                mainScrollPosition: ui.MainScrollPosition));
+                mainScrollPosition: ui.MainScrollPosition,
+                showSecuritySettings: ui.ShowSecuritySettings));
         }
 
         /// <summary>
@@ -294,7 +300,8 @@ namespace io.github.hatayama.uMCP
                 showLLMToolSettings: ui.ShowLLMToolSettings,
                 showConnectedTools: ui.ShowConnectedTools,
                 selectedEditorType: type,
-                mainScrollPosition: ui.MainScrollPosition));
+                mainScrollPosition: ui.MainScrollPosition,
+                showSecuritySettings: ui.ShowSecuritySettings));
             McpSessionManager.instance.SelectedEditorType = type;
         }
 
@@ -309,8 +316,41 @@ namespace io.github.hatayama.uMCP
                 showLLMToolSettings: ui.ShowLLMToolSettings,
                 showConnectedTools: ui.ShowConnectedTools,
                 selectedEditorType: ui.SelectedEditorType,
-                mainScrollPosition: position));
+                mainScrollPosition: position,
+                showSecuritySettings: ui.ShowSecuritySettings));
         }
+
+        /// <summary>
+        /// Update ShowSecuritySettings setting
+        /// </summary>
+        public void UpdateShowSecuritySettings(bool show)
+        {
+            UpdateUIState(ui => new UIState(
+                customPort: ui.CustomPort,
+                autoStartServer: ui.AutoStartServer,
+                showLLMToolSettings: ui.ShowLLMToolSettings,
+                showConnectedTools: ui.ShowConnectedTools,
+                selectedEditorType: ui.SelectedEditorType,
+                mainScrollPosition: ui.MainScrollPosition,
+                showSecuritySettings: show));
+        }
+
+        /// <summary>
+        /// Update EnableTestsExecution setting with persistence
+        /// </summary>
+        public void UpdateEnableTestsExecution(bool enable)
+        {
+            McpEditorSettings.SetEnableTestsExecution(enable);
+        }
+
+        /// <summary>
+        /// Update AllowMenuItemExecution setting with persistence
+        /// </summary>
+        public void UpdateAllowMenuItemExecution(bool allow)
+        {
+            McpEditorSettings.SetAllowMenuItemExecution(allow);
+        }
+
 
 #if UMCP_DEBUG
         /// <summary>
