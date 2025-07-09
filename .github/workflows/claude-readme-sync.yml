@@ -44,14 +44,17 @@ jobs:
             
             Please complete this translation task and save the result to the appropriate file.
 
-      - name: Commit and push changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add Packages/src/README.md
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "docs: sync English README from Japanese version"
-            git push
-          fi
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "docs: sync English README from Japanese version"
+          title: "Auto-sync: Update English README"
+          body: |
+            Automatically generated PR to sync English README from Japanese version.
+            
+            - Source: `Packages/src/README_ja.md`
+            - Target: `Packages/src/README.md`
+            - Triggered by: README_ja.md update in main branch
+          branch: "claude-code/readme-sync"
+          delete-branch: true

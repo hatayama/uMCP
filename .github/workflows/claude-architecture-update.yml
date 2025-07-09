@@ -59,14 +59,17 @@ jobs:
             
             Please analyze the codebase and update the architecture documentation as needed.
 
-      - name: Commit and push changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add Packages/src/Editor/ARCHITECTURE.md Packages/src/TypeScriptServer~/ARCHITECTURE.md
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "docs: update architecture documentation"
-            git push
-          fi
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "docs: update architecture documentation"
+          title: "Auto-update: Architecture documentation"
+          body: |
+            Automatically generated PR to update architecture documentation based on code changes.
+            
+            - Analyzed: `Packages/src/Editor/` and `Packages/src/TypeScriptServer~/`
+            - Updated: `ARCHITECTURE.md` files
+            - Triggered by: Code changes in main branch
+          branch: "claude-code/architecture-update"
+          delete-branch: true
