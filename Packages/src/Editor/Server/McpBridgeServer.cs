@@ -460,19 +460,14 @@ namespace io.github.hatayama.uMCP
             catch (IOException ex)
             {
                 // I/O errors are usually normal disconnections - only log as info instead of warning
-                if (!ex.Message.Contains("Connection reset by peer") && 
-                    !ex.Message.Contains("socket has been shut down") &&
-                    !ex.Message.Contains("Operation aborted") &&
-                    !ex.Message.Contains("I/O operation has been aborted") &&
-                    !ex.Message.Contains("thread exit or application request") &&
-                    !ex.Message.Contains("Unable to read data from the transport connection"))
-                {
-                    McpLogger.LogWarning($"I/O error with client {clientEndpoint}: {ex.Message}");
-                }
-                else
+                if (IsNormalDisconnectionException(ex))
                 {
                     // Log normal disconnections as info level
                     McpLogger.LogInfo($"Client {clientEndpoint} disconnected normally");
+                }
+                else
+                {
+                    McpLogger.LogWarning($"I/O error with client {clientEndpoint}: {ex.Message}");
                 }
             }
             catch (Exception ex)
@@ -653,6 +648,35 @@ namespace io.github.hatayama.uMCP
             {
                 // Incomplete or malformed JSON - this is expected behavior
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines if the given exception represents a normal client disconnection.
+        /// </summary>
+        /// <param name="ex">The exception to evaluate</param>
+        /// <returns>True if the exception represents a normal disconnection, false otherwise</returns>
+        private static bool IsNormalDisconnectionException(Exception ex)
+        {
+            switch (ex)
+            {
+                case SocketException sockEx:
+                    return sockEx.SocketErrorCode == SocketError.ConnectionReset ||
+                           sockEx.SocketErrorCode == SocketError.ConnectionAborted ||
+                           sockEx.SocketErrorCode == SocketError.Shutdown ||
+                           sockEx.SocketErrorCode == SocketError.NotConnected;
+                    
+                case ObjectDisposedException:
+                    return true;
+                    
+                case IOException ioEx when ioEx.InnerException is SocketException innerSockEx:
+                    return innerSockEx.SocketErrorCode == SocketError.ConnectionReset ||
+                           innerSockEx.SocketErrorCode == SocketError.ConnectionAborted ||
+                           innerSockEx.SocketErrorCode == SocketError.Shutdown ||
+                           innerSockEx.SocketErrorCode == SocketError.NotConnected;
+                    
+                default:
+                    return false;
             }
         }
 
