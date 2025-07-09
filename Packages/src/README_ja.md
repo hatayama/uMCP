@@ -115,7 +115,21 @@ UnitySearchが提供する検索プロバイダーを取得します
 > [!NOTE]
 > これらのコマンドを組み合わせることで、AIが人間の介入なしに複雑なタスクを完了できます。
 > 特にエラー修正、テスト実行などの反復的なタスクで威力を発揮します。
- 
+
+## セキュリティ設定
+
+> [!WARNING]
+> **デフォルトで無効化されている機能**
+> 
+> 任意のコードを自由に実行できてしまうため、以下の機能はデフォルトで無効化されています：
+> - `execute-menu-item`: メニュー項目の実行
+> - `run-tests`: テストの実行
+> 
+> これらの機能を使用するには、uMCPウィンドウのSecurity Settingsで該当する設定を有効にする必要があります：
+> - **Allow Test Execution**: `run-tests`コマンドを有効にします
+> - **Allow Menu Item Execution**: `execute-menu-item`コマンドを有効にします
+> これらの機能を有効にする場合は、信頼できる環境でのみ使用してください。
+
 機能詳細は[FEATURES_ja.md](FEATURES_ja.md)を御覧ください。
 
 ## 使用方法
@@ -191,21 +205,7 @@ URL: https://package.openupm.com
 Scope(s): io.github.hatayama.umcp
 ```
 
-3. Package Managerウィンドウを開き、My RegistriesセクションのhutayamaページからProject Settingsに移動
-
-### Unity接続エラー
-> [!CAUTION]
-> 接続エラーが発生した場合：
-> - Unity MCP Bridgeが実行されていることを確認（Window > Unity MCP）
-> - 設定されたポートが他のアプリケーションによって使用されていないことを確認
-
-### Cursor設定エラー
-> [!WARNING]
-> 以下の点を確認してください：
-> - `.cursor/mcp.json`のパスが正しいことを確認
-> - JSON形式が正しいことを確認
-> - CursorのTools & Integrations > MCP Toolsで認識されているかを確認。「0 tool enable」や赤い円が表示される場合は、Cursorを再起動
-
+3. Package Managerウィンドウを開き、My RegistriesセクションのOpenUPMを選択。uMCPが表示されます。
 
 ## カスタムコマンド開発
 コアパッケージを変更することなく、プロジェクト独自のコマンドを簡単に追加できます。

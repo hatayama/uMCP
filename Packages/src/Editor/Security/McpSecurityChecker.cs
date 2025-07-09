@@ -17,9 +17,6 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class McpSecurityChecker
     {
-        // Security setting constants
-        private const string EnableTestsExecutionSetting = "enableTestsExecution";
-        private const string AllowMenuItemExecutionSetting = "allowMenuItemExecution";
         /// <summary>
         /// Checks if a command is allowed based on current security settings
         /// </summary>
@@ -70,10 +67,10 @@ namespace io.github.hatayama.uMCP
             var attribute = commandType.GetCustomAttribute<McpToolAttribute>();
             if (attribute == null)
             {
-                return new CommandAttributeInfo(commandName, SecurityRiskLevel.High, null);
+                return new CommandAttributeInfo(commandName, SecuritySettings.None);
             }
 
-            return new CommandAttributeInfo(commandName, attribute.SecurityLevel, attribute.RequiredSecuritySetting);
+            return new CommandAttributeInfo(commandName, attribute.RequiredSecuritySetting);
         }
 
         /// <summary>
@@ -83,36 +80,21 @@ namespace io.github.hatayama.uMCP
         /// <returns>True if command is allowed</returns>
         private static bool IsCommandAllowedByAttribute(CommandAttributeInfo commandInfo)
         {
-            // Check by security level first
-            switch (commandInfo.SecurityLevel)
+            // Check by required security setting
+            switch (commandInfo.RequiredSecuritySetting)
             {
-                case SecurityRiskLevel.Safe:
-                case SecurityRiskLevel.Low:
-                    return true;
+                case SecuritySettings.None:
+                    return true; // No security restriction
                     
-                case SecurityRiskLevel.Medium:
-                    // Medium risk commands are blocked by default for safe-by-default approach
-                    return false;
+                case SecuritySettings.EnableTestsExecution:
+                    return IsTestsExecutionAllowed();
                     
-                case SecurityRiskLevel.High:
-                    // For high-risk commands, check specific settings
-                    if (commandInfo.RequiredSecuritySetting == EnableTestsExecutionSetting)
-                    {
-                        return IsTestsExecutionAllowed();
-                    }
-                    return false;
+                case SecuritySettings.AllowMenuItemExecution:
+                    return IsMenuItemExecutionAllowed();
                     
-                case SecurityRiskLevel.Critical:
-                    // For critical commands, check specific settings
-                    if (commandInfo.RequiredSecuritySetting == AllowMenuItemExecutionSetting)
-                    {
-                        return IsMenuItemExecutionAllowed();
-                    }
-                    return false;
+                default:
+                    return false; // Unknown setting - block by default
             }
-
-            // Default to block for unknown security levels
-            return false;
         }
 
         /// <summary>
@@ -156,14 +138,15 @@ namespace io.github.hatayama.uMCP
             // Generate block reason based on required security setting
             switch (commandInfo.Value.RequiredSecuritySetting)
             {
-                case EnableTestsExecutionSetting:
+                case SecuritySettings.EnableTestsExecution:
                     return "Tests execution is disabled. Enable 'Enable Tests Execution' in uMCP Security Settings.";
                     
-                case AllowMenuItemExecutionSetting:
+                case SecuritySettings.AllowMenuItemExecution:
                     return "Menu item execution is disabled. Enable 'Allow Menu Item Execution' in uMCP Security Settings.";
                     
+                case SecuritySettings.None:
                 default:
-                    return $"Command '{commandName}' is not allowed by security policy (Risk Level: {commandInfo.Value.SecurityLevel}).";
+                    return $"Command '{commandName}' is not allowed by security policy.";
             }
         }
 
@@ -176,26 +159,10 @@ namespace io.github.hatayama.uMCP
         {
             bool isAllowed = IsCommandAllowed(commandName);
             string reason = isAllowed ? "Command is allowed" : GetBlockReason(commandName);
-            SecurityRiskLevel riskLevel = GetCommandRiskLevel(commandName);
             
-            return new CommandSecurityInfo(commandName, isAllowed, reason, riskLevel);
+            return new CommandSecurityInfo(commandName, isAllowed, reason);
         }
 
-        /// <summary>
-        /// Gets the security risk level of a command
-        /// </summary>
-        /// <param name="commandName">The name of the command</param>
-        /// <returns>Risk level enum</returns>
-        private static SecurityRiskLevel GetCommandRiskLevel(string commandName)
-        {
-            var commandInfo = GetCommandSecurityInfoFromRegistry(commandName);
-            if (!commandInfo.HasValue)
-            {
-                return SecurityRiskLevel.High; // Default to high risk for unknown commands
-            }
-
-            return commandInfo.Value.SecurityLevel;
-        }
 
         /// <summary>
         /// Checks if tests execution is allowed
@@ -224,14 +191,12 @@ namespace io.github.hatayama.uMCP
         public readonly string CommandName;
         public readonly bool IsAllowed;
         public readonly string Reason;
-        public readonly SecurityRiskLevel RiskLevel;
 
-        public CommandSecurityInfo(string commandName, bool isAllowed, string reason, SecurityRiskLevel riskLevel)
+        public CommandSecurityInfo(string commandName, bool isAllowed, string reason)
         {
             CommandName = commandName;
             IsAllowed = isAllowed;
             Reason = reason;
-            RiskLevel = riskLevel;
         }
     }
 
@@ -241,28 +206,15 @@ namespace io.github.hatayama.uMCP
     internal readonly struct CommandAttributeInfo
     {
         public readonly string CommandName;
-        public readonly SecurityRiskLevel SecurityLevel;
-        public readonly string RequiredSecuritySetting;
+        public readonly SecuritySettings RequiredSecuritySetting;
 
-        public CommandAttributeInfo(string commandName, SecurityRiskLevel securityLevel, string requiredSecuritySetting)
+        public CommandAttributeInfo(string commandName, SecuritySettings requiredSecuritySetting)
         {
             CommandName = commandName;
-            SecurityLevel = securityLevel;
             RequiredSecuritySetting = requiredSecuritySetting;
         }
     }
 
-    /// <summary>
-    /// Security risk levels for commands
-    /// </summary>
-    public enum SecurityRiskLevel
-    {
-        Safe = 0,       // No security risk
-        Low = 1,        // Minimal risk
-        Medium = 2,     // Moderate risk
-        High = 3,       // High risk - can affect project files
-        Critical = 4    // Critical risk - can execute arbitrary code
-    }
 
     /// <summary>
     /// Exception thrown when a command is blocked by security settings
