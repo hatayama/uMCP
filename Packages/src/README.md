@@ -15,97 +15,97 @@ Control Unity Editor from various LLM tools.
 
 # Concept
 
-When AI is coding, humans need to handle Unity compilation and log retrieval. uMCP was created with the concept of minimizing this as much as possible.
+During AI-assisted coding with Unity, tasks like compilation and log retrieval typically require human intervention. uMCP was designed to minimize such manual operations as much as possible.
 With uMCP, AI can run autonomously for extended periods without relying on human operations.
 
 # Tool Window
-<img width="300" alt="uMCP-window" src="https://github.com/user-attachments/assets/a71b8f80-f77a-4ef6-8779-5a09b6fdeea6" />
+<img width="350" alt="image" src="https://github.com/user-attachments/assets/5863b58b-7b48-48ae-9a40-c874ddc11488" />
 
 - Manages and monitors server status
 - Provides visibility into LLM tool connection status
-- Enables easy connection to tools by pressing the LLM tool configuration button
+- Enables easy connection to tools via the LLM tool settings button
 
-# Main Features
+# Key Features
 #### 1. compile - Execute Compilation
-Compiles after executing AssetDatabase.Refresh(). Can find errors and warnings that built-in linters cannot detect.  
-Choose between differential compilation and forced full compilation.
+Performs compilation after AssetDatabase.Refresh(). Can detect errors and warnings that built-in linters cannot find.  
+You can choose between incremental compilation and forced full compilation.
 ```
 → Execute compile
 → Analyze error content
-→ Auto-fix relevant files
+→ Automatically fix relevant files
 → Verify with compile again
 ```
 
-#### 2. get-logs - Retrieve Console Logs
-Retrieves the same log content as Unity's Console. Can filter by LogType and search text, with optional stack trace inclusion.
-This allows retrieving logs while keeping context small.
+#### 2. get-logs - Retrieve Logs Same as Unity Console
+Filter by LogType or search target string. You can also choose whether to include stacktrace.
+This allows you to retrieve logs while keeping the context small.
 ```
 → get-logs (LogType: Error, SearchText: "NullReference")
-→ Identify cause from stack trace
+→ Identify cause from stacktrace
 → Fix relevant code
 ```
 
 #### 3. run-tests - Execute TestRunner (PlayMode, EditMode supported)
-Executes Unity Test Runner and retrieves test results. Configure conditions with FilterType and FilterValue.
+Executes Unity Test Runner and retrieves test results. You can set conditions with FilterType and FilterValue.
 - FilterType: all (all tests), fullclassname (full class name), etc.
 - FilterValue: Value according to filter type (class name, namespace, etc.)  
-Can output test results as XML. Returns the output path for AI to read.  
-This is also designed to minimize context consumption.
+Test results can be output as xml. The output path is returned so AI can read it.  
+This is also a strategy to avoid consuming context.
 ```
 → run-tests (FilterType: fullclassname, FilterValue: "PlayerControllerTests")
 → Check failed tests
-→ Fix implementation to pass tests
+→ Fix implementation and pass tests
 ```
 > [!WARNING]
-> When executing PlayMode tests, Domain Reload is forcibly turned OFF. Note that static variables will not be reset.
+> During PlayMode test execution, Domain Reload is forcibly turned OFF. Note that static variables will not be reset.
 
-#### 4. clear-console - Clear Logs
-Can clear logs that become noise during log searches.
+#### 4. clear-console - Log Cleanup
+Clear logs that become noise during log searches.
 ```
 → clear-console
 → Start new debug session
 ```
 
 #### 5. unity-search - Project Search with UnitySearch
-Use [UnitySearch](https://docs.unity3d.com/2022.3/Manual/search-overview.html).
+You can use [UnitySearch](https://docs.unity3d.com/Manual/search-overview.html).
 ```
 → unity-search (SearchQuery: "*.prefab")
-→ List Prefabs matching specific conditions
-→ Identify problematic Prefabs
+→ List prefabs matching specific conditions
+→ Identify problematic prefabs
 ```
 
-#### 6. get-provider-details - Check UnitySearch Providers
-Retrieves search providers offered by UnitySearch.
+#### 6. get-provider-details - Check UnitySearch Search Providers
+Retrieve search providers offered by UnitySearch.
 ```
 → get-provider-details
 → Understand each provider's capabilities
-→ Select optimal search method
+→ Choose optimal search method
 ```
 
 #### 7. get-menu-items - Retrieve Menu Items
-Retrieves menu items defined with [MenuItem("xxx")] attribute. Can filter by string.
+Retrieve menu items defined with [MenuItem("xxx")] attribute. Can filter by string specification.
 ```
 → Check available menu items
 ```
 
 #### 8. execute-menu-item - Execute Menu Items
-Executes menu items defined with [MenuItem("xxx")] attribute.
+Execute menu items defined with [MenuItem("xxx")] attribute.
 ```
-→ Have AI generate test programs
+→ Have AI generate test program
 → execute-menu-item (MenuItemPath: "Tools/xxx")
-→ Execute generated test programs
+→ Execute generated test program
 → Check results with get-logs
 ```
 
 #### 9. find-game-objects - Search Scene Objects
-Retrieves objects and examines component parameters.
+Retrieve objects and examine component parameters.
 ```
 → find-game-objects (RequiredComponents: ["Camera"])
 → Investigate Camera component parameters
 ```
 
 #### 10. get-hierarchy - Analyze Scene Structure
-Retrieves currently active Hierarchy information. Works at runtime too.
+Retrieve information about the currently active Hierarchy. Works at runtime as well.
 ```
 → get-hierarchy
 → Understand parent-child relationships between GameObjects
@@ -114,9 +114,23 @@ Retrieves currently active Hierarchy information. Works at runtime too.
 
 > [!NOTE]
 > By combining these commands, AI can complete complex tasks without human intervention.
-> Particularly effective for repetitive tasks like error fixing and test execution.
- 
-For detailed features, see [FEATURES.md](FEATURES.md).
+> They are particularly powerful for repetitive tasks like error fixing and test execution.
+
+## Security Settings
+
+> [!WARNING]
+> **Features Disabled by Default**
+> 
+> The following features are disabled by default because they can execute arbitrary code freely:
+> - `execute-menu-item`: Executing menu items
+> - `run-tests`: Test execution
+> 
+> To use these features, you need to enable the corresponding settings in the Security Settings of the uMCP window:
+> - **Allow Test Execution**: Enables the `run-tests` command
+> - **Allow Menu Item Execution**: Enables the `execute-menu-item` command
+> Only enable these features in trusted environments.
+
+For detailed features, please see [FEATURES.md](FEATURES.md).
 
 ## Usage
 1. Select Window > uMCP. A dedicated window will open, so press the "Start Server" button.  
@@ -126,13 +140,13 @@ For detailed features, see [FEATURES.md](FEATURES.md).
 <img width="335" alt="image" src="https://github.com/user-attachments/assets/25f1f4f9-e3c8-40a5-a2f3-903f9ed5f45b" />
 
 4. IDE Connection Verification
-  - For example, in Cursor, check Tools & Integrations on the settings page and find uMCP. Click the toggle to enable MCP. If red circles appear, restart Cursor.  
+  - For example, with Cursor, check the Tools & Integrations in the settings page and find uMCP. Click the toggle to enable MCP. If a red circle appears, restart Cursor.  
 <img width="545" alt="image" src="https://github.com/user-attachments/assets/ed54d051-b78a-4bb4-bb2f-7ab23ebc1840" />
 
 
-4. Manual Configuration (Usually Not Required)
+4. Manual Setup (Usually Unnecessary)
 > [!NOTE]
-> Auto-configuration is usually sufficient, but if needed, you can manually edit Cursor's configuration file (`.cursor/mcp.json`):
+> Usually automatic setup is sufficient, but if needed, you can manually edit Cursor's configuration file (`.cursor/mcp.json`):
 
 ```json
 {
@@ -150,21 +164,21 @@ For detailed features, see [FEATURES.md](FEATURES.md).
 }
 ```
 
-**Path examples**:
+**Path Examples**:
 - **Via Package Manager**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
 > [!NOTE]
 > When installed via Package Manager, the package is placed in `Library/PackageCache` with a hashed directory name. Using the "Auto Configure Cursor" button will automatically set the correct path.
 
-5. Support for Multiple Unity Instances
+5. Multiple Unity Instance Support
 > [!NOTE]
-> Supports multiple Unity instances by changing port numbers. Assign different port numbers to each instance.
+> Multiple Unity instances can be supported by changing port numbers. Assign different port numbers to each instance.
 
 ## Prerequisites
 
 > [!WARNING]
 > The following software is required:
-> - **Unity 2022.3 or higher**
-> - **Node.js 18.0 or higher** - Required for MCP server execution
+> - **Unity 2022.3 or later**
+> - **Node.js 18.0 or later** - Required for MCP server execution
 > - Install Node.js from [here](https://nodejs.org/en/download)
 
 ## Installation
@@ -182,8 +196,8 @@ https://github.com/hatayama/uMCP.git?path=/Packages/src
 
 ### Via OpenUPM (Recommended)
 
-### Using Scoped registry with Unity Package Manager
-1. Open the Project Settings window and navigate to the Package Manager page
+### Using Scoped registry in Unity Package Manager
+1. Open Project Settings window and go to Package Manager page
 2. Add the following entry to the Scoped Registries list:
 ```
 Name: OpenUPM
@@ -191,26 +205,12 @@ URL: https://package.openupm.com
 Scope(s): io.github.hatayama.umcp
 ```
 
-3. Open the Package Manager window and navigate to the hutayama page in the My Registries section to go to Project Settings
-
-### Unity Connection Errors
-> [!CAUTION]
-> If connection errors occur:
-> - Ensure Unity MCP Bridge is running (Window > Unity MCP)
-> - Verify the configured port is not being used by other applications
-
-### Cursor Configuration Errors
-> [!WARNING]
-> Please check the following:
-> - Verify the path in `.cursor/mcp.json` is correct
-> - Ensure JSON format is valid
-> - Check if it's recognized in Cursor's Tools & Integrations > MCP Tools. If "0 tool enable" or red circles appear, restart Cursor
-
+3. Open Package Manager window and select OpenUPM in the My Registries section. uMCP will be displayed.
 
 ## Custom Command Development
 You can easily add project-specific commands without modifying the core package.
 
-**Step 1: Create Schema Class** (Define parameters):
+**Step 1: Create Schema Class** (define parameters):
 ```csharp
 using System.ComponentModel;
 
@@ -219,7 +219,7 @@ public class MyCustomSchema : BaseCommandSchema
     [Description("Parameter description")]
     public string MyParameter { get; set; } = "default_value";
     
-    [Description("Enum parameter example")]
+    [Description("Example enum parameter")]
     public MyEnum EnumParameter { get; set; } = MyEnum.Option1;
 }
 
@@ -231,7 +231,7 @@ public enum MyEnum
 }
 ```
 
-**Step 2: Create Response Class** (Define return data):
+**Step 2: Create Response Class** (define return data):
 ```csharp
 public class MyCustomResponse : BaseCommandResponse
 {
@@ -251,13 +251,13 @@ public class MyCustomResponse : BaseCommandResponse
 
 **Step 3: Create Command Class**:
 ```csharp
-[McpTool]  // ← This attribute enables automatic registration
+[McpTool]  // ← Auto-registered with this attribute
 public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
 {
     public override string CommandName => "myCustomCommand";
     public override string Description => "Description of my custom command";
     
-    // Executes on main thread
+    // Executed on main thread
     protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
     {
         // Type-safe parameter access
@@ -279,15 +279,15 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 }
 ```
 
-See [Custom Command Samples](/Assets/Editor/CustomCommandSamples) for reference.
+Please also refer to [Custom Command Samples](/Assets/Editor/CustomCommandSamples).
 
-## WSL2 Support for Claude Code on Windows
-Enable WSL2 mirror mode. Write the following in `C:/Users/[username]/.wslconfig`:
+## WSL2 Support for Using Claude Code on Windows
+Enable WSL2 mirror mode. Add the following to `C:/Users/[username]/.wslconfig`:
 ```
 [wsl2]
 networkingMode=mirrored
 ```
-Then execute the following commands to apply the configuration:
+Then execute the following commands to apply the settings:
 ```bash
 wsl --shutdown
 wsl
