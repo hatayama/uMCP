@@ -81,10 +81,10 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="commandInfo">Command attribute information</param>
         /// <returns>True if command is allowed</returns>
-        private static bool IsCommandAllowedByAttribute(CommandAttributeInfo? commandInfo)
+        private static bool IsCommandAllowedByAttribute(CommandAttributeInfo commandInfo)
         {
             // Check by security level first
-            switch (commandInfo.Value.SecurityLevel)
+            switch (commandInfo.SecurityLevel)
             {
                 case SecurityRiskLevel.Safe:
                 case SecurityRiskLevel.Low:
@@ -96,7 +96,7 @@ namespace io.github.hatayama.uMCP
                     
                 case SecurityRiskLevel.High:
                     // For high-risk commands, check specific settings
-                    if (commandInfo.Value.RequiredSecuritySetting == EnableTestsExecutionSetting)
+                    if (commandInfo.RequiredSecuritySetting == EnableTestsExecutionSetting)
                     {
                         return IsTestsExecutionAllowed();
                     }
@@ -104,7 +104,7 @@ namespace io.github.hatayama.uMCP
                     
                 case SecurityRiskLevel.Critical:
                     // For critical commands, check specific settings
-                    if (commandInfo.Value.RequiredSecuritySetting == AllowMenuItemExecutionSetting)
+                    if (commandInfo.RequiredSecuritySetting == AllowMenuItemExecutionSetting)
                     {
                         return IsMenuItemExecutionAllowed();
                     }
