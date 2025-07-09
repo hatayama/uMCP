@@ -1,5 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
+using UnityEditor;
+using UnityEditor.Compilation;
 
 namespace io.github.hatayama.uMCP
 {
@@ -23,6 +25,21 @@ namespace io.github.hatayama.uMCP
             // Type-safe parameter access - no more string parsing!
             bool forceRecompile = parameters.ForceRecompile;
             
+            // Pre-compilation state check
+            string stateError = ValidateCompilationState();
+            if (!string.IsNullOrEmpty(stateError))
+            {
+                CompileIssue[] stateErrors = { new CompileIssue(stateError, "", 0) };
+                return new CompileResponse(
+                    success: false,
+                    errorCount: 1,
+                    warningCount: 0,
+                    completedAt: System.DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    errors: stateErrors,
+                    warnings: new CompileIssue[0]
+                );
+            }
+            
             // Execute compilation using CompileChecker
             using CompileChecker compileChecker = new CompileChecker();
             CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
@@ -39,6 +56,33 @@ namespace io.github.hatayama.uMCP
                 errors: errors,
                 warnings: warnings
             );
+        }
+        
+        /// <summary>
+        /// Validate compilation state before attempting to compile
+        /// </summary>
+        /// <returns>Error message if compilation cannot proceed, empty string if OK</returns>
+        private string ValidateCompilationState()
+        {
+            // Check if compilation is already in progress
+            if (EditorApplication.isCompiling)
+            {
+                return "Compilation is already in progress. Please wait for the current compilation to finish.";
+            }
+            
+            // Check if domain reload is in progress
+            if (McpSessionManager.instance.IsDomainReloadInProgress)
+            {
+                return "Cannot compile while domain reload is in progress. Please wait for the domain reload to complete.";
+            }
+            
+            // Check if editor is updating
+            if (EditorApplication.isUpdating)
+            {
+                return "Cannot compile while editor is updating. Please wait for the update to complete.";
+            }
+            
+            return string.Empty;
         }
     }
 }
