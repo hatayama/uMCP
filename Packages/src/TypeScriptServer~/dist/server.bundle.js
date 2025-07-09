@@ -5839,7 +5839,7 @@ var MessageHandler = class {
           if (data.command) {
             errorMessage += ` (Command: ${data.command})`;
           }
-          errorMessage += ` To use this feature, enable the corresponding option in Unity menu: Window > uMCP > Security Settings`;
+          errorMessage += " To use this feature, enable the corresponding option in Unity menu: Window > uMCP > Security Settings";
         }
         pending.reject(new Error(errorMessage));
       } else {

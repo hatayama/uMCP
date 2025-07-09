@@ -11,7 +11,7 @@ interface JsonRpcNotification {
 interface JsonRpcResponse {
   id: number;
   result?: unknown;
-  error?: { 
+  error?: {
     message: string;
     data?: {
       command?: string;
@@ -149,7 +149,7 @@ export class MessageHandler {
 
       if (response.error) {
         let errorMessage = response.error.message || 'Unknown error';
-        
+
         // If security blocked, provide detailed information
         if (response.error.data?.type === 'security_blocked') {
           const data = response.error.data;
@@ -158,9 +158,10 @@ export class MessageHandler {
             errorMessage += ` (Command: ${data.command})`;
           }
           // Add instruction for enabling the feature
-          errorMessage += ` To use this feature, enable the corresponding option in Unity menu: Window > uMCP > Security Settings`;
+          errorMessage +=
+            ' To use this feature, enable the corresponding option in Unity menu: Window > uMCP > Security Settings';
         }
-        
+
         pending.reject(new Error(errorMessage));
       } else {
         pending.resolve(response);
