@@ -165,28 +165,28 @@ namespace io.github.hatayama.uMCP
             
             try
             {
-                JObject response = new JObject
-                {
-                    ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                    ["id"] = id != null ? JToken.FromObject(id) : null,
-                    ["result"] = JToken.FromObject(result, JsonSerializer.Create(settings))
-                };
-                return response.ToString(Formatting.None);
+                JsonRpcSuccessResponse response = new JsonRpcSuccessResponse(
+                    McpServerConfig.JSONRPC_VERSION,
+                    id,
+                    result
+                );
+                return JsonConvert.SerializeObject(response, Formatting.None, settings);
             }
             catch (Exception)
             {
                 // Return safe fallback response for any serialization errors
-                JObject fallbackResponse = new JObject
+                object fallbackResult = new
                 {
-                    ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                    ["id"] = id != null ? JToken.FromObject(id) : null,
-                    ["result"] = new JObject
-                    {
-                        ["error"] = "Serialization failed - returning safe fallback",
-                        ["commandType"] = result?.GetType()?.Name ?? "unknown"
-                    }
+                    error = "Serialization failed - returning safe fallback",
+                    commandType = result != null ? result.GetType().Name : "unknown"
                 };
-                return fallbackResponse.ToString(Formatting.None);
+                
+                JsonRpcSuccessResponse fallbackResponse = new JsonRpcSuccessResponse(
+                    McpServerConfig.JSONRPC_VERSION,
+                    id,
+                    fallbackResult
+                );
+                return JsonConvert.SerializeObject(fallbackResponse, Formatting.None);
             }
         }
 
@@ -197,18 +197,34 @@ namespace io.github.hatayama.uMCP
         /// <param name="ex">Exception to convert to error response</param>
         private static string CreateErrorResponse(object id, Exception ex)
         {
-            JObject errorResponse = new JObject
+            JsonRpcErrorData errorData;
+            string errorMessage;
+            
+            // Handle security exceptions with detailed information
+            if (ex is McpSecurityException secEx)
             {
-                ["jsonrpc"] = McpServerConfig.JSONRPC_VERSION,
-                ["id"] = id != null ? JToken.FromObject(id) : null,
-                ["error"] = new JObject
-                {
-                    ["code"] = McpServerConfig.INTERNAL_ERROR_CODE,
-                    ["message"] = "Internal error",
-                    ["data"] = ex.Message
-                }
+                errorData = new SecurityBlockedErrorData(secEx.CommandName, secEx.SecurityReason, secEx.Message);
+                errorMessage = "Command blocked by security settings";
+            }
+            else
+            {
+                errorData = new InternalErrorData(ex.Message);
+                errorMessage = "Internal error";
+            }
+            
+            JsonRpcErrorResponse errorResponse = new JsonRpcErrorResponse(
+                McpServerConfig.JSONRPC_VERSION,
+                id,
+                new JsonRpcError(McpServerConfig.INTERNAL_ERROR_CODE, errorMessage, errorData)
+            );
+            
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                MaxDepth = 10
             };
-            return errorResponse.ToString(Formatting.None);
+            
+            return JsonConvert.SerializeObject(errorResponse, Formatting.None, settings);
         }
 
         /// <summary>
@@ -218,6 +234,117 @@ namespace io.github.hatayama.uMCP
         private static async Task<BaseCommandResponse> ExecuteMethod(string method, JToken paramsToken)
         {
             return await UnityApiHandler.ExecuteCommandAsync(method, paramsToken);
+        }
+    }
+
+    /// <summary>
+    /// Constants for JSON-RPC error types
+    /// </summary>
+    public static class JsonRpcErrorTypes
+    {
+        public const string SecurityBlocked = "security_blocked";
+        public const string InternalError = "internal_error";
+    }
+
+    /// <summary>
+    /// Base class for JSON-RPC error data
+    /// </summary>
+    public abstract class JsonRpcErrorData
+    {
+        public abstract string type { get; }
+        
+        public string message { get; protected set; }
+        
+        protected JsonRpcErrorData(string message)
+        {
+            this.message = message;
+        }
+    }
+
+    /// <summary>
+    /// Error data for security blocked commands
+    /// </summary>
+    public class SecurityBlockedErrorData : JsonRpcErrorData
+    {
+        public override string type => JsonRpcErrorTypes.SecurityBlocked;
+        
+        public string command { get; }
+        
+        public string reason { get; }
+        
+        public SecurityBlockedErrorData(string command, string reason, string message) : base(message)
+        {
+            this.command = command;
+            this.reason = reason;
+        }
+    }
+
+    /// <summary>
+    /// Error data for internal errors
+    /// </summary>
+    public class InternalErrorData : JsonRpcErrorData
+    {
+        public override string type => JsonRpcErrorTypes.InternalError;
+        
+        public InternalErrorData(string message) : base(message)
+        {
+        }
+    }
+
+    /// <summary>
+    /// JSON-RPC error object
+    /// </summary>
+    public class JsonRpcError
+    {
+        public int code { get; }
+        
+        public string message { get; }
+        
+        public JsonRpcErrorData data { get; }
+        
+        public JsonRpcError(int code, string message, JsonRpcErrorData data)
+        {
+            this.code = code;
+            this.message = message;
+            this.data = data;
+        }
+    }
+
+    /// <summary>
+    /// JSON-RPC success response
+    /// </summary>
+    public class JsonRpcSuccessResponse
+    {
+        public string jsonrpc { get; }
+        
+        public object id { get; }
+        
+        public object result { get; }
+        
+        public JsonRpcSuccessResponse(string jsonRpc, object id, object result)
+        {
+            this.jsonrpc = jsonRpc;
+            this.id = id;
+            this.result = result;
+        }
+    }
+
+    /// <summary>
+    /// JSON-RPC error response
+    /// </summary>
+    public class JsonRpcErrorResponse
+    {
+        public string jsonrpc { get; }
+        
+        public object id { get; }
+        
+        public JsonRpcError error { get; }
+        
+        public JsonRpcErrorResponse(string jsonRpc, object id, JsonRpcError error)
+        {
+            this.jsonrpc = jsonRpc;
+            this.id = id;
+            this.error = error;
         }
     }
 } 

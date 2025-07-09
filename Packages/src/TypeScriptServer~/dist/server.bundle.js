@@ -5759,6 +5759,10 @@ var ConnectionManager = class {
 };
 
 // src/message-handler.ts
+var JsonRpcErrorTypes = {
+  SECURITY_BLOCKED: "security_blocked",
+  INTERNAL_ERROR: "internal_error"
+};
 var isJsonRpcNotification = (msg) => {
   return typeof msg === "object" && msg !== null && "method" in msg && typeof msg.method === "string" && !("id" in msg);
 };
@@ -5832,7 +5836,16 @@ var MessageHandler = class {
     if (pending) {
       this.pendingRequests.delete(id);
       if (response.error) {
-        pending.reject(new Error(response.error.message || "Unknown error"));
+        let errorMessage = response.error.message || "Unknown error";
+        if (response.error.data?.type === JsonRpcErrorTypes.SECURITY_BLOCKED) {
+          const data = response.error.data;
+          errorMessage = `${data.reason || errorMessage}`;
+          if (data.command) {
+            errorMessage += ` (Command: ${data.command})`;
+          }
+          errorMessage += " To use this feature, enable the corresponding option in Unity menu: Window > uMCP > Security Settings";
+        }
+        pending.reject(new Error(errorMessage));
       } else {
         pending.resolve(response);
       }

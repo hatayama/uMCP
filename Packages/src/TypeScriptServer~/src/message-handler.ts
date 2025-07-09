@@ -1,6 +1,12 @@
 import { JSONRPC } from './constants.js';
 import { errorToFile, warnToFile } from './utils/log-to-file.js';
 
+// Constants for JSON-RPC error types
+const JsonRpcErrorTypes = {
+  SECURITY_BLOCKED: 'security_blocked',
+  INTERNAL_ERROR: 'internal_error',
+} as const;
+
 // Type definitions for JSON-RPC messages
 interface JsonRpcNotification {
   method: string;
@@ -11,7 +17,15 @@ interface JsonRpcNotification {
 interface JsonRpcResponse {
   id: number;
   result?: unknown;
-  error?: { message: string };
+  error?: {
+    message: string;
+    data?: {
+      command?: string;
+      reason?: string;
+      message?: string;
+      type?: string;
+    };
+  };
   jsonrpc?: string;
 }
 
@@ -140,7 +154,21 @@ export class MessageHandler {
       this.pendingRequests.delete(id);
 
       if (response.error) {
-        pending.reject(new Error(response.error.message || 'Unknown error'));
+        let errorMessage = response.error.message || 'Unknown error';
+
+        // If security blocked, provide detailed information
+        if (response.error.data?.type === JsonRpcErrorTypes.SECURITY_BLOCKED) {
+          const data = response.error.data;
+          errorMessage = `${data.reason || errorMessage}`;
+          if (data.command) {
+            errorMessage += ` (Command: ${data.command})`;
+          }
+          // Add instruction for enabling the feature
+          errorMessage +=
+            ' To use this feature, enable the corresponding option in Unity menu: Window > uMCP > Security Settings';
+        }
+
+        pending.reject(new Error(errorMessage));
       } else {
         pending.resolve(response);
       }
