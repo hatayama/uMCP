@@ -556,7 +556,7 @@ namespace io.github.hatayama.uMCP
                 // Enable Tests Execution
                 EditorGUILayout.BeginHorizontal();
                 bool newEnableTests = EditorGUILayout.Toggle(data.EnableTestsExecution, GUILayout.Width(20));
-                EditorGUILayout.LabelField("Enable Tests Execution", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
+                EditorGUILayout.LabelField("Allow Tests Execution", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
                 if (newEnableTests != data.EnableTestsExecution)
                 {
                     enableTestsCallback?.Invoke(newEnableTests);
