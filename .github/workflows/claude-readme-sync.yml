@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,7 +24,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           timeout_minutes: "30"
-          prompt: |
+          direct_prompt: |
             I need you to translate the Japanese README file to English and update the English README file.
             
             ## Task
