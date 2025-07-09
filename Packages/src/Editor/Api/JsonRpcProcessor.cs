@@ -238,6 +238,15 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
+    /// Constants for JSON-RPC error types
+    /// </summary>
+    public static class JsonRpcErrorTypes
+    {
+        public const string SecurityBlocked = "security_blocked";
+        public const string InternalError = "internal_error";
+    }
+
+    /// <summary>
     /// Base class for JSON-RPC error data
     /// </summary>
     public abstract class JsonRpcErrorData
@@ -257,7 +266,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class SecurityBlockedErrorData : JsonRpcErrorData
     {
-        public override string type => "security_blocked";
+        public override string type => JsonRpcErrorTypes.SecurityBlocked;
         
         public string command { get; }
         
@@ -275,7 +284,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class InternalErrorData : JsonRpcErrorData
     {
-        public override string type => "internal_error";
+        public override string type => JsonRpcErrorTypes.InternalError;
         
         public InternalErrorData(string message) : base(message)
         {

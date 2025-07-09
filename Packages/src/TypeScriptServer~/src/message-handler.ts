@@ -1,6 +1,12 @@
 import { JSONRPC } from './constants.js';
 import { errorToFile, warnToFile } from './utils/log-to-file.js';
 
+// Constants for JSON-RPC error types
+const JsonRpcErrorTypes = {
+  SECURITY_BLOCKED: 'security_blocked',
+  INTERNAL_ERROR: 'internal_error',
+} as const;
+
 // Type definitions for JSON-RPC messages
 interface JsonRpcNotification {
   method: string;
@@ -151,7 +157,7 @@ export class MessageHandler {
         let errorMessage = response.error.message || 'Unknown error';
 
         // If security blocked, provide detailed information
-        if (response.error.data?.type === 'security_blocked') {
+        if (response.error.data?.type === JsonRpcErrorTypes.SECURITY_BLOCKED) {
           const data = response.error.data;
           errorMessage = `${data.reason || errorMessage}`;
           if (data.command) {
