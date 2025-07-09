@@ -25,6 +25,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           timeout_minutes: "60"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           direct_prompt: |
             I need you to analyze the recent code changes and update the architecture documentation files accordingly.
             
