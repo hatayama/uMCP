@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using UnityEditor.TestTools.TestRunner.Api;
-using UnityEditor;
 
 namespace io.github.hatayama.uMCP
 {
@@ -9,7 +8,7 @@ namespace io.github.hatayama.uMCP
     /// Test execution command handler - Type-safe implementation using Schema and Response
     /// Executes tests using Unity Test Runner and returns the results
     /// </summary>
-    [McpTool(SecurityLevel = SecurityRiskLevel.High, RequiredSecuritySetting = "enableTestsExecution")]
+    [McpTool(RequiredSecuritySetting = SecuritySettings.EnableTestsExecution)]
     public class RunTestsCommand : AbstractUnityCommand<RunTestsSchema, RunTestsResponse>
     {
         public override string CommandName => "run-tests";
