@@ -19,7 +19,7 @@ AIによるコーディング時、Unityをコンパイルさせたり、logを�
 uMCPを使えば、AIが人間の操作に頼らず、可能な限り長時間自走するようになります。
 
 # ツールwindow
-<img width="300" alt="uMCP-window" src="https://github.com/user-attachments/assets/a71b8f80-f77a-4ef6-8779-5a09b6fdeea6" />
+<img width="350" alt="image" src="https://github.com/user-attachments/assets/5863b58b-7b48-48ae-9a40-c874ddc11488" />
 
  - サーバーの状態を管理・モニターします
  - LLMツールの接続状況を把握できます
