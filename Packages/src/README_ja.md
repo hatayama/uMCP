@@ -9,10 +9,9 @@
 ![Windsurf](https://img.shields.io/badge/Windsurf-111?logo=Windsurf)
 ![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
-
 <h1 align="center">
-    <img width="500" alt="uMCP" src="https://github.com/user-attachments/assets/519f1807-45d0-470b-993b-ece238b816e1" />  
-</h1>    
+    <img width="500" alt="uMCP" src="https://github.com/user-attachments/assets/0b7c4fcf-af5f-4025-b0d3-e596897d41b7" />  
+</h1>     
 
 様々なLLMツールからUnity Editorを操作する事ができます。  
 
