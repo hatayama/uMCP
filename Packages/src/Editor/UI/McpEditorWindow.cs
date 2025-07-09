@@ -227,8 +227,7 @@ namespace io.github.hatayama.uMCP
                 data: securityData,
                 foldoutCallback: UpdateShowSecuritySettings,
                 enableTestsCallback: UpdateEnableTestsExecution,
-                allowMenuCallback: UpdateAllowMenuItemExecution,
-                sandboxTestsCallback: UpdateSandboxTestsEnabled);
+                allowMenuCallback: UpdateAllowMenuItemExecution);
 
 #if UMCP_DEBUG
             DrawDeveloperTools();
@@ -374,8 +373,7 @@ namespace io.github.hatayama.uMCP
             return new SecuritySettingsData(
                 _model.UI.ShowSecuritySettings,
                 McpEditorSettings.GetEnableTestsExecution(),
-                McpEditorSettings.GetAllowMenuItemExecution(),
-                McpEditorSettings.GetSandboxTestsEnabled());
+                McpEditorSettings.GetAllowMenuItemExecution());
         }
 
         /// <summary>
@@ -496,13 +494,6 @@ namespace io.github.hatayama.uMCP
             _model.UpdateAllowMenuItemExecution(allow);
         }
 
-        /// <summary>
-        /// Update SandboxTestsEnabled setting with persistence
-        /// </summary>
-        private void UpdateSandboxTestsEnabled(bool enable)
-        {
-            _model.UpdateSandboxTestsEnabled(enable);
-        }
 
         /// <summary>
         /// Toggle server state (start if stopped, stop if running)

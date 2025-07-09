@@ -22,7 +22,6 @@ namespace io.github.hatayama.uMCP
         // Security Settings - Safe-by-Default
         public bool enableTestsExecution = false;
         public bool allowMenuItemExecution = false;
-        public bool sandboxTestsEnabled = true;
     }
 
     /// <summary>
@@ -229,23 +228,6 @@ namespace io.github.hatayama.uMCP
             SaveSettings(newSettings);
         }
 
-        /// <summary>
-        /// Gets the sandbox tests enabled flag.
-        /// </summary>
-        public static bool GetSandboxTestsEnabled()
-        {
-            return GetSettings().sandboxTestsEnabled;
-        }
-
-        /// <summary>
-        /// Sets the sandbox tests enabled flag.
-        /// </summary>
-        public static void SetSandboxTestsEnabled(bool sandboxTestsEnabled)
-        {
-            McpEditorSettingsData settings = GetSettings();
-            McpEditorSettingsData newSettings = settings with { sandboxTestsEnabled = sandboxTestsEnabled };
-            SaveSettings(newSettings);
-        }
 
         /// <summary>
         /// Loads the settings file.

@@ -351,13 +351,6 @@ namespace io.github.hatayama.uMCP
             McpEditorSettings.SetAllowMenuItemExecution(allow);
         }
 
-        /// <summary>
-        /// Update SandboxTestsEnabled setting with persistence
-        /// </summary>
-        public void UpdateSandboxTestsEnabled(bool enable)
-        {
-            McpEditorSettings.SetSandboxTestsEnabled(enable);
-        }
 
 #if UMCP_DEBUG
         /// <summary>

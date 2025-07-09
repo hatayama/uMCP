@@ -90,14 +90,12 @@ namespace io.github.hatayama.uMCP
         public readonly bool ShowSecuritySettings;
         public readonly bool EnableTestsExecution;
         public readonly bool AllowMenuItemExecution;
-        public readonly bool SandboxTestsEnabled;
 
-        public SecuritySettingsData(bool showSecuritySettings, bool enableTestsExecution, bool allowMenuItemExecution, bool sandboxTestsEnabled)
+        public SecuritySettingsData(bool showSecuritySettings, bool enableTestsExecution, bool allowMenuItemExecution)
         {
             ShowSecuritySettings = showSecuritySettings;
             EnableTestsExecution = enableTestsExecution;
             AllowMenuItemExecution = allowMenuItemExecution;
-            SandboxTestsEnabled = sandboxTestsEnabled;
         }
     }
 

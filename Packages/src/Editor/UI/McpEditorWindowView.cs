@@ -530,7 +530,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Draw security settings section
         /// </summary>
-        public void DrawSecuritySettings(SecuritySettingsData data, Action<bool> foldoutCallback, Action<bool> enableTestsCallback, Action<bool> allowMenuCallback, Action<bool> sandboxTestsCallback)
+        public void DrawSecuritySettings(SecuritySettingsData data, Action<bool> foldoutCallback, Action<bool> enableTestsCallback, Action<bool> allowMenuCallback)
         {
             EditorGUILayout.BeginVertical("box");
             
@@ -544,8 +544,12 @@ namespace io.github.hatayama.uMCP
             {
                 EditorGUILayout.Space();
                 
-                // Security warning
-                EditorGUILayout.HelpBox("These settings control dangerous MCP operations. Only enable if you trust the AI system.", MessageType.Warning);
+                // Security warning with combined message and custom padding
+                GUIStyle helpBoxStyle = new GUIStyle(EditorStyles.helpBox);
+                helpBoxStyle.padding = new RectOffset(12, 12, 8, 8);
+                helpBoxStyle.margin = new RectOffset(4, 4, 4, 4);
+                
+                EditorGUILayout.LabelField("These settings control dangerous MCP operations. Only enable if you trust the AI system.\n\nChanges take effect immediately - no server restart required.", helpBoxStyle);
                 
                 EditorGUILayout.Space();
                 
@@ -571,24 +575,7 @@ namespace io.github.hatayama.uMCP
                 }
                 EditorGUILayout.EndHorizontal();
                 
-                EditorGUILayout.Space(2);
-                
-                // Sandbox Tests (Future Feature)
-                EditorGUILayout.BeginHorizontal();
-                EditorGUI.BeginDisabledGroup(true); // Disabled for now - future feature
-                bool newSandboxTests = EditorGUILayout.Toggle(data.SandboxTestsEnabled, GUILayout.Width(20));
-                EditorGUILayout.LabelField("Sandbox Tests (Future Feature)", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
-                EditorGUI.EndDisabledGroup();
-                if (newSandboxTests != data.SandboxTestsEnabled)
-                {
-                    sandboxTestsCallback?.Invoke(newSandboxTests);
-                }
-                EditorGUILayout.EndHorizontal();
-                
                 EditorGUILayout.Space();
-                
-                // Help text
-                EditorGUILayout.HelpBox("Changes take effect immediately - no server restart required.", MessageType.Info);
             }
             
             EditorGUILayout.EndVertical();
