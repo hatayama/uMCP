@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.22.3](https://github.com/hatayama/uMCP/compare/v0.22.2...v0.22.3) (2025-07-09)
+
+
+### Bug Fixes
+
+* remove PID-based client identification ([#160](https://github.com/hatayama/uMCP/issues/160)) ([f1c7ce1](https://github.com/hatayama/uMCP/commit/f1c7ce117812dc17da7cb8633176606822bf2162))
+
 ## [0.22.2](https://github.com/hatayama/uMCP/compare/v0.22.1...v0.22.2) (2025-07-08)
 
 
