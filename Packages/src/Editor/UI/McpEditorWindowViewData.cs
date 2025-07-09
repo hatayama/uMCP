@@ -82,6 +82,25 @@ namespace io.github.hatayama.uMCP
         }
     }
 
+    /// <summary>
+    /// Security settings section data for view rendering
+    /// </summary>
+    public record SecuritySettingsData
+    {
+        public readonly bool ShowSecuritySettings;
+        public readonly bool EnableTestsExecution;
+        public readonly bool AllowMenuItemExecution;
+        public readonly bool SandboxTestsEnabled;
+
+        public SecuritySettingsData(bool showSecuritySettings, bool enableTestsExecution, bool allowMenuItemExecution, bool sandboxTestsEnabled)
+        {
+            ShowSecuritySettings = showSecuritySettings;
+            EnableTestsExecution = enableTestsExecution;
+            AllowMenuItemExecution = allowMenuItemExecution;
+            SandboxTestsEnabled = sandboxTestsEnabled;
+        }
+    }
+
 #if UMCP_DEBUG
     public record DeveloperToolsData
     {

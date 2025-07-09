@@ -528,6 +528,74 @@ namespace io.github.hatayama.uMCP
 #endif
 
         /// <summary>
+        /// Draw security settings section
+        /// </summary>
+        public void DrawSecuritySettings(SecuritySettingsData data, Action<bool> foldoutCallback, Action<bool> enableTestsCallback, Action<bool> allowMenuCallback, Action<bool> sandboxTestsCallback)
+        {
+            EditorGUILayout.BeginVertical("box");
+            
+            bool showFoldout = EditorGUILayout.Foldout(data.ShowSecuritySettings, "Security Settings", true);
+            if (showFoldout != data.ShowSecuritySettings)
+            {
+                foldoutCallback?.Invoke(showFoldout);
+            }
+            
+            if (showFoldout)
+            {
+                EditorGUILayout.Space();
+                
+                // Security warning
+                EditorGUILayout.HelpBox("These settings control dangerous MCP operations. Only enable if you trust the AI system.", MessageType.Warning);
+                
+                EditorGUILayout.Space();
+                
+                // Enable Tests Execution
+                EditorGUILayout.BeginHorizontal();
+                bool newEnableTests = EditorGUILayout.Toggle(data.EnableTestsExecution, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Enable Tests Execution", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
+                if (newEnableTests != data.EnableTestsExecution)
+                {
+                    enableTestsCallback?.Invoke(newEnableTests);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.Space(2);
+                
+                // Allow Menu Item Execution
+                EditorGUILayout.BeginHorizontal();
+                bool newAllowMenu = EditorGUILayout.Toggle(data.AllowMenuItemExecution, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Allow Menu Item Execution", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
+                if (newAllowMenu != data.AllowMenuItemExecution)
+                {
+                    allowMenuCallback?.Invoke(newAllowMenu);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.Space(2);
+                
+                // Sandbox Tests (Future Feature)
+                EditorGUILayout.BeginHorizontal();
+                EditorGUI.BeginDisabledGroup(true); // Disabled for now - future feature
+                bool newSandboxTests = EditorGUILayout.Toggle(data.SandboxTestsEnabled, GUILayout.Width(20));
+                EditorGUILayout.LabelField("Sandbox Tests (Future Feature)", GUILayout.MinWidth(150f), GUILayout.ExpandWidth(true));
+                EditorGUI.EndDisabledGroup();
+                if (newSandboxTests != data.SandboxTestsEnabled)
+                {
+                    sandboxTestsCallback?.Invoke(newSandboxTests);
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                EditorGUILayout.Space();
+                
+                // Help text
+                EditorGUILayout.HelpBox("Changes take effect immediately - no server restart required.", MessageType.Info);
+            }
+            
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space();
+        }
+
+        /// <summary>
         /// Check if client name is valid for display
         /// </summary>
         private bool IsValidClientName(string clientName)

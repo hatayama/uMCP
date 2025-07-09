@@ -22,11 +22,17 @@ namespace io.github.hatayama.uMCP
         private readonly Dictionary<string, IUnityCommand> commands = new Dictionary<string, IUnityCommand>();
 
         /// <summary>
+        /// Singleton instance for global access
+        /// </summary>
+        public static UnityCommandRegistry Instance { get; private set; }
+
+        /// <summary>
         /// Default constructor
         /// Auto-registers standard commands
         /// </summary>
         public UnityCommandRegistry()
         {
+            Instance = this;
             RegisterDefaultCommands();
         }
 
@@ -208,12 +214,16 @@ namespace io.github.hatayama.uMCP
         /// <param name="paramsToken">Parameters</param>
         /// <returns>Execution result</returns>
         /// <exception cref="ArgumentException">When command is unknown</exception>
+        /// <exception cref="McpSecurityException">When command is blocked by security settings</exception>
         public async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
             if (!commands.TryGetValue(commandName, out IUnityCommand command))
             {
                 throw new ArgumentException($"Unknown command: {commandName}");
             }
+
+            // Security check - validate command before execution
+            McpSecurityChecker.ValidateCommand(commandName, throwOnBlock: true);
 
             await MainThreadSwitcher.SwitchToMainThread();
             return await command.ExecuteAsync(paramsToken);
@@ -236,8 +246,32 @@ namespace io.github.hatayama.uMCP
                     displayDevelopmentOnly = attribute.DisplayDevelopmentOnly;
                 }
                 
-                return new CommandInfo(cmd.CommandName, cmd.Description, cmd.ParameterSchema, displayDevelopmentOnly);
+                // Check security settings
+                CommandSecurityInfo securityInfo = McpSecurityChecker.GetCommandSecurityInfo(cmd.CommandName);
+                string description = cmd.Description;
+                
+                // Modify description for blocked commands
+                if (!securityInfo.IsAllowed)
+                {
+                    description = $"[BLOCKED] {description} - {securityInfo.Reason}";
+                }
+                
+                return new CommandInfo(cmd.CommandName, description, cmd.ParameterSchema, displayDevelopmentOnly);
             }).ToArray();
+        }
+
+        /// <summary>
+        /// Get command type by name for security checking
+        /// </summary>
+        /// <param name="commandName">Command name</param>
+        /// <returns>Command type or null if not found</returns>
+        public Type GetCommandType(string commandName)
+        {
+            if (commands.TryGetValue(commandName, out IUnityCommand command))
+            {
+                return command.GetType();
+            }
+            return null;
         }
 
         /// <summary>

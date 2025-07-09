@@ -18,6 +18,11 @@ namespace io.github.hatayama.uMCP
         public bool enableCommunicationLogs = false;
         public bool enableDevelopmentMode = false;
         public string lastUsedConfigPath = "";
+        
+        // Security Settings - Safe-by-Default
+        public bool enableTestsExecution = false;
+        public bool allowMenuItemExecution = false;
+        public bool sandboxTestsEnabled = true;
     }
 
     /// <summary>
@@ -183,6 +188,62 @@ namespace io.github.hatayama.uMCP
         {
             McpEditorSettingsData settings = GetSettings();
             McpEditorSettingsData newSettings = settings with { enableDevelopmentMode = enableDevelopmentMode };
+            SaveSettings(newSettings);
+        }
+
+        // Security Settings Methods
+
+        /// <summary>
+        /// Gets the tests execution enabled flag.
+        /// </summary>
+        public static bool GetEnableTestsExecution()
+        {
+            return GetSettings().enableTestsExecution;
+        }
+
+        /// <summary>
+        /// Sets the tests execution enabled flag.
+        /// </summary>
+        public static void SetEnableTestsExecution(bool enableTestsExecution)
+        {
+            McpEditorSettingsData settings = GetSettings();
+            McpEditorSettingsData newSettings = settings with { enableTestsExecution = enableTestsExecution };
+            SaveSettings(newSettings);
+        }
+
+        /// <summary>
+        /// Gets the menu item execution allowed flag.
+        /// </summary>
+        public static bool GetAllowMenuItemExecution()
+        {
+            return GetSettings().allowMenuItemExecution;
+        }
+
+        /// <summary>
+        /// Sets the menu item execution allowed flag.
+        /// </summary>
+        public static void SetAllowMenuItemExecution(bool allowMenuItemExecution)
+        {
+            McpEditorSettingsData settings = GetSettings();
+            McpEditorSettingsData newSettings = settings with { allowMenuItemExecution = allowMenuItemExecution };
+            SaveSettings(newSettings);
+        }
+
+        /// <summary>
+        /// Gets the sandbox tests enabled flag.
+        /// </summary>
+        public static bool GetSandboxTestsEnabled()
+        {
+            return GetSettings().sandboxTestsEnabled;
+        }
+
+        /// <summary>
+        /// Sets the sandbox tests enabled flag.
+        /// </summary>
+        public static void SetSandboxTestsEnabled(bool sandboxTestsEnabled)
+        {
+            McpEditorSettingsData settings = GetSettings();
+            McpEditorSettingsData newSettings = settings with { sandboxTestsEnabled = sandboxTestsEnabled };
             SaveSettings(newSettings);
         }
 

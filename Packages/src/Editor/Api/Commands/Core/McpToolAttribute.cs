@@ -15,6 +15,16 @@ namespace io.github.hatayama.uMCP
         public bool DisplayDevelopmentOnly { get; set; } = false;
 
         /// <summary>
+        /// Gets the security risk level of this command
+        /// </summary>
+        public SecurityRiskLevel SecurityLevel { get; set; } = SecurityRiskLevel.Safe;
+
+        /// <summary>
+        /// Gets the specific security setting name required to execute this command
+        /// </summary>
+        public string RequiredSecuritySetting { get; set; } = null;
+
+        /// <summary>
         /// Initialize McpTool attribute
         /// </summary>
         public McpToolAttribute()
