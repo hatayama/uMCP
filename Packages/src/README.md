@@ -133,7 +133,7 @@ Retrieve information about the currently active Hierarchy. Works at runtime as w
 > - **Allow Menu Item Execution**: Enables the `execute-menu-item` tool
 > Only enable these features in trusted environments.
 
-For detailed features, please see [FEATURES.md](FEATURES.md).
+For detailed features, please see [FEATURES.md](./FEATURES.md).
 
 ## Usage
 1. Select Window > uMCP. A dedicated window will open, so press the "Start Server" button.  

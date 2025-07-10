@@ -132,7 +132,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 > - **Allow Menu Item Execution**: `execute-menu-item`ツールを有効にします
 > これらの機能を有効にする場合は、信頼できる環境でのみ使用してください。
 
-機能詳細は[FEATURES_ja.md](FEATURES_ja.md)を御覧ください。
+機能詳細は[FEATURES_ja.md](./FEATURES_ja.md)を御覧ください。
 
 ## 使用方法
 1. Window > uMCPを選択します。専用ウィンドウが開くので、「Start Server」ボタンを押してください。  
