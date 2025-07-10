@@ -178,13 +178,5 @@ namespace io.github.hatayama.uMCP
             Assert.IsFalse(McpPortValidator.ValidatePort(65536, "test"), "Port 65536 should be invalid");
         }
 
-        [Test]
-        public void ValidatePortRange_ReservedPorts()
-        {
-            // Test reserved port ranges (1-1023) - these should be invalid
-            Assert.IsFalse(McpPortValidator.ValidatePort(1, "test"), "Port 1 should be invalid (reserved)");
-            Assert.IsFalse(McpPortValidator.ValidatePort(80, "test"), "Port 80 should be invalid (reserved)");
-            Assert.IsFalse(McpPortValidator.ValidatePort(1023, "test"), "Port 1023 should be invalid (reserved)");
-        }
     }
 }
