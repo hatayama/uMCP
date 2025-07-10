@@ -42,8 +42,10 @@ graph TB
 Its primary responsibilities are:
 1.  **Running a TCP Server (`McpBridgeServer`)**: Listens for connections from the TypeScript server to receive commands.
 2.  **Executing Unity Operations**: Processes received commands to perform actions within the Unity Editor, such as compiling the project, running tests, or retrieving logs.
-3.  **Providing a User Interface (`McpEditorWindow`)**: Offers a GUI within the Unity Editor for developers to manage and monitor the MCP server.
-4.  **Managing Configuration**: Handles the setup of `mcp.json` files required by LLM tools like Cursor, Claude, and VSCode.
+3.  **Security Management**: Validates and controls command execution through `McpSecurityChecker` to prevent unauthorized operations.
+4.  **Session Management**: Maintains client sessions and connection state through `McpSessionManager`.
+5.  **Providing a User Interface (`McpEditorWindow`)**: Offers a GUI within the Unity Editor for developers to manage and monitor the MCP server.
+6.  **Managing Configuration**: Handles the setup of `mcp.json` files required by LLM tools like Cursor, Claude, and VSCode.
 
 ## 2. Core Architectural Principles
 
@@ -56,10 +58,27 @@ The system is centered around the **Command Pattern**. Each action that can be t
 - **`AbstractUnityCommand<TSchema, TResponse>`**: A generic abstract base class that provides type-safe handling of parameters and responses.
 - **`UnityCommandRegistry`**: A central registry that discovers and holds all available commands.
 - **`UnityApiHandler` / `UnityCommandExecutor`**: These classes receive a command name and parameters, look up the command in the registry, and execute it.
+- **`McpSecurityChecker`**: Validates command execution permissions based on security settings.
 
 This pattern makes the system highly extensible. To add a new feature, a developer simply needs to create a new class that implements `IUnityCommand` and decorate it with the `[McpTool]` attribute. The system will automatically discover and expose it.
 
-### 2.2. Command System Architecture
+### 2.2. Security Architecture
+The system implements comprehensive security controls to prevent unauthorized command execution:
+
+- **`McpSecurityChecker`**: Central security validation component that checks command permissions before execution.
+- **Attribute-Based Security**: Commands can be decorated with security attributes to define their execution requirements.
+- **Default Deny Policy**: Unknown commands are blocked by default to prevent unauthorized operations.
+- **Settings-Based Control**: Security policies can be configured through Unity Editor settings interface.
+
+### 2.3. Session Management
+The system maintains robust session management to handle client connections and state:
+
+- **`McpSessionManager`**: Singleton session manager implemented as `ScriptableSingleton` for domain reload persistence.
+- **Client State Tracking**: Maintains connection state, client identification, and session metadata.
+- **Domain Reload Resilience**: Session state survives Unity domain reloads through persistent storage.
+- **Reconnection Support**: Handles client reconnection scenarios gracefully.
+
+### 2.4. Command System Architecture
 
 ```mermaid
 classDiagram
@@ -108,7 +127,7 @@ classDiagram
     RunTestsCommand ..|> McpToolAttribute : uses
 ```
 
-### 2.3. MVP + Helper Architecture for UI
+### 2.5. MVP + Helper Architecture for UI
 
 ```mermaid
 classDiagram
@@ -169,7 +188,7 @@ classDiagram
     McpEditorModel --> McpEditorWindowViewData : creates
 ```
 
-### 2.4. Schema-Driven and Type-Safe Communication
+### 2.6. Schema-Driven and Type-Safe Communication
 To avoid manual and error-prone JSON parsing, the system uses a schema-driven approach for commands.
 
 - **`*Schema.cs` files** (e.g., `CompileSchema.cs`, `GetLogsSchema.cs`): These classes define the expected parameters for a command using simple C# properties. Attributes like `[Description]` and default values are used to automatically generate a JSON Schema for the client.
@@ -178,7 +197,7 @@ To avoid manual and error-prone JSON parsing, the system uses a schema-driven ap
 
 This design eliminates inconsistencies between the server and client and provides strong type safety within the C# code.
 
-### 2.3. Client Identification Flow
+### 2.7. Client Identification Flow
 The system ensures proper client identification to prevent "Unknown Client" display issues:
 
 1. **Initial State**: Unity Editor shows "No connected tools found" when no clients are connected.
@@ -191,7 +210,7 @@ The system ensures proper client identification to prevent "Unknown Client" disp
 
 This flow prevents the temporary "Unknown Client" display that would occur if the TypeScript server connected to Unity before receiving the client name.
 
-### 2.4. SOLID Principles
+### 2.8. SOLID Principles
 - **Single Responsibility Principle (SRP)**: Each class has a well-defined responsibility.
     - `McpBridgeServer`: Handles raw TCP communication.
     - `McpServerController`: Manages the server's lifecycle and state across domain reloads.
@@ -205,7 +224,7 @@ This flow prevents the temporary "Unknown Client" display that would occur if th
         - `McpServerOperations`: Handles server operations only.
 - **Open/Closed Principle (OCP)**: The system is open for extension but closed for modification. The Command Pattern is the prime example; new commands can be added without altering the core execution logic. The MVP + Helper pattern also demonstrates this principle - new functionality can be added by creating new helper classes without modifying existing components.
 
-### 2.5. MVP + Helper Pattern for UI Architecture
+### 2.9. MVP + Helper Pattern for UI Architecture
 The UI layer implements a sophisticated **MVP (Model-View-Presenter) + Helper Pattern** that evolved from a monolithic 1247-line class into a well-structured, maintainable architecture.
 
 #### Pattern Components
@@ -230,20 +249,55 @@ The UI layer implements a sophisticated **MVP (Model-View-Presenter) + Helper Pa
 - **Complex Operations**: Delegate to appropriate helper classes rather than implementing in Presenter
 - **Event Handling**: Isolate all Unity Editor event management in dedicated EventHandler
 
-### 2.6. Resilience to Domain Reloads
+### 2.10. Resilience to Domain Reloads
 A significant challenge in the Unity Editor is the "domain reload," which resets the application's state. The architecture handles this gracefully:
 - **`McpServerController`**: Uses `[InitializeOnLoad]` to hook into Editor lifecycle events.
 - **`AssemblyReloadEvents`**: Before a reload, `OnBeforeAssemblyReload` is used to save the server's running state (port, status) into `SessionState`.
 - **`SessionState`**: A Unity Editor feature that persists simple data across domain reloads.
 - After a reload, `OnAfterAssemblyReload` reads the `SessionState` and automatically restarts the server if it was previously running, ensuring a seamless experience for the connected client.
 
-## 3. Key Components (Directory Breakdown)
+## 3. Implemented Commands
+
+The system currently implements 13 production-ready commands, each following the established Command Pattern architecture:
+
+### 3.1. Core System Commands
+- **`PingCommand`**: Connection health check and latency testing
+- **`CompileCommand`**: Project compilation with detailed error reporting
+- **`ClearConsoleCommand`**: Unity Console log clearing with confirmation
+- **`SetClientNameCommand`**: Client identification and session management
+- **`GetCommandDetailsCommand`**: Command introspection and metadata retrieval
+
+### 3.2. Information Retrieval Commands
+- **`GetLogsCommand`**: Console log retrieval with filtering and type selection
+- **`GetHierarchyCommand`**: Scene hierarchy export with component information
+- **`GetMenuItemsCommand`**: Unity menu item discovery and metadata
+- **`GetProviderDetailsCommand`**: Unity Search provider information
+
+### 3.3. GameObject and Scene Commands
+- **`FindGameObjectsCommand`**: Advanced GameObject search with multiple criteria
+- **`UnitySearchCommand`**: Unified search across assets, scenes, and project resources
+
+### 3.4. Execution Commands
+- **`RunTestsCommand`**: Test execution with NUnit XML export (security-controlled)
+- **`ExecuteMenuItemCommand`**: MenuItem execution via reflection (security-controlled)
+
+### 3.5. Security-Controlled Commands
+Several commands are subject to security restrictions and can be disabled via settings:
+- **Test Execution**: `RunTestsCommand` requires "Enable Tests Execution" setting
+- **Menu Item Execution**: `ExecuteMenuItemCommand` requires "Allow Menu Item Execution" setting
+- **Unknown Commands**: Blocked by default unless explicitly configured
+
+## 4. Key Components (Directory Breakdown)
 
 ### `/Server`
 This directory contains the core networking and lifecycle management components.
 - **`McpBridgeServer.cs`**: The low-level TCP server. It listens on a specified port, accepts client connections, and handles the reading/writing of JSON data over the network stream. It operates on a background thread.
 - **`McpServerController.cs`**: The high-level, static manager for the server. It controls the lifecycle (Start, Stop, Restart) of the `McpBridgeServer` instance. It is the central point for managing state across domain reloads.
 - **`McpServerConfig.cs`**: A static class holding constants for server configuration (e.g., default port, buffer sizes).
+
+### `/Security`
+Contains the security infrastructure for command execution control.
+- **`McpSecurityChecker.cs`**: Central security validation component that implements permission checking for command execution. Evaluates security attributes and settings to determine if a command should be allowed to execute.
 
 ### `/Api`
 This is the heart of the command processing logic.
@@ -253,9 +307,17 @@ This is the heart of the command processing logic.
         - **`AbstractUnityCommand.cs`**: The generic base class that simplifies command creation by handling the boilerplate of parameter deserialization and response creation.
         - **`UnityCommandRegistry.cs`**: Discovers all classes with the `[McpTool]` attribute and registers them in a dictionary, mapping a command name to its implementation.
         - **`McpToolAttribute.cs`**: A simple attribute used to mark a class for automatic registration as a command.
-    - **Command-specific folders** (e.g., `/Compile`, `/RunTests`): Each folder contains the `*Command.cs`, `*Schema.cs`, and `*Response.cs` files for a single command, keeping the implementation clean and organized.
+    - **Command-specific folders**: Each of the 13 implemented commands has its own folder containing:
+        - `*Command.cs`: The main command implementation
+        - `*Schema.cs`: Type-safe parameter definition
+        - `*Response.cs`: Structured response format
+        - Commands include: `/Compile`, `/RunTests`, `/GetLogs`, `/Ping`, `/ClearConsole`, `/FindGameObjects`, `/GetHierarchy`, `/GetMenuItems`, `/ExecuteMenuItem`, `/SetClientName`, `/UnitySearch`, `/GetProviderDetails`, `/GetCommandDetails`
 - **`JsonRpcProcessor.cs`**: Responsible for parsing incoming JSON strings into `JsonRpcRequest` objects and serializing response objects back into JSON strings, adhering to the JSON-RPC 2.0 specification.
-- **`UnityApiHandler.cs`**: The entry point for API calls. It receives the method name and parameters from the `JsonRpcProcessor` and uses the `UnityCommandRegistry` to execute the appropriate command.
+- **`UnityApiHandler.cs`**: The entry point for API calls. It receives the method name and parameters from the `JsonRpcProcessor` and uses the `UnityCommandRegistry` to execute the appropriate command. Integrates with `McpSecurityChecker` for permission validation.
+
+### `/Core`
+Contains core infrastructure components for session and state management.
+- **`McpSessionManager.cs`**: Singleton session manager implemented as `ScriptableSingleton` that maintains client connection state, session metadata, and survives domain reloads. Provides centralized client identification and connection tracking.
 
 ### `/UI`
 Contains the code for the user-facing Editor Window, implemented using the **MVP (Model-View-Presenter) + Helper Pattern**.
@@ -300,9 +362,9 @@ Contains low-level, general-purpose helper classes.
 - **`EditorDelay.cs`**: A custom, `async/await`-compatible implementation of a frame-based delay, useful for waiting a few frames for the Editor to reach a stable state, especially after domain reloads.
 - **`McpLogger.cs`**: A simple, unified logging wrapper to prefix all package-related logs with `[uMCP]`.
 
-## 4. Key Workflows
+## 5. Key Workflows
 
-### Command Execution Flow
+### 5.1. Command Execution Flow with Security
 
 ```mermaid
 sequenceDiagram
@@ -310,6 +372,7 @@ sequenceDiagram
     participant MB as McpBridgeServer
     participant JP as JsonRpcProcessor
     participant UA as UnityApiHandler
+    participant SC as McpSecurityChecker
     participant UR as UnityCommandRegistry
     participant AC as AbstractUnityCommand
     participant CC as ConcreteCommand
@@ -319,22 +382,29 @@ sequenceDiagram
     MB->>JP: ProcessRequest(json)
     JP->>JP: Deserialize to JsonRpcRequest
     JP->>UA: ExecuteCommandAsync(name, params)
-    UA->>UR: GetCommand(name)
-    UR-->>UA: IUnityCommand instance
-    UA->>AC: ExecuteAsync(JToken)
-    AC->>AC: Deserialize to Schema
-    AC->>CC: ExecuteAsync(Schema)
-    CC->>UT: Execute Unity API
-    UT-->>CC: Result
-    CC-->>AC: Response object
-    AC-->>UA: Response
+    UA->>SC: ValidateCommand(name, params)
+    alt Security Check Passed
+        SC-->>UA: Validation Success
+        UA->>UR: GetCommand(name)
+        UR-->>UA: IUnityCommand instance
+        UA->>AC: ExecuteAsync(JToken)
+        AC->>AC: Deserialize to Schema
+        AC->>CC: ExecuteAsync(Schema)
+        CC->>UT: Execute Unity API
+        UT-->>CC: Result
+        CC-->>AC: Response object
+        AC-->>UA: Response
+    else Security Check Failed
+        SC-->>UA: Validation Failed
+        UA-->>UA: Create Error Response
+    end
     UA-->>JP: Response
     JP->>JP: Serialize to JSON
     JP-->>MB: JSON Response
     MB-->>TS: Send Response
 ```
 
-### UI Interaction Flow (MVP + Helper Pattern)
+### 5.2. UI Interaction Flow (MVP + Helper Pattern)
 1.  **User Interaction**: User interacts with the Unity Editor window (button clicks, field changes, etc.).
 2.  **Presenter Processing**: `McpEditorWindow` (Presenter) receives the Unity Editor event.
 3.  **State Update**: Presenter calls appropriate method on `McpEditorModel` to update application state.
@@ -348,3 +418,52 @@ sequenceDiagram
 8.  **Persistence**: Model automatically handles state persistence through Unity's `SessionState` and `EditorPrefs`.
 
 This workflow ensures clean separation of concerns while maintaining responsiveness and proper state management throughout the application lifecycle.
+
+### 5.3. Session Management Flow
+
+```mermaid
+sequenceDiagram
+    participant TS as TypeScript Server
+    participant MB as McpBridgeServer
+    participant SM as McpSessionManager
+    participant UI as McpEditorWindow
+    participant Unity as Unity Editor
+    
+    TS->>MB: Connect + SetClientName
+    MB->>SM: RegisterClient(clientInfo)
+    SM->>SM: Store session state
+    SM->>UI: Update client display
+    UI->>UI: Show connected client
+    
+    Note over Unity: Domain Reload Occurs
+    Unity->>SM: OnBeforeAssemblyReload
+    SM->>SM: Persist session state
+    Unity->>SM: OnAfterAssemblyReload
+    SM->>SM: Restore session state
+    SM->>MB: Restore connections
+    SM->>UI: Update UI state
+```
+
+### 5.4. Security Validation Flow
+
+```mermaid
+sequenceDiagram
+    participant UA as UnityApiHandler
+    participant SC as McpSecurityChecker
+    participant Settings as Security Settings
+    participant Command as Command Instance
+    
+    UA->>SC: ValidateCommand(commandName)
+    SC->>Settings: Check security policy
+    alt Command is security-controlled
+        Settings-->>SC: Security status
+        alt Security disabled
+            SC-->>UA: Validation Failed
+        else Security enabled
+            SC-->>UA: Validation Success
+        end
+    else Command is not security-controlled
+        SC-->>UA: Validation Success
+    end
+    UA->>Command: Execute (if validated)
+```

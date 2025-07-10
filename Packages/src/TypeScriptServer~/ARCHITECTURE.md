@@ -175,12 +175,15 @@ classDiagram
 sequenceDiagram
     participant MC as MCP Client<br/>(Claude/Cursor)
     participant US as UnityMcpServer
+    participant UTM as UnityToolManager
     participant DT as DynamicUnityCommandTool
     participant UC as UnityClient
     participant MH as MessageHandler
     participant UE as Unity Editor
 
     MC->>US: CallTool Request
+    US->>UTM: getTool(toolName)
+    UTM-->>US: DynamicUnityCommandTool
     US->>DT: execute(args)
     DT->>UC: executeCommand()
     UC->>MH: createRequest()
