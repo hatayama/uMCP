@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.26.1](https://github.com/hatayama/uMCP/compare/v0.26.0...v0.26.1) (2025-07-10)
+
+
+### Bug Fixes
+
+* implement proper timeout handling with CancellationToken support ([#188](https://github.com/hatayama/uMCP/issues/188)) ([3d6751e](https://github.com/hatayama/uMCP/commit/3d6751e174fda1316c3dff2c40c3a49468acd86f))
+
 ## [0.26.0](https://github.com/hatayama/uMCP/compare/v0.25.0...v0.26.0) (2025-07-10)
 
 
