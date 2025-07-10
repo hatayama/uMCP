@@ -47,8 +47,14 @@ namespace io.github.hatayama.uMCP
                 Context = context
             };
             
-            // Export to JSON
-            string jsonContent = JsonUtility.ToJson(exportData, true);
+            // Export to JSON using Newtonsoft.Json for proper serialization
+            var settings = new Newtonsoft.Json.JsonSerializerSettings
+            {
+                ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore,
+                MaxDepth = McpServerConfig.DEFAULT_JSON_MAX_DEPTH,
+                Formatting = Newtonsoft.Json.Formatting.Indented
+            };
+            string jsonContent = Newtonsoft.Json.JsonConvert.SerializeObject(exportData, settings);
             File.WriteAllText(filePath, jsonContent);
             
             // Return relative path
