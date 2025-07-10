@@ -2,24 +2,24 @@
 
 # uMCP Feature Specifications
 
-This document provides detailed information about all Unity MCP (Model Context Protocol) commands and features.
+This document provides detailed information about all Unity MCP (Model Context Protocol) tools and features.
 
 ## Common Parameters & Response Format
 
-All Unity MCP commands share the following common elements:
+All Unity MCP tools share the following common elements:
 
 ### Common Parameters
-- `TimeoutSeconds` (number): Command execution timeout in seconds (default: 10 seconds)
+- `TimeoutSeconds` (number): Tool execution timeout in seconds (default: 10 seconds)
 
 ### Common Response Properties
-All commands automatically include the following timing information:
-- `StartedAt` (string): Command execution start time (local time)
-- `EndedAt` (string): Command execution end time (local time)  
-- `ExecutionTimeMs` (number): Command execution duration in milliseconds
+All tools automatically include the following timing information:
+- `StartedAt` (string): Tool execution start time (local time)
+- `EndedAt` (string): Tool execution end time (local time)  
+- `ExecutionTimeMs` (number): Tool execution duration in milliseconds
 
 ---
 
-## Unity Core Commands
+## Unity Core Tools
 
 ### 1. compile
 - **Description**: Executes compilation after AssetDatabase.Refresh(). Returns compilation results with detailed timing information.
@@ -122,7 +122,7 @@ All commands automatically include the following timing information:
 
 ---
 
-## Unity Search & Discovery Commands
+## Unity Search & Discovery Tools
 
 ### 6. unity-search
 - **Description**: Search Unity project using Unity Search API with comprehensive filtering and export options
@@ -235,26 +235,26 @@ All commands automatically include the following timing information:
 ## Advanced Features
 
 ### Type-Safe Parameter System
-- All commands use strongly typed parameter schemas with automatic validation
+- All tools use strongly typed parameter schemas with automatic validation
 - Enum parameters provide predefined value options for better user experience
 - Optional parameters have default values automatically applied
 - Comprehensive parameter descriptions guide proper usage
 
-### BaseCommandResponse System
-- **Automatic Timing Measurement**: All commands automatically measure and report execution time
+### BaseToolResponse System
+- **Automatic Timing Measurement**: All tools automatically measure and report execution time
 - **Consistent Response Format**: All responses include standardized timing information
 - **Local Time Display**: Timestamps converted to local time for better readability
 - **Performance Monitoring**: Execution times help identify performance bottlenecks
 
 ### Dynamic Timeout Configuration
-- **Per-Command Timeout**: Each command supports individual timeout settings via `TimeoutSeconds` parameter
-- **Intelligent Defaults**: Reasonable default timeouts based on command complexity (ping: 5 seconds, tests: 30 seconds)
+- **Per-Tool Timeout**: Each tool supports individual timeout settings via `TimeoutSeconds` parameter
+- **Intelligent Defaults**: Reasonable default timeouts based on tool complexity (ping: 5 seconds, tests: 30 seconds)
 - **Buffer Management**: TypeScript client adds 10-second buffer to ensure Unity-side timeout triggers first
 - **Timeout Handling**: Proper timeout responses with detailed error information
 
 ### Real-Time Tool Discovery
-- **Event-Driven Updates**: Unity command changes automatically detected and propagated to LLM tools
-- **Dynamic Tool Registration**: New custom commands appear in LLM tools without server restart
+- **Event-Driven Updates**: Unity tool changes automatically detected and propagated to LLM tools
+- **Dynamic Tool Registration**: New custom tools appear in LLM tools without server restart
 - **Domain Reload Recovery**: Automatic reconnection and tool synchronization after Unity compilation
 
 ### File Export System

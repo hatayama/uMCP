@@ -564,7 +564,7 @@ namespace io.github.hatayama.uMCP
             try
             {
                 McpLogger.LogDebug("[TRACE] McpEditorWindow.NotifyCommandChanges: About to call TriggerCommandsChangedNotification (MANUAL_BUTTON)");
-                UnityCommandRegistry.TriggerCommandsChangedNotification();
+                CustomToolManager.NotifyToolChanges();
                 EditorUtility.DisplayDialog("Command Notification",
                     "Command changes have been notified to Cursor successfully!",
                     "OK");

@@ -7,7 +7,7 @@ namespace io.github.hatayama.uMCP
 {
     public class CompileEditorWindow : EditorWindow
     {
-        private CompileChecker compileChecker;
+        private CompileController _compileController;
         private CompileLogDisplay logDisplay;
         private Vector2 scrollPosition;
         private bool forceRecompile = false;
@@ -25,9 +25,9 @@ namespace io.github.hatayama.uMCP
         private void OnEnable()
         {
             // Create instances only if they don't exist yet
-            if (compileChecker == null || logDisplay == null)
+            if (_compileController == null || logDisplay == null)
             {
-                compileChecker = new CompileChecker();
+                _compileController = new CompileController();
                 logDisplay = new CompileLogDisplay();
 
                 // Restore persisted logs from McpSessionManager
@@ -39,18 +39,18 @@ namespace io.github.hatayama.uMCP
                 }
 
                 // Subscribe to events
-                compileChecker.OnCompileStarted += logDisplay.AppendStartMessage;
-                compileChecker.OnAssemblyCompiled += logDisplay.AppendAssemblyMessage;
-                compileChecker.OnCompileCompleted += OnCompileCompleted;
+                _compileController.OnCompileStarted += logDisplay.AppendStartMessage;
+                _compileController.OnAssemblyCompiled += logDisplay.AppendAssemblyMessage;
+                _compileController.OnCompileCompleted += OnCompileCompleted;
             }
             else
             {
                 // If an instance already exists, re-subscribe as the event subscription might have been lost
-                if (!compileChecker.IsCompiling)
+                if (!_compileController.IsCompiling)
                 {
-                    compileChecker.OnCompileStarted += logDisplay.AppendStartMessage;
-                    compileChecker.OnAssemblyCompiled += logDisplay.AppendAssemblyMessage;
-                    compileChecker.OnCompileCompleted += OnCompileCompleted;
+                    _compileController.OnCompileStarted += logDisplay.AppendStartMessage;
+                    _compileController.OnAssemblyCompiled += logDisplay.AppendAssemblyMessage;
+                    _compileController.OnCompileCompleted += OnCompileCompleted;
                 }
             }
         }
@@ -60,23 +60,23 @@ namespace io.github.hatayama.uMCP
             DisposeInstances();
 
             // Set to null only on OnDisable for a complete cleanup
-            compileChecker = null;
+            _compileController = null;
             logDisplay = null;
         }
 
         private void DisposeInstances()
         {
-            if (compileChecker != null)
+            if (_compileController != null)
             {
                 // Unsubscribe from events
                 if (logDisplay != null)
                 {
-                    compileChecker.OnCompileStarted -= logDisplay.AppendStartMessage;
-                    compileChecker.OnAssemblyCompiled -= logDisplay.AppendAssemblyMessage;
+                    _compileController.OnCompileStarted -= logDisplay.AppendStartMessage;
+                    _compileController.OnAssemblyCompiled -= logDisplay.AppendAssemblyMessage;
                 }
-                compileChecker.OnCompileCompleted -= OnCompileCompleted;
+                _compileController.OnCompileCompleted -= OnCompileCompleted;
 
-                compileChecker.Dispose();
+                _compileController.Dispose();
                 // Set to null only on OnDisable
             }
 
@@ -89,7 +89,7 @@ namespace io.github.hatayama.uMCP
 
         private void OnGUI()
         {
-            if (compileChecker == null || logDisplay == null) return;
+            if (_compileController == null || logDisplay == null) return;
 
             GUILayout.Label("Unity Compile Tool", EditorStyles.boldLabel);
 
@@ -97,8 +97,8 @@ namespace io.github.hatayama.uMCP
             forceRecompile = EditorGUILayout.Toggle("Force Recompile", forceRecompile);
             GUILayout.Space(5);
 
-            EditorGUI.BeginDisabledGroup(compileChecker.IsCompiling);
-            string buttonText = compileChecker.IsCompiling ? "Compiling..." :
+            EditorGUI.BeginDisabledGroup(_compileController.IsCompiling);
+            string buttonText = _compileController.IsCompiling ? "Compiling..." :
                                (forceRecompile ? "Run Force Compile" : "Run Compile");
             if (GUILayout.Button(buttonText, GUILayout.Height(30)))
             {
@@ -128,7 +128,7 @@ namespace io.github.hatayama.uMCP
 
         private async Task ExecuteCompileAsync()
         {
-            CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
+            CompileResult result = await _compileController.TryCompileAsync(forceRecompile);
             
             // Output result to log (for debugging)
             UnityEngine.Debug.Log($"Compilation finished: Success={result.Success}, Errors={result.error.Length}, Warnings={result.warning.Length}");
@@ -147,7 +147,7 @@ namespace io.github.hatayama.uMCP
 
         private void DrawMessageDetails()
         {
-            var messages = compileChecker.CompileMessages;
+            var messages = _compileController.CompileMessages;
             if (messages.Count > 0)
             {
                 GUILayout.Space(10);
@@ -167,7 +167,7 @@ namespace io.github.hatayama.uMCP
         private void ClearLog()
         {
             logDisplay.Clear();
-            compileChecker.ClearMessages();
+            _compileController.ClearMessages();
 
             // Also clear McpSessionManager data
             McpSessionManager.instance.ClearCompileWindowData();

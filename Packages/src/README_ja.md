@@ -115,7 +115,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 ```
 
 > [!NOTE]
-> これらのコマンドを組み合わせることで、AIが人間の介入なしに複雑なタスクを完了できます。
+> これらのツールを組み合わせることで、AIが人間の介入なしに複雑なタスクを完了できます。
 > 特にエラー修正、テスト実行などの反復的なタスクで威力を発揮します。
 
 ## セキュリティ設定
@@ -128,8 +128,8 @@ UnitySearchが提供する検索プロバイダーを取得します
 > - `run-tests`: テストの実行
 > 
 > これらの機能を使用するには、uMCPウィンドウのSecurity Settingsで該当する設定を有効にする必要があります：
-> - **Allow Test Execution**: `run-tests`コマンドを有効にします
-> - **Allow Menu Item Execution**: `execute-menu-item`コマンドを有効にします
+> - **Allow Test Execution**: `run-tests`ツールを有効にします
+> - **Allow Menu Item Execution**: `execute-menu-item`ツールを有効にします
 > これらの機能を有効にする場合は、信頼できる環境でのみ使用してください。
 
 機能詳細は[FEATURES_ja.md](FEATURES_ja.md)を御覧ください。
@@ -209,14 +209,14 @@ Scope(s): io.github.hatayama.umcp
 
 3. Package Managerウィンドウを開き、My RegistriesセクションのOpenUPMを選択。uMCPが表示されます。
 
-## カスタムコマンド開発
-コアパッケージを変更することなく、プロジェクト独自のコマンドを簡単に追加できます。
+## カスタムツール開発
+コアパッケージを変更することなく、プロジェクト独自のツールを簡単に追加できます。
 
 **ステップ1: スキーマクラスの作成**（パラメータを定義）：
 ```csharp
 using System.ComponentModel;
 
-public class MyCustomSchema : BaseCommandSchema
+public class MyCustomSchema : BaseToolSchema
 {
     [Description("パラメータの説明")]
     public string MyParameter { get; set; } = "default_value";
@@ -235,7 +235,7 @@ public enum MyEnum
 
 **ステップ2: レスポンスクラスの作成**（返却データを定義）：
 ```csharp
-public class MyCustomResponse : BaseCommandResponse
+public class MyCustomResponse : BaseToolResponse
 {
     public string Result { get; set; }
     public bool Success { get; set; }
@@ -251,13 +251,13 @@ public class MyCustomResponse : BaseCommandResponse
 }
 ```
 
-**ステップ3: コマンドクラスの作成**：
+**ステップ3: ツールクラスの作成**：
 ```csharp
 [McpTool]  // ← この属性により自動登録されます
-public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
+public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 {
-    public override string CommandName => "myCustomCommand";
-    public override string Description => "私のカスタムコマンドの説明";
+    public override string ToolName => "myCustomTool";
+    public override string Description => "私のカスタムツールの説明";
     
     // メインスレッドで実行されます
     protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
@@ -281,7 +281,7 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 }
 ```
 
-[カスタムコマンドのサンプル](/Assets/Editor/CustomCommandSamples)も参考にして下さい。
+[カスタムツールのサンプル](/Assets/Editor/CustomToolSamples)も参考にして下さい。
 
 ## Cursorでmcpの実行を自動で行う
 CursorはデフォルトでMCP実行時にユーザーの許可を必要とします。

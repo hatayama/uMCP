@@ -5,9 +5,9 @@ using Newtonsoft.Json.Linq;
 
 namespace io.github.hatayama.uMCP.Tests
 {
-    public class FindGameObjectsCommandTests
+    public class FindGameObjectsToolTests
     {
-        private FindGameObjectsCommand command;
+        private FindGameObjectsTool tool;
         private GameObject testObject1;
         private GameObject testObject2;
         private GameObject testObject3;
@@ -15,7 +15,7 @@ namespace io.github.hatayama.uMCP.Tests
         [SetUp]
         public void SetUp()
         {
-            command = new FindGameObjectsCommand();
+            tool = new FindGameObjectsTool();
             
             // Create test GameObjects
             testObject1 = new GameObject("TestObject1");
@@ -32,16 +32,16 @@ namespace io.github.hatayama.uMCP.Tests
         }
         
         [Test]
-        public void CommandName_ReturnsCorrectName()
+        public void ToolName_ReturnsCorrectName()
         {
-            Assert.That(command.CommandName, Is.EqualTo("findgameobjects"));
+            Assert.That(tool.ToolName, Is.EqualTo("find-game-objects"));
         }
         
         [Test]
         public void Description_ReturnsNonEmptyString()
         {
-            Assert.That(command.Description, Is.Not.Null);
-            Assert.That(command.Description, Is.Not.Empty);
+            Assert.That(tool.Description, Is.Not.Null);
+            Assert.That(tool.Description, Is.Not.Empty);
         }
         
         [Test]
@@ -55,7 +55,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -78,7 +78,7 @@ namespace io.github.hatayama.uMCP.Tests
             JObject paramsJson = new JObject();
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -102,7 +102,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -130,7 +130,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -161,7 +161,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -198,7 +198,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -231,7 +231,7 @@ namespace io.github.hatayama.uMCP.Tests
             try
             {
                 // Act
-                BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+                BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
                 FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
                 
                 // Assert
@@ -268,7 +268,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -297,7 +297,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -326,7 +326,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
             
             // Assert
@@ -361,7 +361,7 @@ namespace io.github.hatayama.uMCP.Tests
             try
             {
                 // Act
-                BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+                BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
                 FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
                 
                 // Assert
@@ -404,7 +404,7 @@ namespace io.github.hatayama.uMCP.Tests
             try
             {
                 // Act
-                BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+                BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
                 FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
                 
                 // Assert
@@ -437,7 +437,7 @@ namespace io.github.hatayama.uMCP.Tests
             try
             {
                 // Act
-                BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+                BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
                 FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
                 
                 // Assert
@@ -471,7 +471,7 @@ namespace io.github.hatayama.uMCP.Tests
             try
             {
                 // Act
-                BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+                BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
                 FindGameObjectsResponse response = baseResponse as FindGameObjectsResponse;
                 
                 // Assert

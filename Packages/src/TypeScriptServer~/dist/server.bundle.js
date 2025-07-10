@@ -6048,53 +6048,53 @@ var UnityClient = class {
     return response.result || { Message: "Unity pong" };
   }
   /**
-   * Get available commands from Unity
+   * Get available tools from Unity
    */
-  async getAvailableCommands() {
+  async getAvailableTools() {
     await this.ensureConnected();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: "getAvailableCommands",
+      method: "getAvailableTools",
       params: {}
     };
     const response = await this.sendRequest(request);
     if (response.error) {
-      throw new Error(`Failed to get available commands: ${response.error.message}`);
+      throw new Error(`Failed to get available tools: ${response.error.message}`);
     }
     return response.result || [];
   }
   /**
-   * Get command details from Unity
+   * Get tool details from Unity
    */
-  async getCommandDetails(includeDevelopmentOnly = false) {
+  async getToolDetails(includeDevelopmentOnly = false) {
     await this.ensureConnected();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: "get-command-details",
+      method: "get-tool-details",
       params: { IncludeDevelopmentOnly: includeDevelopmentOnly }
     };
     const response = await this.sendRequest(request);
     if (response.error) {
-      throw new Error(`Failed to get command details: ${response.error.message}`);
+      throw new Error(`Failed to get tool details: ${response.error.message}`);
     }
     return response.result || [];
   }
   /**
-   * Execute any Unity command dynamically
+   * Execute any Unity tool dynamically
    */
-  async executeCommand(commandName, params = {}) {
+  async executeTool(toolName, params = {}) {
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: commandName,
+      method: toolName,
       params
     };
     const timeoutMs = params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0 ? (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1e3 : TIMEOUTS.PING;
     const response = await this.sendRequest(request, timeoutMs);
     if (response.error) {
-      throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
+      throw new Error(`Failed to execute tool '${toolName}': ${response.error.message}`);
     }
     return response.result;
   }
@@ -6568,11 +6568,11 @@ var DynamicUnityCommandTool = class extends BaseTool {
   name;
   description;
   inputSchema;
-  commandName;
-  constructor(context, commandName, description, parameterSchema) {
+  toolName;
+  constructor(context, toolName, description, parameterSchema) {
     super(context);
-    this.commandName = commandName;
-    this.name = commandName;
+    this.toolName = toolName;
+    this.name = toolName;
     this.description = description;
     this.inputSchema = this.generateInputSchema(parameterSchema);
   }
@@ -6659,10 +6659,7 @@ var DynamicUnityCommandTool = class extends BaseTool {
   async execute(args) {
     try {
       const actualArgs = this.validateArgs(args);
-      const result = await this.context.unityClient.executeCommand(
-        this.commandName,
-        actualArgs
-      );
+      const result = await this.context.unityClient.executeTool(this.toolName, actualArgs);
       return {
         content: [
           {
@@ -6681,7 +6678,7 @@ var DynamicUnityCommandTool = class extends BaseTool {
       content: [
         {
           type: "text",
-          text: `Failed to execute command '${this.commandName}': ${errorMessage}`
+          text: `Failed to execute tool '${this.toolName}': ${errorMessage}`
         }
       ]
     };
@@ -6719,11 +6716,11 @@ var UnityToolManager = class {
       return [];
     }
     try {
-      const commandDetails = await this.fetchCommandDetailsFromUnity();
-      if (!commandDetails) {
+      const toolDetails = await this.fetchToolDetailsFromUnity();
+      if (!toolDetails) {
         return [];
       }
-      this.createDynamicToolsFromCommands(commandDetails);
+      this.createDynamicToolsFromTools(toolDetails);
       const tools = [];
       for (const [toolName, dynamicTool] of this.dynamicTools) {
         tools.push({
@@ -6744,54 +6741,51 @@ var UnityToolManager = class {
   async initializeDynamicTools() {
     try {
       await this.unityClient.ensureConnected();
-      const commandDetails = await this.fetchCommandDetailsFromUnity();
-      if (!commandDetails) {
+      const toolDetails = await this.fetchToolDetailsFromUnity();
+      if (!toolDetails) {
         return;
       }
-      this.createDynamicToolsFromCommands(commandDetails);
+      this.createDynamicToolsFromTools(toolDetails);
     } catch (error) {
       errorToFile("[Unity Tool Manager] Failed to initialize dynamic tools:", error);
     }
   }
   /**
-   * Fetch command details from Unity
+   * Fetch tool details from Unity
    */
-  async fetchCommandDetailsFromUnity() {
+  async fetchToolDetailsFromUnity() {
     const params = { IncludeDevelopmentOnly: this.isDevelopment };
-    const commandDetailsResponse = await this.unityClient.executeCommand(
-      "get-command-details",
-      params
-    );
-    const commandDetails = commandDetailsResponse?.Commands || commandDetailsResponse;
-    if (!Array.isArray(commandDetails)) {
-      errorToFile("[Unity Tool Manager] Invalid command details response:", commandDetailsResponse);
+    const toolDetailsResponse = await this.unityClient.executeTool("get-tool-details", params);
+    const toolDetails = toolDetailsResponse?.Tools || toolDetailsResponse;
+    if (!Array.isArray(toolDetails)) {
+      errorToFile("[Unity Tool Manager] Invalid tool details response:", toolDetailsResponse);
       return null;
     }
-    return commandDetails;
+    return toolDetails;
   }
   /**
-   * Create dynamic tools from Unity command details
+   * Create dynamic tools from Unity tool details
    */
-  createDynamicToolsFromCommands(commandDetails) {
+  createDynamicToolsFromTools(toolDetails) {
     this.dynamicTools.clear();
     const toolContext = { unityClient: this.unityClient };
-    for (const commandInfo of commandDetails) {
-      const commandName = commandInfo.name;
-      const description = commandInfo.description || `Execute Unity command: ${commandName}`;
-      const parameterSchema = commandInfo.parameterSchema;
-      const displayDevelopmentOnly = commandInfo.displayDevelopmentOnly || false;
+    for (const toolInfo of toolDetails) {
+      const toolName = toolInfo.name;
+      const description = toolInfo.description || `Execute Unity tool: ${toolName}`;
+      const parameterSchema = toolInfo.parameterSchema;
+      const displayDevelopmentOnly = toolInfo.displayDevelopmentOnly || false;
       if (displayDevelopmentOnly && !this.isDevelopment) {
         continue;
       }
-      const toolName = commandName;
+      const finalToolName = toolName;
       const dynamicTool = new DynamicUnityCommandTool(
         toolContext,
-        commandName,
+        toolName,
         description,
         parameterSchema
         // Pass schema information
       );
-      this.dynamicTools.set(toolName, dynamicTool);
+      this.dynamicTools.set(finalToolName, dynamicTool);
     }
   }
   /**

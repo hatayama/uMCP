@@ -19,7 +19,7 @@ interface UnityDiscovery {
  *
  * Related classes:
  * - UnityMcpServer: The main server class that uses this client
- * - DynamicUnityCommandTool: Uses this client to execute commands in Unity
+ * - DynamicUnityCommandTool: Uses this client to execute tools in Unity
  * - ConnectionManager: Handles connection state and reconnection polling
  * - MessageHandler: Handles JSON-RPC message processing
  */
@@ -236,31 +236,31 @@ export class UnityClient {
   }
 
   /**
-   * Get available commands from Unity
+   * Get available tools from Unity
    */
-  async getAvailableCommands(): Promise<string[]> {
+  async getAvailableTools(): Promise<string[]> {
     await this.ensureConnected();
 
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: 'getAvailableCommands',
+      method: 'getAvailableTools',
       params: {},
     };
 
     const response = await this.sendRequest(request);
 
     if (response.error) {
-      throw new Error(`Failed to get available commands: ${response.error.message}`);
+      throw new Error(`Failed to get available tools: ${response.error.message}`);
     }
 
     return (response.result as string[]) || [];
   }
 
   /**
-   * Get command details from Unity
+   * Get tool details from Unity
    */
-  async getCommandDetails(
+  async getToolDetails(
     includeDevelopmentOnly: boolean = false,
   ): Promise<Array<{ name: string; description: string; parameterSchema?: unknown }>> {
     await this.ensureConnected();
@@ -268,14 +268,14 @@ export class UnityClient {
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: 'get-command-details',
+      method: 'get-tool-details',
       params: { IncludeDevelopmentOnly: includeDevelopmentOnly },
     };
 
     const response = await this.sendRequest(request);
 
     if (response.error) {
-      throw new Error(`Failed to get command details: ${response.error.message}`);
+      throw new Error(`Failed to get tool details: ${response.error.message}`);
     }
 
     return (
@@ -288,16 +288,13 @@ export class UnityClient {
   }
 
   /**
-   * Execute any Unity command dynamically
+   * Execute any Unity tool dynamically
    */
-  async executeCommand(
-    commandName: string,
-    params: Record<string, unknown> = {},
-  ): Promise<unknown> {
+  async executeTool(toolName: string, params: Record<string, unknown> = {}): Promise<unknown> {
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
-      method: commandName,
+      method: toolName,
       params: params,
     };
 
@@ -312,7 +309,7 @@ export class UnityClient {
     const response = await this.sendRequest(request, timeoutMs);
 
     if (response.error) {
-      throw new Error(`Failed to execute command '${commandName}': ${response.error.message}`);
+      throw new Error(`Failed to execute tool '${toolName}': ${response.error.message}`);
     }
 
     return response.result;

@@ -70,6 +70,11 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
+        echo "Fetching and switching to actual branch..."
+        git fetch origin ${{ github.head_ref }}:${{ github.head_ref }}
+        git checkout ${{ github.head_ref }}
+        git reset --hard origin/${{ github.head_ref }}
+        
         echo "Adding only dist/ files to git..."
         git add Packages/src/TypeScriptServer~/dist/
         
@@ -84,7 +89,7 @@ jobs:
           - dist/server.bundle.js
           
           Note: node_modules/ is excluded by .gitignore"
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin ${{ github.head_ref }}
           echo "Built files committed successfully"
         fi
         

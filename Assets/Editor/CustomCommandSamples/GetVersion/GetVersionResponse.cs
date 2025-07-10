@@ -1,10 +1,10 @@
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Response schema for GetVersion command
+    /// Response schema for GetVersion tool
     /// Provides Unity version and project information
     /// </summary>
-    public class GetVersionResponse : BaseCommandResponse
+    public class GetVersionResponse : BaseToolResponse
     {
         public string UnityVersion { get; set; }
         public string Platform { get; set; }

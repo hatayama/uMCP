@@ -5,7 +5,7 @@ using io.github.hatayama.uMCP;
 using Newtonsoft.Json.Linq;
 
 /// <summary>
-/// Manual testing window for UnitySearchCommand
+/// Manual testing window for UnitySearchTool
 /// Provides a simple UI to test various search scenarios
 /// </summary>
 public class UnitySearchTester : EditorWindow
@@ -66,7 +66,7 @@ public class UnitySearchTester : EditorWindow
     
     private async void TestBasicSearch()
     {
-        UnitySearchCommand command = new UnitySearchCommand();
+        UnitySearchTool tool = new UnitySearchTool();
         UnitySearchSchema schema = new UnitySearchSchema
         {
             SearchQuery = searchQuery,
@@ -74,12 +74,12 @@ public class UnitySearchTester : EditorWindow
             SaveToFile = saveToFile
         };
         
-        await ExecuteTest(command, schema, "Basic Search");
+        await ExecuteTest(tool, schema, "Basic Search");
     }
     
     private async void TestFileExtensionFilter()
     {
-        UnitySearchCommand command = new UnitySearchCommand();
+        UnitySearchTool tool = new UnitySearchTool();
         UnitySearchSchema schema = new UnitySearchSchema
         {
             SearchQuery = "*",
@@ -88,12 +88,12 @@ public class UnitySearchTester : EditorWindow
             SaveToFile = saveToFile
         };
         
-        await ExecuteTest(command, schema, "File Extension Filter");
+        await ExecuteTest(tool, schema, "File Extension Filter");
     }
     
     private async void TestAssetTypeFilter()
     {
-        UnitySearchCommand command = new UnitySearchCommand();
+        UnitySearchTool tool = new UnitySearchTool();
         UnitySearchSchema schema = new UnitySearchSchema
         {
             SearchQuery = "*",
@@ -102,29 +102,29 @@ public class UnitySearchTester : EditorWindow
             SaveToFile = saveToFile
         };
         
-        await ExecuteTest(command, schema, "Asset Type Filter");
+        await ExecuteTest(tool, schema, "Asset Type Filter");
     }
     
     private async void TestEmptyQuery()
     {
-        UnitySearchCommand command = new UnitySearchCommand();
+        UnitySearchTool tool = new UnitySearchTool();
         UnitySearchSchema schema = new UnitySearchSchema
         {
             SearchQuery = "",
             MaxResults = maxResults
         };
         
-        await ExecuteTest(command, schema, "Empty Query Test");
+        await ExecuteTest(tool, schema, "Empty Query Test");
     }
     
-    private async Task ExecuteTest(UnitySearchCommand command, UnitySearchSchema schema, string testName)
+    private async Task ExecuteTest(UnitySearchTool tool, UnitySearchSchema schema, string testName)
     {
         try
         {
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(schema);
             JToken token = JToken.Parse(json);
             
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(token);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(token);
             UnitySearchResponse response = baseResponse as UnitySearchResponse;
             
             if (response != null)

@@ -15,10 +15,10 @@ namespace io.github.hatayama.uMCP
     }
 
     /// <summary>
-    /// Schema for HelloWorld command parameters
+    /// Schema for HelloWorld tool parameters
     /// Provides type-safe parameter access with default values
     /// </summary>
-    public class HelloWorldSchema : BaseCommandSchema
+    public class HelloWorldSchema : BaseToolSchema
     {
         /// <summary>
         /// Name to greet

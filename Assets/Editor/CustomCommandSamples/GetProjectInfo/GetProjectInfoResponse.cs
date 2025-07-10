@@ -3,10 +3,10 @@ using System;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Response schema for GetProjectInfo command
+    /// Response schema for GetProjectInfo tool
     /// Provides detailed Unity project information
     /// </summary>
-    public class GetProjectInfoResponse : BaseCommandResponse
+    public class GetProjectInfoResponse : BaseToolResponse
     {
         public string ProjectName { get; set; }
         public string CompanyName { get; set; }
@@ -30,7 +30,7 @@ namespace io.github.hatayama.uMCP
         public int SystemMemorySize { get; set; }
         public string GraphicsDeviceName { get; set; }
         public DateTime Timestamp { get; set; }
-        public string CommandName { get; set; }
+        public string ToolName { get; set; }
 
         public GetProjectInfoResponse()
         {

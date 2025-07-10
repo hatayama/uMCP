@@ -2,24 +2,24 @@
 
 # uMCP 機能仕様
 
-このドキュメントでは、Unity MCP（Model Context Protocol）の全コマンドと機能について詳細に説明します。
+このドキュメントでは、Unity MCP（Model Context Protocol）の全ツールと機能について詳細に説明します。
 
 ## 共通パラメータ・レスポンス形式
 
-すべてのUnity MCPコマンドは以下の共通要素を持ちます：
+すべてのUnity MCPツールは以下の共通要素を持ちます：
 
 ### 共通パラメータ
-- `TimeoutSeconds` (number): コマンド実行のタイムアウト時間（秒）（デフォルト: 10秒）
+- `TimeoutSeconds` (number): ツール実行のタイムアウト時間（秒）（デフォルト: 10秒）
 
 ### 共通レスポンスプロパティ
-すべてのコマンドには以下のタイミング情報が自動的に含まれます：
-- `StartedAt` (string): コマンド実行開始時刻（ローカル時間）
-- `EndedAt` (string): コマンド実行終了時刻（ローカル時間）  
-- `ExecutionTimeMs` (number): コマンド実行時間（ミリ秒）
+すべてのツールには以下のタイミング情報が自動的に含まれます：
+- `StartedAt` (string): ツール実行開始時刻（ローカル時間）
+- `EndedAt` (string): ツール実行終了時刻（ローカル時間）  
+- `ExecutionTimeMs` (number): ツール実行時間（ミリ秒）
 
 ---
 
-## Unity コアコマンド
+## Unity コアツール
 
 ### 1. compile
 - **説明**: AssetDatabase.Refresh()を実行後、コンパイルを行います。詳細なタイミング情報付きでコンパイル結果を返します。
@@ -122,7 +122,7 @@
 
 ---
 
-## Unity 検索・発見コマンド
+## Unity 検索・発見ツール
 
 ### 6. unity-search
 - **説明**: Unity Search APIを使用してUnityプロジェクトを検索し、包括的なフィルタリングとエクスポートオプションを提供します

@@ -31,7 +31,7 @@ namespace io.github.hatayama.uMCP
         /// Get command registry
         /// Use this registry when adding new commands
         /// </summary>
-        public static UnityCommandRegistry CommandRegistry => CustomCommandManager.GetRegistry();
+        public static UnityToolRegistry CommandRegistry => CustomToolManager.GetRegistry();
 
         /// <summary>
         /// Generic command execution method
@@ -40,9 +40,9 @@ namespace io.github.hatayama.uMCP
         /// <param name="commandName">Command name</param>
         /// <param name="paramsToken">Parameters</param>
         /// <returns>Execution result</returns>
-        public static async Task<BaseCommandResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
+        public static async Task<BaseToolResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
-            return await CustomCommandManager.GetRegistry().ExecuteCommandAsync(commandName, paramsToken);
+            return await CustomToolManager.GetRegistry().ExecuteToolAsync(commandName, paramsToken);
         }
 
     }

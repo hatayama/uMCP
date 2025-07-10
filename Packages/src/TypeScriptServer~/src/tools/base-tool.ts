@@ -7,7 +7,7 @@ import { ToolHandler, ToolResponse, ToolContext } from '../types/tool-types.js';
  * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
- * - DynamicUnityCommandTool: Extends this class for Unity command tools
+ * - DynamicUnityCommandTool: Extends this class for Unity tools
  * - UnityMcpServer: Uses tools through this interface
  * - ToolHandler: Interface this class implements
  */

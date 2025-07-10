@@ -3,10 +3,10 @@ using Newtonsoft.Json;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Response schema for HelloWorld command
+    /// Response schema for HelloWorld tool
     /// Provides type-safe response structure
     /// </summary>
-    public class HelloWorldResponse : BaseCommandResponse
+    public class HelloWorldResponse : BaseToolResponse
     {
         /// <summary>
         /// The greeting message

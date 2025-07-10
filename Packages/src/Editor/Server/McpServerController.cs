@@ -198,11 +198,11 @@ namespace io.github.hatayama.uMCP
             // Process pending compile requests.
             ProcessPendingCompileRequests();
             
-            // Always send command change notification after compilation
+            // Always send tool change notification after compilation
             // This ensures schema changes (descriptions, parameters) are communicated to Cursor
             if (IsServerRunning)
             {
-                _ = SendCommandNotificationAfterCompilation();
+                _ = SendToolNotificationAfterCompilation();
             }
         }
 
@@ -302,7 +302,7 @@ namespace io.github.hatayama.uMCP
                 sessionManager.IsReconnecting = false;
                 McpLogger.LogDebug("[RECONNECTION] Server restored successfully, cleared server reconnecting flag");
                 
-                // Commands changed notification will be sent by OnAfterAssemblyReload
+                // Tools changed notification will be sent by OnAfterAssemblyReload
             }
             catch (System.Exception ex)
             {
@@ -368,19 +368,19 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Send commands changed notification to TypeScript side
+        /// Send tools changed notification to TypeScript side
         /// </summary>
-        private static void SendCommandsChangedNotification()
+        private static void SendToolsChangedNotification()
         {
             // Log with stack trace to identify caller
             System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace(true);
             string callerInfo = stackTrace.GetFrame(1)?.GetMethod()?.Name ?? "Unknown";
-            McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification called from: {callerInfo}");
+            McpLogger.LogDebug($"[TRACE] SendToolsChangedNotification called from: {callerInfo}");
             McpLogger.LogDebug($"[TRACE] Full stack trace:\n{stackTrace.ToString()}");
             
             if (mcpServer == null)
             {
-                McpLogger.LogDebug("[TRACE] SendCommandsChangedNotification skipped: mcpServer is null");
+                McpLogger.LogDebug("[TRACE] SendToolsChangedNotification skipped: mcpServer is null");
                 return;
             }
             
@@ -388,7 +388,7 @@ namespace io.github.hatayama.uMCP
             var notificationParams = new
             {
                 timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                message = "Unity commands have been updated"
+                message = "Unity tools have been updated"
             };
             
             var mcpNotification = new
@@ -401,40 +401,49 @@ namespace io.github.hatayama.uMCP
             string mcpNotificationJson = JsonConvert.SerializeObject(mcpNotification);
             mcpServer.SendNotificationToClients(mcpNotificationJson);
             
-            McpLogger.LogDebug($"[TRACE] SendCommandsChangedNotification sent successfully at {System.DateTime.Now:HH:mm:ss.fff}");
+            McpLogger.LogDebug($"[TRACE] SendToolsChangedNotification sent successfully at {System.DateTime.Now:HH:mm:ss.fff}");
         }
 
         /// <summary>
-        /// Manually trigger command change notification
-        /// Public method for external calls (e.g., from UnityCommandRegistry)
+        /// Manually trigger tool change notification
+        /// Public method for external calls (e.g., from UnityToolRegistry)
         /// </summary>
-        public static void TriggerCommandChangeNotification()
+        public static void TriggerToolChangeNotification()
         {
-            McpLogger.LogDebug($"[TRACE] TriggerCommandChangeNotification called at {System.DateTime.Now:HH:mm:ss.fff}");
+            McpLogger.LogDebug($"[TRACE] TriggerToolChangeNotification called at {System.DateTime.Now:HH:mm:ss.fff}");
             
             if (IsServerRunning)
             {
-                SendCommandsChangedNotification();
+                SendToolsChangedNotification();
             }
             else
             {
-                McpLogger.LogDebug("[TRACE] TriggerCommandChangeNotification skipped: Server not running");
+                McpLogger.LogDebug("[TRACE] TriggerToolChangeNotification skipped: Server not running");
             }
         }
         
         /// <summary>
-        /// Send command notification after compilation with frame delay
+        /// Backward compatibility method for TriggerCommandChangeNotification
         /// </summary>
-        private static async Task SendCommandNotificationAfterCompilation()
+        [System.Obsolete("Use TriggerToolChangeNotification instead. This method will be removed in a future version.")]
+        public static void TriggerCommandChangeNotification()
         {
-            McpLogger.LogDebug($"[TRACE] SendCommandNotificationAfterCompilation started at {System.DateTime.Now:HH:mm:ss.fff}");
+            TriggerToolChangeNotification();
+        }
+        
+        /// <summary>
+        /// Send tool notification after compilation with frame delay
+        /// </summary>
+        private static async Task SendToolNotificationAfterCompilation()
+        {
+            McpLogger.LogDebug($"[TRACE] SendToolNotificationAfterCompilation started at {System.DateTime.Now:HH:mm:ss.fff}");
             
             // Use frame delay for timing adjustment after domain reload
             // This ensures Unity Editor is in a stable state before sending notifications
             await EditorDelay.DelayFrame(1);
             
-            McpLogger.LogDebug("[TRACE] SendCommandNotificationAfterCompilation: About to call TriggerCommandsChangedNotification (AFTER_COMPILATION)");
-            UnityCommandRegistry.TriggerCommandsChangedNotification();
+            McpLogger.LogDebug("[TRACE] SendToolNotificationAfterCompilation: About to call TriggerToolsChangedNotification (AFTER_COMPILATION)");
+            CustomToolManager.NotifyToolChanges();
         }
         
         
