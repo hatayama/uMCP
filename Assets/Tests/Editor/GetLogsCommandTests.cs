@@ -17,7 +17,7 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Test for command name.
+        /// Test for tool name.
         /// - Asserts that the tool name is "getlogs".
         /// </summary>
         [Test]

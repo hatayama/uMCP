@@ -15,9 +15,9 @@ import { ENVIRONMENT } from './constants.js';
  * - UnityMcpServer: Main server class that uses this manager
  *
  * Key features:
- * - Dynamic tool generation from Unity commands
+ * - Dynamic tool generation from Unity tools
  * - Tool refresh management
- * - Command details fetching and parsing
+ * - Tool details fetching and parsing
  * - Development mode support
  */
 export class UnityToolManager {
@@ -55,13 +55,13 @@ export class UnityToolManager {
     }
 
     try {
-      const commandDetails = await this.fetchCommandDetailsFromUnity();
+      const toolDetails = await this.fetchToolDetailsFromUnity();
 
-      if (!commandDetails) {
+      if (!toolDetails) {
         return [];
       }
 
-      this.createDynamicToolsFromCommands(commandDetails);
+      this.createDynamicToolsFromTools(toolDetails);
 
       // Convert dynamic tools to Tool array
       const tools: Tool[] = [];
@@ -81,20 +81,20 @@ export class UnityToolManager {
   }
 
   /**
-   * Initialize dynamic Unity command tools
+   * Initialize dynamic Unity tools
    */
   async initializeDynamicTools(): Promise<void> {
     try {
       await this.unityClient.ensureConnected();
 
-      const commandDetails = await this.fetchCommandDetailsFromUnity();
-      if (!commandDetails) {
+      const toolDetails = await this.fetchToolDetailsFromUnity();
+      if (!toolDetails) {
         return;
       }
 
-      this.createDynamicToolsFromCommands(commandDetails);
+      this.createDynamicToolsFromTools(toolDetails);
 
-      // Command details processed successfully
+      // Tool details processed successfully
     } catch (error) {
       errorToFile('[Unity Tool Manager] Failed to initialize dynamic tools:', error);
       // Continue without dynamic tools
@@ -102,66 +102,62 @@ export class UnityToolManager {
   }
 
   /**
-   * Fetch command details from Unity
+   * Fetch tool details from Unity
    */
-  private async fetchCommandDetailsFromUnity(): Promise<unknown[] | null> {
-    // Get detailed command information including schemas
-    // Include development-only commands if in development mode
+  private async fetchToolDetailsFromUnity(): Promise<unknown[] | null> {
+    // Get detailed tool information including schemas
+    // Include development-only tools if in development mode
     const params = { IncludeDevelopmentOnly: this.isDevelopment };
-    const commandDetailsResponse = await this.unityClient.executeCommand(
-      'get-command-details',
-      params,
-    );
+    const toolDetailsResponse = await this.unityClient.executeTool('get-tool-details', params);
 
-    // Handle new GetCommandDetailsResponse structure
-    const commandDetails =
-      (commandDetailsResponse as { Commands?: unknown[] })?.Commands || commandDetailsResponse;
-    if (!Array.isArray(commandDetails)) {
-      errorToFile('[Unity Tool Manager] Invalid command details response:', commandDetailsResponse);
+    // Handle new GetToolDetailsResponse structure
+    const toolDetails =
+      (toolDetailsResponse as { Tools?: unknown[] })?.Tools || toolDetailsResponse;
+    if (!Array.isArray(toolDetails)) {
+      errorToFile('[Unity Tool Manager] Invalid tool details response:', toolDetailsResponse);
       return null;
     }
 
-    return commandDetails as unknown[];
+    return toolDetails as unknown[];
   }
 
   /**
-   * Create dynamic tools from Unity command details
+   * Create dynamic tools from Unity tool details
    */
-  private createDynamicToolsFromCommands(commandDetails: unknown[]): void {
-    // Create dynamic tools for each Unity command
+  private createDynamicToolsFromTools(toolDetails: unknown[]): void {
+    // Create dynamic tools for each Unity tool
     this.dynamicTools.clear();
     const toolContext = { unityClient: this.unityClient };
 
-    for (const commandInfo of commandDetails) {
-      const commandName = (commandInfo as { name: string }).name;
+    for (const toolInfo of toolDetails) {
+      const toolName = (toolInfo as { name: string }).name;
       const description =
-        (commandInfo as { description?: string }).description ||
-        `Execute Unity command: ${commandName}`;
-      const parameterSchema = (commandInfo as { parameterSchema?: unknown }).parameterSchema;
+        (toolInfo as { description?: string }).description || `Execute Unity tool: ${toolName}`;
+      const parameterSchema = (toolInfo as { parameterSchema?: unknown }).parameterSchema;
       const displayDevelopmentOnly =
-        (commandInfo as { displayDevelopmentOnly?: boolean }).displayDevelopmentOnly || false;
+        (toolInfo as { displayDevelopmentOnly?: boolean }).displayDevelopmentOnly || false;
 
-      // Skip development-only commands in production mode
+      // Skip development-only tools in production mode
       if (displayDevelopmentOnly && !this.isDevelopment) {
         continue;
       }
 
-      const toolName = commandName;
+      const finalToolName = toolName;
 
       const dynamicTool = new DynamicUnityCommandTool(
         toolContext,
-        commandName,
+        toolName,
         description,
         parameterSchema, // Pass schema information
       );
 
-      this.dynamicTools.set(toolName, dynamicTool);
+      this.dynamicTools.set(finalToolName, dynamicTool);
     }
   }
 
   /**
    * Refresh dynamic tools by re-fetching from Unity
-   * This method can be called to update the tool list when Unity commands change
+ * This method can be called to update the tool list when Unity tools change
    */
   async refreshDynamicTools(sendNotification?: () => void): Promise<void> {
     await this.initializeDynamicTools();

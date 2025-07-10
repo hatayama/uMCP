@@ -14,7 +14,7 @@ import { NOTIFICATION_METHODS } from '../constants.js';
  * - Testing if your MCP client properly receives notifications
  * - Debugging tool list refresh issues in IDEs
  * - Verifying that dynamic tool registration works correctly
- * - Troubleshooting when tools don't appear in the client after Unity command changes
+ * - Troubleshooting when tools don't appear in the client after Unity tool changes
  *
  * How it works:
  * 1. Simulates tool count changes by toggling between 5 and 8 tools

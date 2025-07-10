@@ -203,8 +203,8 @@ namespace io.github.hatayama.uMCP
             // Handle security exceptions with detailed information
             if (ex is McpSecurityException secEx)
             {
-                errorData = new SecurityBlockedErrorData(secEx.CommandName, secEx.SecurityReason, secEx.Message);
-                errorMessage = "Command blocked by security settings";
+                errorData = new SecurityBlockedErrorData(secEx.ToolName, secEx.SecurityReason, secEx.Message);
+                errorMessage = "Tool blocked by security settings";
             }
             else
             {

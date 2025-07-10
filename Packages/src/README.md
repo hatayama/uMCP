@@ -116,7 +116,7 @@ Retrieve information about the currently active Hierarchy. Works at runtime as w
 ```
 
 > [!NOTE]
-> By combining these commands, AI can complete complex tasks without human intervention.
+> By combining these tools, AI can complete complex tasks without human intervention.
 > They are particularly powerful for repetitive tasks like error fixing and test execution.
 
 ## Security Settings
@@ -129,8 +129,8 @@ Retrieve information about the currently active Hierarchy. Works at runtime as w
 > - `run-tests`: Test execution
 > 
 > To use these features, you need to enable the corresponding settings in the Security Settings of the uMCP window:
-> - **Allow Test Execution**: Enables the `run-tests` command
-> - **Allow Menu Item Execution**: Enables the `execute-menu-item` command
+> - **Allow Test Execution**: Enables the `run-tests` tool
+> - **Allow Menu Item Execution**: Enables the `execute-menu-item` tool
 > Only enable these features in trusted environments.
 
 For detailed features, please see [FEATURES.md](FEATURES.md).
@@ -210,14 +210,14 @@ Scope(s): io.github.hatayama.umcp
 
 3. Open Package Manager window and select OpenUPM in the My Registries section. uMCP will be displayed.
 
-## Custom Command Development
-You can easily add project-specific commands without modifying the core package.
+## Custom Tool Development
+You can easily add project-specific tools without modifying the core package.
 
 **Step 1: Create Schema Class** (define parameters):
 ```csharp
 using System.ComponentModel;
 
-public class MyCustomSchema : BaseCommandSchema
+public class MyCustomSchema : BaseToolSchema
 {
     [Description("Parameter description")]
     public string MyParameter { get; set; } = "default_value";
@@ -236,7 +236,7 @@ public enum MyEnum
 
 **Step 2: Create Response Class** (define return data):
 ```csharp
-public class MyCustomResponse : BaseCommandResponse
+public class MyCustomResponse : BaseToolResponse
 {
     public string Result { get; set; }
     public bool Success { get; set; }
@@ -252,13 +252,13 @@ public class MyCustomResponse : BaseCommandResponse
 }
 ```
 
-**Step 3: Create Command Class**:
+**Step 3: Create Tool Class**:
 ```csharp
 [McpTool]  // ← Auto-registered with this attribute
-public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResponse>
+public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 {
-    public override string CommandName => "myCustomCommand";
-    public override string Description => "Description of my custom command";
+    public override string ToolName => "myCustomTool";
+    public override string Description => "Description of my custom tool";
     
     // Executed on main thread
     protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
@@ -282,7 +282,7 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 }
 ```
 
-Please also refer to [Custom Command Samples](/Assets/Editor/CustomCommandSamples).
+Please also refer to [Custom Tool Samples](/Assets/Editor/CustomToolSamples).
 
 ## Automatic MCP Execution in Cursor
 By default, Cursor requires user permission when executing MCP.

@@ -223,7 +223,7 @@ namespace io.github.hatayama.uMCP
             }
 
             // Security check - validate tool before execution
-            if (!McpSecurityChecker.IsCommandAllowed(toolName))
+            if (!McpSecurityChecker.IsToolAllowed(toolName))
             {
                 throw new McpSecurityException(toolName, "Tool is blocked by security settings");
             }
@@ -250,7 +250,7 @@ namespace io.github.hatayama.uMCP
                 }
                 
                 // Check security settings
-                bool isAllowed = McpSecurityChecker.IsCommandAllowed(tool.ToolName);
+                bool isAllowed = McpSecurityChecker.IsToolAllowed(tool.ToolName);
                 string description = tool.Description;
                 
                 // Modify description for blocked tools
@@ -294,7 +294,7 @@ namespace io.github.hatayama.uMCP
         public static void TriggerToolsChangedNotification()
         {
             // Call the public method in McpServerController
-            McpServerController.TriggerCommandChangeNotification();
+            McpServerController.TriggerToolChangeNotification();
         }
 
     }

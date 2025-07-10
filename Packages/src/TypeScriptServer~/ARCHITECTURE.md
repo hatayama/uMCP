@@ -2,14 +2,14 @@
 
 ## 1. Overview
 
-This document outlines the architecture of the TypeScript server located in `Packages/src/TypeScriptServer`. This server acts as the intermediary between an MCP-compatible client (like Cursor, Claude, or VSCode) and the Unity Editor. It runs as a Node.js process, communicates with the client via standard I/O (stdio) using the Model Context Protocol (MCP), and relays commands to the Unity Editor via a TCP socket.
+This document outlines the architecture of the TypeScript server located in `Packages/src/TypeScriptServer`. This server acts as the intermediary between an MCP-compatible client (like Cursor, Claude, or VSCode) and the Unity Editor. It runs as a Node.js process, communicates with the client via standard I/O (stdio) using the Model Context Protocol (MCP), and relays tool requests to the Unity Editor via a TCP socket.
 
 Its primary responsibilities are:
 1.  **MCP Server Implementation**: Implements the MCP server specification using `@modelcontextprotocol/sdk` to handle requests from the client (e.g., `tools/list`, `tools/call`).
-2.  **Dynamic Tool Management**: Fetches a list of available commands from the Unity Editor and dynamically creates corresponding "tools" to expose to the MCP client.
+2.  **Dynamic Tool Management**: Fetches a list of available tools from the Unity Editor and dynamically creates corresponding "tools" to expose to the MCP client.
 3.  **Unity Communication**: Manages a persistent TCP connection to the `McpBridgeServer` running inside the Unity Editor.
-4.  **Command Forwarding**: Translates `tools/call` requests from the MCP client into JSON-RPC requests and sends them to the Unity server for execution.
-5.  **Notification Handling**: Listens for `notifications/tools/list_changed` events from Unity to automatically refresh its toolset when commands are added or removed in the Unity project.
+4.  **Tool Forwarding**: Translates `tools/call` requests from the MCP client into JSON-RPC requests and sends them to the Unity server for execution.
+5.  **Notification Handling**: Listens for `notifications/tools/list_changed` events from Unity to automatically refresh its toolset when tools are added or removed in the Unity project.
 
 ## 2. Architecture Diagrams
 
@@ -85,8 +85,8 @@ classDiagram
         -dynamicTools: Map
         +initializeDynamicTools()
         +refreshDynamicToolsSafe()
-        +fetchCommandDetailsFromUnity()
-        +createDynamicToolsFromCommands()
+        +fetchToolDetailsFromUnity()
+        +createDynamicToolsFromTools()
         +getToolsFromUnity()
     }
 
@@ -115,7 +115,7 @@ classDiagram
         -messageHandler: MessageHandler
         +connect()
         +disconnect()
-        +executeCommand()
+        +executeTool()
         +ensureConnected()
     }
 
@@ -144,7 +144,7 @@ classDiagram
         #formatResponse()
     }
 
-    class DynamicUnityCommandTool {
+    class DynamicUnityTool {
         +name: string
         +description: string
         +inputSchema: object
@@ -159,33 +159,33 @@ classDiagram
     UnityMcpServer "1" --> "1" UnityClient : uses
     UnityConnectionManager "1" --> "1" UnityClient : manages
     UnityToolManager "1" --> "1" UnityClient : uses
-    UnityToolManager "1" --> "*" DynamicUnityCommandTool : manages
+    UnityToolManager "1" --> "*" DynamicUnityTool : manages
     McpClientCompatibility "1" --> "1" UnityClient : uses
     UnityEventHandler "1" --> "1" UnityClient : uses
     UnityEventHandler "1" --> "1" UnityConnectionManager : uses
     UnityClient "1" --> "1" ConnectionManager : delegates to
     UnityClient "1" --> "1" MessageHandler : delegates to
-    DynamicUnityCommandTool --|> BaseTool : extends
-    DynamicUnityCommandTool --> UnityClient : uses
+    DynamicUnityTool --|> BaseTool : extends
+    DynamicUnityTool --> UnityClient : uses
 ```
 
-### 2.3. Command Execution Sequence
+### 2.3. Tool Execution Sequence
 
 ```mermaid
 sequenceDiagram
     participant MC as MCP Client<br/>(Claude/Cursor)
     participant US as UnityMcpServer
     participant UTM as UnityToolManager
-    participant DT as DynamicUnityCommandTool
+    participant DT as DynamicUnityTool
     participant UC as UnityClient
     participant MH as MessageHandler
     participant UE as Unity Editor
 
     MC->>US: CallTool Request
     US->>UTM: getTool(toolName)
-    UTM-->>US: DynamicUnityCommandTool
+    UTM-->>US: DynamicUnityTool
     US->>DT: execute(args)
-    DT->>UC: executeCommand()
+    DT->>UC: executeTool()
     UC->>MH: createRequest()
     UC->>UE: Send JSON-RPC
     UE-->>UC: JSON-RPC Response

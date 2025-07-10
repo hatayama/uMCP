@@ -9,17 +9,17 @@ namespace io.github.hatayama.uMCP
     /// Reference example for users to add their own tools
     /// </summary>\
     // [InitializeOnLoad]
-    public static class RegisterCustomCommandsSample
+    public static class RegisterCustomToolsSample
     {
-        static RegisterCustomCommandsSample()
+        static RegisterCustomToolsSample()
         {
-            RegisterSampleCommands();
+            RegisterSampleTools();
         }
         /// <summary>
         /// Register custom tools
         /// </summary>
         [MenuItem("uMCP/Tools/Custom Tools/Register Sample Tools")]
-        public static void RegisterSampleCommands()
+        public static void RegisterSampleTools()
         {
             CustomToolManager.RegisterCustomTool(new HelloWorldTool());
             CustomToolManager.RegisterCustomTool(new GetProjectInfoTool());

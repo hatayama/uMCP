@@ -8,7 +8,7 @@
  * Related classes:
  * - BaseTool: Base class that implements ToolHandler interface
  * - DynamicUnityCommandTool: Specific tool implementation
- * - UnityToolManager: Manages dynamic tool registration from Unity commands
+ * - UnityToolManager: Manages dynamic tool registration from Unity tools
  *
  * Key features:
  * - ToolHandler interface for all tools
@@ -42,7 +42,7 @@ export interface ToolResponse {
  * Unity client interface for tool execution
  */
 export interface UnityClient {
-  executeCommand(commandName: string, params?: Record<string, unknown>): Promise<unknown>;
+  executeTool(toolName: string, params?: Record<string, unknown>): Promise<unknown>;
 }
 
 /**

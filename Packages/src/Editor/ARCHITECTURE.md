@@ -21,7 +21,7 @@ graph TB
     
     subgraph "Unity Editor"
         MB[McpBridgeServer<br/>TCP Server]
-        CMD[Command System]
+        CMD[Tool System]
         UI[McpEditorWindow<br/>GUI]
         API[Unity APIs]
     end
@@ -40,9 +40,9 @@ graph TB
 ```
 
 Its primary responsibilities are:
-1.  **Running a TCP Server (`McpBridgeServer`)**: Listens for connections from the TypeScript server to receive commands.
-2.  **Executing Unity Operations**: Processes received commands to perform actions within the Unity Editor, such as compiling the project, running tests, or retrieving logs.
-3.  **Security Management**: Validates and controls command execution through `McpSecurityChecker` to prevent unauthorized operations.
+1.  **Running a TCP Server (`McpBridgeServer`)**: Listens for connections from the TypeScript server to receive tool requests.
+2.  **Executing Unity Operations**: Processes received tool requests to perform actions within the Unity Editor, such as compiling the project, running tests, or retrieving logs.
+3.  **Security Management**: Validates and controls tool execution through `McpSecurityChecker` to prevent unauthorized operations.
 4.  **Session Management**: Maintains client sessions and connection state through `McpSessionManager`.
 5.  **Providing a User Interface (`McpEditorWindow`)**: Offers a GUI within the Unity Editor for developers to manage and monitor the MCP server.
 6.  **Managing Configuration**: Handles the setup of `mcp.json` files required by LLM tools like Cursor, Claude, and VSCode.
@@ -51,23 +51,23 @@ Its primary responsibilities are:
 
 The architecture is built upon several key design principles to ensure robustness, extensibility, and maintainability.
 
-### 2.1. Command Pattern
-The system is centered around the **Command Pattern**. Each action that can be triggered by an LLM tool is encapsulated in its own command class.
+### 2.1. Tool Pattern
+The system is centered around the **Tool Pattern**. Each action that can be triggered by an LLM tool is encapsulated in its own tool class.
 
-- **`IUnityCommand`**: The common interface for all commands.
-- **`AbstractUnityCommand<TSchema, TResponse>`**: A generic abstract base class that provides type-safe handling of parameters and responses.
-- **`UnityCommandRegistry`**: A central registry that discovers and holds all available commands.
-- **`UnityApiHandler` / `UnityCommandExecutor`**: These classes receive a command name and parameters, look up the command in the registry, and execute it.
-- **`McpSecurityChecker`**: Validates command execution permissions based on security settings.
+- **`IUnityTool`**: The common interface for all tools.
+- **`AbstractUnityTool<TSchema, TResponse>`**: A generic abstract base class that provides type-safe handling of parameters and responses.
+- **`UnityToolRegistry`**: A central registry that discovers and holds all available tools.
+- **`UnityApiHandler`**: These classes receive a tool name and parameters, look up the tool in the registry, and execute it.
+- **`McpSecurityChecker`**: Validates tool execution permissions based on security settings.
 
-This pattern makes the system highly extensible. To add a new feature, a developer simply needs to create a new class that implements `IUnityCommand` and decorate it with the `[McpTool]` attribute. The system will automatically discover and expose it.
+This pattern makes the system highly extensible. To add a new feature, a developer simply needs to create a new class that implements `IUnityTool` and decorate it with the `[McpTool]` attribute. The system will automatically discover and expose it.
 
 ### 2.2. Security Architecture
-The system implements comprehensive security controls to prevent unauthorized command execution:
+The system implements comprehensive security controls to prevent unauthorized tool execution:
 
-- **`McpSecurityChecker`**: Central security validation component that checks command permissions before execution.
-- **Attribute-Based Security**: Commands can be decorated with security attributes to define their execution requirements.
-- **Default Deny Policy**: Unknown commands are blocked by default to prevent unauthorized operations.
+- **`McpSecurityChecker`**: Central security validation component that checks tool permissions before execution.
+- **Attribute-Based Security**: Tools can be decorated with security attributes to define their execution requirements.
+- **Default Deny Policy**: Unknown tools are blocked by default to prevent unauthorized operations.
 - **Settings-Based Control**: Security policies can be configured through Unity Editor settings interface.
 
 ### 2.3. Session Management

@@ -34,7 +34,7 @@ import packageJson from '../package.json' assert { type: 'json' };
  * - McpClientCompatibility: Handles client-specific compatibility
  * - UnityEventHandler: Manages events and graceful shutdown
  * - UnityClient: Handles the TCP connection to the Unity Editor
- * - DynamicUnityCommandTool: Dynamically creates tools based on commands from Unity
+ * - DynamicUnityCommandTool: Dynamically creates tools based on Unity tools
  * - @modelcontextprotocol/sdk/server: The core MCP server implementation
  */
 class UnityMcpServer {
@@ -209,7 +209,7 @@ class UnityMcpServer {
       debugToFile(`Tool executed: ${name}`, { args });
 
       try {
-        // Check if it's a dynamic Unity command tool
+        // Check if it's a dynamic Unity tool
         if (this.toolManager.hasTool(name)) {
           const dynamicTool = this.toolManager.getTool(name);
           if (!dynamicTool) {

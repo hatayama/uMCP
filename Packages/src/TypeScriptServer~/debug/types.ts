@@ -50,15 +50,15 @@ export interface PingResult {
   timestamp: string;
 }
 
-// コマンド詳細の型定義
-export interface CommandDetail {
+// ツール詳細の型定義
+export interface ToolDetail {
   name: string;
   description: string;
   parameters: any[];
 }
 
-export interface GetCommandDetailsResult {
-  commands: CommandDetail[];
+export interface GetToolDetailsResult {
+  tools: ToolDetail[];
 }
 
 // JSON-RPC関連の型定義

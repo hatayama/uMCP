@@ -27,37 +27,37 @@ interface InputSchema {
 }
 
 /**
- * Dynamically generated tool for Unity commands
+ * Dynamically generated tool for Unity tools
  *
  * Design document reference: Packages/src/TypeScriptServer~/ARCHITECTURE.md
  *
  * Related classes:
  * - UnityMcpServer: Instantiates and uses this tool
- * - UnityClient: Used to execute the actual command in Unity
+ * - UnityClient: Used to execute the actual tool in Unity
  * - BaseTool: Base class providing common tool functionality
  */
 export class DynamicUnityCommandTool extends BaseTool {
   public readonly name: string;
   public readonly description: string;
   public readonly inputSchema: InputSchema;
-  private readonly commandName: string;
+  private readonly toolName: string;
 
   constructor(
     context: ToolContext,
-    commandName: string,
+    toolName: string,
     description: string,
     parameterSchema?: UnityParameterSchema,
   ) {
     super(context);
-    this.commandName = commandName;
-    this.name = commandName;
+    this.toolName = toolName;
+    this.name = toolName;
     this.description = description;
     this.inputSchema = this.generateInputSchema(parameterSchema);
   }
 
   private generateInputSchema(parameterSchema?: UnityParameterSchema): InputSchema {
     if (this.hasNoParameters(parameterSchema)) {
-      // For commands without parameters, return minimal schema without dummy parameters
+      // For tools without parameters, return minimal schema without dummy parameters
       return {
         type: 'object',
         properties: {},
@@ -172,10 +172,7 @@ export class DynamicUnityCommandTool extends BaseTool {
       // Validate and use the provided arguments
       const actualArgs: Record<string, unknown> = this.validateArgs(args);
 
-      const result: unknown = await this.context.unityClient.executeCommand(
-        this.commandName,
-        actualArgs,
-      );
+      const result: unknown = await this.context.unityClient.executeTool(this.toolName, actualArgs);
 
       return {
         content: [
@@ -196,7 +193,7 @@ export class DynamicUnityCommandTool extends BaseTool {
       content: [
         {
           type: 'text',
-          text: `Failed to execute command '${this.commandName}': ${errorMessage}`,
+          text: `Failed to execute tool '${this.toolName}': ${errorMessage}`,
         },
       ],
     };

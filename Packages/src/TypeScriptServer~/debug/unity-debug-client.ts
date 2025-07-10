@@ -5,7 +5,7 @@ import {
     GetLogsResult,
     TestResult,
     PingResult,
-    GetCommandDetailsResult,
+    GetToolDetailsResult,
     JsonRpcRequest,
     JsonRpcResponse,
     JsonRpcNotification
@@ -260,28 +260,28 @@ export class UnityDebugClient {
         });
     }
 
-    async getCommandDetails(): Promise<GetCommandDetailsResult> {
+    async getToolDetails(): Promise<GetToolDetailsResult> {
         if (!this.connected) {
             throw new Error('Not connected to Unity');
         }
         
-        console.log('📤 Sending getCommandDetails request...');
+        console.log('📤 Sending getToolDetails request...');
         const request: JsonRpcRequest = {
             jsonrpc: '2.0',
             id: Date.now(),
-            method: "get-command-details",
+            method: "get-tool-details",
             params: {}
         };
 
         console.log('📋 Request:', JSON.stringify(request, null, 2));
-        const response = await this.sendRequest<GetCommandDetailsResult>(request);
+        const response = await this.sendRequest<GetToolDetailsResult>(request);
         console.log('📥 Raw response:', JSON.stringify(response, null, 2));
         
         if (response.error) {
-            throw new Error(`Failed to get command details: ${response.error.message}`);
+            throw new Error(`Failed to get tool details: ${response.error.message}`);
         }
 
-        return response.result || { commands: [] };
+        return response.result || { tools: [] };
     }
 
     async sendRequest<T>(request: JsonRpcRequest): Promise<JsonRpcResponse<T>> {
