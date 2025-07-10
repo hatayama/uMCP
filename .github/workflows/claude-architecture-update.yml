@@ -1,7 +1,8 @@
 name: Claude Architecture Update
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize]
     branches: [main]
     paths:
       - 'Packages/src/Editor/**'
@@ -20,6 +21,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Update Architecture Documentation
         uses: anthropics/claude-code-action@beta
@@ -59,18 +61,32 @@ jobs:
             - Focus on the "why" and "how" of architectural decisions, not just the "what"
             
             Please analyze the codebase and update the architecture documentation as needed.
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "docs: update architecture documentation"
-          title: "Auto-update: Architecture documentation"
-          body: |
-            Automatically generated PR to update architecture documentation based on code changes.
             
-            - Analyzed: `Packages/src/Editor/` and `Packages/src/TypeScriptServer~/`
-            - Updated: `ARCHITECTURE.md` files
-            - Triggered by: Code changes in main branch
-          branch: "claude-code/architecture-update"
-          delete-branch: true
+            ## Commit Instructions
+            - Commit any changes directly to this PR branch
+            - Use descriptive commit messages like "docs: update architecture documentation based on code changes"
+            - Do not create a separate pull request
+
+      - name: Commit changes to current PR
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action - Architecture Update"
+          
+          # Check if there are any changes
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No architecture documentation changes needed"
+            exit 0
+          fi
+          
+          # Add and commit changes
+          git add Packages/src/Editor/ARCHITECTURE.md Packages/src/TypeScriptServer~/ARCHITECTURE.md
+          git commit -m "docs: update architecture documentation based on code changes
+
+          - Analyzed changes in Editor/ and TypeScriptServer~/ directories
+          - Updated architecture documentation to reflect current implementation
+          - Ensured consistency between Unity and TypeScript architecture docs
+          
+          [skip ci]" || echo "No changes to commit"
+          
+          # Push to the PR branch
+          git push origin ${{ github.event.pull_request.head.ref }}
