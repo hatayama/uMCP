@@ -52,13 +52,18 @@ namespace io.github.hatayama.uMCP
             // Create nested response for size calculation
             GetHierarchyResponse nestedResponse = new GetHierarchyResponse(nestedNodes, context);
             
-            // Calculate response size
-            string jsonString = JsonUtility.ToJson(nestedResponse, true);
-            int estimatedSizeBytes = jsonString.Length * 2; // UTF-8 estimation
+            // Calculate response size using Newtonsoft.Json for accurate size estimation
+            var settings = new Newtonsoft.Json.JsonSerializerSettings
+            {
+                ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore,
+                MaxDepth = McpServerConfig.DEFAULT_JSON_MAX_DEPTH
+            };
+            string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(nestedResponse, Newtonsoft.Json.Formatting.None, settings);
+            int estimatedSizeBytes = System.Text.Encoding.UTF8.GetByteCount(jsonString);
             int estimatedSizeKB = estimatedSizeBytes / 1024;
             
             // Check if response should be saved to file
-            if (estimatedSizeKB > parameters.MaxResponseSizeKB)
+            if (estimatedSizeKB >= parameters.MaxResponseSizeKB)
             {
                 // Check for cancellation before file export
                 cancellationToken.ThrowIfCancellationRequested();
