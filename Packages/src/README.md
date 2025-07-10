@@ -174,7 +174,7 @@ For detailed features, please see [FEATURES.md](FEATURES.md).
 
 5. Multiple Unity Instance Support
 > [!NOTE]
-> Multiple Unity instances can be supported by changing port numbers. Assign different port numbers to each instance.
+> Multiple Unity instances can be supported by changing port numbers. uMCP automatically assigns unused ports when starting up.
 
 ## Prerequisites
 
@@ -283,6 +283,11 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 ```
 
 Please also refer to [Custom Command Samples](/Assets/Editor/CustomCommandSamples).
+
+## Automatic MCP Execution in Cursor
+By default, Cursor requires user permission when executing MCP.
+To disable this, go to Cursor Settings > Chat > MCP Tools Protection and turn it Off.
+Note that this cannot be controlled per MCP type or tool, so all MCPs will no longer require permission. This is a security tradeoff, so please configure it with that in mind.
 
 ## WSL2 Support for Using Claude Code on Windows
 Enable WSL2 mirror mode. Add the following to `C:/Users/[username]/.wslconfig`:

@@ -173,7 +173,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 
 5. 複数のUnityインスタンスのサポート
 > [!NOTE]
-> ポート番号を変更することで複数のUnityインスタンスをサポートできます。各インスタンスに異なるポート番号を割り当ててください。
+> ポート番号を変更することで複数のUnityインスタンスをサポートできます。uMCP起動時に自動的に使われいないportが割り当てられます。
 
 ## 前提条件
 
@@ -282,6 +282,11 @@ public class MyCustomCommand : AbstractUnityCommand<MyCustomSchema, MyCustomResp
 ```
 
 [カスタムコマンドのサンプル](/Assets/Editor/CustomCommandSamples)も参考にして下さい。
+
+## Cursorでmcpの実行を自動で行う
+CursorはデフォルトでMCP実行時にユーザーの許可を必要とします。
+これを無効にするには、Cursor Settings > Chat > MCP Tools ProtectionをOffにします。
+MCPの種類・ツール事に制御できず、全てのMCPが許可不要になってしまうため、セキュリティとのトレードオフになります。そこを留意して設定してください。
 
 ## WindowsでClaude Codeを使う際、WSL2の対応
 WSL2のミラーモードを有効化します。`C:/Users/[username]/.wslconfig` に、下記を記述します。
