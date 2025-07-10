@@ -158,26 +158,32 @@
   - `SaveToFileReason` (string): 結果がファイルに保存された理由
 
 ### 7. get-hierarchy
-- **説明**: Unity階層構造をAIフレンドリーな形式で取得します
+- **説明**: AIフレンドリーな処理のためにUnity階層構造をネストされたJSON形式で取得します
 - **パラメータ**: 
-  - `IncludeInactive` (boolean): 非アクティブなGameObjectを含めるかどうか（デフォルト: true）
-  - `MaxDepth` (number): 探索する最大深度（無制限の場合は-1）（デフォルト: -1）
-  - `RootPath` (string): 開始ルートパス（すべてのルートオブジェクトの場合はnull）（デフォルト: null）
-  - `IncludeComponents` (boolean): コンポーネント情報を含めるかどうか（デフォルト: true）
+  - `IncludeInactive` (boolean): 階層結果に非アクティブなGameObjectを含めるかどうか（デフォルト: true）
+  - `MaxDepth` (number): 階層を探索する最大深度（無制限深度の場合は-1）（デフォルト: -1）
+  - `RootPath` (string): 階層探索を開始するルートGameObjectパス（すべてのルートオブジェクトの場合は空/null）（デフォルト: null）
+  - `IncludeComponents` (boolean): 階層内の各GameObjectのコンポーネント情報を含めるかどうか（デフォルト: true）
+  - `MaxResponseSizeKB` (number): ファイルに保存する前の最大レスポンスサイズ（KB）（デフォルト: 100KB）
 - **レスポンス**: 
-  - `Success` (boolean): 操作が成功したかどうか
-  - `Hierarchy` (object): GameObjectの階層構造
-    - `RootObjects` (array): ルートレベルのGameObjectの配列
-      - `Name` (string): GameObject名
-      - `Path` (string): 完全な階層パス
-      - `IsActive` (boolean): GameObjectがアクティブかどうか
-      - `Tag` (string): GameObjectタグ
-      - `Layer` (number): GameObjectレイヤー
-      - `LayerName` (string): GameObjectレイヤー名
-      - `Components` (array): コンポーネントタイプ名の配列（IncludeComponentsがtrueの場合）
-      - `Children` (array): 同じ構造を持つ子GameObjectの再帰的配列
-  - `TotalGameObjectCount` (number): 階層内のGameObjectの総数
-  - `MaxDepthReached` (number): 探索中に到達した実際の最大深度
+  - **小さな階層**（≤100KB）: 直接的なネストされたJSON構造
+    - `hierarchy` (array): ネスト形式のルートレベルGameObjectの配列
+      - `id` (number): UnityのGetInstanceID() - セッション内で一意
+      - `name` (string): GameObject名
+      - `depth` (number): 階層内の深度レベル（ルートは0）
+      - `isActive` (boolean): GameObjectがアクティブかどうか
+      - `components` (array): このGameObjectにアタッチされたコンポーネントタイプ名の配列
+      - `children` (array): 同じ構造を持つ子GameObjectの再帰的配列
+    - `context` (object): 階層に関するコンテキスト情報
+      - `sceneType` (string): シーンタイプ（"editor", "runtime", "prefab"）
+      - `sceneName` (string): シーン名またはプレハブパス
+      - `nodeCount` (number): 階層内のノードの総数
+      - `maxDepth` (number): 探索中に到達した最大深度
+  - **大きな階層**（>100KB）: 自動ファイルエクスポート
+    - `hierarchySavedToFile` (boolean): 大きな階層では常にtrue
+    - `hierarchyFilePath` (string): 保存された階層ファイルの相対パス（例: "HierarchyResults/hierarchy_2025-07-10_21-30-15.json"）
+    - `saveToFileReason` (string): ファイルエクスポートの理由（"auto_threshold"）
+    - `context` (object): 上記と同じコンテキスト情報
   - `Message` (string): 操作メッセージ
   - `ErrorMessage` (string): 操作が失敗した場合のエラーメッセージ
 

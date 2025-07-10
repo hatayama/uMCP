@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace io.github.hatayama.uMCP
 {
@@ -8,6 +9,8 @@ namespace io.github.hatayama.uMCP
     /// - HierarchyService: Core logic for hierarchy traversal
     /// - HierarchySerializer: JSON formatting logic
     /// - HierarchyNode: Data structure for hierarchy nodes
+    /// - HierarchyNodeNested: Nested hierarchy structure
+    /// - HierarchyResultExporter: File export functionality
     /// </summary>
     [McpTool(Description = "Get Unity Hierarchy structure in AI-friendly format")]
     public class GetHierarchyTool : AbstractUnityTool<GetHierarchySchema, GetHierarchyResponse>
@@ -33,10 +36,29 @@ namespace io.github.hatayama.uMCP
             var nodes = service.GetHierarchyNodes(options);
             var context = service.GetCurrentContext();
             
-            // Serialize to response format
-            GetHierarchyResponse response = serializer.SerializeHierarchy(nodes, context);
+            // Convert to nested structure
+            var nestedNodes = serializer.ConvertToNestedStructure(nodes);
             
-            return Task.FromResult(response);
+            // Create nested response for size calculation
+            GetHierarchyResponse nestedResponse = new GetHierarchyResponse(nestedNodes, context);
+            
+            // Calculate response size
+            string jsonString = JsonUtility.ToJson(nestedResponse, true);
+            int estimatedSizeBytes = jsonString.Length * 2; // UTF-8 estimation
+            int estimatedSizeKB = estimatedSizeBytes / 1024;
+            
+            // Check if response should be saved to file
+            if (estimatedSizeKB > parameters.MaxResponseSizeKB)
+            {
+                // Save to file and return file path response
+                string filePath = HierarchyResultExporter.ExportHierarchyResults(nestedNodes, context);
+                return Task.FromResult(new GetHierarchyResponse(filePath, "auto_threshold", context));
+            }
+            else
+            {
+                // Return nested response directly
+                return Task.FromResult(nestedResponse);
+            }
         }
     }
 }

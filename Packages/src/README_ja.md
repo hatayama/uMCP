@@ -44,8 +44,9 @@ AssetDatabase.Refresh()をした後、コンパイルして結果を返却しま
 #### 2. get-logs - UnityのConsoleと同じ内容のLogを取得します
 LogTypeや検索対象の文字列で絞り込む事ができます。また、stacktraceの有無も選択できます。
 これにより、コンテキストを小さく保ちながらlogを取得できます。
+**MaxCountの動作**: 最新のログから指定数を取得します（tail的な動作）。MaxCount=10なら最新の10件のログを返します。
 ```
-→ get-logs (LogType: Error, SearchText: "NullReference")
+→ get-logs (LogType: Error, SearchText: "NullReference", MaxCount: 10)
 → スタックトレースから原因箇所を特定、該当コードを修正
 ```
 
@@ -102,9 +103,11 @@ UnitySearchが提供する検索プロバイダーを取得します
 ```
 
 #### 10. get-hierarchy - シーン構造の解析
-現在アクティブなHierarchyの情報を取得します。ランタイムでも動作します。
+現在アクティブなHierarchyの情報をネストされたJSON形式で取得します。ランタイムでも動作します。
+**自動ファイル出力**: 大きなHierarchy（100KB超）は自動的に`HierarchyResults/`ディレクトリに保存され、トークン消費を最小限に抑えます。
 ```
 → GameObject間の親子関係を理解。構造的な問題を発見・修正
+→ 大きなシーンでは、Hierarchyデータがファイルに保存され、生のJSONの代わりにパスが返されます
 ```
 
 > [!NOTE]

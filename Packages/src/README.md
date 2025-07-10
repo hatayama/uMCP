@@ -44,8 +44,9 @@ You can choose between incremental compilation and forced full compilation.
 #### 2. get-logs - Retrieve Logs Same as Unity Console
 Filter by LogType or search target string. You can also choose whether to include stacktrace.
 This allows you to retrieve logs while keeping the context small.
+**MaxCount behavior**: Returns the latest logs (tail-like behavior). When MaxCount=10, returns the most recent 10 logs.
 ```
-→ get-logs (LogType: Error, SearchText: "NullReference")
+→ get-logs (LogType: Error, SearchText: "NullReference", MaxCount: 10)
 → Identify cause from stacktrace, fix relevant code
 ```
 
@@ -102,9 +103,11 @@ Retrieve objects and examine component parameters.
 ```
 
 #### 10. get-hierarchy - Analyze Scene Structure
-Retrieve information about the currently active Hierarchy. Works at runtime as well.
+Retrieve information about the currently active Hierarchy in nested JSON format. Works at runtime as well.
+**Automatic File Export**: Large hierarchies (>100KB) are automatically saved to `HierarchyResults/` directory to minimize token consumption.
 ```
 → Understand parent-child relationships between GameObjects, discover and fix structural issues
+→ For large scenes, hierarchy data is saved to file and path is returned instead of raw JSON
 ```
 
 > [!NOTE]
