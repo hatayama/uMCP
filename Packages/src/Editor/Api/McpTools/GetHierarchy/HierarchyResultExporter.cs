@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using Newtonsoft.Json;
 
 namespace io.github.hatayama.uMCP
 {
@@ -48,13 +49,13 @@ namespace io.github.hatayama.uMCP
             };
             
             // Export to JSON using Newtonsoft.Json for proper serialization
-            var settings = new Newtonsoft.Json.JsonSerializerSettings
+            var settings = new JsonSerializerSettings
             {
-                ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 MaxDepth = McpServerConfig.DEFAULT_JSON_MAX_DEPTH,
-                Formatting = Newtonsoft.Json.Formatting.Indented
+                Formatting = Formatting.Indented
             };
-            string jsonContent = Newtonsoft.Json.JsonConvert.SerializeObject(exportData, settings);
+            string jsonContent = JsonConvert.SerializeObject(exportData, settings);
             File.WriteAllText(filePath, jsonContent);
             
             // Return relative path
