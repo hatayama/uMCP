@@ -160,7 +160,7 @@ namespace io.github.hatayama.uMCP
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                MaxDepth = 10
+                MaxDepth = McpServerConfig.DEFAULT_JSON_MAX_DEPTH
             };
             
             try
@@ -227,7 +227,7 @@ namespace io.github.hatayama.uMCP
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                MaxDepth = 10
+                MaxDepth = McpServerConfig.DEFAULT_JSON_MAX_DEPTH
             };
             
             return JsonConvert.SerializeObject(errorResponse, Formatting.None, settings);

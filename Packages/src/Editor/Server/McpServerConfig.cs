@@ -79,5 +79,11 @@ namespace io.github.hatayama.uMCP
         /// ISO format date and time string.
         /// </summary>
         public const string ISO_DATETIME_FORMAT = "yyyy-MM-ddTHH:mm:ss.fffZ";
+        
+        /// <summary>
+        /// Default maximum depth for JSON serialization.
+        /// Set to int.MaxValue to effectively disable depth limiting while preventing infinite loops.
+        /// </summary>
+        public const int DEFAULT_JSON_MAX_DEPTH = int.MaxValue;
     }
 } 
