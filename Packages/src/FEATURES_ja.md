@@ -133,7 +133,6 @@
     - 一般的なプロバイダー: "asset", "scene", "menu", "settings", "packages"
   - `MaxResults` (number): 返す検索結果の最大数（デフォルト: 50）
   - `IncludeDescription` (boolean): 結果に詳細な説明を含めるかどうか（デフォルト: true）
-  - `IncludeThumbnails` (boolean): サムネイル/プレビュー情報を含めるかどうか（デフォルト: false）
   - `IncludeMetadata` (boolean): ファイルメタデータ（サイズ、更新日）を含めるかどうか（デフォルト: false）
   - `SearchFlags` (enum): Unity Search動作を制御する検索フラグ（デフォルト: "Default"）
   - `SaveToFile` (boolean): 検索結果を外部ファイルに保存するかどうか（デフォルト: false）

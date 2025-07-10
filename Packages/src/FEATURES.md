@@ -135,9 +135,9 @@ All tools automatically include the following timing information:
   - `IncludeDescription` (boolean): Whether to include detailed descriptions in results (default: true)
   - `IncludeMetadata` (boolean): Whether to include file metadata (size, modified date) (default: false)
   - `SearchFlags` (enum): Search flags for controlling Unity Search behavior (default: "Default")
-  - `SaveToFile` (boolean): Whether to save search results to external file to avoid massive token consumption when dealing with large result sets (default: false)
+  - `SaveToFile` (boolean): Whether to save search results to external file (default: false)
   - `OutputFormat` (enum): Output file format when SaveToFile is enabled - "JSON", "CSV", "TSV" (default: "JSON")
-  - `AutoSaveThreshold` (number): Threshold for automatic file saving (result count exceeding this will automatically save to file). Set to 0 to disable automatic file saving (default: 100)
+  - `AutoSaveThreshold` (number): Threshold for automatic file saving (default: 100)
   - `FileExtensions` (array): Filter results by file extension (e.g., "cs", "prefab", "mat") (default: [])
   - `AssetTypes` (array): Filter results by asset type (e.g., "Texture2D", "GameObject", "MonoScript") (default: [])
   - `PathFilter` (string): Filter results by path pattern (supports wildcards) (default: "")
@@ -229,39 +229,6 @@ All tools automatically include the following timing information:
   - `ErrorMessage` (string): Error message if execution failed
   - `Details` (string): Additional information about the execution
   - `MenuItemFound` (boolean): Whether the menu item was found in the system
-
----
-
-## Advanced Features
-
-### Type-Safe Parameter System
-- All tools use strongly typed parameter schemas with automatic validation
-- Enum parameters provide predefined value options for better user experience
-- Optional parameters have default values automatically applied
-- Comprehensive parameter descriptions guide proper usage
-
-### BaseToolResponse System
-- **Automatic Timing Measurement**: All tools automatically measure and report execution time
-- **Consistent Response Format**: All responses include standardized timing information
-- **Local Time Display**: Timestamps converted to local time for better readability
-- **Performance Monitoring**: Execution times help identify performance bottlenecks
-
-### Dynamic Timeout Configuration
-- **Per-Tool Timeout**: Each tool supports individual timeout settings via `TimeoutSeconds` parameter
-- **Intelligent Defaults**: Reasonable default timeouts based on tool complexity (ping: 5 seconds, tests: 30 seconds)
-- **Buffer Management**: TypeScript client adds 10-second buffer to ensure Unity-side timeout triggers first
-- **Timeout Handling**: Proper timeout responses with detailed error information
-
-### Real-Time Tool Discovery
-- **Event-Driven Updates**: Unity tool changes automatically detected and propagated to LLM tools
-- **Dynamic Tool Registration**: New custom tools appear in LLM tools without server restart
-- **Domain Reload Recovery**: Automatic reconnection and tool synchronization after Unity compilation
-
-### File Export System
-- **Large Result Management**: Automatic file export for large search results to avoid token consumption
-- **Multiple Formats**: Support for JSON, CSV, and TSV export formats
-- **Automatic Cleanup**: Old export files automatically cleaned up to prevent disk space issues
-- **Threshold-Based Export**: Configurable thresholds for automatic file saving
 
 ---
 

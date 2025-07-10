@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
 
-namespace io.github.hatayama.uMCP.Tests
+namespace io.github.hatayama.uMCP
 {
     public class FindGameObjectsToolTests
     {
