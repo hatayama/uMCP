@@ -253,11 +253,10 @@ public class MyCustomResponse : BaseToolResponse
 
 **ステップ3: ツールクラスの作成**：
 ```csharp
-[McpTool]  // ← この属性により自動登録されます
+[McpTool(Description = "私のカスタムツールの説明")]  // ← この属性により自動登録されます
 public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 {
-    public override string ToolName => "myCustomTool";
-    public override string Description => "私のカスタムツールの説明";
+    public override string ToolName => "my-custom-tool";
     
     // メインスレッドで実行されます
     protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
