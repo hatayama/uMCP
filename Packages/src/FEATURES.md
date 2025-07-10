@@ -156,28 +156,32 @@ All tools automatically include the following timing information:
   - `SaveToFileReason` (string): Reason why results were saved to file
 
 ### 7. get-hierarchy
-- **Description**: Get Unity Hierarchy structure in AI-friendly format
+- **Description**: Get Unity Hierarchy structure in nested JSON format for AI-friendly processing
 - **Parameters**: 
-  - `IncludeInactive` (boolean): Whether to include inactive GameObjects (default: true)
-  - `MaxDepth` (number): Maximum depth to traverse (-1 for unlimited) (default: -1)
-  - `RootPath` (string): Starting root path (null for all root objects) (default: null)
-  - `IncludeComponents` (boolean): Whether to include component information (default: true)
+  - `IncludeInactive` (boolean): Whether to include inactive GameObjects in the hierarchy result (default: true)
+  - `MaxDepth` (number): Maximum depth to traverse the hierarchy (-1 for unlimited depth) (default: -1)
+  - `RootPath` (string): Root GameObject path to start hierarchy traversal from (empty/null for all root objects) (default: null)
+  - `IncludeComponents` (boolean): Whether to include component information for each GameObject in the hierarchy (default: true)
+  - `MaxResponseSizeKB` (number): Maximum response size in KB before saving to file (default: 100KB)
 - **Response**: 
-  - `Success` (boolean): Whether the operation was successful
-  - `Hierarchy` (object): Hierarchical structure of GameObjects
-    - `RootObjects` (array): Array of root level GameObjects
-      - `Name` (string): GameObject name
-      - `Path` (string): Full hierarchy path
-      - `IsActive` (boolean): Whether the GameObject is active
-      - `Tag` (string): GameObject tag
-      - `Layer` (number): GameObject layer
-      - `LayerName` (string): GameObject layer name
-      - `Components` (array): Array of component type names (if IncludeComponents is true)
-      - `Children` (array): Recursive array of child GameObjects with same structure
-  - `TotalGameObjectCount` (number): Total number of GameObjects in the hierarchy
-  - `MaxDepthReached` (number): The actual maximum depth reached during traversal
-  - `Message` (string): Operation message
-  - `ErrorMessage` (string): Error message if operation failed
+  - **Small hierarchies** (≤100KB): Direct nested JSON structure
+    - `hierarchy` (array): Array of root level GameObjects in nested format
+      - `id` (number): Unity's GetInstanceID() - unique within session
+      - `name` (string): GameObject name
+      - `depth` (number): Depth level in hierarchy (0 for root)
+      - `isActive` (boolean): Whether the GameObject is active
+      - `components` (array): Array of component type names attached to this GameObject
+      - `children` (array): Recursive array of child GameObjects with same structure
+    - `context` (object): Context information about the hierarchy
+      - `sceneType` (string): Scene type ("editor", "runtime", "prefab")
+      - `sceneName` (string): Scene name or prefab path
+      - `nodeCount` (number): Total number of nodes in hierarchy
+      - `maxDepth` (number): Maximum depth reached during traversal
+  - **Large hierarchies** (>100KB): Automatic file export
+    - `hierarchySavedToFile` (boolean): Always true for large hierarchies
+    - `hierarchyFilePath` (string): Relative path to saved hierarchy file (e.g., "HierarchyResults/hierarchy_2025-07-10_21-30-15.json")
+    - `saveToFileReason` (string): Reason for file export ("auto_threshold")
+    - `context` (object): Same context information as above
 
 ### 8. get-provider-details
 - **Description**: Get detailed information about Unity Search providers including display names, descriptions, active status, and capabilities

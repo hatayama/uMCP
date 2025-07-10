@@ -1,4 +1,4 @@
-[日本語](/Packages/src/README_ja.md)
+[日本語](README_ja.md)
 
 [![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
@@ -9,32 +9,34 @@
 ![Windsurf](https://img.shields.io/badge/Windsurf-111?logo=Windsurf)
 ![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
-
 <h1 align="center">
     <img width="500" alt="uMCP" src="https://github.com/user-attachments/assets/0b7c4fcf-af5f-4025-b0d3-e596897d41b7" />  
-</h1>    
+</h1>     
 
 Control Unity Editor from various LLM tools.
 
 # Concept
+This project was created with the concept of enabling AI-driven coding to run autonomously for as long as possible.
+Normally, humans need to handle tasks like compiling Unity, running tests, and communicating logs to AI. uMCP solves this hassle.
 
-During AI-assisted coding with Unity, tasks like compilation and log retrieval typically require human intervention. uMCP was designed to minimize such manual operations as much as possible.
-With uMCP, AI can run autonomously for extended periods without relying on human operations.
+# Features
+1. Simply install the package and press the button to connect to your LLM tool to start using it immediately.
+2. Easily extensible functionality. You can quickly create your own custom MCP tools. (AI should be able to create them for you quickly)
+3. Options are implemented to minimize context consumption.
 
 # Tool Window
 <img width="350" alt="image" src="https://github.com/user-attachments/assets/5863b58b-7b48-48ae-9a40-c874ddc11488" />
 
-- Manages and monitors server status
-- Provides visibility into LLM tool connection status
-- Enables easy connection to tools via the LLM tool settings button
+ - Manages and monitors server status
+ - Provides visibility into LLM tool connection status
+ - Enables easy connection to tools via the LLM tool settings button
 
 # Key Features
 #### 1. compile - Execute Compilation
-Performs compilation after AssetDatabase.Refresh(). Can detect errors and warnings that built-in linters cannot find.  
+Performs AssetDatabase.Refresh() and then compiles, returning the results. Can detect errors and warnings that built-in linters cannot find.  
 You can choose between incremental compilation and forced full compilation.
 ```
-→ Execute compile
-→ Analyze error content
+→ Execute compile, analyze error and warning content
 → Automatically fix relevant files
 → Verify with compile again
 ```
@@ -42,10 +44,10 @@ You can choose between incremental compilation and forced full compilation.
 #### 2. get-logs - Retrieve Logs Same as Unity Console
 Filter by LogType or search target string. You can also choose whether to include stacktrace.
 This allows you to retrieve logs while keeping the context small.
+**MaxCount behavior**: Returns the latest logs (tail-like behavior). When MaxCount=10, returns the most recent 10 logs.
 ```
-→ get-logs (LogType: Error, SearchText: "NullReference")
-→ Identify cause from stacktrace
-→ Fix relevant code
+→ get-logs (LogType: Error, SearchText: "NullReference", MaxCount: 10)
+→ Identify cause from stacktrace, fix relevant code
 ```
 
 #### 3. run-tests - Execute TestRunner (PlayMode, EditMode supported)
@@ -56,8 +58,7 @@ Test results can be output as xml. The output path is returned so AI can read it
 This is also a strategy to avoid consuming context.
 ```
 → run-tests (FilterType: fullclassname, FilterValue: "PlayerControllerTests")
-→ Check failed tests
-→ Fix implementation and pass tests
+→ Check failed tests, fix implementation to pass tests
 ```
 > [!WARNING]
 > During PlayMode test execution, Domain Reload is forcibly turned OFF. Note that static variables will not be reset.
@@ -80,23 +81,17 @@ You can use [UnitySearch](https://docs.unity3d.com/Manual/search-overview.html).
 #### 6. get-provider-details - Check UnitySearch Search Providers
 Retrieve search providers offered by UnitySearch.
 ```
-→ get-provider-details
-→ Understand each provider's capabilities
-→ Choose optimal search method
+→ Understand each provider's capabilities, choose optimal search method
 ```
 
 #### 7. get-menu-items - Retrieve Menu Items
 Retrieve menu items defined with [MenuItem("xxx")] attribute. Can filter by string specification.
-```
-→ Check available menu items
-```
 
 #### 8. execute-menu-item - Execute Menu Items
 Execute menu items defined with [MenuItem("xxx")] attribute.
 ```
 → Have AI generate test program
-→ execute-menu-item (MenuItemPath: "Tools/xxx")
-→ Execute generated test program
+→ execute-menu-item (MenuItemPath: "Tools/xxx") to execute generated test program
 → Check results with get-logs
 ```
 
@@ -108,11 +103,11 @@ Retrieve objects and examine component parameters.
 ```
 
 #### 10. get-hierarchy - Analyze Scene Structure
-Retrieve information about the currently active Hierarchy. Works at runtime as well.
+Retrieve information about the currently active Hierarchy in nested JSON format. Works at runtime as well.
+**Automatic File Export**: Large hierarchies (>100KB) are automatically saved to `HierarchyResults/` directory to minimize token consumption.
 ```
-→ get-hierarchy
-→ Understand parent-child relationships between GameObjects
-→ Discover and fix structural issues
+→ Understand parent-child relationships between GameObjects, discover and fix structural issues
+→ For large scenes, hierarchy data is saved to file and path is returned instead of raw JSON
 ```
 
 > [!NOTE]
@@ -133,16 +128,16 @@ Retrieve information about the currently active Hierarchy. Works at runtime as w
 > - **Allow Menu Item Execution**: Enables the `execute-menu-item` tool
 > Only enable these features in trusted environments.
 
-For detailed features, please see [FEATURES.md](./FEATURES.md).
+For detailed features, please see [FEATURES_ja.md](./FEATURES_ja.md).
 
 ## Usage
 1. Select Window > uMCP. A dedicated window will open, so press the "Start Server" button.  
 <img width="335" alt="image" src="https://github.com/user-attachments/assets/4cfd7f26-7739-442d-bad9-b3f6d113a0d7" />
 
-3. Next, select the target IDE in the LLM Tool Settings section. Press the yellow "Configure {LLM Tool Name}" button to automatically connect to the IDE.  
+2. Next, select the target IDE in the LLM Tool Settings section. Press the yellow "Configure {LLM Tool Name}" button to automatically connect to the IDE.  
 <img width="335" alt="image" src="https://github.com/user-attachments/assets/25f1f4f9-e3c8-40a5-a2f3-903f9ed5f45b" />
 
-4. IDE Connection Verification
+3. IDE Connection Verification
   - For example, with Cursor, check the Tools & Integrations in the settings page and find uMCP. Click the toggle to enable MCP. If a red circle appears, restart Cursor.  
 <img width="545" alt="image" src="https://github.com/user-attachments/assets/ed54d051-b78a-4bb4-bb2f-7ab23ebc1840" />
 
@@ -228,9 +223,9 @@ public class MyCustomSchema : BaseToolSchema
 
 public enum MyEnum
 {
-    Option1,
-    Option2,
-    Option3
+    Option1 = 0,
+    Option2 = 1,
+    Option3 = 2
 }
 ```
 

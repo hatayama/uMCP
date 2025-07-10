@@ -68,9 +68,15 @@ namespace io.github.hatayama.uMCP.Tests
             
             // Assert
             Assert.That(response, Is.Not.Null);
-            Assert.That(response.hierarchy.Find(n => n.name == "TestRoot"), Is.Not.Null, "MaxDepth=1 should include depth 0 objects");
-            Assert.That(response.hierarchy.Find(n => n.name == "Child"), Is.Not.Null, "MaxDepth=1 should include depth 1 objects");
-            Assert.That(response.hierarchy.Find(n => n.name == "GrandChild"), Is.Null, "MaxDepth=1 should not include depth 2 objects");
+            // Find nodes in nested structure
+            HierarchyNodeNested rootNode = response.hierarchy.Find(n => n.name == "TestRoot");
+            Assert.That(rootNode, Is.Not.Null, "MaxDepth=1 should include depth 0 objects");
+            
+            HierarchyNodeNested childNode = rootNode?.children.Find(n => n.name == "Child");
+            Assert.That(childNode, Is.Not.Null, "MaxDepth=1 should include depth 1 objects");
+            
+            HierarchyNodeNested grandChildNode = childNode?.children.Find(n => n.name == "GrandChild");
+            Assert.That(grandChildNode, Is.Null, "MaxDepth=1 should not include depth 2 objects");
         }
         
         [Test]
@@ -90,7 +96,7 @@ namespace io.github.hatayama.uMCP.Tests
             
             // Assert
             Assert.That(response, Is.Not.Null);
-            HierarchyNode rootNode = response.hierarchy.Find(n => n.name == "TestRoot");
+            HierarchyNodeNested rootNode = response.hierarchy.Find(n => n.name == "TestRoot");
             if (rootNode != null)
             {
                 Assert.That(rootNode.components.Length, Is.EqualTo(0));

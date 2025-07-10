@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
@@ -5,24 +7,19 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public class GetHierarchySchema : BaseToolSchema
     {
-        /// <summary>
-        /// Include inactive GameObjects in the result
-        /// </summary>
+        [Description("Whether to include inactive GameObjects in the hierarchy result")]
         public bool IncludeInactive { get; set; } = true;
         
-        /// <summary>
-        /// Maximum depth to traverse (-1 for unlimited)
-        /// </summary>
+        [Description("Maximum depth to traverse the hierarchy (-1 for unlimited depth)")]
         public int MaxDepth { get; set; } = -1;
         
-        /// <summary>
-        /// Root path to start traversal from (null for all root objects)
-        /// </summary>
+        [Description("Root GameObject path to start hierarchy traversal from (empty/null for all root objects)")]
         public string RootPath { get; set; }
         
-        /// <summary>
-        /// Include component information in the result
-        /// </summary>
+        [Description("Whether to include component information for each GameObject in the hierarchy")]
         public bool IncludeComponents { get; set; } = true;
+        
+        [Description("Maximum response size in KB before saving to file (default: 100KB)")]
+        public int MaxResponseSizeKB { get; set; } = 100;
     }
 }

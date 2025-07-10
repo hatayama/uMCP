@@ -44,11 +44,15 @@ namespace io.github.hatayama.uMCP
                 logData = LogGetter.GetConsoleLog(logType, searchText);
             }
             
-            // Limit logs according to maxCount.
+            // Limit logs according to maxCount - take latest logs (tail behavior) and reverse to newest first.
             LogEntryDto[] limitedEntries = logData.LogEntries;
             if (limitedEntries.Length > maxCount)
             {
-                Array.Resize(ref limitedEntries, maxCount);
+                limitedEntries = limitedEntries.Skip(limitedEntries.Length - maxCount).Reverse().ToArray();
+            }
+            else
+            {
+                limitedEntries = limitedEntries.Reverse().ToArray();
             }
             
             // Create type-safe response

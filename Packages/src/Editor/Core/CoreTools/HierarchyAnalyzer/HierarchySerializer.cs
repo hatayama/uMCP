@@ -5,6 +5,10 @@ namespace io.github.hatayama.uMCP
 {
     /// <summary>
     /// Serializer for converting hierarchy data to response format
+    /// Related classes:
+    /// - HierarchyNode: Flat hierarchy structure
+    /// - HierarchyNodeNested: Nested hierarchy structure
+    /// - GetHierarchyResponse: Response structure
     /// </summary>
     public class HierarchySerializer
     {
@@ -25,7 +29,61 @@ namespace io.github.hatayama.uMCP
                 maxDepth
             );
             
-            return new GetHierarchyResponse(nodes, updatedContext);
+            // Convert to nested structure
+            List<HierarchyNodeNested> nestedNodes = ConvertToNestedStructure(nodes);
+            
+            return new GetHierarchyResponse(nestedNodes, updatedContext);
+        }
+        
+        /// <summary>
+        /// Convert flat hierarchy nodes to nested structure
+        /// </summary>
+        public List<HierarchyNodeNested> ConvertToNestedStructure(List<HierarchyNode> flatNodes)
+        {
+            if (flatNodes == null || flatNodes.Count == 0)
+            {
+                return new List<HierarchyNodeNested>();
+            }
+            
+            // Create dictionary for fast lookup
+            Dictionary<int, HierarchyNodeNested> nodeDict = new Dictionary<int, HierarchyNodeNested>();
+            
+            // First pass: create all nodes
+            foreach (HierarchyNode flatNode in flatNodes)
+            {
+                HierarchyNodeNested nestedNode = new HierarchyNodeNested(
+                    flatNode.id,
+                    flatNode.name,
+                    flatNode.depth,
+                    flatNode.isActive,
+                    flatNode.components
+                );
+                nodeDict[flatNode.id] = nestedNode;
+            }
+            
+            // Second pass: build parent-child relationships
+            List<HierarchyNodeNested> rootNodes = new List<HierarchyNodeNested>();
+            
+            foreach (HierarchyNode flatNode in flatNodes)
+            {
+                HierarchyNodeNested nestedNode = nodeDict[flatNode.id];
+                
+                if (flatNode.parent == null)
+                {
+                    // Root node
+                    rootNodes.Add(nestedNode);
+                }
+                else
+                {
+                    // Child node - add to parent's children list
+                    if (nodeDict.ContainsKey(flatNode.parent.Value))
+                    {
+                        nodeDict[flatNode.parent.Value].children.Add(nestedNode);
+                    }
+                }
+            }
+            
+            return rootNodes;
         }
     }
 }
