@@ -15,6 +15,7 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Unity Search flags for controlling search behavior
     /// </summary>
+    [System.Flags]
     public enum UnitySearchFlags
     {
         Default = 0,

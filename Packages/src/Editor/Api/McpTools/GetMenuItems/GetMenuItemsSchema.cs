@@ -10,17 +10,17 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Contains filter - partial match (case insensitive)
         /// </summary>
-        contains,
+        contains = 0,
         
         /// <summary>
         /// Exact match filter (case insensitive)
         /// </summary>
-        exact,
+        exact = 1,
         
         /// <summary>
         /// Starts with filter (case insensitive)
         /// </summary>
-        startswith
+        startswith = 2
     }
 
     /// <summary>

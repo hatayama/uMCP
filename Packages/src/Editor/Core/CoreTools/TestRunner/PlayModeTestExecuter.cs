@@ -99,7 +99,7 @@ namespace io.github.hatayama.uMCP
                         break;
                     case TestExecutionFilterType.Regex:
                         // Use groupNames with regex for pattern matching (classes, namespaces)
-                        unityFilter.groupNames = new string[] { "^" + filter.FilterValue.Replace(".", "\\.") + "\\." };
+                        unityFilter.groupNames = new string[] { "^" + System.Text.RegularExpressions.Regex.Escape(filter.FilterValue) + "(\\.|$)" };
                         break;
                     case TestExecutionFilterType.AssemblyName:
                         unityFilter.assemblyNames = new string[] { filter.FilterValue };

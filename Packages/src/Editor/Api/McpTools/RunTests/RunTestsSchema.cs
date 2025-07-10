@@ -8,10 +8,10 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public enum TestFilterType
     {
-        all,
-        exact,
-        regex,
-        assembly
+        all = 0,
+        exact = 1,
+        regex = 2,
+        assembly = 3
     }
 
     /// <summary>
