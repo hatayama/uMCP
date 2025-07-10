@@ -12,11 +12,10 @@ namespace io.github.hatayama.uMCP
     /// - UnitySearchSchema: Type-safe parameter schema
     /// - UnitySearchResponse: Type-safe response structure
     /// </summary>
-    [McpTool]
+    [McpTool(Description = "Search Unity project using Unity Search API with comprehensive filtering and export options")]
     public class UnitySearchTool : AbstractUnityTool<UnitySearchSchema, UnitySearchResponse>
     {
         public override string ToolName => "unity-search";
-        public override string Description => "Search Unity project using Unity Search API with comprehensive filtering and export options";
 
         /// <summary>
         /// Execute Unity search tool with type-safe parameters

@@ -56,11 +56,12 @@ The system is centered around the **Tool Pattern**. Each action that can be trig
 
 - **`IUnityTool`**: The common interface for all tools.
 - **`AbstractUnityTool<TSchema, TResponse>`**: A generic abstract base class that provides type-safe handling of parameters and responses.
+- **`McpToolAttribute`**: Attribute used to mark tools for automatic registration, including Description configuration.
 - **`UnityToolRegistry`**: A central registry that discovers and holds all available tools.
 - **`UnityApiHandler`**: These classes receive a tool name and parameters, look up the tool in the registry, and execute it.
 - **`McpSecurityChecker`**: Validates tool execution permissions based on security settings.
 
-This pattern makes the system highly extensible. To add a new feature, a developer simply needs to create a new class that implements `IUnityTool` and decorate it with the `[McpTool]` attribute. The system will automatically discover and expose it.
+This pattern makes the system highly extensible. To add a new feature, a developer simply needs to create a new class that implements `IUnityTool` and decorate it with the `[McpTool(Description = "...")]` attribute. The system will automatically discover and expose it.
 
 ### 2.2. Security Architecture
 The system implements comprehensive security controls to prevent unauthorized tool execution:
@@ -108,7 +109,9 @@ classDiagram
 
     class McpToolAttribute {
         <<attribute>>
-        +AutoRegister: bool
+        +Description: string
+        +DisplayDevelopmentOnly: bool
+        +RequiredSecuritySetting: SecuritySettings
     }
 
     class CompileCommand {

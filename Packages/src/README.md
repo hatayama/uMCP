@@ -254,11 +254,10 @@ public class MyCustomResponse : BaseToolResponse
 
 **Step 3: Create Tool Class**:
 ```csharp
-[McpTool]  // ← Auto-registered with this attribute
+[McpTool(Description = "Description of my custom tool")]  // ← Auto-registered with this attribute
 public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 {
-    public override string ToolName => "myCustomTool";
-    public override string Description => "Description of my custom tool";
+    public override string ToolName => "my-custom-tool";
     
     // Executed on main thread
     protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)

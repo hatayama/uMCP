@@ -20,6 +20,11 @@ namespace io.github.hatayama.uMCP
         public SecuritySettings RequiredSecuritySetting { get; set; } = SecuritySettings.None;
 
         /// <summary>
+        /// Gets or sets the description of this tool
+        /// </summary>
+        public string Description { get; set; } = string.Empty;
+
+        /// <summary>
         /// Initialize McpTool attribute
         /// </summary>
         public McpToolAttribute()

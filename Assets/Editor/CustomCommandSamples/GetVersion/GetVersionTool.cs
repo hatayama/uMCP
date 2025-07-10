@@ -1,7 +1,5 @@
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using UnityEngine;
-
 
 namespace io.github.hatayama.uMCP
 {
@@ -10,14 +8,12 @@ namespace io.github.hatayama.uMCP
     /// Get Unity version information
     /// Created as an example of adding new tools
     /// </summary>
-    public class GetVersionTool : IUnityTool
+    [McpTool(Description = "Get Unity version and project information")]
+    public class GetVersionTool : AbstractUnityTool<GetVersionSchema, GetVersionResponse>
     {
-        public string ToolName => "getversion";
-        public string Description => "Get Unity version and project information";
+        public override string ToolName => "get-version";
 
-        public ToolParameterSchema ParameterSchema => new ToolParameterSchema();
-
-        public Task<BaseToolResponse> ExecuteAsync(JToken paramsToken)
+        protected override Task<GetVersionResponse> ExecuteAsync(GetVersionSchema parameters)
         {
             McpLogger.LogDebug("GetVersion request received");
             
@@ -36,7 +32,7 @@ namespace io.github.hatayama.uMCP
             
             McpLogger.LogDebug($"GetVersion completed: Unity {Application.unityVersion}");
             
-            return Task.FromResult<BaseToolResponse>(response);
+            return Task.FromResult(response);
         }
     }
 } 

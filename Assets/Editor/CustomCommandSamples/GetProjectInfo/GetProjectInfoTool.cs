@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 namespace io.github.hatayama.uMCP
@@ -8,17 +7,13 @@ namespace io.github.hatayama.uMCP
     /// Project information retrieval custom tool
     /// Example of retrieving detailed Unity project information
     /// </summary>
-    public class GetProjectInfoTool : IUnityTool
+    [McpTool(Description = "Get detailed Unity project information")]
+    public class GetProjectInfoTool : AbstractUnityTool<GetProjectInfoSchema, GetProjectInfoResponse>
     {
-        public string ToolName => "getprojectinfo";
-        public string Description => "Get detailed Unity project information";
+        public override string ToolName => "get-project-info";
 
-        public ToolParameterSchema ParameterSchema => new ToolParameterSchema();
-
-        public Task<BaseToolResponse> ExecuteAsync(JToken paramsToken)
+        protected override Task<GetProjectInfoResponse> ExecuteAsync(GetProjectInfoSchema parameters)
         {
-            Debug.Log("GetProjectInfo tool executed");
-            
             GetProjectInfoResponse response = new GetProjectInfoResponse
             {
                 ProjectName = Application.productName,
@@ -46,7 +41,7 @@ namespace io.github.hatayama.uMCP
                 ToolName = ToolName
             };
             
-            return Task.FromResult<BaseToolResponse>(response);
+            return Task.FromResult(response);
         }
     }
 } 

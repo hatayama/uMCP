@@ -7,11 +7,13 @@ namespace io.github.hatayama.uMCP
     /// SetClientName tool handler - Allows MCP clients to register their name
     /// This tool is called by TypeScript clients to identify themselves
     /// </summary>
-    [McpTool(DisplayDevelopmentOnly = true)]
+    [McpTool(
+        Description = "Register client name for identification in Unity MCP server",
+        DisplayDevelopmentOnly = true
+    )]
     public class SetClientNameTool : AbstractUnityTool<SetClientNameSchema, SetClientNameResponse>
     {
         public override string ToolName => "set-client-name";
-        public override string Description => "Register client name for identification in Unity MCP server";
 
         protected override Task<SetClientNameResponse> ExecuteAsync(SetClientNameSchema parameters)
         {

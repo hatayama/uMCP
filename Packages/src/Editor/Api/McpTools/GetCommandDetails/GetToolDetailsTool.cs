@@ -11,11 +11,13 @@ namespace io.github.hatayama.uMCP
     /// - ToolInfo: Data structure for tool details
     /// - GetToolDetailsResponse: Type-safe response structure
     /// </summary>
-    [McpTool(DisplayDevelopmentOnly = true)]
+    [McpTool(
+        Description = "Retrieve detailed information about all registered Unity MCP tools",
+        DisplayDevelopmentOnly = true
+    )]
     public class GetToolDetailsTool : AbstractUnityTool<GetToolDetailsSchema, GetToolDetailsResponse>
     {
         public override string ToolName => "get-tool-details";
-        public override string Description => "Retrieve detailed information about all registered Unity MCP tools";
 
         protected override Task<GetToolDetailsResponse> ExecuteAsync(GetToolDetailsSchema parameters)
         {

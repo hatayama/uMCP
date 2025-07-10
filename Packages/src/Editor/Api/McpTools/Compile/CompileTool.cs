@@ -9,11 +9,10 @@ namespace io.github.hatayama.uMCP
     /// Compile tool handler - Type-safe implementation using Schema and Response
     /// Handles Unity project compilation with optional force recompile
     /// </summary>
-    [McpTool]
+    [McpTool(Description = "Execute Unity project compilation")]
     public class CompileTool : AbstractUnityTool<CompileSchema, CompileResponse>
     {
         public override string ToolName => "compile";
-        public override string Description => "Execute Unity project compilation";
 
         /// <summary>
         /// Execute compile tool

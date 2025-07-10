@@ -8,11 +8,10 @@ namespace io.github.hatayama.uMCP
     /// GetLogs tool handler - Type-safe implementation using Schema and Response
     /// Retrieves Unity console logs with filtering options
     /// </summary>
-    [McpTool]
+    [McpTool(Description = "Retrieve logs from Unity Console")]
     public class GetLogsTool : AbstractUnityTool<GetLogsSchema, GetLogsResponse>
     {
         public override string ToolName => "get-logs";
-        public override string Description => "Retrieve logs from Unity Console";
 
 
 

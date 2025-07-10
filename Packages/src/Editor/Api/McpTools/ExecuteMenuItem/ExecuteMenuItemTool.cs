@@ -10,11 +10,13 @@ namespace io.github.hatayama.uMCP
     /// ExecuteMenuItem tool handler - Executes Unity MenuItems by path
     /// Supports both EditorApplication.ExecuteMenuItem and reflection-based execution
     /// </summary>
-    [McpTool(RequiredSecuritySetting = SecuritySettings.AllowMenuItemExecution)]
+    [McpTool(
+        Description = "Execute Unity MenuItem by path",
+        RequiredSecuritySetting = SecuritySettings.AllowMenuItemExecution
+    )]
     public class ExecuteMenuItemTool : AbstractUnityTool<ExecuteMenuItemSchema, ExecuteMenuItemResponse>
     {
         public override string ToolName => "execute-menu-item";
-        public override string Description => "Execute Unity MenuItem by path";
 
         protected override Task<ExecuteMenuItemResponse> ExecuteAsync(ExecuteMenuItemSchema parameters)
         {

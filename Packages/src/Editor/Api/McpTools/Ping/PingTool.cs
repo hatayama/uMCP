@@ -6,11 +6,13 @@ namespace io.github.hatayama.uMCP
     /// Ping tool handler - Type-safe implementation using Schema and Response
     /// Connection test and message echo functionality
     /// </summary>
-    [McpTool(DisplayDevelopmentOnly = true)]
+    [McpTool(
+        DisplayDevelopmentOnly = true,
+        Description = "Connection test and message echo"
+    )]
     public class PingTool : AbstractUnityTool<PingSchema, PingResponse>
     {
         public override string ToolName => "ping";
-        public override string Description => "Connection test and message echo";
 
 
         protected override Task<PingResponse> ExecuteAsync(PingSchema parameters)

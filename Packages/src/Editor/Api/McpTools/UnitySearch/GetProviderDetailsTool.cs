@@ -13,7 +13,7 @@ namespace io.github.hatayama.uMCP
     /// - GetProviderDetailsSchema: Input parameters schema
     /// - GetProviderDetailsResponse: Output response schema
     /// </summary>
-    [McpTool]
+    [McpTool(Description = "Get detailed information about Unity Search providers including display names, descriptions, active status, and capabilities")]
     public class GetProviderDetailsTool : AbstractUnityTool<GetProviderDetailsSchema, GetProviderDetailsResponse>
     {
         /// <summary>
@@ -21,10 +21,6 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         public override string ToolName => "get-provider-details";
 
-        /// <summary>
-        /// Tool description for MCP tool registration
-        /// </summary>
-        public override string Description => "Get detailed information about Unity Search providers including display names, descriptions, active status, and capabilities";
 
         /// <summary>
         /// Execute the provider details retrieval tool

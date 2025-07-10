@@ -19,7 +19,6 @@ namespace io.github.hatayama.uMCP
         where TResponse : BaseToolResponse
     {
         public abstract string ToolName { get; }
-        public abstract string Description { get; }
 
         /// <summary>
         /// Automatically generates parameter schema from TSchema type
