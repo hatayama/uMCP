@@ -16,9 +16,13 @@
 様々なLLMツールからUnity Editorを操作する事ができます。  
 
 # コンセプト
+AIによるコーディングを可能な限り長時間自走させる事をコンセンプトに作りました。
+通常、Unityをコンパイルさせたり、Testを走らせたり、logをAIに伝える部分は人間がやる必要があります。その面倒をuMCPが解決します。
 
-AIによるコーディング時、Unityをコンパイルさせたり、logを取得する部分は人間がやる必要があります。それを可能な限り少なくするというコンセプトで作られました。
-uMCPを使えば、AIが人間の操作に頼らず、可能な限り長時間自走するようになります。
+# 特徴
+1. packageをinstallして、お使いのLLMツールに接続するボタンを押すだけで、すぐに使い始める事ができます。
+2. 簡単に機能拡張ができます。自分専用のmcp toolをすぐに作る事が可能です。(おそらくAIに頼めばすぐに作ってくれるはずです)
+3. コンテキストをなるべく消費しないようにするオプションを実装しています。 
 
 # ツールwindow
 <img width="350" alt="image" src="https://github.com/user-attachments/assets/5863b58b-7b48-48ae-9a40-c874ddc11488" />
@@ -29,11 +33,10 @@ uMCPを使えば、AIが人間の操作に頼らず、可能な限り長時間�
 
 # 主要機能
 #### 1. compile - コンパイルの実行
-AssetDatabase.Refresh()をした後、コンパイルします。内蔵のLinterでは発見できないエラー・警告を見つける事ができます。  
+AssetDatabase.Refresh()をした後、コンパイルして結果を返却します。内蔵のLinterでは発見できないエラー・警告を見つける事ができます。  
 差分コンパイルと強制全体コンパイルを選択できます。
 ```
-→ compile実行
-→ エラー内容を解析
+→ compile実行、エラー・警告内容を解析
 → 該当ファイルを自動修正
 → 再度compileで確認
 ```
@@ -43,8 +46,7 @@ LogTypeや検索対象の文字列で絞り込む事ができます。また、s
 これにより、コンテキストを小さく保ちながらlogを取得できます。
 ```
 → get-logs (LogType: Error, SearchText: "NullReference")
-→ スタックトレースから原因箇所を特定
-→ 該当コードを修正
+→ スタックトレースから原因箇所を特定、該当コードを修正
 ```
 
 #### 3. run-tests - TestRunnerの実行 (PlayMode, EditMode対応)
@@ -55,8 +57,7 @@ Unity Test Runnerを実行し、テスト結果を取得します。FilterType�
 これもコンテキストを圧迫しないための工夫です。
 ```
 → run-tests (FilterType: fullclassname, FilterValue: "PlayerControllerTests")
-→ 失敗したテストを確認
-→ 実装を修正してテストをパス
+→ 失敗したテストを確認、実装を修正してテストをパス
 ```
 > [!WARNING]
 > PlayModeテスト実行の際、Domain Reloadは強制的にOFFにされます。Static変数がリセットされない事に注意して下さい。
@@ -79,23 +80,17 @@ log検索時、ノイズのとなるlogをクリアする事ができます。
 #### 6. get-provider-details - UnitySearch検索プロバイダーの確認
 UnitySearchが提供する検索プロバイダーを取得します
 ```
-→ get-provider-details
-→ 各プロバイダーの機能を理解
-→ 最適な検索方法を選択
+→ 各プロバイダーの機能を理解、最適な検索方法を選択
 ```
 
 #### 7. get-menu-items - メニュー項目の取得
 [MenuItem("xxx")]属性で定義されたメニュー項目を取得します。文字列指定でフィルター出来ます。
-```
-→ 利用可能なメニューアイテムを確認
-```
 
 #### 8. execute-menu-item - メニュー項目の実行
 [MenuItem("xxx")]属性で定義されたメニュー項目を実行できます。
 ```
 → AIにテストプログラムを生成させる
-→ execute-menu-item (MenuItemPath: "Tools/xxx")
-→ 生成させたテストプログラムの実行
+→ execute-menu-item (MenuItemPath: "Tools/xxx") で生成させたテストプログラムの実行
 → get-logsで結果を確認
 ```
 
@@ -109,9 +104,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 #### 10. get-hierarchy - シーン構造の解析
 現在アクティブなHierarchyの情報を取得します。ランタイムでも動作します。
 ```
-→ get-hierarchy
-→ GameObject間の親子関係を理解
-→ 構造的な問題を発見・修正
+→ GameObject間の親子関係を理解。構造的な問題を発見・修正
 ```
 
 > [!NOTE]
@@ -227,9 +220,9 @@ public class MyCustomSchema : BaseToolSchema
 
 public enum MyEnum
 {
-    Option1,
-    Option2,
-    Option3
+    Option1 = 0,
+    Option2 = 1,
+    Option3 = 2
 }
 ```
 
