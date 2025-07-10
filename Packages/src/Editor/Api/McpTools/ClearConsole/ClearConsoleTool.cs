@@ -11,11 +11,10 @@ namespace io.github.hatayama.uMCP
     /// - ClearConsoleSchema: Type-safe parameter schema
     /// - ClearConsoleResponse: Type-safe response structure
     /// </summary>
-    [McpTool]
+    [McpTool(Description = "Clear Unity console logs")]
     public class ClearConsoleTool : AbstractUnityTool<ClearConsoleSchema, ClearConsoleResponse>
     {
         public override string ToolName => "clear-console";
-        public override string Description => "Clear Unity console logs";
 
         /// <summary>
         /// Execute console clear tool

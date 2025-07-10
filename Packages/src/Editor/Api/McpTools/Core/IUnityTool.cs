@@ -30,10 +30,6 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         string ToolName { get; }
         
-        /// <summary>
-        /// Get tool description
-        /// </summary>
-        string Description { get; }
         
         /// <summary>
         /// Get parameter schema information for TypeScript side

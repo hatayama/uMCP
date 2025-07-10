@@ -30,12 +30,6 @@ namespace io.github.hatayama.uMCP.Tests
             Assert.That(tool.ToolName, Is.EqualTo("get-hierarchy"));
         }
         
-        [Test]
-        public void Description_ReturnsNonEmptyString()
-        {
-            Assert.That(tool.Description, Is.Not.Null);
-            Assert.That(tool.Description, Is.Not.Empty);
-        }
         
         [Test]
         public async Task ExecuteAsync_WithDefaultParameters_ReturnsValidResponse()

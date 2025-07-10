@@ -9,11 +9,10 @@ namespace io.github.hatayama.uMCP
     /// - GameObjectFinderService: Core logic for finding GameObjects
     /// - FindGameObjectsSchema: Search parameters
     /// </summary>
-    [McpTool]
+    [McpTool(Description = "Find multiple GameObjects with advanced search criteria (component type, tag, layer, etc.)")]
     public class FindGameObjectsTool : AbstractUnityTool<FindGameObjectsSchema, FindGameObjectsResponse>
     {
         public override string ToolName => "find-game-objects";
-        public override string Description => "Find multiple GameObjects with advanced search criteria (component type, tag, layer, etc.)";
         
         protected override Task<FindGameObjectsResponse> ExecuteAsync(FindGameObjectsSchema parameters)
         {

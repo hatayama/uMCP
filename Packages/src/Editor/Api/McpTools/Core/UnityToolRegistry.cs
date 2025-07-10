@@ -249,7 +249,9 @@ namespace io.github.hatayama.uMCP
                 
                 // Check security settings
                 bool isAllowed = McpSecurityChecker.IsToolAllowed(tool.ToolName);
-                string description = tool.Description;
+                
+                // Get description from attribute
+                string description = attribute?.Description ?? "";
                 
                 // Modify description for blocked tools
                 if (!isAllowed)

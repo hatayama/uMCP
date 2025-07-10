@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using UnityEngine;
-using System.Collections.Generic;
 
 namespace io.github.hatayama.uMCP
 {
@@ -9,13 +7,11 @@ namespace io.github.hatayama.uMCP
     /// Hello World custom tool - Type-safe implementation using Schema and Response
     /// Basic implementation example of a custom tool with strongly typed parameters and response
     /// </summary>
+    [McpTool(Description = "Personalized hello world tool with name parameter")]
     public class HelloWorldTool : AbstractUnityTool<HelloWorldSchema, HelloWorldResponse>
     {
-        public override string ToolName => "helloworld";
-        public override string Description => "Personalized hello world tool with name parameter";
-
-
-
+        public override string ToolName => "hello-world";
+        
         protected override Task<HelloWorldResponse> ExecuteAsync(HelloWorldSchema parameters)
         {
             // Type-safe parameter access - no more string parsing!

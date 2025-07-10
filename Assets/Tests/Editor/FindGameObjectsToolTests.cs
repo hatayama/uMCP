@@ -37,12 +37,6 @@ namespace io.github.hatayama.uMCP
             Assert.That(tool.ToolName, Is.EqualTo("find-game-objects"));
         }
         
-        [Test]
-        public void Description_ReturnsNonEmptyString()
-        {
-            Assert.That(tool.Description, Is.Not.Null);
-            Assert.That(tool.Description, Is.Not.Empty);
-        }
         
         [Test]
         public async Task ExecuteAsync_WithNamePattern_FindsMatchingObjects()

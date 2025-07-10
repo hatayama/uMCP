@@ -9,11 +9,10 @@ namespace io.github.hatayama.uMCP
     /// - HierarchySerializer: JSON formatting logic
     /// - HierarchyNode: Data structure for hierarchy nodes
     /// </summary>
-    [McpTool]
+    [McpTool(Description = "Get Unity Hierarchy structure in AI-friendly format")]
     public class GetHierarchyTool : AbstractUnityTool<GetHierarchySchema, GetHierarchyResponse>
     {
         public override string ToolName => "get-hierarchy";
-        public override string Description => "Get Unity Hierarchy structure in AI-friendly format";
         
         protected override Task<GetHierarchyResponse> ExecuteAsync(GetHierarchySchema parameters)
         {

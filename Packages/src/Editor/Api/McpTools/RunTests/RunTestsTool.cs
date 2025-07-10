@@ -8,11 +8,13 @@ namespace io.github.hatayama.uMCP
     /// Test execution tool handler - Type-safe implementation using Schema and Response
     /// Executes tests using Unity Test Runner and returns the results
     /// </summary>
-    [McpTool(RequiredSecuritySetting = SecuritySettings.EnableTestsExecution)]
+    [McpTool(
+        RequiredSecuritySetting = SecuritySettings.EnableTestsExecution,
+        Description = "Execute Unity Test Runner with advanced filtering options - exact test methods, regex patterns for classes/namespaces, assembly filtering"
+    )]
     public class RunTestsTool : AbstractUnityTool<RunTestsSchema, RunTestsResponse>
     {
         public override string ToolName => "run-tests";
-        public override string Description => "Execute Unity Test Runner with advanced filtering options - exact test methods, regex patterns for classes/namespaces, assembly filtering";
 
         protected override async Task<RunTestsResponse> ExecuteAsync(RunTestsSchema parameters)
         {
