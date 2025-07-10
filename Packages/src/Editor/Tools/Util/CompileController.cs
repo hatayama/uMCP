@@ -11,7 +11,7 @@ namespace io.github.hatayama.uMCP
     /// A class that asynchronously executes Unity's compilation process and monitors the results.
     /// It handles starting compilation, monitoring its progress, and retrieving the results.
     /// </summary>
-    public class CompileChecker : IDisposable
+    public class CompileController : IDisposable
     {
         private bool isCompiling = false;
         private List<CompilerMessage> compileMessages = new List<CompilerMessage>();

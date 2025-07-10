@@ -41,8 +41,8 @@ namespace io.github.hatayama.uMCP
             }
             
             // Execute compilation using CompileChecker
-            using CompileChecker compileChecker = new CompileChecker();
-            CompileResult result = await compileChecker.TryCompileAsync(forceRecompile);
+            using CompileController compileController = new CompileController();
+            CompileResult result = await compileController.TryCompileAsync(forceRecompile);
             
             // Create type-safe response
             CompileIssue[] errors = result.error.Select(e => new CompileIssue(e.message, e.file, e.line)).ToArray();

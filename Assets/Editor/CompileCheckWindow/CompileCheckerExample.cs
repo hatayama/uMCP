@@ -8,12 +8,12 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Debug/Compile Tests/Compile Checker Usage Example")]
         public static async void TestCompileChecker()
         {
-            CompileChecker compileChecker = new CompileChecker();
+            CompileController compileController = new CompileController();
             
             try
             {
                 // How Masamichi requested to use it
-                CompileResult result = await compileChecker.TryCompileAsync();
+                CompileResult result = await compileController.TryCompileAsync();
                 var err = result.error;
                 var warning = result.warning;
 
@@ -35,19 +35,19 @@ namespace io.github.hatayama.uMCP
             }
             finally
             {
-                compileChecker.Dispose();
+                compileController.Dispose();
             }
         }
 
         [MenuItem("uMCP/Debug/Compile Tests/Force Compile Checker Usage Example")]
         public static async void TestForceCompileChecker()
         {
-            CompileChecker compileChecker = new CompileChecker();
+            CompileController compileController = new CompileController();
             
             try
             {
                 // Example of forced re-compilation
-                CompileResult result = await compileChecker.TryCompileAsync(forceRecompile: true);
+                CompileResult result = await compileController.TryCompileAsync(forceRecompile: true);
                 var err = result.error;
                 var warning = result.warning;
 
@@ -56,7 +56,7 @@ namespace io.github.hatayama.uMCP
             }
             finally
             {
-                compileChecker.Dispose();
+                compileController.Dispose();
             }
         }
     }
