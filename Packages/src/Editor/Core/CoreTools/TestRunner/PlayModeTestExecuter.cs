@@ -93,14 +93,13 @@ namespace io.github.hatayama.uMCP
             {
                 switch (filter.FilterType)
                 {
-                    case TestExecutionFilterType.TestName:
+                    case TestExecutionFilterType.Exact:
+                        // Use testNames for exact matching (individual test methods)
                         unityFilter.testNames = new string[] { filter.FilterValue };
                         break;
-                    case TestExecutionFilterType.ClassName:
-                        unityFilter.testNames = new string[] { filter.FilterValue };
-                        break;
-                    case TestExecutionFilterType.Namespace:
-                        unityFilter.testNames = new string[] { filter.FilterValue };
+                    case TestExecutionFilterType.Regex:
+                        // Use groupNames with regex for pattern matching (classes, namespaces)
+                        unityFilter.groupNames = new string[] { "^" + System.Text.RegularExpressions.Regex.Escape(filter.FilterValue) + "(\\.|$)" };
                         break;
                     case TestExecutionFilterType.AssemblyName:
                         unityFilter.assemblyNames = new string[] { filter.FilterValue };

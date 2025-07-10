@@ -10,17 +10,17 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Contains filter - partial match (case insensitive)
         /// </summary>
-        contains,
+        contains = 0,
         
         /// <summary>
         /// Exact match filter (case insensitive)
         /// </summary>
-        exact,
+        exact = 1,
         
         /// <summary>
         /// Starts with filter (case insensitive)
         /// </summary>
-        startswith
+        startswith = 2
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Type of filter to apply (contains, exact, startswith)
         /// </summary>
-        [Description("Type of filter to apply (contains, exact, startswith)")]
+        [Description("Type of filter to apply (contains(0), exact(1), startswith(2))")]
         public MenuItemFilterType FilterType { get; set; } = MenuItemFilterType.contains;
 
         /// <summary>

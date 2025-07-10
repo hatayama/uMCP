@@ -23,7 +23,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Log type to filter (Error, Warning, Log, All)
         /// </summary>
-        [Description("Log type to filter (Error, Warning, Log, All)")]
+        [Description("Log type to filter (Error(2), Warning(1), Log(0), All(3))")]
         public McpLogType LogType { get; set; } = McpLogType.All;
 
         /// <summary>
