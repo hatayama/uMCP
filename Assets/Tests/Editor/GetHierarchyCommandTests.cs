@@ -27,7 +27,7 @@ namespace io.github.hatayama.uMCP.Tests
         [Test]
         public void ToolName_ReturnsCorrectName()
         {
-            Assert.That(tool.ToolName, Is.EqualTo("gethierarchy"));
+            Assert.That(tool.ToolName, Is.EqualTo("get-hierarchy"));
         }
         
         [Test]

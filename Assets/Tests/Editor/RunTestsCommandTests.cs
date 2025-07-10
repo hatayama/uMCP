@@ -14,13 +14,13 @@ namespace io.github.hatayama.uMCP
 
         /// <summary>
         /// Test for tool name.
-        /// - Asserts that the tool name is "runtests".
+        /// - Asserts that the tool name is "run-tests".
         /// </summary>
         [Test]
         public void ToolName_ShouldReturnRunTests()
         {
             // Assert
-            Assert.That(runTestsTool.ToolName, Is.EqualTo("runtests"));
+            Assert.That(runTestsTool.ToolName, Is.EqualTo("run-tests"));
         }
 
         /// <summary>

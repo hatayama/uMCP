@@ -34,7 +34,7 @@ namespace io.github.hatayama.uMCP.Tests
         [Test]
         public void ToolName_ReturnsCorrectName()
         {
-            Assert.That(tool.ToolName, Is.EqualTo("findgameobjects"));
+            Assert.That(tool.ToolName, Is.EqualTo("find-game-objects"));
         }
         
         [Test]

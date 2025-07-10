@@ -18,13 +18,13 @@ namespace io.github.hatayama.uMCP
 
         /// <summary>
         /// Test for tool name.
-        /// - Asserts that the tool name is "getlogs".
+        /// - Asserts that the tool name is "get-logs".
         /// </summary>
         [Test]
         public void ToolName_ShouldReturnGetLogs()
         {
             // Assert
-            Assert.That(getLogsTool.ToolName, Is.EqualTo("getlogs"));
+            Assert.That(getLogsTool.ToolName, Is.EqualTo("get-logs"));
         }
 
         /// <summary>
