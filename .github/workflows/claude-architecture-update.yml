@@ -72,6 +72,13 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action - Architecture Update"
           
+          # Validate and sanitize branch name to prevent shell injection
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          if [[ ! "$BRANCH_NAME" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+            echo "Error: Invalid branch name format: $BRANCH_NAME"
+            exit 1
+          fi
+          
           # Check if there are any changes
           if git diff --quiet && git diff --staged --quiet; then
             echo "No architecture documentation changes needed"
@@ -88,5 +95,5 @@ jobs:
           
           [skip ci]" || echo "No changes to commit"
           
-          # Push to the PR branch
-          git push origin ${{ github.event.pull_request.head.ref }}
+          # Push to the PR branch with properly quoted branch name
+          git push origin "$BRANCH_NAME"
