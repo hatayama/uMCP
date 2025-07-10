@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
@@ -15,7 +16,7 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "set-client-name";
 
-        protected override Task<SetClientNameResponse> ExecuteAsync(SetClientNameSchema parameters)
+        protected override Task<SetClientNameResponse> ExecuteAsync(SetClientNameSchema parameters, CancellationToken cancellationToken)
         {
             string clientName = parameters.ClientName;
             

@@ -1,5 +1,5 @@
 import * as net from 'net';
-import { UNITY_CONNECTION, JSONRPC, TIMEOUTS, ERROR_MESSAGES, POLLING } from './constants.js';
+import { UNITY_CONNECTION, JSONRPC, TIMEOUTS, ERROR_MESSAGES } from './constants.js';
 import { errorToFile } from './utils/log-to-file.js';
 import { safeSetTimeout } from './utils/safe-timer.js';
 import { ConnectionManager } from './connection-manager.js';
@@ -298,13 +298,8 @@ export class UnityClient {
       params: params,
     };
 
-    // Use TimeoutSeconds parameter or default timeout
-    const timeoutMs =
-      params?.TimeoutSeconds &&
-      typeof params.TimeoutSeconds === 'number' &&
-      params.TimeoutSeconds > 0
-        ? (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1000
-        : TIMEOUTS.PING;
+    // Unity側でタイムアウト制御されるため、TS側は長めのネットワークタイムアウトのみ
+    const timeoutMs = TIMEOUTS.NETWORK;
 
     const response = await this.sendRequest(request, timeoutMs);
 
@@ -330,8 +325,8 @@ export class UnityClient {
     timeoutMs?: number,
   ): Promise<{ id: number; error?: { message: string }; result?: unknown }> {
     return new Promise((resolve, reject) => {
-      // Use provided timeout or default to PING timeout
-      const timeout_duration = timeoutMs || TIMEOUTS.PING;
+      // Use provided timeout or default to NETWORK timeout
+      const timeout_duration = timeoutMs || TIMEOUTS.NETWORK;
 
       // Use SafeTimer for automatic cleanup to prevent orphaned processes
       const timeoutTimer = safeSetTimeout(() => {

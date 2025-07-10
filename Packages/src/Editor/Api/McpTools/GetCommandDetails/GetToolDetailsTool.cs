@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
@@ -19,7 +20,7 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "get-tool-details";
 
-        protected override Task<GetToolDetailsResponse> ExecuteAsync(GetToolDetailsSchema parameters)
+        protected override Task<GetToolDetailsResponse> ExecuteAsync(GetToolDetailsSchema parameters, CancellationToken cancellationToken)
         {
             // Type-safe parameter access
             bool includeDevelopmentOnly = parameters.IncludeDevelopmentOnly;

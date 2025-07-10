@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System;
+using System.Threading;
 
 namespace io.github.hatayama.uMCP
 {
@@ -33,8 +34,9 @@ namespace io.github.hatayama.uMCP
         /// so individual tools do not need to call it again.
         /// </summary>
         /// <param name="parameters">Strongly typed parameters</param>
+        /// <param name="cancellationToken">Cancellation token for timeout control</param>
         /// <returns>Strongly typed tool execution result</returns>
-        protected abstract Task<TResponse> ExecuteAsync(TSchema parameters);
+        protected abstract Task<TResponse> ExecuteAsync(TSchema parameters, CancellationToken cancellationToken);
 
         /// <summary>
         /// IUnityTool implementation - converts JToken to Schema and returns BaseToolResponse
@@ -48,19 +50,30 @@ namespace io.github.hatayama.uMCP
                 // Convert JToken to strongly typed Schema
                 TSchema parameters = ConvertToSchema(paramsToken);
 
-                // Execute with type-safe parameters and get type-safe response
-                TResponse response = await ExecuteAsync(parameters);
-
-                DateTime endTime = DateTime.UtcNow;
-
-                // Set timing information if response inherits from BaseToolResponse
-                if (response is BaseToolResponse baseResponse)
+                // Create CancellationTokenSource with timeout from parameters
+                using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(parameters.TimeoutSeconds)))
                 {
-                    baseResponse.SetTimingInfo(startTime, endTime);
-                }
+                    try
+                    {
+                        // Execute with type-safe parameters and cancellation token
+                        TResponse response = await ExecuteAsync(parameters, cts.Token);
 
-                // Return as BaseToolResponse for IUnityTool interface compatibility
-                return response;
+                        DateTime endTime = DateTime.UtcNow;
+
+                        // Set timing information if response inherits from BaseToolResponse
+                        if (response is BaseToolResponse baseResponse)
+                        {
+                            baseResponse.SetTimingInfo(startTime, endTime);
+                        }
+
+                        // Return as BaseToolResponse for IUnityTool interface compatibility
+                        return response;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw new TimeoutException($"Tool {ToolName} timed out after {parameters.TimeoutSeconds} seconds");
+                    }
+                }
             }
             catch (Exception ex)
             {

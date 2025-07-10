@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using uMCP.Editor.Api.Commands.GetMenuItems;
 
@@ -14,8 +15,11 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "get-menu-items";
 
-        protected override Task<GetMenuItemsResponse> ExecuteAsync(GetMenuItemsSchema parameters)
+        protected override Task<GetMenuItemsResponse> ExecuteAsync(GetMenuItemsSchema parameters, CancellationToken cancellationToken)
         {
+            // Check for cancellation before starting
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Type-safe parameter access
             string filterText = parameters.FilterText;
             MenuItemFilterType filterType = parameters.FilterType;
@@ -24,6 +28,9 @@ namespace io.github.hatayama.uMCP
             
             // Discover all MenuItems using the service
             List<MenuItemInfo> allMenuItems = MenuItemDiscoveryService.DiscoverAllMenuItems();
+            
+            // Check for cancellation before filtering
+            cancellationToken.ThrowIfCancellationRequested();
             
             // Apply filtering
             List<MenuItemInfo> filteredMenuItems = ApplyFiltering(allMenuItems, filterText, filterType, includeValidation);

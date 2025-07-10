@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
@@ -12,7 +13,7 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "hello-world";
         
-        protected override Task<HelloWorldResponse> ExecuteAsync(HelloWorldSchema parameters)
+        protected override Task<HelloWorldResponse> ExecuteAsync(HelloWorldSchema parameters, CancellationToken cancellationToken)
         {
             // Type-safe parameter access - no more string parsing!
             string name = parameters.Name;

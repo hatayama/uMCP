@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -20,8 +21,9 @@ namespace io.github.hatayama.uMCP
         /// Execute console clear tool
         /// </summary>
         /// <param name="parameters">Type-safe parameters</param>
+        /// <param name="cancellationToken">Cancellation token for timeout control</param>
         /// <returns>Clear operation result</returns>
-        protected override Task<ClearConsoleResponse> ExecuteAsync(ClearConsoleSchema parameters)
+        protected override Task<ClearConsoleResponse> ExecuteAsync(ClearConsoleSchema parameters, CancellationToken cancellationToken)
         {
             // Get current log counts before clearing
             ConsoleUtility.GetConsoleLogCounts(out int errorCount, out int warningCount, out int logCount);

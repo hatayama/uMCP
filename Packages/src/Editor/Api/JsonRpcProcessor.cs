@@ -206,6 +206,12 @@ namespace io.github.hatayama.uMCP
                 errorData = new SecurityBlockedErrorData(secEx.ToolName, secEx.SecurityReason, secEx.Message);
                 errorMessage = "Tool blocked by security settings";
             }
+            // Handle timeout exceptions with detailed information
+            else if (ex is TimeoutException timeoutEx)
+            {
+                errorData = new InternalErrorData(timeoutEx.Message);
+                errorMessage = "Request timeout";
+            }
             else
             {
                 errorData = new InternalErrorData(ex.Message);

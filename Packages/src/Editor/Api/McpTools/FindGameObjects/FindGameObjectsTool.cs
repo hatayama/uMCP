@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
@@ -14,8 +15,11 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "find-game-objects";
         
-        protected override Task<FindGameObjectsResponse> ExecuteAsync(FindGameObjectsSchema parameters)
+        protected override Task<FindGameObjectsResponse> ExecuteAsync(FindGameObjectsSchema parameters, CancellationToken cancellationToken)
         {
+            // Check for cancellation before starting
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Validate that at least one search criterion is provided
             if (string.IsNullOrEmpty(parameters.NamePattern) &&
                 (parameters.RequiredComponents == null || parameters.RequiredComponents.Length == 0) &&
@@ -42,6 +46,9 @@ namespace io.github.hatayama.uMCP
                 MaxResults = parameters.MaxResults
             };
             
+            // Check for cancellation before search
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Execute search
             GameObjectFinderService service = new GameObjectFinderService();
             GameObjectDetails[] foundObjects = service.FindGameObjectsAdvanced(options);
@@ -56,12 +63,18 @@ namespace io.github.hatayama.uMCP
                 McpLogger.LogDebug($"[FindGameObjectsTool] Found {foundObjects.Length} objects");
             }
             
+            // Check for cancellation before conversion
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Convert to response format
             ComponentSerializer serializer = new ComponentSerializer();
             List<FindGameObjectResult> results = new List<FindGameObjectResult>();
             
             foreach (GameObjectDetails details in foundObjects)
             {
+                // Check for cancellation during conversion
+                cancellationToken.ThrowIfCancellationRequested();
+                
                 FindGameObjectResult result = new FindGameObjectResult
                 {
                     name = details.Name,
