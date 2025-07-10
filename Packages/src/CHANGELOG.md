@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.26.2](https://github.com/hatayama/uMCP/compare/v0.26.1...v0.26.2) (2025-07-10)
+
+
+### Bug Fixes
+
+* remove JSON depth limit and fix MaxResponseSizeKB threshold ([#190](https://github.com/hatayama/uMCP/issues/190)) ([1825e73](https://github.com/hatayama/uMCP/commit/1825e73e64b491dec8e2c42005d5eb794a889fd3))
+
 ## [0.26.1](https://github.com/hatayama/uMCP/compare/v0.26.0...v0.26.1) (2025-07-10)
 
 
