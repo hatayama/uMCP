@@ -5,15 +5,15 @@ using Newtonsoft.Json.Linq;
 
 namespace io.github.hatayama.uMCP.Tests
 {
-    public class GetHierarchyCommandTests
+    public class GetHierarchyToolTests
     {
-        private GetHierarchyCommand command;
+        private GetHierarchyTool tool;
         private GameObject testRoot;
         
         [SetUp]
         public void SetUp()
         {
-            command = new GetHierarchyCommand();
+            tool = new GetHierarchyTool();
             testRoot = new GameObject("TestRoot");
         }
         
@@ -25,16 +25,16 @@ namespace io.github.hatayama.uMCP.Tests
         }
         
         [Test]
-        public void CommandName_ReturnsCorrectName()
+        public void ToolName_ReturnsCorrectName()
         {
-            Assert.That(command.CommandName, Is.EqualTo("gethierarchy"));
+            Assert.That(tool.ToolName, Is.EqualTo("gethierarchy"));
         }
         
         [Test]
         public void Description_ReturnsNonEmptyString()
         {
-            Assert.That(command.Description, Is.Not.Null);
-            Assert.That(command.Description, Is.Not.Empty);
+            Assert.That(tool.Description, Is.Not.Null);
+            Assert.That(tool.Description, Is.Not.Empty);
         }
         
         [Test]
@@ -44,7 +44,7 @@ namespace io.github.hatayama.uMCP.Tests
             JObject paramsJson = new JObject();
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             GetHierarchyResponse response = baseResponse as GetHierarchyResponse;
             
             // Assert
@@ -69,7 +69,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             GetHierarchyResponse response = baseResponse as GetHierarchyResponse;
             
             // Assert
@@ -91,7 +91,7 @@ namespace io.github.hatayama.uMCP.Tests
             };
             
             // Act
-            BaseCommandResponse baseResponse = await command.ExecuteAsync(paramsJson);
+            BaseToolResponse baseResponse = await tool.ExecuteAsync(paramsJson);
             GetHierarchyResponse response = baseResponse as GetHierarchyResponse;
             
             // Assert
@@ -107,7 +107,7 @@ namespace io.github.hatayama.uMCP.Tests
         public void ParameterSchema_HasCorrectProperties()
         {
             // Act
-            CommandParameterSchema schema = command.ParameterSchema;
+            ToolParameterSchema schema = tool.ParameterSchema;
             
             // Assert
             Assert.That(schema, Is.Not.Null);

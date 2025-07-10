@@ -16,7 +16,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for RunTests command parameters
     /// Provides type-safe parameter access with default values
     /// </summary>
-    public class RunTestsSchema : BaseCommandSchema
+    public class RunTestsSchema : BaseToolSchema
     {
         /// <summary>
         /// Test mode (EditMode or PlayMode)

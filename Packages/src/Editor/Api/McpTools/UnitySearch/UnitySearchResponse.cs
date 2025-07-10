@@ -7,7 +7,7 @@ namespace io.github.hatayama.uMCP
     /// Provides type-safe response structure for Unity Search results
     /// Supports both inline results and file-based results for token consumption management
     /// </summary>
-    public class UnitySearchResponse : BaseCommandResponse
+    public class UnitySearchResponse : BaseToolResponse
     {
         /// <summary>
         /// Array of search result items (empty if results were saved to file)

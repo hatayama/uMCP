@@ -434,7 +434,7 @@ namespace io.github.hatayama.uMCP
             await EditorDelay.DelayFrame(1);
             
             McpLogger.LogDebug("[TRACE] SendCommandNotificationAfterCompilation: About to call TriggerCommandsChangedNotification (AFTER_COMPILATION)");
-            UnityCommandRegistry.TriggerCommandsChangedNotification();
+            CustomToolManager.NotifyToolChanges();
         }
         
         

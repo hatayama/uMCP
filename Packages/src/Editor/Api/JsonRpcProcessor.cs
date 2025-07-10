@@ -130,7 +130,7 @@ namespace io.github.hatayama.uMCP
             {
                 await MainThreadSwitcher.SwitchToMainThread();
                 await McpCommunicationLogger.LogRequest(originalJson);
-                BaseCommandResponse result = await ExecuteMethod(request.Method, request.Params);
+                BaseToolResponse result = await ExecuteMethod(request.Method, request.Params);
                 string response = CreateSuccessResponse(request.Id, result);
                 McpLogger.LogDebug($"Method: [{request.Method}], executed in {result.ExecutionTimeMs}ms");
                 _ = McpCommunicationLogger.RecordLogResponse(response);
@@ -155,7 +155,7 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="id">Request ID - must be same type as received (string/number/null per JSON-RPC spec)</param>
         /// <param name="result">Command execution result</param>
-        private static string CreateSuccessResponse(object id, BaseCommandResponse result)
+        private static string CreateSuccessResponse(object id, BaseToolResponse result)
         {
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
@@ -231,7 +231,7 @@ namespace io.github.hatayama.uMCP
         /// Execute appropriate handler according to method name
         /// Use new command-based structure
         /// </summary>
-        private static async Task<BaseCommandResponse> ExecuteMethod(string method, JToken paramsToken)
+        private static async Task<BaseToolResponse> ExecuteMethod(string method, JToken paramsToken)
         {
             return await UnityApiHandler.ExecuteCommandAsync(method, paramsToken);
         }

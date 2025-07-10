@@ -10,7 +10,7 @@ namespace io.github.hatayama.uMCP
         [MenuItem("uMCP/Debug/FindGameObjects Tests/Test Camera Search")]
         public static async void TestFindGameObjectsCamera()
         {
-            FindGameObjectsCommand command = new FindGameObjectsCommand();
+            FindGameObjectsTool tool = new FindGameObjectsTool();
             
             JObject parameters = new JObject
             {
@@ -21,7 +21,7 @@ namespace io.github.hatayama.uMCP
             
             try
             {
-                BaseCommandResponse response = await command.ExecuteAsync(parameters);
+                BaseToolResponse response = await tool.ExecuteAsync(parameters);
                 
                 if (response is FindGameObjectsResponse findResponse)
                 {
@@ -52,7 +52,7 @@ namespace io.github.hatayama.uMCP
         {
             Debug.Log("[FindGameObjectsTestMenu] Starting Main Camera path search test...");
             
-            FindGameObjectsCommand command = new FindGameObjectsCommand();
+            FindGameObjectsTool tool = new FindGameObjectsTool();
             
             // Search for Main Camera by path
             JObject parameters = new JObject
@@ -65,7 +65,7 @@ namespace io.github.hatayama.uMCP
             try
             {
                 Debug.Log("[FindGameObjectsTestMenu] Executing search for Main Camera...");
-                BaseCommandResponse response = await command.ExecuteAsync(parameters);
+                BaseToolResponse response = await tool.ExecuteAsync(parameters);
                 
                 if (response is FindGameObjectsResponse findResponse)
                 {

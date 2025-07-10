@@ -51,20 +51,20 @@ namespace io.github.hatayama.uMCP
         private static CommandAttributeInfo? GetCommandSecurityInfoFromRegistry(string commandName)
         {
             // Get the command registry instance
-            var registry = UnityCommandRegistry.Instance;
+            var registry = CustomToolManager.GetRegistry();
             if (registry == null)
             {
                 return null;
             }
 
-            // Find the command and get its attribute
-            var commandType = registry.GetCommandType(commandName);
-            if (commandType == null)
+            // Find the tool and get its attribute
+            var toolType = registry.GetToolType(commandName);
+            if (toolType == null)
             {
                 return null;
             }
 
-            var attribute = commandType.GetCustomAttribute<McpToolAttribute>();
+            var attribute = toolType.GetCustomAttribute<McpToolAttribute>();
             if (attribute == null)
             {
                 return new CommandAttributeInfo(commandName, SecuritySettings.None);

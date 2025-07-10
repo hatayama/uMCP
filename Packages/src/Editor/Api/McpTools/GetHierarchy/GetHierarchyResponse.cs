@@ -7,7 +7,7 @@ namespace io.github.hatayama.uMCP
     /// Response structure for GetHierarchy command
     /// </summary>
     [Serializable]
-    public class GetHierarchyResponse : BaseCommandResponse
+    public class GetHierarchyResponse : BaseToolResponse
     {
         /// <summary>
         /// List of hierarchy nodes

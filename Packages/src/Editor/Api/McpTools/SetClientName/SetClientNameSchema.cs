@@ -6,7 +6,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for SetClientName command parameters
     /// Allows TypeScript clients to register their name for identification
     /// </summary>
-    public class SetClientNameSchema : BaseCommandSchema
+    public class SetClientNameSchema : BaseToolSchema
     {
         /// <summary>
         /// Name of the MCP client tool (e.g., "Claude Code", "Cursor")

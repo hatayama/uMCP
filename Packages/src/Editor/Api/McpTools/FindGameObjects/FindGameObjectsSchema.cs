@@ -1,6 +1,6 @@
 namespace io.github.hatayama.uMCP
 {
-    public class FindGameObjectsSchema : BaseCommandSchema
+    public class FindGameObjectsSchema : BaseToolSchema
     {
         // Search criteria
         public string NamePattern { get; set; } = "";

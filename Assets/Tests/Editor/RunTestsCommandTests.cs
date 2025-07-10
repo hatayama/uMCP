@@ -2,25 +2,25 @@ using NUnit.Framework;
 
 namespace io.github.hatayama.uMCP
 {
-    public class RunTestsCommandTests
+    public class RunTestsToolTests
     {
-        private RunTestsCommand runTestsCommand;
+        private RunTestsTool runTestsTool;
 
         [SetUp]
         public void Setup()
         {
-            runTestsCommand = new RunTestsCommand();
+            runTestsTool = new RunTestsTool();
         }
 
         /// <summary>
         /// Test for command name.
-        /// - Asserts that the command name is "runtests".
+        /// - Asserts that the tool name is "runtests".
         /// </summary>
         [Test]
-        public void CommandName_ShouldReturnRunTests()
+        public void ToolName_ShouldReturnRunTests()
         {
             // Assert
-            Assert.That(runTestsCommand.CommandName, Is.EqualTo("runtests"));
+            Assert.That(runTestsTool.ToolName, Is.EqualTo("runtests"));
         }
 
         /// <summary>
@@ -71,10 +71,10 @@ namespace io.github.hatayama.uMCP
         public void CreateFilter_ShouldCreateCorrectFilter()
         {
             // Act - Invoke private method using reflection.
-            System.Reflection.MethodInfo createFilterMethod = typeof(RunTestsCommand)
+            System.Reflection.MethodInfo createFilterMethod = typeof(RunTestsTool)
                 .GetMethod("CreateFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            TestExecutionFilter result = (TestExecutionFilter)createFilterMethod.Invoke(runTestsCommand, new object[] { "fullclassname", "TestClass" });
+            TestExecutionFilter result = (TestExecutionFilter)createFilterMethod.Invoke(runTestsTool, new object[] { "fullclassname", "TestClass" });
 
             // Assert
             Assert.That(result.FilterType, Is.EqualTo(TestExecutionFilterType.ClassName));
@@ -88,12 +88,12 @@ namespace io.github.hatayama.uMCP
         public void CreateFilter_WithUnsupportedType_ShouldThrowException()
         {
             // Act & Assert - Invoke private method using reflection.
-            System.Reflection.MethodInfo createFilterMethod = typeof(RunTestsCommand)
+            System.Reflection.MethodInfo createFilterMethod = typeof(RunTestsTool)
                 .GetMethod("CreateFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             Assert.Throws<System.Reflection.TargetInvocationException>(() =>
             {
-                createFilterMethod.Invoke(runTestsCommand, new object[] { "unsupported", "value" });
+                createFilterMethod.Invoke(runTestsTool, new object[] { "unsupported", "value" });
             });
         }
     }

@@ -52,7 +52,7 @@ namespace io.github.hatayama.uMCP
     /// - settings: Search project settings
     /// - packages: Search in packages
     /// </summary>
-    public class UnitySearchSchema : BaseCommandSchema
+    public class UnitySearchSchema : BaseToolSchema
     {
         /// <summary>
         /// Search query string (supports Unity Search syntax)

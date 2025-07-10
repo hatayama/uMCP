@@ -6,7 +6,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for ExecuteMenuItem command parameters
     /// Provides type-safe parameter access for executing Unity MenuItems
     /// </summary>
-    public class ExecuteMenuItemSchema : BaseCommandSchema
+    public class ExecuteMenuItemSchema : BaseToolSchema
     {
         /// <summary>
         /// The menu item path to execute (e.g., "GameObject/Create Empty")

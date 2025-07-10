@@ -7,7 +7,7 @@ namespace io.github.hatayama.uMCP
     /// Response for GetMenuItems command
     /// Contains discovered Unity MenuItems with filter information
     /// </summary>
-    public class GetMenuItemsResponse : BaseCommandResponse
+    public class GetMenuItemsResponse : BaseToolResponse
     {
         /// <summary>
         /// List of discovered MenuItems matching the filter criteria

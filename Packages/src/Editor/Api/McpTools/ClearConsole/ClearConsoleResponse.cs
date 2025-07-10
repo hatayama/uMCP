@@ -6,7 +6,7 @@ namespace io.github.hatayama.uMCP
     /// Response schema for ClearConsole command
     /// Provides type-safe response structure for console clearing operation
     /// </summary>
-    public class ClearConsoleResponse : BaseCommandResponse
+    public class ClearConsoleResponse : BaseToolResponse
     {
         /// <summary>
         /// Whether the console clear operation was successful

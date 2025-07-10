@@ -5,8 +5,8 @@ using UnityEditor;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Sample implementation of custom commands
-    /// Reference example for users to add their own commands
+    /// Sample implementation of custom tools
+    /// Reference example for users to add their own tools
     /// </summary>\
     // [InitializeOnLoad]
     public static class RegisterCustomCommandsSample
@@ -16,58 +16,58 @@ namespace io.github.hatayama.uMCP
             RegisterSampleCommands();
         }
         /// <summary>
-        /// Register custom commands
+        /// Register custom tools
         /// </summary>
-        [MenuItem("uMCP/Tools/Custom Commands/Register Sample Commands")]
+        [MenuItem("uMCP/Tools/Custom Tools/Register Sample Tools")]
         public static void RegisterSampleCommands()
         {
-            CustomCommandManager.RegisterCustomCommand(new HelloWorldCommand());
-            CustomCommandManager.RegisterCustomCommand(new GetProjectInfoCommand());
-            CustomCommandManager.RegisterCustomCommand(new GetVersionCommand());
+            CustomToolManager.RegisterCustomTool(new HelloWorldTool());
+            CustomToolManager.RegisterCustomTool(new GetProjectInfoTool());
+            CustomToolManager.RegisterCustomTool(new GetVersionTool());
             
-            Debug.Log("Sample custom commands registered successfully!");
-            Debug.Log("Available commands: " + string.Join(", ", CustomCommandManager.GetRegisteredCustomCommands().Select(c => c.Name)));
+            Debug.Log("Sample custom tools registered successfully!");
+            Debug.Log("Available tools: " + string.Join(", ", CustomToolManager.GetRegisteredCustomTools().Select(c => c.Name)));
             
-            // Manual notification is automatically called by RegisterCustomCommand,
+            // Manual notification is automatically called by RegisterCustomTool,
             // but we can also call it explicitly if needed
-            CustomCommandManager.NotifyCommandChanges();
+            CustomToolManager.NotifyToolChanges();
         }
 
         /// <summary>
-        /// Unregister custom commands
+        /// Unregister custom tools
         /// </summary>
-        [MenuItem("uMCP/Tools/Custom Commands/Unregister Sample Commands")]
+        [MenuItem("uMCP/Tools/Custom Tools/Unregister Sample Tools")]
         public static void UnregisterSampleCommands()
         {
-            CustomCommandManager.UnregisterCustomCommand("helloworld");
-            CustomCommandManager.UnregisterCustomCommand("getprojectinfo");
-            CustomCommandManager.UnregisterCustomCommand("advancedcustom");
-            CustomCommandManager.UnregisterCustomCommand("getversion");
+            CustomToolManager.UnregisterCustomTool("helloworld");
+            CustomToolManager.UnregisterCustomTool("getprojectinfo");
+            CustomToolManager.UnregisterCustomTool("advancedcustom");
+            CustomToolManager.UnregisterCustomTool("getversion");
             
-            Debug.Log("Sample custom commands unregistered successfully!");
+            Debug.Log("Sample custom tools unregistered successfully!");
             
-            // Manual notification is automatically called by UnregisterCustomCommand,
+            // Manual notification is automatically called by UnregisterCustomTool,
             // but we can also call it explicitly if needed
-            CustomCommandManager.NotifyCommandChanges();
+            CustomToolManager.NotifyToolChanges();
         }
 
         /// <summary>
-        /// Display list of currently registered commands
+        /// Display list of currently registered tools
         /// </summary>
-        [MenuItem("uMCP/Tools/Custom Commands/Show Registered Commands")]
+        [MenuItem("uMCP/Tools/Custom Tools/Show Registered Tools")]
         public static void ShowRegisteredCommands()
         {
-            CommandInfo[] commands = CustomCommandManager.GetRegisteredCustomCommands();
-            Debug.Log($"Currently registered commands ({commands.Length}):");
+            ToolInfo[] tools = CustomToolManager.GetRegisteredCustomTools();
+            Debug.Log($"Currently registered tools ({tools.Length}):");
             
-            for (int i = 0; i < commands.Length; i++)
+            for (int i = 0; i < tools.Length; i++)
             {
-                Debug.Log($"{i + 1}. {commands[i].Name} - {commands[i].Description}");
+                Debug.Log($"{i + 1}. {tools[i].Name} - {tools[i].Description}");
             }
             
             // Additional detailed debug information
             Debug.Log("=== Debug Info ===");
-            Debug.Log(CustomCommandManager.GetDebugInfo());
+            Debug.Log(CustomToolManager.GetDebugInfo());
         }
     }
 } 

@@ -10,7 +10,7 @@ namespace io.github.hatayama.uMCP
     /// - GetProviderDetailsResponse: Response containing provider details
     /// - UnitySearchService: Service layer for provider information retrieval
     /// </summary>
-    public class GetProviderDetailsSchema : BaseCommandSchema
+    public class GetProviderDetailsSchema : BaseToolSchema
     {
         /// <summary>
         /// Specific provider ID to get details for (empty = all providers)

@@ -1,6 +1,6 @@
 namespace io.github.hatayama.uMCP
 {
-    public class FindGameObjectsResponse : BaseCommandResponse
+    public class FindGameObjectsResponse : BaseToolResponse
     {
         public FindGameObjectResult[] results { get; set; }
         public int totalFound { get; set; }

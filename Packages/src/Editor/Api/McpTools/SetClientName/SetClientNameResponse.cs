@@ -4,7 +4,7 @@ namespace io.github.hatayama.uMCP
     /// Response schema for SetClientName command
     /// Confirms client name registration
     /// </summary>
-    public class SetClientNameResponse : BaseCommandResponse
+    public class SetClientNameResponse : BaseToolResponse
     {
         /// <summary>
         /// Success status message

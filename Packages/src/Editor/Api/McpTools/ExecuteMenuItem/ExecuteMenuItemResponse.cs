@@ -4,7 +4,7 @@ namespace io.github.hatayama.uMCP
     /// Response for ExecuteMenuItem command
     /// Contains execution result and method information
     /// </summary>
-    public class ExecuteMenuItemResponse : BaseCommandResponse
+    public class ExecuteMenuItemResponse : BaseToolResponse
     {
         /// <summary>
         /// The menu item path that was executed

@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for GetLogs command parameters
     /// Provides type-safe parameter access with default values
     /// </summary>
-    public class GetLogsSchema : BaseCommandSchema
+    public class GetLogsSchema : BaseToolSchema
     {
         /// <summary>
         /// Log type to filter (Error, Warning, Log, All)

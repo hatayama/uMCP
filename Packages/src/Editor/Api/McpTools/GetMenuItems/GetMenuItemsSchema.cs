@@ -27,7 +27,7 @@ namespace io.github.hatayama.uMCP
     /// Schema for GetMenuItems command parameters
     /// Provides type-safe parameter access for retrieving Unity MenuItems with filtering
     /// </summary>
-    public class GetMenuItemsSchema : BaseCommandSchema
+    public class GetMenuItemsSchema : BaseToolSchema
     {
         /// <summary>
         /// Text to filter MenuItem paths (empty for all items)

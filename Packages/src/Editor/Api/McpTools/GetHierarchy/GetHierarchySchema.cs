@@ -3,7 +3,7 @@ namespace io.github.hatayama.uMCP
     /// <summary>
     /// Input parameters for GetHierarchy command
     /// </summary>
-    public class GetHierarchySchema : BaseCommandSchema
+    public class GetHierarchySchema : BaseToolSchema
     {
         /// <summary>
         /// Include inactive GameObjects in the result

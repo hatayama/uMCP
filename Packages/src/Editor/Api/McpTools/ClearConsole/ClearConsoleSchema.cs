@@ -10,7 +10,7 @@ namespace io.github.hatayama.uMCP
     /// - ClearConsoleResponse: Type-safe response structure
     /// - ClearConsoleCommand: Command implementation
     /// </summary>
-    public class ClearConsoleSchema : BaseCommandSchema
+    public class ClearConsoleSchema : BaseToolSchema
     {
         /// <summary>
         /// Whether to add a confirmation log message after clearing

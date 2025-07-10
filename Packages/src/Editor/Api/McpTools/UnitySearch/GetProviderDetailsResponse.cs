@@ -7,7 +7,7 @@ namespace io.github.hatayama.uMCP
     /// Response schema for GetProviderDetails command
     /// Provides type-safe response structure for Unity Search provider information
     /// </summary>
-    public class GetProviderDetailsResponse : BaseCommandResponse
+    public class GetProviderDetailsResponse : BaseToolResponse
     {
         /// <summary>
         /// Array of provider information

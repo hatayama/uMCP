@@ -6,25 +6,25 @@ using UnityEngine.TestTools;
 
 namespace io.github.hatayama.uMCP
 {
-    public class GetLogsCommandTests
+    public class GetLogsToolTests
     {
-        private GetLogsCommand getLogsCommand;
+        private GetLogsTool getLogsTool;
 
         [SetUp]
         public void Setup()
         {
-            getLogsCommand = new GetLogsCommand();
+            getLogsTool = new GetLogsTool();
         }
 
         /// <summary>
         /// Test for command name.
-        /// - Asserts that the command name is "getlogs".
+        /// - Asserts that the tool name is "getlogs".
         /// </summary>
         [Test]
-        public void CommandName_ShouldReturnGetLogs()
+        public void ToolName_ShouldReturnGetLogs()
         {
             // Assert
-            Assert.That(getLogsCommand.CommandName, Is.EqualTo("getlogs"));
+            Assert.That(getLogsTool.ToolName, Is.EqualTo("getlogs"));
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace io.github.hatayama.uMCP
                 try {
                     // Convert schema to JToken for public ExecuteAsync method
                     JToken paramsToken = JToken.FromObject(schema);
-                    object response = await getLogsCommand.ExecuteAsync(paramsToken);
+                    object response = await getLogsTool.ExecuteAsync(paramsToken);
                     result = response as GetLogsResponse;
                     completed = true;
                 } catch (System.Exception ex) {
@@ -92,7 +92,7 @@ namespace io.github.hatayama.uMCP
                 try {
                     // Convert schema to JToken for public ExecuteAsync method
                     JToken paramsToken = JToken.FromObject(schema);
-                    object response = await getLogsCommand.ExecuteAsync(paramsToken);
+                    object response = await getLogsTool.ExecuteAsync(paramsToken);
                     result = response as GetLogsResponse;
                     completed = true;
                 } catch (System.Exception ex) {
