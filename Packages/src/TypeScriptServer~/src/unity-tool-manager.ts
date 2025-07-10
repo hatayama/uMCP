@@ -157,7 +157,7 @@ export class UnityToolManager {
 
   /**
    * Refresh dynamic tools by re-fetching from Unity
- * This method can be called to update the tool list when Unity tools change
+   * This method can be called to update the tool list when Unity tools change
    */
   async refreshDynamicTools(sendNotification?: () => void): Promise<void> {
     await this.initializeDynamicTools();

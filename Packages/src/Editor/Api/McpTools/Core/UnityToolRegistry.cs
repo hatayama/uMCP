@@ -89,8 +89,6 @@ namespace io.github.hatayama.uMCP
             catch (Exception ex)
             {
                 McpLogger.LogError($"Failed to register tools with attributes: {ex.Message}");
-                // Fall back to manual registration
-                RegisterManualTools();
                 throw;
             }
         }

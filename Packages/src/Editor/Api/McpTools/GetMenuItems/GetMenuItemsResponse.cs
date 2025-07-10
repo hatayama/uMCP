@@ -4,7 +4,7 @@ using uMCP.Editor.Api.Commands.GetMenuItems;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Response for GetMenuItems command
+    /// Response for GetMenuItems tool
     /// Contains discovered Unity MenuItems with filter information
     /// </summary>
     public class GetMenuItemsResponse : BaseToolResponse

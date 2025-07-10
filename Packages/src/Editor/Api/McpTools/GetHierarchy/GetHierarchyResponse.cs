@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace io.github.hatayama.uMCP
 {
     /// <summary>
-    /// Response structure for GetHierarchy command
+    /// Response structure for GetHierarchy tool
     /// </summary>
     [Serializable]
     public class GetHierarchyResponse : BaseToolResponse
