@@ -12,6 +12,6 @@ namespace io.github.hatayama.uMCP
         /// Timeout for tool execution in seconds (default: 15 seconds)
         /// </summary>
         [Description("Timeout for tool execution in seconds (default: 15 seconds)")]
-        public virtual int TimeoutSeconds { get; set; } = 10;
+        public virtual int TimeoutSeconds { get; set; } = 15;
     }
 } 

@@ -1,5 +1,5 @@
 import * as net from 'net';
-import { UNITY_CONNECTION, JSONRPC, TIMEOUTS, ERROR_MESSAGES, POLLING } from './constants.js';
+import { UNITY_CONNECTION, JSONRPC, TIMEOUTS, ERROR_MESSAGES } from './constants.js';
 import { errorToFile } from './utils/log-to-file.js';
 import { safeSetTimeout } from './utils/safe-timer.js';
 import { ConnectionManager } from './connection-manager.js';
@@ -291,6 +291,7 @@ export class UnityClient {
    * Execute any Unity tool dynamically
    */
   async executeTool(toolName: string, params: Record<string, unknown> = {}): Promise<unknown> {
+    const startTime = Date.now();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
@@ -298,16 +299,25 @@ export class UnityClient {
       params: params,
     };
 
-    // Use TimeoutSeconds parameter or default timeout
-    const timeoutMs =
-      params?.TimeoutSeconds &&
-      typeof params.TimeoutSeconds === 'number' &&
-      params.TimeoutSeconds > 0
-        ? (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1000
-        : TIMEOUTS.PING;
+    // Unity側でタイムアウト制御されるため、TS側は長めのネットワークタイムアウトのみ
+    const timeoutMs = TIMEOUTS.NETWORK;
 
-    const response = await this.sendRequest(request, timeoutMs);
+    try {
+      const response = await this.sendRequest(request, timeoutMs);
+      return this.handleToolResponse(response, toolName);
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      
+      // Log timeout details to file for debugging in production
+      if (error instanceof Error && error.message.includes('timed out')) {
+        errorToFile(`[TIMEOUT] Tool: ${toolName}, NetworkTimeout: ${timeoutMs}ms, ExecutionTime: ${executionTime}ms, RequestId: ${request.id}, Params: ${JSON.stringify(params)}`);
+      }
+      
+      throw error;
+    }
+  }
 
+  private handleToolResponse(response: { error?: { message: string }; result?: unknown }, toolName: string): unknown {
     if (response.error) {
       throw new Error(`Failed to execute tool '${toolName}': ${response.error.message}`);
     }
@@ -330,11 +340,14 @@ export class UnityClient {
     timeoutMs?: number,
   ): Promise<{ id: number; error?: { message: string }; result?: unknown }> {
     return new Promise((resolve, reject) => {
-      // Use provided timeout or default to PING timeout
-      const timeout_duration = timeoutMs || TIMEOUTS.PING;
+      // Use provided timeout or default to NETWORK timeout
+      const timeout_duration = timeoutMs || TIMEOUTS.NETWORK;
 
       // Use SafeTimer for automatic cleanup to prevent orphaned processes
       const timeoutTimer = safeSetTimeout(() => {
+        // Log network-level timeout details for debugging
+        errorToFile(`[NETWORK_TIMEOUT] Method: ${request.method}, RequestId: ${request.id}, NetworkTimeout: ${timeout_duration}ms, Params: ${JSON.stringify(request.params || {})}`);
+        
         this.messageHandler.clearPendingRequests(`Request ${ERROR_MESSAGES.TIMEOUT}`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);

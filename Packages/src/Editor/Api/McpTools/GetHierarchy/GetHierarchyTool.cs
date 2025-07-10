@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using UnityEngine;
+using System.Threading;
 
 namespace io.github.hatayama.uMCP
 {
@@ -17,7 +18,7 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "get-hierarchy";
         
-        protected override Task<GetHierarchyResponse> ExecuteAsync(GetHierarchySchema parameters)
+        protected override Task<GetHierarchyResponse> ExecuteAsync(GetHierarchySchema parameters, CancellationToken cancellationToken)
         {
             // Create service instances
             HierarchyService service = new HierarchyService();
@@ -32,12 +33,21 @@ namespace io.github.hatayama.uMCP
                 IncludeComponents = parameters.IncludeComponents
             };
             
+            // Check for cancellation before starting hierarchy traversal
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Get hierarchy data
             var nodes = service.GetHierarchyNodes(options);
             var context = service.GetCurrentContext();
             
+            // Check for cancellation after hierarchy traversal
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Convert to nested structure
             var nestedNodes = serializer.ConvertToNestedStructure(nodes);
+            
+            // Check for cancellation after conversion
+            cancellationToken.ThrowIfCancellationRequested();
             
             // Create nested response for size calculation
             GetHierarchyResponse nestedResponse = new GetHierarchyResponse(nestedNodes, context);
@@ -50,6 +60,9 @@ namespace io.github.hatayama.uMCP
             // Check if response should be saved to file
             if (estimatedSizeKB > parameters.MaxResponseSizeKB)
             {
+                // Check for cancellation before file export
+                cancellationToken.ThrowIfCancellationRequested();
+                
                 // Save to file and return file path response
                 string filePath = HierarchyResultExporter.ExportHierarchyResults(nestedNodes, context);
                 return Task.FromResult(new GetHierarchyResponse(filePath, "auto_threshold", context));

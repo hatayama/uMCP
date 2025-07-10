@@ -65,10 +65,7 @@ export const PARAMETER_SCHEMA = {
 
 // Timeout configuration (milliseconds)
 export const TIMEOUTS = {
-  PING: 5000,
-  COMPILE: 30000,
-  GET_LOGS: 10000,
-  RUN_TESTS: 60000,
+  NETWORK: 120000, // 2分 - ネットワークレベルのタイムアウト（Unity側のタイムアウトより長く設定）
 } as const;
 
 // Log configuration

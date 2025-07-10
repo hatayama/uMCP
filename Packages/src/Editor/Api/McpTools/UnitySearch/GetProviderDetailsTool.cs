@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
@@ -26,8 +27,9 @@ namespace io.github.hatayama.uMCP
         /// Execute the provider details retrieval tool
         /// </summary>
         /// <param name="parameters">Tool parameters</param>
+        /// <param name="cancellationToken">Cancellation token for timeout control</param>
         /// <returns>Provider details response</returns>
-        protected override Task<GetProviderDetailsResponse> ExecuteAsync(GetProviderDetailsSchema parameters)
+        protected override Task<GetProviderDetailsResponse> ExecuteAsync(GetProviderDetailsSchema parameters, CancellationToken cancellationToken)
         {
             ProviderInfo[] providers;
             string appliedFilter;

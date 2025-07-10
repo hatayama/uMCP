@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
@@ -21,12 +22,19 @@ namespace io.github.hatayama.uMCP
         /// Execute Unity search tool with type-safe parameters
         /// </summary>
         /// <param name="parameters">Type-safe search parameters</param>
+        /// <param name="cancellationToken">Cancellation token for timeout control</param>
         /// <returns>Search results or file path if exported</returns>
-        protected override async Task<UnitySearchResponse> ExecuteAsync(UnitySearchSchema parameters)
+        protected override async Task<UnitySearchResponse> ExecuteAsync(UnitySearchSchema parameters, CancellationToken cancellationToken)
         {
+            // Check for cancellation before starting
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Clean up old export files before executing new search
             UnitySearchService.CleanupOldExports();
 
+            // Check for cancellation before search
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Execute search using service layer
             UnitySearchResponse response = await UnitySearchService.ExecuteSearchAsync(parameters);
 

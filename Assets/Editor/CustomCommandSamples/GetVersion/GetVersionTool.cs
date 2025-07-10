@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -13,7 +14,7 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "get-version";
 
-        protected override Task<GetVersionResponse> ExecuteAsync(GetVersionSchema parameters)
+        protected override Task<GetVersionResponse> ExecuteAsync(GetVersionSchema parameters, CancellationToken cancellationToken)
         {
             McpLogger.LogDebug("GetVersion request received");
             

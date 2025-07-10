@@ -5500,10 +5500,8 @@ var PARAMETER_SCHEMA = {
   REQUIRED_PROPERTY: "Required"
 };
 var TIMEOUTS = {
-  PING: 5e3,
-  COMPILE: 3e4,
-  GET_LOGS: 1e4,
-  RUN_TESTS: 6e4
+  NETWORK: 12e4
+  // 2分 - ネットワークレベルのタイムアウト（Unity側のタイムアウトより長く設定）
 };
 var DEFAULT_CLIENT_NAME = "";
 var ENVIRONMENT = {
@@ -6085,14 +6083,26 @@ var UnityClient = class {
    * Execute any Unity tool dynamically
    */
   async executeTool(toolName, params = {}) {
+    const startTime = Date.now();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
       method: toolName,
       params
     };
-    const timeoutMs = params?.TimeoutSeconds && typeof params.TimeoutSeconds === "number" && params.TimeoutSeconds > 0 ? (params.TimeoutSeconds + POLLING.BUFFER_SECONDS) * 1e3 : TIMEOUTS.PING;
-    const response = await this.sendRequest(request, timeoutMs);
+    const timeoutMs = TIMEOUTS.NETWORK;
+    try {
+      const response = await this.sendRequest(request, timeoutMs);
+      return this.handleToolResponse(response, toolName);
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      if (error instanceof Error && error.message.includes("timed out")) {
+        errorToFile(`[TIMEOUT] Tool: ${toolName}, NetworkTimeout: ${timeoutMs}ms, ExecutionTime: ${executionTime}ms, RequestId: ${request.id}, Params: ${JSON.stringify(params)}`);
+      }
+      throw error;
+    }
+  }
+  handleToolResponse(response, toolName) {
     if (response.error) {
       throw new Error(`Failed to execute tool '${toolName}': ${response.error.message}`);
     }
@@ -6109,8 +6119,9 @@ var UnityClient = class {
    */
   async sendRequest(request, timeoutMs) {
     return new Promise((resolve, reject) => {
-      const timeout_duration = timeoutMs || TIMEOUTS.PING;
+      const timeout_duration = timeoutMs || TIMEOUTS.NETWORK;
       const timeoutTimer = safeSetTimeout(() => {
+        errorToFile(`[NETWORK_TIMEOUT] Method: ${request.method}, RequestId: ${request.id}, NetworkTimeout: ${timeout_duration}ms, Params: ${JSON.stringify(request.params || {})}`);
         this.messageHandler.clearPendingRequests(`Request ${ERROR_MESSAGES.TIMEOUT}`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
@@ -6736,7 +6747,7 @@ var UnityToolManager = class {
     }
   }
   /**
-   * Initialize dynamic Unity command tools
+   * Initialize dynamic Unity tools
    */
   async initializeDynamicTools() {
     try {
@@ -6790,7 +6801,7 @@ var UnityToolManager = class {
   }
   /**
    * Refresh dynamic tools by re-fetching from Unity
-   * This method can be called to update the tool list when Unity commands change
+   * This method can be called to update the tool list when Unity tools change
    */
   async refreshDynamicTools(sendNotification) {
     await this.initializeDynamicTools();

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor.TestTools.TestRunner.Api;
 
@@ -16,8 +17,11 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "run-tests";
 
-        protected override async Task<RunTestsResponse> ExecuteAsync(RunTestsSchema parameters)
+        protected override async Task<RunTestsResponse> ExecuteAsync(RunTestsSchema parameters, CancellationToken cancellationToken)
         {
+            // Check for cancellation before starting
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Create filter if specified
             TestExecutionFilter filter = null;
             if (parameters.FilterType != TestFilterType.all)
@@ -25,6 +29,9 @@ namespace io.github.hatayama.uMCP
                 filter = CreateFilter(parameters.FilterType.ToString(), parameters.FilterValue);
             }
 
+            // Check for cancellation before test execution
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Execute tests using appropriate method
             SerializableTestResult result;
             if (parameters.TestMode == TestMode.PlayMode)

@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -18,9 +19,13 @@ namespace io.github.hatayama.uMCP
         /// Execute compile tool
         /// </summary>
         /// <param name="parameters">Type-safe parameters</param>
+        /// <param name="cancellationToken">Cancellation token for timeout control</param>
         /// <returns>Compile result</returns>
-        protected override async Task<CompileResponse> ExecuteAsync(CompileSchema parameters)
+        protected override async Task<CompileResponse> ExecuteAsync(CompileSchema parameters, CancellationToken cancellationToken)
         {
+            // Check for cancellation before starting
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Type-safe parameter access - no more string parsing!
             bool forceRecompile = parameters.ForceRecompile;
             
@@ -38,6 +43,9 @@ namespace io.github.hatayama.uMCP
                     warnings: new CompileIssue[0]
                 );
             }
+            
+            // Check for cancellation before compilation
+            cancellationToken.ThrowIfCancellationRequested();
             
             // Execute compilation using CompileChecker
             using CompileController compileController = new CompileController();

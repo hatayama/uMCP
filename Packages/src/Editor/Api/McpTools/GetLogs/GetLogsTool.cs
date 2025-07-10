@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace io.github.hatayama.uMCP
@@ -15,8 +16,11 @@ namespace io.github.hatayama.uMCP
 
 
 
-        protected override Task<GetLogsResponse> ExecuteAsync(GetLogsSchema parameters)
+        protected override Task<GetLogsResponse> ExecuteAsync(GetLogsSchema parameters, CancellationToken cancellationToken)
         {
+            // Check for cancellation before starting
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Type-safe parameter access - no more string parsing!
             McpLogType logType = parameters.LogType;
             int maxCount = parameters.MaxCount;
@@ -43,6 +47,9 @@ namespace io.github.hatayama.uMCP
             {
                 logData = LogGetter.GetConsoleLog(logType, searchText);
             }
+            
+            // Check for cancellation before processing
+            cancellationToken.ThrowIfCancellationRequested();
             
             // Limit logs according to maxCount - take latest logs (tail behavior) and reverse to newest first.
             LogEntryDto[] limitedEntries = logData.LogEntries;

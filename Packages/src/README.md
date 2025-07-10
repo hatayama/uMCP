@@ -249,21 +249,30 @@ public class MyCustomResponse : BaseToolResponse
 
 **Step 3: Create Tool Class**:
 ```csharp
+using System.Threading;
+using System.Threading.Tasks;
+
 [McpTool(Description = "Description of my custom tool")]  // ← Auto-registered with this attribute
 public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 {
     public override string ToolName => "my-custom-tool";
     
     // Executed on main thread
-    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
+    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters, CancellationToken cancellationToken)
     {
         // Type-safe parameter access
         string param = parameters.MyParameter;
         MyEnum enumValue = parameters.EnumParameter;
         
+        // Check for cancellation before long-running operations
+        cancellationToken.ThrowIfCancellationRequested();
+        
         // Implement custom logic here
         string result = ProcessCustomLogic(param, enumValue);
         bool success = !string.IsNullOrEmpty(result);
+        
+        // For long-running operations, periodically check for cancellation
+        // cancellationToken.ThrowIfCancellationRequested();
         
         return Task.FromResult(new MyCustomResponse(result, success));
     }
@@ -275,6 +284,10 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
     }
 }
 ```
+
+**Important Notes**:
+- **Timeout Handling**: All tools inherit `TimeoutSeconds` parameter from `BaseToolSchema` (default: 15 seconds). Implement `cancellationToken.ThrowIfCancellationRequested()` checks in long-running operations to ensure proper timeout behavior.
+- **Thread Safety**: Tools execute on Unity's main thread, so Unity API calls are safe without additional synchronization.
 
 Please also refer to [Custom Tool Samples](/Assets/Editor/CustomToolSamples).
 

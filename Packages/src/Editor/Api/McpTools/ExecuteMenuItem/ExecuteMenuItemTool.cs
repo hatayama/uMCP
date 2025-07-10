@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using uMCP.Editor.Api.Commands.GetMenuItems;
@@ -18,7 +19,7 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "execute-menu-item";
 
-        protected override Task<ExecuteMenuItemResponse> ExecuteAsync(ExecuteMenuItemSchema parameters)
+        protected override Task<ExecuteMenuItemResponse> ExecuteAsync(ExecuteMenuItemSchema parameters, CancellationToken cancellationToken)
         {
             // Type-safe parameter access
             string menuItemPath = parameters.MenuItemPath;

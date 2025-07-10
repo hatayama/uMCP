@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -12,7 +13,7 @@ namespace io.github.hatayama.uMCP
     {
         public override string ToolName => "get-project-info";
 
-        protected override Task<GetProjectInfoResponse> ExecuteAsync(GetProjectInfoSchema parameters)
+        protected override Task<GetProjectInfoResponse> ExecuteAsync(GetProjectInfoSchema parameters, CancellationToken cancellationToken)
         {
             GetProjectInfoResponse response = new GetProjectInfoResponse
             {
