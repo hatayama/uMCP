@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.26.0](https://github.com/hatayama/uMCP/compare/v0.25.0...v0.26.0) (2025-07-10)
+
+
+### Features
+
+* enhance GetHierarchy with nested JSON and automatic file export ([#185](https://github.com/hatayama/uMCP/issues/185)) ([d2d6957](https://github.com/hatayama/uMCP/commit/d2d6957f8498dd2f48109e9755c1587f7189258f))
+
 ## [0.25.0](https://github.com/hatayama/uMCP/compare/v0.24.1...v0.25.0) (2025-07-10)
 
 
