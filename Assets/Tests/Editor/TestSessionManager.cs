@@ -16,7 +16,6 @@ namespace io.github.hatayama.uMCP
             set
             {
                 testBoolValue = value;
-                Save(true);
             }
         }
 
@@ -26,7 +25,6 @@ namespace io.github.hatayama.uMCP
             set
             {
                 testIntValue = value;
-                Save(true);
             }
         }
 
@@ -36,7 +34,6 @@ namespace io.github.hatayama.uMCP
             set
             {
                 testStringValue = value ?? "";
-                Save(true);
             }
         }
 
@@ -46,7 +43,6 @@ namespace io.github.hatayama.uMCP
             set
             {
                 testFloatValue = value;
-                Save(true);
             }
         }
 
@@ -56,7 +52,6 @@ namespace io.github.hatayama.uMCP
             testIntValue = 0;
             testStringValue = "";
             testFloatValue = 0.0f;
-            Save(true);
         }
 
         public string GetAllValuesAsString()

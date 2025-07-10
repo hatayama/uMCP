@@ -35,13 +35,13 @@ namespace io.github.hatayama.uMCP
             // Arrange - Test the Schema object directly
             RunTestsSchema schema = new RunTestsSchema
             {
-                FilterType = TestFilterType.fullclassname,
+                FilterType = TestFilterType.regex,
                 FilterValue = "TestClass",
                 SaveXml = true
             };
 
             // Assert - Schema properties should match what we set
-            Assert.That(schema.FilterType.ToString(), Is.EqualTo("fullclassname"));
+            Assert.That(schema.FilterType.ToString(), Is.EqualTo("regex"));
             Assert.That(schema.FilterValue, Is.EqualTo("TestClass"));
             Assert.That(schema.SaveXml, Is.True);
         }
@@ -74,10 +74,10 @@ namespace io.github.hatayama.uMCP
             System.Reflection.MethodInfo createFilterMethod = typeof(RunTestsTool)
                 .GetMethod("CreateFilter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            TestExecutionFilter result = (TestExecutionFilter)createFilterMethod.Invoke(runTestsTool, new object[] { "fullclassname", "TestClass" });
+            TestExecutionFilter result = (TestExecutionFilter)createFilterMethod.Invoke(runTestsTool, new object[] { "regex", "TestClass" });
 
             // Assert
-            Assert.That(result.FilterType, Is.EqualTo(TestExecutionFilterType.ClassName));
+            Assert.That(result.FilterType, Is.EqualTo(TestExecutionFilterType.Regex));
             Assert.That(result.FilterValue, Is.EqualTo("TestClass"));
         }
 

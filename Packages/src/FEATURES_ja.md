@@ -63,10 +63,12 @@
 ### 3. run-tests
 - **説明**: Unity Test Runnerを実行し、包括的なレポート付きでテスト結果を取得します
 - **パラメータ**: 
-  - `FilterType` (enum): テストフィルタのタイプ - "all", "fullclassname"（デフォルト: "all"）
+  - `FilterType` (enum): テストフィルタのタイプ - "all"(0), "exact"(1), "regex"(2), "assembly"(3)（デフォルト: "all"）
   - `FilterValue` (string): フィルタ値（FilterTypeがall以外の場合に指定）（デフォルト: ""）
-    - `fullclassname`: 完全クラス名（例：io.github.hatayama.uMCP.CompileCommandTests）
-  - `TestMode` (enum): テストモード - "EditMode", "PlayMode"（デフォルト: "EditMode"）
+    - `exact`: 個別テストメソッド名（完全一致）（例：io.github.hatayama.uMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs）
+    - `regex`: クラス名または名前空間（正規表現パターン）（例：io.github.hatayama.uMCP.ConsoleLogRetrieverTests, io.github.hatayama.uMCP）
+    - `assembly`: アセンブリ名（例：uMCP.Tests.Editor）
+  - `TestMode` (enum): テストモード - "EditMode"(0), "PlayMode"(1)（デフォルト: "EditMode"）
     - ⚠️ **PlayMode注意**: PlayModeテスト実行時は、一時的にdomain reloadが無効化されます
   - `SaveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）
     - XMLファイルは `TestResults/` フォルダに保存されます（プロジェクトルート）

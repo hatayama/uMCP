@@ -90,7 +90,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Search flags for controlling Unity Search behavior
         /// </summary>
-        [Description("(Optional) Search flags for controlling Unity Search behavior (default: Default)")]
+        [Description("(Optional) Search flags for controlling Unity Search behavior (default: Default(0), Synchronous(1), WantsMore(2), Packages(4), Sorted(8))")]
         public UnitySearchFlags SearchFlags { get; set; } = UnitySearchFlags.Default;
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Output file format when SaveToFile is enabled (JSON, CSV, TSV)
         /// </summary>
-        [Description("(Optional) Output file format when SaveToFile is enabled (default: JSON)")]
+        [Description("(Optional) Output file format when SaveToFile is enabled (default: JSON(0), CSV(1), TSV(2))")]
         public SearchOutputFormat OutputFormat { get; set; } = SearchOutputFormat.JSON;
 
         /// <summary>

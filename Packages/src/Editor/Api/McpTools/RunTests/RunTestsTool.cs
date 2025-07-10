@@ -12,7 +12,7 @@ namespace io.github.hatayama.uMCP
     public class RunTestsTool : AbstractUnityTool<RunTestsSchema, RunTestsResponse>
     {
         public override string ToolName => "run-tests";
-        public override string Description => "Execute Unity tests using Test Runner";
+        public override string Description => "Execute Unity Test Runner with advanced filtering options - exact test methods, regex patterns for classes/namespaces, assembly filtering";
 
         protected override async Task<RunTestsResponse> ExecuteAsync(RunTestsSchema parameters)
         {
@@ -58,9 +58,8 @@ namespace io.github.hatayama.uMCP
             return filterType.ToLower() switch
             {
                 "all" => TestExecutionFilter.All(), // Run all tests
-                "fullclassname" => TestExecutionFilter.ByClassName(filterValue), // Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)
-                "namespace" => TestExecutionFilter.ByNamespace(filterValue), // Namespace (e.g.: io.github.hatayama.uMCP)
-                "testname" => TestExecutionFilter.ByTestName(filterValue), // Individual test name
+                "exact" => TestExecutionFilter.ByTestName(filterValue), // Individual test method (exact match)
+                "regex" => TestExecutionFilter.ByClassName(filterValue), // Class name or namespace (regex pattern)
                 "assembly" => TestExecutionFilter.ByAssemblyName(filterValue), // Assembly name
                 _ => throw new ArgumentException($"Unsupported filter type: {filterType}")
             };

@@ -38,7 +38,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Type of filter to apply (contains, exact, startswith)
         /// </summary>
-        [Description("Type of filter to apply (contains, exact, startswith)")]
+        [Description("Type of filter to apply (contains(0), exact(1), startswith(2))")]
         public MenuItemFilterType FilterType { get; set; } = MenuItemFilterType.contains;
 
         /// <summary>

@@ -11,19 +11,14 @@ namespace io.github.hatayama.uMCP
         All,
         
         /// <summary>
-        /// Filter by a specific test name.
+        /// Filter by exact test method name (complete match).
         /// </summary>
-        TestName,
+        Exact,
         
         /// <summary>
-        /// Filter by class name.
+        /// Filter by regex pattern (class name or namespace).
         /// </summary>
-        ClassName,
-        
-        /// <summary>
-        /// Filter by namespace.
-        /// </summary>
-        Namespace,
+        Regex,
         
         /// <summary>
         /// Filter by assembly name.
@@ -45,9 +40,8 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// The specific value to filter tests by, based on the FilterType.
         /// Examples:
-        /// • When FilterType is TestName: "MySpecificTestMethod"
-        /// • When FilterType is ClassName: "io.github.hatayama.uMCP.CompileCommandTests"
-        /// • When FilterType is Namespace: "io.github.hatayama.uMCP"
+        /// • When FilterType is Exact: "io.github.hatayama.uMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs"
+        /// • When FilterType is Regex: "io.github.hatayama.uMCP.ConsoleLogRetrieverTests" or "io.github.hatayama.uMCP"
         /// • When FilterType is AssemblyName: "uMCP.Tests.Editor"
         /// </summary>
         public string FilterValue { get; }
@@ -62,27 +56,19 @@ namespace io.github.hatayama.uMCP
         }
         
         /// <summary>
-        /// Creates a filter by class name.
-        /// </summary>
-        public static TestExecutionFilter ByClassName(string className)
-        {
-            return new TestExecutionFilter(TestExecutionFilterType.ClassName, className);
-        }
-        
-        /// <summary>
-        /// Creates a filter by namespace.
-        /// </summary>
-        public static TestExecutionFilter ByNamespace(string namespaceName)
-        {
-            return new TestExecutionFilter(TestExecutionFilterType.Namespace, namespaceName);
-        }
-        
-        /// <summary>
-        /// Creates a filter by test name.
+        /// Creates a filter by exact test method name.
         /// </summary>
         public static TestExecutionFilter ByTestName(string testName)
         {
-            return new TestExecutionFilter(TestExecutionFilterType.TestName, testName);
+            return new TestExecutionFilter(TestExecutionFilterType.Exact, testName);
+        }
+        
+        /// <summary>
+        /// Creates a filter by regex pattern (class name or namespace).
+        /// </summary>
+        public static TestExecutionFilter ByClassName(string className)
+        {
+            return new TestExecutionFilter(TestExecutionFilterType.Regex, className);
         }
         
         /// <summary>
