@@ -9,9 +9,9 @@ namespace io.github.hatayama.uMCP
     public abstract class BaseToolSchema
     {
         /// <summary>
-        /// Timeout for tool execution in seconds (default: 30 seconds)
+        /// Timeout for tool execution in seconds (default: 15 seconds)
         /// </summary>
-        [Description("Timeout for tool execution in seconds (default: 30 seconds)")]
-        public virtual int TimeoutSeconds { get; set; } = 30;
+        [Description("Timeout for tool execution in seconds (default: 15 seconds)")]
+        public virtual int TimeoutSeconds { get; set; } = 15;
     }
 } 

@@ -249,21 +249,30 @@ public class MyCustomResponse : BaseToolResponse
 
 **ステップ3: ツールクラスの作成**：
 ```csharp
+using System.Threading;
+using System.Threading.Tasks;
+
 [McpTool(Description = "私のカスタムツールの説明")]  // ← この属性により自動登録されます
 public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 {
     public override string ToolName => "my-custom-tool";
     
     // メインスレッドで実行されます
-    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters)
+    protected override Task<MyCustomResponse> ExecuteAsync(MyCustomSchema parameters, CancellationToken cancellationToken)
     {
         // 型安全なパラメータアクセス
         string param = parameters.MyParameter;
         MyEnum enumValue = parameters.EnumParameter;
         
+        // 長時間実行される処理の前にキャンセレーションをチェック
+        cancellationToken.ThrowIfCancellationRequested();
+        
         // カスタムロジックをここに実装
         string result = ProcessCustomLogic(param, enumValue);
         bool success = !string.IsNullOrEmpty(result);
+        
+        // 長時間実行される処理では定期的にキャンセレーションをチェック
+        // cancellationToken.ThrowIfCancellationRequested();
         
         return Task.FromResult(new MyCustomResponse(result, success));
     }
@@ -275,6 +284,10 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
     }
 }
 ```
+
+**重要事項**：
+- **タイムアウト処理**: 全てのツールは`BaseToolSchema`から`TimeoutSeconds`パラメータを継承します（デフォルト: 15秒）。長時間実行される処理では`cancellationToken.ThrowIfCancellationRequested()`チェックを実装して、適切なタイムアウト動作を保証してください。
+- **スレッドセーフティ**: ツールはUnityのメインスレッドで実行されるため、追加の同期なしにUnity APIを安全に呼び出せます。
 
 [カスタムツールのサンプル](/Assets/Editor/CustomToolSamples)も参考にして下さい。
 

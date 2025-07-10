@@ -6083,6 +6083,7 @@ var UnityClient = class {
    * Execute any Unity tool dynamically
    */
   async executeTool(toolName, params = {}) {
+    const startTime = Date.now();
     const request = {
       jsonrpc: JSONRPC.VERSION,
       id: this.generateId(),
@@ -6090,7 +6091,18 @@ var UnityClient = class {
       params
     };
     const timeoutMs = TIMEOUTS.NETWORK;
-    const response = await this.sendRequest(request, timeoutMs);
+    try {
+      const response = await this.sendRequest(request, timeoutMs);
+      return this.handleToolResponse(response, toolName);
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      if (error instanceof Error && error.message.includes("timed out")) {
+        errorToFile(`[TIMEOUT] Tool: ${toolName}, NetworkTimeout: ${timeoutMs}ms, ExecutionTime: ${executionTime}ms, RequestId: ${request.id}, Params: ${JSON.stringify(params)}`);
+      }
+      throw error;
+    }
+  }
+  handleToolResponse(response, toolName) {
     if (response.error) {
       throw new Error(`Failed to execute tool '${toolName}': ${response.error.message}`);
     }
@@ -6109,6 +6121,7 @@ var UnityClient = class {
     return new Promise((resolve, reject) => {
       const timeout_duration = timeoutMs || TIMEOUTS.NETWORK;
       const timeoutTimer = safeSetTimeout(() => {
+        errorToFile(`[NETWORK_TIMEOUT] Method: ${request.method}, RequestId: ${request.id}, NetworkTimeout: ${timeout_duration}ms, Params: ${JSON.stringify(request.params || {})}`);
         this.messageHandler.clearPendingRequests(`Request ${ERROR_MESSAGES.TIMEOUT}`);
         reject(new Error(`Request ${ERROR_MESSAGES.TIMEOUT}`));
       }, timeout_duration);
