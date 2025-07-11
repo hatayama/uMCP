@@ -44,7 +44,7 @@ jobs:
         with:
           path: Packages/src
           release-type: node
-          package-name: "io.github.hatayama.umcp"
+          package-name: "io.github.hatayama.uloopmcp"
           token: ${{ secrets.GITHUB_TOKEN }}
           extra-files: |
             TypeScriptServer~/package.json

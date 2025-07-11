@@ -149,7 +149,7 @@ For detailed features, please see [FEATURES_ja.md](./FEATURES_ja.md).
 ```json
 {
   "mcpServers": {
-    "uMcp": {
+    "uLoopMCP": {
       "command": "node",
       "args": [
         "[Unity Package Path]/TypeScriptServer~/dist/server.bundle.js"

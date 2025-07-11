@@ -149,7 +149,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 ```json
 {
   "mcpServers": {
-    "uMcp": {
+    "uLoopMCP": {
       "command": "node",
       "args": [
         "[Unity Package Path]/TypeScriptServer~/dist/server.bundle.js"

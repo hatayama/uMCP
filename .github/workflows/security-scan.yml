@@ -35,7 +35,7 @@ jobs:
     - name: Run SecurityCodeScan on uMCP Package
       run: |
         # Create a temporary project file for scanning
-        cat > temp-umcp.csproj << 'EOF'
+        cat > temp-uloopmcp.csproj << 'EOF'
         <Project Sdk="Microsoft.NET.Sdk">
           <PropertyGroup>
             <TargetFramework>net6.0</TargetFramework>
@@ -52,10 +52,10 @@ jobs:
         EOF
         
         # Run dotnet build to trigger SecurityCodeScan analysis
-        dotnet restore temp-umcp.csproj
+        dotnet restore temp-uloopmcp.csproj
         
         # Build with continue on error and create a basic SARIF file if scanning fails
-        if ! dotnet build temp-umcp.csproj --configuration Release --verbosity normal --no-restore; then
+        if ! dotnet build temp-uloopmcp.csproj --configuration Release --verbosity normal --no-restore; then
           echo "SecurityCodeScan completed with warnings/errors - creating placeholder SARIF"
           cat > security-results.sarif << 'SARIF_EOF'
         {
