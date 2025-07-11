@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Core service for finding GameObjects and extracting component information

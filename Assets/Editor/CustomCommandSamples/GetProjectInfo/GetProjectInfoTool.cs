@@ -2,7 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Project information retrieval custom tool

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine.TestTools;
 using NUnit.Framework;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Unit tests for EditorDelay system

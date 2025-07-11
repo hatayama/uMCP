@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     public class ScriptableSingletonThreadTest
     {

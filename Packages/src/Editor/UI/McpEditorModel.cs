@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Model layer for McpEditorWindow in MVP architecture
@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
     {
         public UIState UI { get; private set; }
         public RuntimeState Runtime { get; private set; }
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
         public DebugState Debug { get; private set; }
 #endif
 
@@ -26,7 +26,7 @@ namespace io.github.hatayama.uMCP
         {
             UI = new UIState();
             Runtime = new RuntimeState();
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
             Debug = new DebugState();
 #endif
         }
@@ -49,7 +49,7 @@ namespace io.github.hatayama.uMCP
             Runtime = updater(Runtime);
         }
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
         /// <summary>
         /// Update debug state with new values
         /// </summary>
@@ -76,7 +76,7 @@ namespace io.github.hatayama.uMCP
                 mainScrollPosition: ui.MainScrollPosition,
                 showSecuritySettings: ui.ShowSecuritySettings));
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
             UpdateDebugState(debug => new DebugState(
                 showDeveloperTools: settings.showDeveloperTools,
                 enableMcpLogs: settings.enableMcpLogs,
@@ -101,7 +101,7 @@ namespace io.github.hatayama.uMCP
             McpEditorSettings.SetCustomPort(UI.CustomPort);
             McpEditorSettings.SetAutoStartServer(UI.AutoStartServer);
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
             McpEditorSettings.SetShowDeveloperTools(Debug.ShowDeveloperTools);
             McpEditorSettings.SetEnableMcpLogs(Debug.EnableMcpLogs);
             McpEditorSettings.SetEnableCommunicationLogs(Debug.EnableCommunicationLogs);
@@ -126,7 +126,7 @@ namespace io.github.hatayama.uMCP
                 mainScrollPosition: ui.MainScrollPosition,
                 showSecuritySettings: ui.ShowSecuritySettings));
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
             float communicationLogHeight = sessionManager.CommunicationLogHeight;
 
             UpdateDebugState(debug => new DebugState(
@@ -150,7 +150,7 @@ namespace io.github.hatayama.uMCP
             McpSessionManager sessionManager = McpSessionManager.instance;
             sessionManager.SelectedEditorType = UI.SelectedEditorType;
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
             sessionManager.CommunicationLogHeight = Debug.CommunicationLogHeight;
 #endif
         }
@@ -352,7 +352,7 @@ namespace io.github.hatayama.uMCP
         }
 
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
         /// <summary>
         /// Update communication log scroll position
         /// </summary>

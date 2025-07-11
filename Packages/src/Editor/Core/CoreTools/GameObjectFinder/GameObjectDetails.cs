@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Value object containing GameObject search results

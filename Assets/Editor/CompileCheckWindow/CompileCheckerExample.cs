@@ -1,11 +1,11 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     public class CompileCheckerExample
     {
-        [MenuItem("uMCP/Debug/Compile Tests/Compile Checker Usage Example")]
+        [MenuItem("uLoopMCP/Debug/Compile Tests/Compile Checker Usage Example")]
         public static async void TestCompileChecker()
         {
             CompileController compileController = new CompileController();
@@ -39,7 +39,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-        [MenuItem("uMCP/Debug/Compile Tests/Force Compile Checker Usage Example")]
+        [MenuItem("uLoopMCP/Debug/Compile Tests/Force Compile Checker Usage Example")]
         public static async void TestForceCompileChecker()
         {
             CompileController compileController = new CompileController();

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using System.Threading;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Tool to retrieve Unity Hierarchy information in AI-friendly format

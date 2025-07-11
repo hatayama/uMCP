@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using UnityEditor.TestTools.TestRunner.Api;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Supported test filter types
@@ -34,11 +34,11 @@ namespace io.github.hatayama.uMCP
 
         /// <summary>
         /// Filter value (specify when filterType is not all)
-        /// • exact: Individual test method name (e.g.: io.github.hatayama.uMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs)
-        /// • regex: Class name or namespace (e.g.: io.github.hatayama.uMCP.ConsoleLogRetrieverTests, io.github.hatayama.uMCP)
-        /// • assembly: Assembly name (e.g.: uMCP.Tests.Editor)
+        /// • exact: Individual test method name (e.g.: io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs)
+        /// • regex: Class name or namespace (e.g.: io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests, io.github.hatayama.uLoopMCP)
+        /// • assembly: Assembly name (e.g.: uLoopMCP.Tests.Editor)
         /// </summary>
-        [Description("Filter value (specify when filterType is not all)\n• exact: Individual test method name (e.g.: io.github.hatayama.uMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs)\n• regex: Class name or namespace (e.g.: io.github.hatayama.uMCP.ConsoleLogRetrieverTests, io.github.hatayama.uMCP)\n• assembly: Assembly name (e.g.: uMCP.Tests.Editor)")]
+        [Description("Filter value (specify when filterType is not all)\n• exact: Individual test method name (e.g.: io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs)\n• regex: Class name or namespace (e.g.: io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests, io.github.hatayama.uLoopMCP)\n• assembly: Assembly name (e.g.: uLoopMCP.Tests.Editor)")]
         public string FilterValue { get; set; } = "";
 
         /// <summary>

@@ -2,23 +2,23 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
-    /// Unity Editor menu items for toggling UMCP_DEBUG scripting define symbol
-    /// Provides easy access to enable/disable debug features in uMCP
+    /// Unity Editor menu items for toggling ULOOPMCP_DEBUG scripting define symbol
+    /// Provides easy access to enable/disable debug features in uLoopMCP
     /// Related classes:
-    /// - McpEditorWindow: Uses UMCP_DEBUG to show/hide developer tools
+    /// - McpEditorWindow: Uses ULOOPMCP_DEBUG to show/hide developer tools
     /// - McpLogger: Debug logging behavior controlled by this symbol
     /// </summary>
-    public static class UmcpDebugToggle
+    public static class ULoopMCPDebugToggle
     {
-        private const string DEBUG_SYMBOL = "UMCP_DEBUG";
-        private const string MENU_PATH_ENABLE = "uMCP/Tools/Debug Settings/Enable Debug Mode";
-        private const string MENU_PATH_DISABLE = "uMCP/Tools/Debug Settings/Disable Debug Mode";
+        private const string DEBUG_SYMBOL = "ULOOPMCP_DEBUG";
+        private const string MENU_PATH_ENABLE = "uLoopMCP/Tools/Debug Settings/Enable Debug Mode";
+        private const string MENU_PATH_DISABLE = "uLoopMCP/Tools/Debug Settings/Disable Debug Mode";
 
         /// <summary>
-        /// Check if UMCP_DEBUG symbol is currently defined
+        /// Check if ULOOPMCP_DEBUG symbol is currently defined
         /// </summary>
         private static bool IsDebugModeEnabled()
         {
@@ -28,14 +28,14 @@ namespace io.github.hatayama.uMCP
         }
 
         /// <summary>
-        /// Enable UMCP_DEBUG scripting define symbol
+        /// Enable ULOOPMCP_DEBUG scripting define symbol
         /// </summary>
         [MenuItem(MENU_PATH_ENABLE)]
         public static void EnableDebugMode()
         {
             if (IsDebugModeEnabled())
             {
-                Debug.Log("[uMCP] Debug mode is already enabled");
+                Debug.Log("[uLoopMCP] Debug mode is already enabled");
                 return;
             }
 
@@ -52,18 +52,18 @@ namespace io.github.hatayama.uMCP
             }
             
             PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, defines);
-            Debug.Log("[uMCP] Debug mode enabled. Unity will recompile scripts.");
+            Debug.Log("[uLoopMCP] Debug mode enabled. Unity will recompile scripts.");
         }
 
         /// <summary>
-        /// Disable UMCP_DEBUG scripting define symbol
+        /// Disable ULOOPMCP_DEBUG scripting define symbol
         /// </summary>
         [MenuItem(MENU_PATH_DISABLE)]
         public static void DisableDebugMode()
         {
             if (!IsDebugModeEnabled())
             {
-                Debug.Log("[uMCP] Debug mode is already disabled");
+                Debug.Log("[uLoopMCP] Debug mode is already disabled");
                 return;
             }
 
@@ -75,7 +75,7 @@ namespace io.github.hatayama.uMCP
             defines = string.Join(";", defineArray);
             
             PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, defines);
-            Debug.Log("[uMCP] Debug mode disabled. Unity will recompile scripts.");
+            Debug.Log("[uLoopMCP] Debug mode disabled. Unity will recompile scripts.");
         }
 
         /// <summary>

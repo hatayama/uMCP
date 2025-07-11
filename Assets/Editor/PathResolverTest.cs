@@ -2,14 +2,14 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Utility for testing the path resolution feature.
     /// </summary>
     public static class PathResolverTest
     {
-        [MenuItem("uMCP/Tools/Path Resolver/Test TypeScript Server Path")]
+        [MenuItem("uLoopMCP/Tools/Path Resolver/Test TypeScript Server Path")]
         public static void TestTypeScriptServerPath()
         {
             McpLogger.LogInfo("=== TypeScript Server Path Test ===");
@@ -60,7 +60,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo("=== Test Complete ===");
         }
         
-        [MenuItem("uMCP/Tools/Path Resolver/Force Update MCP Config")]
+        [MenuItem("uLoopMCP/Tools/Path Resolver/Force Update MCP Config")]
         public static void ForceUpdateMcpConfig()
         {
             McpLogger.LogInfo("=== Force Update MCP Config ===");
@@ -73,7 +73,7 @@ namespace io.github.hatayama.uMCP
             McpLogger.LogInfo("MCP config update completed");
         }
 
-        [MenuItem("uMCP/Tools/Path Resolver/Test Path Resolver")]
+        [MenuItem("uLoopMCP/Tools/Path Resolver/Test Path Resolver")]
         public static void TestPathResolver()
         {
             Debug.Log("=== Path Resolver Test ===");

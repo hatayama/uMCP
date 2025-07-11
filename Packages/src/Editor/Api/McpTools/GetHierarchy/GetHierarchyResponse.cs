@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Response structure for GetHierarchy tool

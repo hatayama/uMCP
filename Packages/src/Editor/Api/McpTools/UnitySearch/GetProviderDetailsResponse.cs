@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Response schema for GetProviderDetails command

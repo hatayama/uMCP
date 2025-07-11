@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// A class that provides a general-purpose static API for retrieving console logs.

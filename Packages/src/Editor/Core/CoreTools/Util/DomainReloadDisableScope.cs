@@ -1,7 +1,7 @@
 using System;
 using UnityEditor;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     public class DomainReloadDisableScope : IDisposable
     {

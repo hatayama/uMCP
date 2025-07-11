@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Debug tool that sleeps for specified duration to test timeout functionality

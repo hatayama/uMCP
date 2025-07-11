@@ -1,4 +1,4 @@
-# uMCP Unity Editor-Side Architecture
+# uLoopMCP Unity Editor-Side Architecture
 
 ## 1. Overview
 
@@ -363,7 +363,7 @@ Contains higher-level utilities that wrap core Unity Editor functionality.
 Contains low-level, general-purpose helper classes.
 - **`MainThreadSwitcher.cs`**: A crucial utility that provides an `awaitable` object to switch execution from a background thread (like the TCP server's) back to Unity's main thread. This is essential because most Unity APIs can only be called from the main thread.
 - **`EditorDelay.cs`**: A custom, `async/await`-compatible implementation of a frame-based delay, useful for waiting a few frames for the Editor to reach a stable state, especially after domain reloads.
-- **`McpLogger.cs`**: A simple, unified logging wrapper to prefix all package-related logs with `[uMCP]`.
+- **`McpLogger.cs`**: A simple, unified logging wrapper to prefix all package-related logs with `[uLoopMCP]`.
 
 ## 5. Key Workflows
 

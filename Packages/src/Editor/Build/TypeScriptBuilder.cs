@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using SystemDiagnostics = System.Diagnostics;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Class responsible for TypeScript server build processing

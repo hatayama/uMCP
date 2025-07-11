@@ -6,7 +6,7 @@ using System.Text;
 using Newtonsoft.Json;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Utility class for exporting Unity search results to external files
@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class SearchResultExporter
     {
-        private const string EXPORT_DIRECTORY = "Temp/uMCP/SearchResults";
+        private const string EXPORT_DIRECTORY = "Temp/uLoopMCP/SearchResults";
         private const string FILE_PREFIX = "unity_search_results";
 
         /// <summary>

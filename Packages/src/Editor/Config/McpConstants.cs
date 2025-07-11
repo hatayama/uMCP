@@ -1,4 +1,4 @@
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Central constants repository for Unity MCP system.
@@ -14,9 +14,9 @@ namespace io.github.hatayama.uMCP
     /// </summary>
     public static class McpConstants
     {
-        public const string PROJECT_NAME = "uMCP";
+        public const string PROJECT_NAME = "uLoopMCP";
 
-        public const string MCP_DEBUG = "UMCP_DEBUG";
+        public const string MCP_DEBUG = "ULOOPMCP_DEBUG";
         
         // JSON configuration keys
         public const string JSON_KEY_MCP_SERVERS = "mcpServers";
@@ -33,8 +33,8 @@ namespace io.github.hatayama.uMCP
         public const string UNITY_TCP_PORT_ENV_KEY = "UNITY_TCP_PORT";
         
         // Environment variable keys for development mode
-        public const string ENV_KEY_UMCP_DEBUG = "UMCP_DEBUG";
-        public const string ENV_KEY_UMCP_PRODUCTION = "UMCP_PRODUCTION";
+        public const string ENV_KEY_ULOOPMCP_DEBUG = "ULOOPMCP_DEBUG";
+        public const string ENV_KEY_ULOOPMCP_PRODUCTION = "ULOOPMCP_PRODUCTION";
         public const string ENV_KEY_NODE_ENV = "NODE_ENV";
         public const string ENV_KEY_MCP_DEBUG = "MCP_DEBUG";
         // MCP_CLIENT_NAME removed - now using clientInfo.name from MCP protocol
@@ -71,32 +71,32 @@ namespace io.github.hatayama.uMCP
         public const string SRC_DIR = "src";
         public const string LIBRARY_DIR = "Library";
         public const string PACKAGE_CACHE_DIR = "PackageCache";
-        public const string PACKAGE_NAME_PATTERN = "io.github.hatayama.umcp@*";
+        public const string PACKAGE_NAME_PATTERN = "io.github.hatayama.uloopmcp@*";
         
         // SessionState keys
-        public const string SESSION_KEY_SERVER_RUNNING = "uMCP.ServerRunning";
-        public const string SESSION_KEY_SERVER_PORT = "uMCP.ServerPort";
-        public const string SESSION_KEY_AFTER_COMPILE = "uMCP.AfterCompile";
-        public const string SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS = "uMCP.DomainReloadInProgress";
-        public const string SESSION_KEY_SELECTED_EDITOR_TYPE = "uMCP.SelectedEditorType";
-        public const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uMCP.CommunicationLogHeight";
-        public const string SESSION_KEY_COMMUNICATION_LOGS = "uMCP.CommunicationLogs";
-        public const string SESSION_KEY_PENDING_REQUESTS = "uMCP.PendingRequests";
-        public const string SESSION_KEY_RECONNECTING = "uMCP.Reconnecting";
-        public const string SESSION_KEY_SHOW_RECONNECTING_UI = "uMCP.ShowReconnectingUI";
+        public const string SESSION_KEY_SERVER_RUNNING = "uLoopMCP.ServerRunning";
+        public const string SESSION_KEY_SERVER_PORT = "uLoopMCP.ServerPort";
+        public const string SESSION_KEY_AFTER_COMPILE = "uLoopMCP.AfterCompile";
+        public const string SESSION_KEY_DOMAIN_RELOAD_IN_PROGRESS = "uLoopMCP.DomainReloadInProgress";
+        public const string SESSION_KEY_SELECTED_EDITOR_TYPE = "uLoopMCP.SelectedEditorType";
+        public const string SESSION_KEY_COMMUNICATION_LOG_HEIGHT = "uLoopMCP.CommunicationLogHeight";
+        public const string SESSION_KEY_COMMUNICATION_LOGS = "uLoopMCP.CommunicationLogs";
+        public const string SESSION_KEY_PENDING_REQUESTS = "uLoopMCP.PendingRequests";
+        public const string SESSION_KEY_RECONNECTING = "uLoopMCP.Reconnecting";
+        public const string SESSION_KEY_SHOW_RECONNECTING_UI = "uLoopMCP.ShowReconnectingUI";
         
         // Security constants
         public const int MAX_JSON_SIZE_BYTES = 1024 * 1024; // 1MB limit for JSON files
         public const int MAX_SETTINGS_SIZE_BYTES = 1024 * 16; // 16KB limit for settings files
-        public const string UMCP_NAMESPACE_PREFIX = "io.github.hatayama.uMCP";
-        public const string SECURITY_LOG_PREFIX = "[uMCP Security]";
+        public const string ULOOPMCP_NAMESPACE_PREFIX = "io.github.hatayama.uLoopMCP";
+        public const string SECURITY_LOG_PREFIX = "[uLoopMCP Security]";
         
         // Security: Allowed namespaces for reflection operations
         public static readonly string[] ALLOWED_NAMESPACES = {
             "UnityEditor",
             "Unity.EditorCoroutines", 
             "Unity.VisualScripting",
-            UMCP_NAMESPACE_PREFIX
+            ULOOPMCP_NAMESPACE_PREFIX
         };
         
         // Security: Denied types for reflection operations

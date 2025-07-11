@@ -1,7 +1,7 @@
 using System.IO;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Supported editor types.
@@ -62,8 +62,8 @@ namespace io.github.hatayama.uMCP
     /// ### 8. Configuration Details
     /// 
     /// #### Server Key Format:
-    /// - Windsurf: "uMCP-{port}" (includes port number)
-    /// - Other editors: "uMCP" (no port number)
+    /// - Windsurf: "uLoopMCP-{port}" (includes port number)
+    /// - Other editors: "uLoopMCP" (no port number)
     /// 
     /// #### Server Path Format:
     /// - Desktop editors (Cursor, VSCode, Windsurf): Absolute path
@@ -73,7 +73,7 @@ namespace io.github.hatayama.uMCP
     /// ```json
     /// {
     ///   "mcpServers": {
-    ///     "uMCP": {
+    ///     "uLoopMCP": {
     ///       "command": "node",
     ///       "args": ["{path_to_server.bundle.js}"],
     ///       "env": {
@@ -279,7 +279,7 @@ namespace io.github.hatayama.uMCP
             string packageCacheDir = Path.Combine(projectRoot, McpConstants.LIBRARY_DIR, McpConstants.PACKAGE_CACHE_DIR);
             if (Directory.Exists(packageCacheDir))
             {
-                // Search for directories starting with io.github.hatayama.umcp@.
+                // Search for directories starting with io.github.hatayama.uloopmcp@.
                 string[] packageDirs = Directory.GetDirectories(packageCacheDir, McpConstants.PACKAGE_NAME_PATTERN);
                 
                 foreach (string packageDir in packageDirs)

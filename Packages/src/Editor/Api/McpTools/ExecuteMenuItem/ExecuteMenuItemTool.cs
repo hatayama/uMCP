@@ -3,9 +3,9 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
-using uMCP.Editor.Api.Commands.GetMenuItems;
+using uLoopMCP.Editor.Api.Commands.GetMenuItems;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// ExecuteMenuItem tool handler - Executes Unity MenuItems by path

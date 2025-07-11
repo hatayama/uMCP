@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Threading;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     // Related classes:
     // - IUnityTool: The interface that this class implements.

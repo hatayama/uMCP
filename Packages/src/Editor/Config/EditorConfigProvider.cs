@@ -1,6 +1,6 @@
 using System;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Provides centralized configuration management for different MCP editors using the Visitor pattern.

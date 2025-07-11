@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEditor.Search;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Service layer for Unity Search API integration

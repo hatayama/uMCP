@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// View layer for McpEditorWindow - handles only UI rendering
@@ -288,7 +288,7 @@ namespace io.github.hatayama.uMCP
             }
         }
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
         public void DrawDeveloperTools(DeveloperToolsData data, Action<bool> foldoutCallback, Action<bool> devModeCallback, Action<bool> mcpLogsCallback, Action<bool> commLogsCallback, Action<bool> commLogsFoldoutCallback, Action showDebugCallback, Action notifyChangesCallback, Action rebuildCallback)
         {
             EditorGUILayout.BeginVertical("box");

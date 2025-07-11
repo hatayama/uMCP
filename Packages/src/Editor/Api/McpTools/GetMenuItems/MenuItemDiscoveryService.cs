@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
-using uMCP.Editor.Api.Commands.GetMenuItems;
+using uLoopMCP.Editor.Api.Commands.GetMenuItems;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Service for discovering Unity MenuItems using reflection

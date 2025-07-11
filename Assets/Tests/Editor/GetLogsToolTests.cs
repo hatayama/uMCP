@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     public class GetLogsToolTests
     {

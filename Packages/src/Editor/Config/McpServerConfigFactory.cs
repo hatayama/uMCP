@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Factory class for creating MCP server configuration objects.

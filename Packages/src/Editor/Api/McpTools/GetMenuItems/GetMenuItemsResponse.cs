@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using uMCP.Editor.Api.Commands.GetMenuItems;
+using uLoopMCP.Editor.Api.Commands.GetMenuItems;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Response for GetMenuItems tool

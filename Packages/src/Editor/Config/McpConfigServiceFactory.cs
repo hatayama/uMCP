@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Factory for creating and managing MCP configuration services

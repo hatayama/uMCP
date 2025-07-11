@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     // Related classes:
     // - UnityToolExecutor: Uses this registry to execute tools.
@@ -156,8 +156,8 @@ namespace io.github.hatayama.uMCP
                     return false;
                 }
                 
-                // Must be in uMCP namespace (security restriction)
-                if (!type.Namespace?.StartsWith(McpConstants.UMCP_NAMESPACE_PREFIX) == true)
+                // Must be in uLoopMCP namespace (security restriction)
+                if (!type.Namespace?.StartsWith(McpConstants.ULOOPMCP_NAMESPACE_PREFIX) == true)
                 {
                     return false;
                 }

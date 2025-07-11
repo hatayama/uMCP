@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Threading.Tasks;
-using io.github.hatayama.uMCP;
+using io.github.hatayama.uLoopMCP;
 using Newtonsoft.Json.Linq;
 
 /// <summary>
@@ -16,7 +16,7 @@ public class UnitySearchTester : EditorWindow
     private string lastResult = "";
     private Vector2 scrollPosition;
     
-    [MenuItem("uMCP/Windows/Unity Search Tester")]
+    [MenuItem("uLoopMCP/Windows/Unity Search Tester")]
     public static void ShowWindow()
     {
         GetWindow<UnitySearchTester>("Unity Search Tester");

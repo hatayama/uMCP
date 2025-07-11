@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     public class LogGetterEditorWindow : EditorWindow
     {
@@ -13,7 +13,7 @@ namespace io.github.hatayama.uMCP
         private string selectedLogType = "All";
         private readonly string[] logTypeOptions = { "All", "Log", "Warning", "Error", "Assert" };
 
-        [MenuItem("uMCP/Windows/Log Viewer")]
+        [MenuItem("uLoopMCP/Windows/Log Viewer")]
         public static void ShowWindow()
         {
             LogGetterEditorWindow window = GetWindow<LogGetterEditorWindow>();

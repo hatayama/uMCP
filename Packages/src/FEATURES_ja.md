@@ -1,6 +1,6 @@
 [English](FEATURES.md)
 
-# uMCP 機能仕様
+# uLoopMCP 機能仕様
 
 このドキュメントでは、Unity MCP（Model Context Protocol）の全ツールと機能について詳細に説明します。
 
@@ -65,9 +65,9 @@
 - **パラメータ**: 
   - `FilterType` (enum): テストフィルタのタイプ - "all"(0), "exact"(1), "regex"(2), "assembly"(3)（デフォルト: "all"）
   - `FilterValue` (string): フィルタ値（FilterTypeがall以外の場合に指定）（デフォルト: ""）
-    - `exact`: 個別テストメソッド名（完全一致）（例：io.github.hatayama.uMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs）
-    - `regex`: クラス名または名前空間（正規表現パターン）（例：io.github.hatayama.uMCP.ConsoleLogRetrieverTests, io.github.hatayama.uMCP）
-    - `assembly`: アセンブリ名（例：uMCP.Tests.Editor）
+    - `exact`: 個別テストメソッド名（完全一致）（例：io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs）
+    - `regex`: クラス名または名前空間（正規表現パターン）（例：io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests, io.github.hatayama.uLoopMCP）
+    - `assembly`: アセンブリ名（例：uLoopMCP.Tests.Editor）
   - `TestMode` (enum): テストモード - "EditMode"(0), "PlayMode"(1)（デフォルト: "EditMode"）
     - ⚠️ **PlayMode注意**: PlayModeテスト実行時は、一時的にdomain reloadが無効化されます
   - `SaveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）

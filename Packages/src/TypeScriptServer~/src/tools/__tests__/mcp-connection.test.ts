@@ -18,7 +18,7 @@ export class McpConnectionValidator {
     try {
       this.server = new Server(
         {
-          name: 'uMCP-7400-test',
+          name: 'uLoopMCP-7400-test',
           version: '1.0.0',
         },
         {

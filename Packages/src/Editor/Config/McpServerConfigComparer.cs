@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Class responsible for comparing MCP server settings.

@@ -14,9 +14,9 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using io.github.hatayama.uMCP;
+using io.github.hatayama.uLoopMCP;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Provides network-related utility functions

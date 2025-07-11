@@ -1,6 +1,6 @@
 using System;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Individual log entry information

@@ -61,7 +61,7 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
-    "io.github.hatayama.umcp": {
+    "io.github.hatayama.uloopmcp": {
       "version": "file:src",
       "depth": 0,
       "source": "embedded",

@@ -2,7 +2,7 @@ using System;
 using UnityEditor.TestTools.TestRunner.Api;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Serializable test result for domain reload survival

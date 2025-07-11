@@ -2,7 +2,7 @@
 
 [![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hatayama/uMCP)  
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hatayama/uLoopMCP)  
 ![ClaudeCode](https://img.shields.io/badge/Claude_Code-555?logo=claude)
 ![Cursor](https://img.shields.io/badge/Cursor-111?logo=Cursor)
 ![GitHubCopilot](https://img.shields.io/badge/GitHub_Copilot-111?logo=githubcopilot)
@@ -10,14 +10,14 @@
 ![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
 <h1 align="center">
-    <img width="500" alt="uMCP" src="https://github.com/user-attachments/assets/0b7c4fcf-af5f-4025-b0d3-e596897d41b7" />  
+    <img width="500" alt="uLoopMCP" src="https://github.com/user-attachments/assets/0b7c4fcf-af5f-4025-b0d3-e596897d41b7" />  
 </h1>     
 
 様々なLLMツールからUnity Editorを操作する事ができます。  
 
 # コンセプト
 AIによるコーディングを可能な限り長時間自走させる事をコンセンプトに作りました。
-通常、Unityをコンパイルさせたり、Testを走らせたり、logをAIに伝える部分は人間がやる必要があります。その面倒をuMCPが解決します。
+通常、Unityをコンパイルさせたり、Testを走らせたり、logをAIに伝える部分は人間がやる必要があります。その面倒をuLoopMCPが解決します。
 
 # 特徴
 1. packageをinstallして、お使いのLLMツールに接続するボタンを押すだけで、すぐに使い始める事ができます。
@@ -123,7 +123,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 > - `execute-menu-item`: メニュー項目の実行
 > - `run-tests`: テストの実行
 > 
-> これらの機能を使用するには、uMCPウィンドウのSecurity Settingsで該当する設定を有効にする必要があります：
+> これらの機能を使用するには、uLoopMCPウィンドウのSecurity Settingsで該当する設定を有効にする必要があります：
 > - **Allow Test Execution**: `run-tests`ツールを有効にします
 > - **Allow Menu Item Execution**: `execute-menu-item`ツールを有効にします
 > これらの機能を有効にする場合は、信頼できる環境でのみ使用してください。
@@ -131,14 +131,14 @@ UnitySearchが提供する検索プロバイダーを取得します
 機能詳細は[FEATURES_ja.md](./FEATURES_ja.md)を御覧ください。
 
 ## 使用方法
-1. Window > uMCPを選択します。専用ウィンドウが開くので、「Start Server」ボタンを押してください。  
+1. Window > uLoopMCPを選択します。専用ウィンドウが開くので、「Start Server」ボタンを押してください。  
 <img width="335" alt="image" src="https://github.com/user-attachments/assets/4cfd7f26-7739-442d-bad9-b3f6d113a0d7" />
 
 3. 次に、LLM Tool SettingsセクションでターゲットIDEを選択します。黄色い「Configure {LLM Tool名}」ボタンを押してIDEに自動接続してください。  
 <img width="335" alt="image" src="https://github.com/user-attachments/assets/25f1f4f9-e3c8-40a5-a2f3-903f9ed5f45b" />
 
 4. IDE接続確認
-  - 例えばCursorの場合、設定ページのTools & Integrationsを確認し、uMCPを見つけてください。トグルをクリックしてMCPを有効にします。赤い円が表示される場合は、Cursorを再起動してください。  
+  - 例えばCursorの場合、設定ページのTools & Integrationsを確認し、uLoopMCPを見つけてください。トグルをクリックしてMCPを有効にします。赤い円が表示される場合は、Cursorを再起動してください。  
 <img width="545" alt="image" src="https://github.com/user-attachments/assets/ed54d051-b78a-4bb4-bb2f-7ab23ebc1840" />
 
 
@@ -163,13 +163,13 @@ UnitySearchが提供する検索プロバイダーを取得します
 ```
 
 **パス例**:
-- **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
+- **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.uloopmcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
 > [!NOTE]
 > Package Manager経由でインストールした場合、パッケージはハッシュ化されたディレクトリ名で`Library/PackageCache`に配置されます。「Auto Configure Cursor」ボタンを使用すると、正しいパスが自動的に設定されます。
 
 5. 複数のUnityインスタンスのサポート
 > [!NOTE]
-> ポート番号を変更することで複数のUnityインスタンスをサポートできます。uMCP起動時に自動的に使われいないportが割り当てられます。
+> ポート番号を変更することで複数のUnityインスタンスをサポートできます。uLoopMCP起動時に自動的に使われいないportが割り当てられます。
 
 ## 前提条件
 
@@ -189,7 +189,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 4. 「Add package from git URL」を選択
 5. 以下のURLを入力：
 ```
-https://github.com/hatayama/uMCP.git?path=/Packages/src
+https://github.com/hatayama/uLoopMCP.git?path=/Packages/src
 ```
 
 ### OpenUPM経由（推奨）
@@ -200,10 +200,10 @@ https://github.com/hatayama/uMCP.git?path=/Packages/src
 ```
 Name: OpenUPM
 URL: https://package.openupm.com
-Scope(s): io.github.hatayama.umcp
+Scope(s): io.github.hatayama.uloopmcp
 ```
 
-3. Package Managerウィンドウを開き、My RegistriesセクションのOpenUPMを選択。uMCPが表示されます。
+3. Package Managerウィンドウを開き、My RegistriesセクションのOpenUPMを選択。uLoopMCPが表示されます。
 
 ## カスタムツール開発
 コアパッケージを変更することなく、プロジェクト独自のツールを簡単に追加できます。

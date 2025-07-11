@@ -1,6 +1,6 @@
 [日本語](FEATURES_ja.md)
 
-# uMCP Feature Specifications
+# uLoopMCP Feature Specifications
 
 This document provides detailed information about all Unity MCP (Model Context Protocol) tools and features.
 
@@ -65,7 +65,7 @@ All tools automatically include the following timing information:
 - **Parameters**: 
   - `FilterType` (enum): Type of test filter - "all", "fullclassname" (default: "all")
   - `FilterValue` (string): Filter value (specify when FilterType is other than all) (default: "")
-    - `fullclassname`: Full class name (e.g.: io.github.hatayama.uMCP.CompileCommandTests)
+    - `fullclassname`: Full class name (e.g.: io.github.hatayama.uLoopMCP.CompileCommandTests)
   - `TestMode` (enum): Test mode - "EditMode", "PlayMode" (default: "EditMode")
     - ⚠️ **PlayMode Warning**: During PlayMode test execution, domain reload is temporarily disabled
   - `SaveXml` (boolean): Whether to save test results as XML file (default: false)
