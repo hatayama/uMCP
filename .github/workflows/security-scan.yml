@@ -32,7 +32,7 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Run SecurityCodeScan on uMCP Package
+    - name: Run SecurityCodeScan on uLoopMCP Package
       run: |
         # Create a temporary project file for scanning
         cat > temp-uloopmcp.csproj << 'EOF'

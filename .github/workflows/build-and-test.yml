@@ -1,4 +1,4 @@
-name: Build and Release uMCP
+name: Build and Release uLoopMCP
 
 on:
   push:
