@@ -3,7 +3,7 @@ using System.IO;
 using System.Security;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Unity MCP Editor settings data.

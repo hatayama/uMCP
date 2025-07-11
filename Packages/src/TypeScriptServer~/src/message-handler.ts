@@ -165,7 +165,7 @@ export class MessageHandler {
           }
           // Add instruction for enabling the feature
           errorMessage +=
-            ' To use this feature, enable the corresponding option in Unity menu: Window > uMCP > Security Settings';
+            ' To use this feature, enable the corresponding option in Unity menu: Window > uLoopMCP > Security Settings';
         }
 
         pending.reject(new Error(errorMessage));

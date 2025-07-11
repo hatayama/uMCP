@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using System.Linq;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     public class MainThreadSwitcherTests
     {

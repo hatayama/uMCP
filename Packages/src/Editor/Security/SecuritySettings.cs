@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// セキュリティ設定の種類を定義するenum

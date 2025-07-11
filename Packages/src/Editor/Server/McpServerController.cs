@@ -3,7 +3,7 @@ using UnityEditor;
 using Newtonsoft.Json;
 
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     // Related classes:
     // - McpBridgeServer: The TCP server instance that this class manages.

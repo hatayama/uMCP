@@ -1,6 +1,6 @@
 using System;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Represents a single node in the Unity Hierarchy

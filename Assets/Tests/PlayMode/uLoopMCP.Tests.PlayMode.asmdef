@@ -1,5 +1,5 @@
 {
-    "name": "uMCP.Tests.PlayMode",
+    "name": "uLoopMCP.Tests.PlayMode",
     "rootNamespace": "Tests.PlayMode",
     "references": [
         "UnityEngine.TestRunner",

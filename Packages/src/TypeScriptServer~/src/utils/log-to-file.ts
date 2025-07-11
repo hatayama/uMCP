@@ -21,7 +21,7 @@
  * logging is the safest approach for debugging MCP servers.
  *
  * Where are logs written?
- * Logs are written to: {project_root}/UmcpLogs/mcp-debug-YYYY-MM-DD_HH-MM-SS.log
+ * Logs are written to: {project_root}/ULoopMCPLogs/mcp-debug-YYYY-MM-DD_HH-MM-SS.log
  * - Each server session creates a new timestamped log file
  * - Directory is created automatically on first log write
  * - Logs are only written when MCP_DEBUG environment variable is set
@@ -87,7 +87,7 @@ const findProjectRoot = (): string => {
   return process.cwd();
 };
 
-const logDir = path.join(findProjectRoot(), 'UmcpLogs');
+const logDir = path.join(findProjectRoot(), 'ULoopMCPLogs');
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
 const dateStr = timestamp[0]; // YYYY-MM-DD
 const timeStr = timestamp[1].split('.')[0]; // HH-MM-SS

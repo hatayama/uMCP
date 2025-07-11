@@ -1,6 +1,6 @@
 using System;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Base response class for all Unity MCP tool responses

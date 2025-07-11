@@ -2,7 +2,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Sample implementation of custom tools
@@ -18,7 +18,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Register custom tools
         /// </summary>
-        [MenuItem("uMCP/Tools/Custom Tools/Register Sample Tools")]
+        [MenuItem("uLoopMCP/Tools/Custom Tools/Register Sample Tools")]
         public static void RegisterSampleTools()
         {
             CustomToolManager.RegisterCustomTool(new HelloWorldTool());
@@ -36,7 +36,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Unregister custom tools
         /// </summary>
-        [MenuItem("uMCP/Tools/Custom Tools/Unregister Sample Tools")]
+        [MenuItem("uLoopMCP/Tools/Custom Tools/Unregister Sample Tools")]
         public static void UnregisterSampleCommands()
         {
             CustomToolManager.UnregisterCustomTool("helloworld");
@@ -54,7 +54,7 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// Display list of currently registered tools
         /// </summary>
-        [MenuItem("uMCP/Tools/Custom Tools/Show Registered Tools")]
+        [MenuItem("uLoopMCP/Tools/Custom Tools/Show Registered Tools")]
         public static void ShowRegisteredCommands()
         {
             ToolInfo[] tools = CustomToolManager.GetRegisteredCustomTools();

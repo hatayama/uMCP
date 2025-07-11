@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Represents a parsed JSON-RPC request

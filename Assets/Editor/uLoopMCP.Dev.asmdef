@@ -1,10 +1,8 @@
 {
-    "name": "uMCP.Tests.Editor",
+    "name": "uLoopMCP.Dev",
     "rootNamespace": "",
     "references": [
-        "GUID:214998e563c124e8a88199b2dd1f522d",
-        "GUID:0acc523941302664db1f4e527237feb3",
-        "GUID:27619889b8ba8c24980f49ee34dbb44a"
+        "GUID:214998e563c124e8a88199b2dd1f522d"
     ],
     "includePlatforms": [
         "Editor"

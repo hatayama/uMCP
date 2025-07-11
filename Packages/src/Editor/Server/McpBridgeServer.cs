@@ -14,7 +14,7 @@ using UnityEditor;
 using Newtonsoft.Json;
 
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     // Related classes:
     // - McpServerController: Manages the lifecycle of this server.

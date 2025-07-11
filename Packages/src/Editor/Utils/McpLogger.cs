@@ -3,14 +3,14 @@ using UnityEngine;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Class for unified management of Unity MCP Server related logs
     /// </summary>
     public class McpLogger : ScriptableSingleton<McpLogger>
     {
-        private const string LOG_PREFIX = "[uMCP]";
+        private const string LOG_PREFIX = "[uLoopMCP]";
         
         [SerializeField] private bool enableDebugLog = false;
         

@@ -4,7 +4,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using System.ComponentModel;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Utility class to generate ToolParameterSchema from DTO classes

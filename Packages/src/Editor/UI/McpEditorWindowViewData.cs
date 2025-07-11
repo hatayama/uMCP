@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Data structures for McpEditorWindow View rendering
@@ -99,7 +99,7 @@ namespace io.github.hatayama.uMCP
         }
     }
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
     public record DeveloperToolsData
     {
         public readonly bool ShowFoldout;

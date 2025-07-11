@@ -1,4 +1,4 @@
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Response for debug sleep tool execution

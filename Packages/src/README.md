@@ -2,7 +2,7 @@
 
 [![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hatayama/uMCP)  
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hatayama/uLoopMCP)  
 ![ClaudeCode](https://img.shields.io/badge/Claude_Code-555?logo=claude)
 ![Cursor](https://img.shields.io/badge/Cursor-111?logo=Cursor)
 ![GitHubCopilot](https://img.shields.io/badge/GitHub_Copilot-111?logo=githubcopilot)
@@ -10,14 +10,14 @@
 ![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
 <h1 align="center">
-    <img width="500" alt="uMCP" src="https://github.com/user-attachments/assets/0b7c4fcf-af5f-4025-b0d3-e596897d41b7" />  
+    <img width="500" alt="uLoopMCP" src="https://github.com/user-attachments/assets/0b7c4fcf-af5f-4025-b0d3-e596897d41b7" />  
 </h1>     
 
 Control Unity Editor from various LLM tools.
 
 # Concept
 This project was created with the concept of enabling AI-driven coding to run autonomously for as long as possible.
-Normally, humans need to handle tasks like compiling Unity, running tests, and communicating logs to AI. uMCP solves this hassle.
+Normally, humans need to handle tasks like compiling Unity, running tests, and communicating logs to AI. uLoopMCP solves this hassle.
 
 # Features
 1. Simply install the package and press the button to connect to your LLM tool to start using it immediately.
@@ -123,7 +123,7 @@ Retrieve information about the currently active Hierarchy in nested JSON format.
 > - `execute-menu-item`: Executing menu items
 > - `run-tests`: Test execution
 > 
-> To use these features, you need to enable the corresponding settings in the Security Settings of the uMCP window:
+> To use these features, you need to enable the corresponding settings in the Security Settings of the uLoopMCP window:
 > - **Allow Test Execution**: Enables the `run-tests` tool
 > - **Allow Menu Item Execution**: Enables the `execute-menu-item` tool
 > Only enable these features in trusted environments.
@@ -131,14 +131,14 @@ Retrieve information about the currently active Hierarchy in nested JSON format.
 For detailed features, please see [FEATURES_ja.md](./FEATURES_ja.md).
 
 ## Usage
-1. Select Window > uMCP. A dedicated window will open, so press the "Start Server" button.  
+1. Select Window > uLoopMCP. A dedicated window will open, so press the "Start Server" button.  
 <img width="335" alt="image" src="https://github.com/user-attachments/assets/4cfd7f26-7739-442d-bad9-b3f6d113a0d7" />
 
 2. Next, select the target IDE in the LLM Tool Settings section. Press the yellow "Configure {LLM Tool Name}" button to automatically connect to the IDE.  
 <img width="335" alt="image" src="https://github.com/user-attachments/assets/25f1f4f9-e3c8-40a5-a2f3-903f9ed5f45b" />
 
 3. IDE Connection Verification
-  - For example, with Cursor, check the Tools & Integrations in the settings page and find uMCP. Click the toggle to enable MCP. If a red circle appears, restart Cursor.  
+  - For example, with Cursor, check the Tools & Integrations in the settings page and find uLoopMCP. Click the toggle to enable MCP. If a red circle appears, restart Cursor.  
 <img width="545" alt="image" src="https://github.com/user-attachments/assets/ed54d051-b78a-4bb4-bb2f-7ab23ebc1840" />
 
 
@@ -149,7 +149,7 @@ For detailed features, please see [FEATURES_ja.md](./FEATURES_ja.md).
 ```json
 {
   "mcpServers": {
-    "uMcp": {
+    "uLoopMCP": {
       "command": "node",
       "args": [
         "[Unity Package Path]/TypeScriptServer~/dist/server.bundle.js"
@@ -163,13 +163,13 @@ For detailed features, please see [FEATURES_ja.md](./FEATURES_ja.md).
 ```
 
 **Path Examples**:
-- **Via Package Manager**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.umcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
+- **Via Package Manager**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.uloopmcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
 > [!NOTE]
 > When installed via Package Manager, the package is placed in `Library/PackageCache` with a hashed directory name. Using the "Auto Configure Cursor" button will automatically set the correct path.
 
 5. Multiple Unity Instance Support
 > [!NOTE]
-> Multiple Unity instances can be supported by changing port numbers. uMCP automatically assigns unused ports when starting up.
+> Multiple Unity instances can be supported by changing port numbers. uLoopMCP automatically assigns unused ports when starting up.
 
 ## Prerequisites
 
@@ -189,7 +189,7 @@ For detailed features, please see [FEATURES_ja.md](./FEATURES_ja.md).
 4. Select "Add package from git URL"
 5. Enter the following URL:
 ```
-https://github.com/hatayama/uMCP.git?path=/Packages/src
+https://github.com/hatayama/uLoopMCP.git?path=/Packages/src
 ```
 
 ### Via OpenUPM (Recommended)
@@ -200,10 +200,10 @@ https://github.com/hatayama/uMCP.git?path=/Packages/src
 ```
 Name: OpenUPM
 URL: https://package.openupm.com
-Scope(s): io.github.hatayama.umcp
+Scope(s): io.github.hatayama.uloopmcp
 ```
 
-3. Open Package Manager window and select OpenUPM in the My Registries section. uMCP will be displayed.
+3. Open Package Manager window and select OpenUPM in the My Registries section. uLoopMCP will be displayed.
 
 ## Custom Tool Development
 You can easily add project-specific tools without modifying the core package.

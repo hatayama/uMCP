@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// A class responsible for the business logic of MCP settings.
@@ -71,7 +71,7 @@ namespace io.github.hatayama.uMCP
             McpConfig config = _repository.Load(configPath);
 
             // For Windsurf, keep the original behavior (always create new key)
-            // For other editors, remove existing uMCP configuration and create new one with updated port
+            // For other editors, remove existing uLoopMCP configuration and create new one with updated port
             string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port, _editorType);
             bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
             
@@ -79,13 +79,13 @@ namespace io.github.hatayama.uMCP
             
             if (shouldReplaceExistingKey)
             {
-                // Try to find existing uMCP configuration
-                string existingKey = FindExistingUmcpConfigurationKey(config);
+                // Try to find existing uLoopMCP configuration
+                string existingKey = FindExistingULoopMCPConfigurationKey(config);
                 if (!string.IsNullOrEmpty(existingKey) && existingKey != serverKey)
                 {
                     // Remove existing configuration with different key
                     updatedServers.Remove(existingKey);
-                    McpLogger.LogInfo($"Removed existing uMCP configuration key: {existingKey}, creating new key: {serverKey}");
+                    McpLogger.LogInfo($"Removed existing uLoopMCP configuration key: {existingKey}, creating new key: {serverKey}");
                 }
             }
 
@@ -121,11 +121,11 @@ namespace io.github.hatayama.uMCP
 
         /// <summary>
         /// Finds existing Unity MCP configuration key in the loaded config.
-        /// Returns the first found uMCP configuration key, or null if none exists.
+        /// Returns the first found uLoopMCP configuration key, or null if none exists.
         /// </summary>
         /// <param name="config">The loaded MCP configuration</param>
-        /// <returns>Existing uMCP configuration key, or null if not found</returns>
-        private string FindExistingUmcpConfigurationKey(McpConfig config)
+        /// <returns>Existing uLoopMCP configuration key, or null if not found</returns>
+        private string FindExistingULoopMCPConfigurationKey(McpConfig config)
         {
             foreach (System.Collections.Generic.KeyValuePair<string, McpServerConfigData> serverEntry in config.mcpServers)
             {
@@ -133,7 +133,7 @@ namespace io.github.hatayama.uMCP
                 
                 if (!serverEntry.Value.env.ContainsKey(McpConstants.UNITY_TCP_PORT_ENV_KEY)) continue;
                 
-                // Found existing uMCP configuration
+                // Found existing uLoopMCP configuration
                 return serverEntry.Key;
             }
             
@@ -157,7 +157,7 @@ namespace io.github.hatayama.uMCP
             McpConfig config = _repository.Load(configPath);
 
             // For Windsurf, keep the original behavior (always use port-based key)
-            // For other editors, remove existing uMCP configuration and create new one with updated port
+            // For other editors, remove existing uLoopMCP configuration and create new one with updated port
             string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port, _editorType);
             bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
             
@@ -165,13 +165,13 @@ namespace io.github.hatayama.uMCP
             
             if (shouldReplaceExistingKey)
             {
-                // Try to find existing uMCP configuration
-                string existingKey = FindExistingUmcpConfigurationKey(config);
+                // Try to find existing uLoopMCP configuration
+                string existingKey = FindExistingULoopMCPConfigurationKey(config);
                 if (!string.IsNullOrEmpty(existingKey) && existingKey != serverKey)
                 {
                     // Remove existing configuration with different key
                     updatedServers.Remove(existingKey);
-                    McpLogger.LogInfo($"Removed existing uMCP configuration key: {existingKey}, creating new key: {serverKey}");
+                    McpLogger.LogInfo($"Removed existing uLoopMCP configuration key: {existingKey}, creating new key: {serverKey}");
                 }
             }
 
@@ -203,7 +203,7 @@ namespace io.github.hatayama.uMCP
             McpConfig config = _repository.Load(configPath);
             
             // For Windsurf, keep the original behavior (always use port-based key)
-            // For other editors, remove existing uMCP configuration and create new one with updated port
+            // For other editors, remove existing uLoopMCP configuration and create new one with updated port
             string serverKey = McpServerConfigFactory.CreateUnityMcpServerKey(port, _editorType);
             bool shouldReplaceExistingKey = _editorType != McpEditorType.Windsurf;
             
@@ -211,13 +211,13 @@ namespace io.github.hatayama.uMCP
             
             if (shouldReplaceExistingKey)
             {
-                // Try to find existing uMCP configuration
-                string existingKey = FindExistingUmcpConfigurationKey(config);
+                // Try to find existing uLoopMCP configuration
+                string existingKey = FindExistingULoopMCPConfigurationKey(config);
                 if (!string.IsNullOrEmpty(existingKey) && existingKey != serverKey)
                 {
                     // Remove existing configuration with different key
                     updatedServers.Remove(existingKey);
-                    McpLogger.LogInfo($"Removed existing uMCP configuration key: {existingKey}, creating new key: {serverKey}");
+                    McpLogger.LogInfo($"Removed existing uLoopMCP configuration key: {existingKey}, creating new key: {serverKey}");
                 }
             }
             
@@ -237,8 +237,8 @@ namespace io.github.hatayama.uMCP
             updatedEnv[McpConstants.UNITY_TCP_PORT_ENV_KEY] = port.ToString();
             
             // Remove old development mode environment variables (cleanup legacy settings)
-            updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_DEBUG);
-            updatedEnv.Remove(McpConstants.ENV_KEY_UMCP_PRODUCTION);
+            updatedEnv.Remove(McpConstants.ENV_KEY_ULOOPMCP_DEBUG);
+            updatedEnv.Remove(McpConstants.ENV_KEY_ULOOPMCP_PRODUCTION);
             updatedEnv.Remove(McpConstants.ENV_KEY_NODE_ENV);
             updatedEnv.Remove(McpConstants.ENV_KEY_MCP_DEBUG);
             
@@ -303,8 +303,8 @@ namespace io.github.hatayama.uMCP
         public int GetConfiguredPort()
         {
             McpConfig config = LoadConfiguration();
-            System.Collections.Generic.List<(string key, int port)> umcpConfigs = ExtractUmcpConfigurations(config);
-            return SelectBestMatchingPort(umcpConfigs);
+            System.Collections.Generic.List<(string key, int port)> uloopmcpConfigs = ExtractULoopMCPConfigurations(config);
+            return SelectBestMatchingPort(uloopmcpConfigs);
         }
 
         /// <summary>
@@ -328,9 +328,9 @@ namespace io.github.hatayama.uMCP
         /// </summary>
         /// <param name="config">The loaded MCP configuration</param>
         /// <returns>List of Unity MCP server configurations with their ports</returns>
-        private System.Collections.Generic.List<(string key, int port)> ExtractUmcpConfigurations(McpConfig config)
+        private System.Collections.Generic.List<(string key, int port)> ExtractULoopMCPConfigurations(McpConfig config)
         {
-            System.Collections.Generic.List<(string key, int port)> umcpConfigs = new System.Collections.Generic.List<(string key, int port)>();
+            System.Collections.Generic.List<(string key, int port)> uloopmcpConfigs = new System.Collections.Generic.List<(string key, int port)>();
             
             foreach (System.Collections.Generic.KeyValuePair<string, McpServerConfigData> serverEntry in config.mcpServers)
             {
@@ -341,33 +341,33 @@ namespace io.github.hatayama.uMCP
                 string portString = serverEntry.Value.env[McpConstants.UNITY_TCP_PORT_ENV_KEY];
                 if (int.TryParse(portString, out int port))
                 {
-                    umcpConfigs.Add((serverEntry.Key, port));
+                    uloopmcpConfigs.Add((serverEntry.Key, port));
                 }
             }
             
-            if (umcpConfigs.Count == 0)
+            if (uloopmcpConfigs.Count == 0)
             {
                 throw new System.InvalidOperationException("Unity MCP server configuration not found.");
             }
             
-            return umcpConfigs;
+            return uloopmcpConfigs;
         }
 
         /// <summary>
         /// Select the best matching port based on server status
         /// </summary>
-        /// <param name="umcpConfigs">Available Unity MCP configurations</param>
+        /// <param name="uloopmcpConfigs">Available Unity MCP configurations</param>
         /// <returns>The most appropriate port number</returns>
-        private int SelectBestMatchingPort(System.Collections.Generic.List<(string key, int port)> umcpConfigs)
+        private int SelectBestMatchingPort(System.Collections.Generic.List<(string key, int port)> uloopmcpConfigs)
         {
             bool serverIsRunning = McpServerController.IsServerRunning;
             
-            if (!serverIsRunning) return umcpConfigs[0].port;
+            if (!serverIsRunning) return uloopmcpConfigs[0].port;
             
             int currentServerPort = McpServerController.ServerPort;
-            (string key, int port) matchingConfig = umcpConfigs.FirstOrDefault(c => c.port == currentServerPort);
+            (string key, int port) matchingConfig = uloopmcpConfigs.FirstOrDefault(c => c.port == currentServerPort);
             
-            return matchingConfig != default ? matchingConfig.port : umcpConfigs[0].port;
+            return matchingConfig != default ? matchingConfig.port : uloopmcpConfigs[0].port;
         }
 
         /// <summary>

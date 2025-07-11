@@ -1,4 +1,4 @@
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Type of test execution filter.
@@ -40,9 +40,9 @@ namespace io.github.hatayama.uMCP
         /// <summary>
         /// The specific value to filter tests by, based on the FilterType.
         /// Examples:
-        /// • When FilterType is Exact: "io.github.hatayama.uMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs"
-        /// • When FilterType is Regex: "io.github.hatayama.uMCP.ConsoleLogRetrieverTests" or "io.github.hatayama.uMCP"
-        /// • When FilterType is AssemblyName: "uMCP.Tests.Editor"
+        /// • When FilterType is Exact: "io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs"
+        /// • When FilterType is Regex: "io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests" or "io.github.hatayama.uLoopMCP"
+        /// • When FilterType is AssemblyName: "uLoopMCP.Tests.Editor"
         /// </summary>
         public string FilterValue { get; }
         

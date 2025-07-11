@@ -1,4 +1,4 @@
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// A class for managing settings related to the Unity MCP Server.

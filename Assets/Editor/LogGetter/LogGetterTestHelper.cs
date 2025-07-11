@@ -1,11 +1,11 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     public class LogGetterTestHelper
     {
-        [MenuItem("uMCP/Debug/LogGetter Tests/Output Test Logs")]
+        [MenuItem("uLoopMCP/Debug/LogGetter Tests/Output Test Logs")]
         public static void OutputTestLogs()
         {
             Debug.Log("This is a normal log.");

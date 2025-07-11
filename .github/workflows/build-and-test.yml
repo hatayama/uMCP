@@ -1,4 +1,4 @@
-name: Build and Release uMCP
+name: Build and Release uLoopMCP
 
 on:
   push:
@@ -37,24 +37,24 @@ jobs:
     - name: Build TypeScript Server
       working-directory: Packages/src/TypeScriptServer~
       env:
-        UMCP_PRODUCTION: "true"
+        ULOOPMCP_PRODUCTION: "true"
         NODE_ENV: "production"
       run: |
         echo "Building TypeScript Server in production mode..."
-        echo "Environment: UMCP_PRODUCTION=$UMCP_PRODUCTION, NODE_ENV=$NODE_ENV"
+        echo "Environment: ULOOPMCP_PRODUCTION=$ULOOPMCP_PRODUCTION, NODE_ENV=$NODE_ENV"
         npm run build:production
         echo "Production build completed successfully"
         
     - name: Verify build output
       working-directory: Packages/src/TypeScriptServer~
       env:
-        UMCP_PRODUCTION: "true"
+        ULOOPMCP_PRODUCTION: "true"
         NODE_ENV: "production"
       run: |
         echo "Verifying build output..."
         ls -la dist/
         echo "Testing server startup in production mode..."
-        echo "Environment: UMCP_PRODUCTION=$UMCP_PRODUCTION, NODE_ENV=$NODE_ENV"
+        echo "Environment: ULOOPMCP_PRODUCTION=$ULOOPMCP_PRODUCTION, NODE_ENV=$NODE_ENV"
         timeout 5s node dist/server.bundle.js || echo "Production server built successfully"
         
     - name: Clean up node_modules (optional verification)

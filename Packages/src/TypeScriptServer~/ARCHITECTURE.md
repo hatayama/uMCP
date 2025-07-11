@@ -1,4 +1,4 @@
-# uMCP TypeScript Server Architecture
+# uLoopMCP TypeScript Server Architecture
 
 ## 1. Overview
 
@@ -237,7 +237,7 @@ The server is designed to be resilient to connection drops and process lifecycle
 
 ### 3.4. Safe Logging
 Because the server uses `stdio` for JSON-RPC communication, `console.log` cannot be used for debugging as it would corrupt the protocol stream.
-- **`log-to-file.ts`**: This utility provides a safe, file-based logging mechanism. When the `MCP_DEBUG` environment variable is set, all debug, info, warning, and error messages are written to a timestamped log file in the user's home directory (`~/.claude/umcp-logs/`), keeping `stdout` clean for protocol messages.
+- **`log-to-file.ts`**: This utility provides a safe, file-based logging mechanism. When the `MCP_DEBUG` environment variable is set, all debug, info, warning, and error messages are written to a timestamped log file in the user's home directory (`~/.claude/uloopmcp-logs/`), keeping `stdout` clean for protocol messages.
 
 ## 4. Key Components (File Breakdown)
 

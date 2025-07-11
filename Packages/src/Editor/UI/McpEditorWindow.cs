@@ -3,12 +3,12 @@ using UnityEditor;
 using System.Linq;
 
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
 using System.Collections.Generic;
 using System;
 #endif
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Editor Window for controlling Unity MCP Server - Presenter layer in MVP architecture
@@ -41,7 +41,7 @@ namespace io.github.hatayama.uMCP
         // Server operations handler (MVP pattern helper)
         private McpServerOperations _serverOperations;
 
-        [MenuItem("Window/uMCP")]
+        [MenuItem("Window/uLoopMCP")]
         public static void ShowWindow()
         {
             McpEditorWindow window = GetWindow<McpEditorWindow>(McpConstants.PROJECT_NAME);
@@ -229,7 +229,7 @@ namespace io.github.hatayama.uMCP
                 enableTestsCallback: UpdateEnableTestsExecution,
                 allowMenuCallback: UpdateAllowMenuItemExecution);
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
             DrawDeveloperTools();
 #endif
 
@@ -386,7 +386,7 @@ namespace io.github.hatayama.uMCP
             int portToUse = isServerRunning ? McpServerController.ServerPort : _model.UI.CustomPort;
 
             configService.AutoConfigure(portToUse);
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
             configService.UpdateDevelopmentSettings(portToUse, _model.Debug.EnableDevelopmentMode, _model.Debug.EnableMcpLogs);
 #endif
             Repaint();
@@ -511,7 +511,7 @@ namespace io.github.hatayama.uMCP
         }
 
         // DebugState update helper methods for callback unification
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
         private void DrawDeveloperTools()
         {
             DeveloperToolsData devToolsData = CreateDeveloperToolsData();

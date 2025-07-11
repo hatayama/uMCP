@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 
-namespace io.github.hatayama.uMCP.Tests
+namespace io.github.hatayama.uLoopMCP.Tests
 {
     public class HierarchySerializerTests
     {

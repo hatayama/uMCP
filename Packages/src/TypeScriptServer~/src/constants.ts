@@ -25,7 +25,7 @@
 
 // MCP Protocol Constants
 export const MCP_PROTOCOL_VERSION = '2024-11-05';
-export const MCP_SERVER_NAME = 'umcp-server';
+export const MCP_SERVER_NAME = 'uloopmcp-server';
 
 // MCP Capabilities
 export const TOOLS_LIST_CHANGED_CAPABILITY = true;

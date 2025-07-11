@@ -5478,7 +5478,7 @@ import * as net from "net";
 
 // src/constants.ts
 var MCP_PROTOCOL_VERSION = "2024-11-05";
-var MCP_SERVER_NAME = "umcp-server";
+var MCP_SERVER_NAME = "uloopmcp-server";
 var TOOLS_LIST_CHANGED_CAPABILITY = true;
 var NOTIFICATION_METHODS = {
   TOOLS_LIST_CHANGED: "notifications/tools/list_changed"
@@ -5562,7 +5562,7 @@ var findProjectRoot = () => {
   }
   return process.cwd();
 };
-var logDir = path.join(findProjectRoot(), "UmcpLogs");
+var logDir = path.join(findProjectRoot(), "ULoopMCPLogs");
 var timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").split("T");
 var dateStr = timestamp[0];
 var timeStr = timestamp[1].split(".")[0];
@@ -5841,7 +5841,7 @@ var MessageHandler = class {
           if (data.command) {
             errorMessage += ` (Command: ${data.command})`;
           }
-          errorMessage += " To use this feature, enable the corresponding option in Unity menu: Window > uMCP > Security Settings";
+          errorMessage += " To use this feature, enable the corresponding option in Unity menu: Window > uLoopMCP > Security Settings";
         }
         pending.reject(new Error(errorMessage));
       } else {
@@ -7084,7 +7084,7 @@ var UnityEventHandler = class {
 
 // package.json
 var package_default = {
-  name: "umcp-server",
+  name: "uloopmcp-server",
   version: "0.5.0",
   description: "TypeScript MCP Server for Unity-Cursor integration",
   main: "dist/server.bundle.js",
@@ -7093,11 +7093,11 @@ var package_default = {
     prepare: "husky",
     build: "npm run build:bundle",
     "build:bundle": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
-    "build:production": "UMCP_PRODUCTION=true NODE_ENV=production esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
+    "build:production": "ULOOPMCP_PRODUCTION=true NODE_ENV=production esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os",
     dev: "NODE_ENV=development npm run build:bundle && NODE_ENV=development node dist/server.bundle.js",
     "dev:watch": "NODE_ENV=development esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.bundle.js --external:fs --external:path --external:net --external:os --watch",
     start: "node dist/server.bundle.js",
-    "start:production": "UMCP_PRODUCTION=true node dist/server.bundle.js",
+    "start:production": "ULOOPMCP_PRODUCTION=true node dist/server.bundle.js",
     "start:dev": "NODE_ENV=development node dist/server.bundle.js",
     lint: "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Port blocker script for testing uMCP automatic port adjustment
+Port blocker script for testing uLoopMCP automatic port adjustment
 Usage: python3 test_port_blocker.py [port_number]
 Default port: 7400
 """
@@ -10,7 +10,7 @@ import time
 import sys
 
 def block_port(port=8700):
-    """Block the specified port to test uMCP port adjustment"""
+    """Block the specified port to test uLoopMCP port adjustment"""
     try:
         # Create socket and bind to port
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,8 +19,8 @@ def block_port(port=8700):
         s.listen(0)
         
         print(f"✅ Port {port} is now occupied and blocked")
-        print("📋 Now you can test uMCP automatic port adjustment:")
-        print("   1. Open Unity uMCP Window")
+        print("📋 Now you can test uLoopMCP automatic port adjustment:")
+        print("   1. Open Unity uLoopMCP Window")
         print("   2. Try to start server on port 8700")
         print("   3. It should automatically find port 8701")
         print("\n🛑 Press Ctrl+C to stop blocking the port")

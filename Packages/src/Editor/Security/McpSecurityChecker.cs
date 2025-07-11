@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Security checker for Unity MCP tools - provides runtime tool blocking based on user settings
@@ -163,10 +163,10 @@ namespace io.github.hatayama.uMCP
             switch (toolInfo.Value.RequiredSecuritySetting)
             {
                 case SecuritySettings.EnableTestsExecution:
-                    return "Tests execution is disabled. Enable 'Enable Tests Execution' in uMCP Security Settings.";
+                    return "Tests execution is disabled. Enable 'Enable Tests Execution' in uLoopMCP Security Settings.";
                     
                 case SecuritySettings.AllowMenuItemExecution:
-                    return "Menu item execution is disabled. Enable 'Allow Menu Item Execution' in uMCP Security Settings.";
+                    return "Menu item execution is disabled. Enable 'Allow Menu Item Execution' in uLoopMCP Security Settings.";
                     
                 case SecuritySettings.None:
                 default:

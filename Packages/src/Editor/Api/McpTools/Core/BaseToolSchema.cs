@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// Base schema class for all Unity MCP tool parameters

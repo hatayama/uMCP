@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace io.github.hatayama.uMCP
+namespace io.github.hatayama.uLoopMCP
 {
     /// <summary>
     /// State management objects for McpEditorWindow
@@ -75,7 +75,7 @@ namespace io.github.hatayama.uMCP
         }
     }
 
-#if UMCP_DEBUG
+#if ULOOPMCP_DEBUG
     /// <summary>
     /// Debug state data for McpEditorWindow
     /// Available only in debug builds
