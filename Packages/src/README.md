@@ -10,7 +10,7 @@
 ![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
 <h1 align="center">
-    <img width="500" alt="uLoopMCP" src="https://github.com/user-attachments/assets/0b7c4fcf-af5f-4025-b0d3-e596897d41b7" />  
+    <img width="500" alt="uLoopMCP" src="https://github.com/user-attachments/assets/a8b53cca-5444-445d-aa39-9024d41763e6" />  
 </h1>     
 
 Control Unity Editor from various LLM tools.
