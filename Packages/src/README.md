@@ -112,15 +112,8 @@ Retrieve information about the currently active Hierarchy in nested JSON format.
 ```
 
 ## Feature Specifications
-
-> [!TIP]
-> **Complete API Reference**
-> 
-> Comprehensive documentation of detailed parameters, response formats, and usage examples for each tool.
-> Serves as a technical reference for automation scripts and AI tool development.
-
 <details>
-<summary>Detailed Specifications</summary>
+<summary>View Detailed Specifications</summary>
 
 ## Common Parameters & Response Format
 
@@ -464,16 +457,12 @@ Scope(s): io.github.hatayama.uloopmcp
 
 3. Open Package Manager window and select OpenUPM in the My Registries section. uLoopMCP will be displayed.
 
-## Custom Tool Development
-
-> [!TIP]
-> **Project-Specific Tool Development**
-> 
-> uLoopMCP enables efficient development of project-specific MCP tools without requiring changes to the core package.
-> The type-safe design allows for reliable custom tool implementation in minimal time.
+## Project-Specific Tool Development
+uLoopMCP enables efficient development of project-specific MCP tools without requiring changes to the core package.  
+The type-safe design allows for reliable custom tool implementation in minimal time.
 
 <details>
-<summary>Implementation Guide</summary>
+<summary>View Implementation Guide</summary>
 
 You can easily add project-specific tools without modifying the core package.
 
