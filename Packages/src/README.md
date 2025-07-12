@@ -426,7 +426,7 @@ All tools automatically include the following timing information:
 
 ## Installation
 
-> [!WARNING]
+> [!WARNING]  
 > The following software is required
 >
 > - **Unity 2022.3 or later**
@@ -541,7 +541,7 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 }
 ```
 
-> [!IMPORTANT]
+> [!IMPORTANT]  
 > **Important Notes**:
 > - **Timeout Handling**: All tools inherit `TimeoutSeconds` parameter from `BaseToolSchema`. Implement `cancellationToken.ThrowIfCancellationRequested()` checks in long-running operations to ensure proper timeout behavior.
 > - **Thread Safety**: Tools execute on Unity's main thread, so Unity API calls are safe without additional synchronization.
