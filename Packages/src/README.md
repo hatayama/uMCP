@@ -423,14 +423,14 @@ All tools automatically include the following timing information:
 > [!NOTE]
 > Multiple Unity instances can be supported by changing port numbers. uLoopMCP automatically assigns unused ports when starting up.
 
-## Prerequisites
-
-The following software is required:
-- **Unity 2022.3 or later**
-- **Node.js 18.0 or later** - Required for MCP server execution
-- Install Node.js from [here](https://nodejs.org/en/download)
-
 ## Installation
+
+> [!WARNING]
+> The following software is required
+>
+> - **Unity 2022.3 or later**
+> - **Node.js 18.0 or later** - Required for MCP server execution
+> - Install Node.js from [here](https://nodejs.org/en/download)
 
 ### Via Unity Package Manager
 

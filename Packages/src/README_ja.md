@@ -421,14 +421,14 @@ UnitySearchが提供する検索プロバイダーを取得します
 > [!NOTE]
 > ポート番号を変更することで複数のUnityインスタンスをサポートできます。uLoopMCP起動時に自動的に使われていないportが割り当てられます。
 
-## 前提条件
-
-以下のソフトウェアが必須です：
-- **Unity 2022.3以上**
-- **Node.js 18.0以上** - MCPサーバー実行に必要
-- Node.jsを[こちら](https://nodejs.org/en/download)からインストールしてください
-
 ## インストール
+
+> [!WARNING]
+> 以下のソフトウェアが必須です
+> 
+> - **Unity 2022.3以上**
+> - **Node.js 18.0以上** - MCPサーバー実行に必要
+> - Node.jsを[こちら](https://nodejs.org/en/download)からインストールしてください
 
 ### Unity Package Manager経由
 
