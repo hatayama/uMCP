@@ -18,7 +18,7 @@ namespace io.github.hatayama.uLoopMCP
     /// </summary>
     public static class SearchResultExporter
     {
-        private const string EXPORT_DIRECTORY = "Temp/uLoopMCP/SearchResults";
+        private static readonly string EXPORT_DIRECTORY = Path.Combine(McpConstants.OUTPUT_ROOT_DIR, McpConstants.SEARCH_RESULTS_DIR);
         private const string FILE_PREFIX = "unity_search_results";
 
         /// <summary>

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace io.github.hatayama.uLoopMCP.Tests
+namespace io.github.hatayama.uLoopMCP
 {
     public class HierarchyServiceTests
     {
