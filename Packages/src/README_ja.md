@@ -110,8 +110,17 @@ UnitySearchが提供する検索プロバイダーを取得します
 → GameObject間の親子関係を理解。構造的な問題を発見・修正
 → 大きなシーンでは、Hierarchyデータがファイルに保存され、生のJSONの代わりにパスが返されます
 ```
+
+## 機能詳細仕様
+
+> [!TIP]
+> **完全なAPI仕様書**
+> 
+> 各ツールの詳細なパラメータ、レスポンス形式、使用例を網羅的に記載しています。
+> 自動化スクリプトやAIツール開発時の技術的参照として活用できます。
+
 <details>
-<summary><span style="font-size: 2em; font-weight: bold;">機能詳細仕様</span></summary>
+<summary>詳細仕様</summary>
 
 ## 共通パラメータ・レスポンス形式
 
@@ -462,8 +471,16 @@ Scope(s): io.github.hatayama.uloopmcp
 
 3. Package Managerウィンドウを開き、My RegistriesセクションのOpenUPMを選択。uLoopMCPが表示されます。
 
+## カスタムツール開発
+
+> [!TIP]
+> **プロジェクト固有のツール開発**
+> 
+> uLoopMCPはコアパッケージへの変更を必要とせず、プロジェクト固有のMCPツールを効率的に開発できます。
+> 型安全な設計により、信頼性の高いカスタムツールを短時間で実装可能です。
+
 <details>
-<summary><span style="font-size: 2em; font-weight: bold;">カスタムツール開発</span></summary>
+<summary>実装ガイド</summary>
 
 コアパッケージを変更することなく、プロジェクト独自のツールを簡単に追加できます。
 
