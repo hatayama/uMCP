@@ -425,11 +425,10 @@ All tools automatically include the following timing information:
 
 ## Prerequisites
 
-> [!WARNING]
-> The following software is required:
-> - **Unity 2022.3 or later**
-> - **Node.js 18.0 or later** - Required for MCP server execution
-> - Install Node.js from [here](https://nodejs.org/en/download)
+The following software is required:
+- **Unity 2022.3 or later**
+- **Node.js 18.0 or later** - Required for MCP server execution
+- Install Node.js from [here](https://nodejs.org/en/download)
 
 ## Installation
 
@@ -554,18 +553,18 @@ Please also refer to [Custom Tool Samples](/Assets/Editor/CustomToolSamples).
 
 ## Other
 > [!TIP]
-> **File Output**: The `run-tests`, `unity-search`, and `get-hierarchy` tools can save results to the `{project_root}/uLoopMCPOutputs/` directory to avoid massive token consumption when dealing with large datasets.
-> 
+> **File Output**
+> The `run-tests`, `unity-search`, and `get-hierarchy` tools can save results to the `{project_root}/uLoopMCPOutputs/` directory to avoid massive token consumption when dealing with large datasets.
 > **Recommendation**: Add `uLoopMCPOutputs/` to `.gitignore` to exclude from version control.
 
 > [!TIP]
 > **Automatic MCP Execution in Cursor**
-> 
 > By default, Cursor requires user permission when executing MCP.
 > To disable this, go to Cursor Settings > Chat > MCP Tools Protection and turn it Off.
 > Note that this cannot be controlled per MCP type or tool, so all MCPs will no longer require permission. This is a security tradeoff, so please configure it with that in mind.
 
-> [!WARNING]  
+> [!WARNING]
+> **Windows Claude Code**
 > When using Claude Code on Windows, version 1.0.51 or higher is recommended. (Git for Windows is required)  
 > Please refer to [Claude Code CHANGELOG](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
 
