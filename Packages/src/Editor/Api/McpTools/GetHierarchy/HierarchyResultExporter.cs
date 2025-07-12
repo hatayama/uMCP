@@ -15,7 +15,7 @@ namespace io.github.hatayama.uLoopMCP
     /// </summary>
     public static class HierarchyResultExporter
     {
-        private const string EXPORT_DIR = "HierarchyResults";
+        private static readonly string EXPORT_DIR = Path.Combine(McpConstants.OUTPUT_ROOT_DIR, McpConstants.HIERARCHY_RESULTS_DIR);
         private const string FILE_PREFIX = "hierarchy";
         
         /// <summary>

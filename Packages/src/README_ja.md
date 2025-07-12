@@ -7,7 +7,6 @@
 ![Cursor](https://img.shields.io/badge/Cursor-111?logo=Cursor)
 ![GitHubCopilot](https://img.shields.io/badge/GitHub_Copilot-111?logo=githubcopilot)
 ![Windsurf](https://img.shields.io/badge/Windsurf-111?logo=Windsurf)
-![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
 <h1 align="center">
     <img width="500" alt="uLoopMCP" src="https://github.com/user-attachments/assets/a8b53cca-5444-445d-aa39-9024d41763e6" />  
@@ -62,8 +61,9 @@ Unity Test Runnerを実行し、テスト結果を取得します。FilterType�
 → run-tests (FilterType: fullclassname, FilterValue: "PlayerControllerTests")
 → 失敗したテストを確認、実装を修正してテストをパス
 ```
-> [!WARNING]
-> PlayModeテスト実行の際、Domain Reloadは強制的にOFFにされます。Static変数がリセットされない事に注意して下さい。
+> [!WARNING]  
+> PlayModeテスト実行の際、Domain Reloadは強制的にOFFにされます。(テスト終了後に元の設定に戻ります)  
+> この際、Static変数がリセットされない事に注意して下さい。
 
 #### 4. clear-console - ログのクリーンアップ
 log検索時、ノイズのとなるlogをクリアする事ができます。
@@ -106,13 +106,15 @@ UnitySearchが提供する検索プロバイダーを取得します
 
 #### 10. get-hierarchy - シーン構造の解析
 現在アクティブなHierarchyの情報をネストされたJSON形式で取得します。ランタイムでも動作します。
-**自動ファイル出力**: 大きなHierarchy（100KB超）は自動的に`HierarchyResults/`ディレクトリに保存され、トークン消費を最小限に抑えます。
+**自動ファイル出力**: 大きなHierarchy（100KB超）は自動的に`{project_root}/uLoopMCPOutputs/HierarchyResults/`ディレクトリに保存され、トークン消費を最小限に抑えます。
 ```
 → GameObject間の親子関係を理解。構造的な問題を発見・修正
 → 大きなシーンでは、Hierarchyデータがファイルに保存され、生のJSONの代わりにパスが返されます
 ```
+
+## 機能詳細仕様
 <details>
-<summary><span style="font-size: 1.1em; font-weight: bold;">機能詳細仕様</span></summary>
+<summary>詳細仕様を見る</summary>
 
 ## 共通パラメータ・レスポンス形式
 
@@ -168,7 +170,6 @@ UnitySearchが提供する検索プロバイダーを取得します
     - `Type` (string): ログタイプ（Error, Warning, Log）
     - `Message` (string): ログメッセージ
     - `StackTrace` (string): スタックトレース（IncludeStackTraceがtrueの場合）
-    - `File` (string): ログが発生したファイル名
 
 ### 3. run-tests
 - **説明**: Unity Test Runnerを実行し、包括的なレポート付きでテスト結果を取得します
@@ -181,8 +182,7 @@ UnitySearchが提供する検索プロバイダーを取得します
   - `TestMode` (enum): テストモード - "EditMode"(0), "PlayMode"(1)（デフォルト: "EditMode"）
     - ⚠️ **PlayMode注意**: PlayModeテスト実行時は、一時的にdomain reloadが無効化されます
   - `SaveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）
-    - XMLファイルは `TestResults/` フォルダに保存されます（プロジェクトルート）
-    - **推奨**: `.gitignore` に `TestResults/` を追加してバージョン管理から除外してください
+    - XMLファイルは `{project_root}//uLoopMCPOutputs/TestResults/` フォルダに保存されます
 - **レスポンス**: 
   - `Success` (boolean): テスト実行が成功したかどうか
   - `Message` (string): テスト実行メッセージ
@@ -266,9 +266,14 @@ UnitySearchが提供する検索プロバイダーを取得します
   - `ResultsSavedToFile` (boolean): 結果がファイルに保存されたかどうか
   - `SavedFileFormat` (string): 保存された結果のファイル形式
   - `SaveToFileReason` (string): 結果がファイルに保存された理由
+  - `AppliedFilters` (object): 適用されたフィルタ情報
+    - `FileExtensions` (array): フィルタされたファイル拡張子
+    - `AssetTypes` (array): フィルタされたアセットタイプ
+    - `PathFilter` (string): 適用されたパスフィルタパターン
+    - `FilteredOutCount` (number): フィルタで除外された結果数
 
 ### 7. get-hierarchy
-- **説明**: AIフレンドリーな処理のためにUnity階層構造をネストされたJSON形式で取得します
+- **説明**: Unity階層構造をネストされたJSON形式で取得します
 - **パラメータ**: 
   - `IncludeInactive` (boolean): 階層結果に非アクティブなGameObjectを含めるかどうか（デフォルト: true）
   - `MaxDepth` (number): 階層を探索する最大深度（無制限深度の場合は-1）（デフォルト: -1）
@@ -291,7 +296,7 @@ UnitySearchが提供する検索プロバイダーを取得します
       - `maxDepth` (number): 探索中に到達した最大深度
   - **大きな階層**（>100KB）: 自動ファイルエクスポート
     - `hierarchySavedToFile` (boolean): 大きな階層では常にtrue
-    - `hierarchyFilePath` (string): 保存された階層ファイルの相対パス（例: "HierarchyResults/hierarchy_2025-07-10_21-30-15.json"）
+    - `hierarchyFilePath` (string): 保存された階層ファイルの相対パス（例: "{project_root}/uLoopMCPOutputs/HierarchyResults/hierarchy_2025-07-10_21-30-15.json"）
     - `saveToFileReason` (string): ファイルエクスポートの理由（"auto_threshold"）
     - `context` (object): 上記と同じコンテキスト情報
   - `Message` (string): 操作メッセージ
@@ -358,10 +363,6 @@ UnitySearchが提供する検索プロバイダーを取得します
 - [変更履歴](CHANGELOG.md) - バージョン履歴と更新
 </details>
 
-> [!NOTE]
-> これらのツールを組み合わせることで、AIが人間の介入なしに複雑なタスクを完了できます。
-> 特にエラー修正、テスト実行などの反復的なタスクで威力を発揮します。
-
 ## セキュリティ設定
 
 > [!IMPORTANT]
@@ -388,9 +389,11 @@ UnitySearchが提供する検索プロバイダーを取得します
 <img width="545" alt="image" src="https://github.com/user-attachments/assets/ed54d051-b78a-4bb4-bb2f-7ab23ebc1840" />
 
 
-4. 手動設定（通常は不要）
+<details>
+<summary>手動設定（通常は不要）</summary>
+
 > [!NOTE]
-> 通常は自動設定で十分ですが、必要に応じて、Cursorの設定ファイル（`.cursor/mcp.json`）を手動で編集できます：
+> 通常は自動設定で十分ですが、必要に応じて、設定ファイル（`mcp.jsonなど`）を手動で編集できます：
 
 ```json
 {
@@ -413,19 +416,20 @@ UnitySearchが提供する検索プロバイダーを取得します
 > [!NOTE]
 > Package Manager経由でインストールした場合、パッケージはハッシュ化されたディレクトリ名で`Library/PackageCache`に配置されます。「Auto Configure Cursor」ボタンを使用すると、正しいパスが自動的に設定されます。
 
+</details>
+
 5. 複数のUnityインスタンスのサポート
 > [!NOTE]
-> ポート番号を変更することで複数のUnityインスタンスをサポートできます。uLoopMCP起動時に自動的に使われいないportが割り当てられます。
+> ポート番号を変更することで複数のUnityインスタンスをサポートできます。uLoopMCP起動時に自動的に使われていないportが割り当てられます。
 
-## 前提条件
+## インストール
 
-> [!WARNING]
-> 以下のソフトウェアが必須です：
+> [!WARNING]  
+> 以下のソフトウェアが必須です
+> 
 > - **Unity 2022.3以上**
 > - **Node.js 18.0以上** - MCPサーバー実行に必要
 > - Node.jsを[こちら](https://nodejs.org/en/download)からインストールしてください
-
-## インストール
 
 ### Unity Package Manager経由
 
@@ -451,8 +455,12 @@ Scope(s): io.github.hatayama.uloopmcp
 
 3. Package Managerウィンドウを開き、My RegistriesセクションのOpenUPMを選択。uLoopMCPが表示されます。
 
-## カスタムツール開発
-コアパッケージを変更することなく、プロジェクト独自のツールを簡単に追加できます。
+## プロジェクト固有のツール開発
+uLoopMCPはコアパッケージへの変更を必要とせず、プロジェクト固有のMCPツールを効率的に開発できます。  
+型安全な設計により、信頼性の高いカスタムツールを短時間で実装可能です。
+
+<details>
+<summary>実装ガイドを見る</summary>
 
 **ステップ1: スキーマクラスの作成**（パラメータを定義）：
 ```csharp
@@ -531,29 +539,35 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 }
 ```
 
-> [!IMPORTANT]
+> [!IMPORTANT]  
 > **重要事項**：
 > - **タイムアウト処理**: 全てのツールは`BaseToolSchema`から`TimeoutSeconds`パラメータを継承します。長時間実行される処理では`cancellationToken.ThrowIfCancellationRequested()`チェックを実装して、適切なタイムアウト動作を保証してください。
 > - **スレッドセーフティ**: ツールはUnityのメインスレッドで実行されるため、追加の同期なしにUnity APIを安全に呼び出せます。
 
 [カスタムツールのサンプル](/Assets/Editor/CustomToolSamples)も参考にして下さい。
 
-## Cursorでmcpの実行を自動で行う
-CursorはデフォルトでMCP実行時にユーザーの許可を必要とします。
-これを無効にするには、Cursor Settings > Chat > MCP Tools ProtectionをOffにします。
-MCPの種類・ツール事に制御できず、全てのMCPが許可不要になってしまうため、セキュリティとのトレードオフになります。そこを留意して設定してください。
+</details>
 
-## WindowsでClaude Codeを使う際、WSL2の対応
-WSL2のミラーモードを有効化します。`C:/Users/[username]/.wslconfig` に、下記を記述します。
-```
-[wsl2]
-networkingMode=mirrored
-```
-その後、下記コマンドを実行して設定を反映させます。
-```bash
-wsl --shutdown
-wsl
-```
+## その他
+
+> [!TIP]
+> **ファイル出力について**  
+> 
+> `run-tests`、`unity-search`、`get-hierarchy`の各ツールは、大量のデータによるトークン消費を避けるため、結果を`{project_root}/uLoopMCPOutputs/`ディレクトリにファイル保存する機能があります。
+> **推奨**: `.gitignore`に`uLoopMCPOutputs/`を追加してバージョン管理から除外してください。
+
+> [!TIP]
+> **Cursorでmcpの実行を自動で行う**  
+> 
+> CursorはデフォルトでMCP実行時にユーザーの許可を必要とします。
+> これを無効にするには、Cursor Settings > Chat > MCP Tools ProtectionをOffにします。
+> MCPの種類・ツール事に制御できず、全てのMCPが許可不要になってしまうため、セキュリティとのトレードオフになります。そこを留意して設定してください。
+
+> [!WARNING]
+> **Windows板 Claude Code**  
+> 
+> WindowsでClaude Codeを使う場合、1.0.51以上のバージョンを推奨します。(Git for Windows が必要です)  
+> [Claude CodeのCHANGELOG](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) を参照して下さい。
 
 ## ライセンス
 MIT License

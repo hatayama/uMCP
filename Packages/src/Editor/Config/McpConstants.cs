@@ -73,6 +73,12 @@ namespace io.github.hatayama.uLoopMCP
         public const string PACKAGE_CACHE_DIR = "PackageCache";
         public const string PACKAGE_NAME_PATTERN = "io.github.hatayama.uloopmcp@*";
         
+        // File output directories
+        public const string OUTPUT_ROOT_DIR = "uLoopMCPOutputs";
+        public const string TEST_RESULTS_DIR = "TestResults";
+        public const string SEARCH_RESULTS_DIR = "SearchResults";
+        public const string HIERARCHY_RESULTS_DIR = "HierarchyResults";
+        
         // SessionState keys
         public const string SESSION_KEY_SERVER_RUNNING = "uLoopMCP.ServerRunning";
         public const string SESSION_KEY_SERVER_PORT = "uLoopMCP.ServerPort";
