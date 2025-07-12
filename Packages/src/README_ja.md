@@ -119,7 +119,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 すべてのUnity MCPツールは以下の共通要素を持ちます：
 
 ### 共通パラメータ
-- `TimeoutSeconds` (number): ツール実行のタイムアウト時間（秒）（デフォルト: 10秒）
+- `TimeoutSeconds` (number): ツール実行のタイムアウト時間（秒）
 
 ### 共通レスポンスプロパティ
 すべてのツールには以下のタイミング情報が自動的に含まれます：
@@ -531,9 +531,10 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 }
 ```
 
-**重要事項**：
-- **タイムアウト処理**: 全てのツールは`BaseToolSchema`から`TimeoutSeconds`パラメータを継承します（デフォルト: 15秒）。長時間実行される処理では`cancellationToken.ThrowIfCancellationRequested()`チェックを実装して、適切なタイムアウト動作を保証してください。
-- **スレッドセーフティ**: ツールはUnityのメインスレッドで実行されるため、追加の同期なしにUnity APIを安全に呼び出せます。
+> [!IMPORTANT]
+> **重要事項**：
+> - **タイムアウト処理**: 全てのツールは`BaseToolSchema`から`TimeoutSeconds`パラメータを継承します。長時間実行される処理では`cancellationToken.ThrowIfCancellationRequested()`チェックを実装して、適切なタイムアウト動作を保証してください。
+> - **スレッドセーフティ**: ツールはUnityのメインスレッドで実行されるため、追加の同期なしにUnity APIを安全に呼び出せます。
 
 [カスタムツールのサンプル](/Assets/Editor/CustomToolSamples)も参考にして下さい。
 

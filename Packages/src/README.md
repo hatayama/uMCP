@@ -120,7 +120,7 @@ Retrieve information about the currently active Hierarchy in nested JSON format.
 All Unity MCP tools share the following common elements:
 
 ### Common Parameters
-- `TimeoutSeconds` (number): Tool execution timeout in seconds (default: 10 seconds)
+- `TimeoutSeconds` (number): Tool execution timeout in seconds
 
 ### Common Response Properties
 All tools automatically include the following timing information:
@@ -529,9 +529,10 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 }
 ```
 
-**Important Notes**:
-- **Timeout Handling**: All tools inherit `TimeoutSeconds` parameter from `BaseToolSchema` (default: 15 seconds). Implement `cancellationToken.ThrowIfCancellationRequested()` checks in long-running operations to ensure proper timeout behavior.
-- **Thread Safety**: Tools execute on Unity's main thread, so Unity API calls are safe without additional synchronization.
+> [!IMPORTANT]
+> **Important Notes**:
+> - **Timeout Handling**: All tools inherit `TimeoutSeconds` parameter from `BaseToolSchema`. Implement `cancellationToken.ThrowIfCancellationRequested()` checks in long-running operations to ensure proper timeout behavior.
+> - **Thread Safety**: Tools execute on Unity's main thread, so Unity API calls are safe without additional synchronization.
 
 Please also refer to [Custom Tool Samples](/Assets/Editor/CustomToolSamples).
 
