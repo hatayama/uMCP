@@ -553,17 +553,20 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 
 > [!TIP]
 > **ファイル出力について**  
+> 
 > `run-tests`、`unity-search`、`get-hierarchy`の各ツールは、大量のデータによるトークン消費を避けるため、結果を`{project_root}/uLoopMCPOutputs/`ディレクトリにファイル保存する機能があります。
 > **推奨**: `.gitignore`に`uLoopMCPOutputs/`を追加してバージョン管理から除外してください。
 
 > [!TIP]
 > **Cursorでmcpの実行を自動で行う**  
+> 
 > CursorはデフォルトでMCP実行時にユーザーの許可を必要とします。
 > これを無効にするには、Cursor Settings > Chat > MCP Tools ProtectionをOffにします。
 > MCPの種類・ツール事に制御できず、全てのMCPが許可不要になってしまうため、セキュリティとのトレードオフになります。そこを留意して設定してください。
 
 > [!WARNING]
 > **Windows板 Claude Code**  
+> 
 > WindowsでClaude Codeを使う場合、1.0.51以上のバージョンを推奨します。(Git for Windows が必要です)  
 > [Claude CodeのCHANGELOG](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) を参照して下さい。
 
