@@ -1,4 +1,4 @@
-[English](README.md)
+[English](Packages/src/README.md)
 
 [![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
@@ -111,25 +111,6 @@ UnitySearchが提供する検索プロバイダーを取得します
 → GameObject間の親子関係を理解。構造的な問題を発見・修正
 → 大きなシーンでは、Hierarchyデータがファイルに保存され、生のJSONの代わりにパスが返されます
 ```
-
-> [!NOTE]
-> これらのツールを組み合わせることで、AIが人間の介入なしに複雑なタスクを完了できます。
-> 特にエラー修正、テスト実行などの反復的なタスクで威力を発揮します。
-
-## セキュリティ設定
-
-> [!WARNING]
-> **デフォルトで無効化されている機能**
-> 
-> 任意のコードを自由に実行できてしまうため、以下の機能はデフォルトで無効化されています：
-> - `execute-menu-item`: メニュー項目の実行
-> - `run-tests`: テストの実行
-> 
-> これらの機能を使用するには、uLoopMCPウィンドウのSecurity Settingsで該当する設定を有効にする必要があります：
-> - **Allow Test Execution**: `run-tests`ツールを有効にします
-> - **Allow Menu Item Execution**: `execute-menu-item`ツールを有効にします
-> これらの機能を有効にする場合は、信頼できる環境でのみ使用してください。
-
 <details>
 <summary><span style="font-size: 1.1em; font-weight: bold;">機能詳細仕様</span></summary>
 
@@ -375,8 +356,25 @@ UnitySearchが提供する検索プロバイダーを取得します
 - [アーキテクチャドキュメント](Editor/ARCHITECTURE.md) - 技術アーキテクチャの詳細
 - [TypeScriptサーバーアーキテクチャ](TypeScriptServer~/ARCHITECTURE.md) - TypeScriptサーバー実装
 - [変更履歴](CHANGELOG.md) - バージョン履歴と更新
-
 </details>
+
+> [!NOTE]
+> これらのツールを組み合わせることで、AIが人間の介入なしに複雑なタスクを完了できます。
+> 特にエラー修正、テスト実行などの反復的なタスクで威力を発揮します。
+
+## セキュリティ設定
+
+> [!IMPORTANT]
+> **デフォルトで無効化されている機能**
+>
+> 任意のコードを自由に実行できてしまうため、以下の機能はデフォルトで無効化されています：
+> - `execute-menu-item`: メニュー項目の実行
+> - `run-tests`: テストの実行
+>
+> これらの機能を使用するには、uLoopMCPウィンドウのSecurity Settingsで該当する設定を有効にする必要があります：
+> - **Allow Test Execution**: `run-tests`ツールを有効にします
+> - **Allow Menu Item Execution**: `execute-menu-item`ツールを有効にします
+    > これらの機能を有効にする場合は、信頼できる環境でのみ使用してください。
 
 ## 使用方法
 1. Window > uLoopMCPを選択します。専用ウィンドウが開くので、「Start Server」ボタンを押してください。  

@@ -1,4 +1,4 @@
-[日本語](README_ja.md)
+[日本語](Packages/src/README_ja.md)
 
 [![Unity](https://img.shields.io/badge/Unity-2022.3+-red.svg)](https://unity3d.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
@@ -111,24 +111,6 @@ Retrieve information about the currently active Hierarchy in nested JSON format.
 → Understand parent-child relationships between GameObjects, discover and fix structural issues
 → For large scenes, hierarchy data is saved to file and path is returned instead of raw JSON
 ```
-
-> [!NOTE]
-> By combining these tools, AI can complete complex tasks without human intervention.
-> They are particularly powerful for repetitive tasks like error fixing and test execution.
-
-## Security Settings
-
-> [!WARNING]
-> **Features Disabled by Default**
-> 
-> The following features are disabled by default because they can execute arbitrary code freely:
-> - `execute-menu-item`: Executing menu items
-> - `run-tests`: Test execution
-> 
-> To use these features, you need to enable the corresponding settings in the Security Settings of the uLoopMCP window:
-> - **Allow Test Execution**: Enables the `run-tests` tool
-> - **Allow Menu Item Execution**: Enables the `execute-menu-item` tool
-> Only enable these features in trusted environments.
 
 <details>
 <summary><span style="font-size: 1.1em; font-weight: bold;">Feature Specifications</span></summary>
@@ -373,6 +355,24 @@ All tools automatically include the following timing information:
 - [Changelog](CHANGELOG.md) - Version history and updates
 
 </details>
+
+> [!NOTE]
+> By combining these tools, AI can complete complex tasks without human intervention.
+> They are particularly powerful for repetitive tasks like error fixing and test execution.
+
+## Security Settings
+
+> [!IMPORTANT]
+> **Features Disabled by Default**
+>
+> The following features are disabled by default because they can execute arbitrary code freely:
+> - `execute-menu-item`: Executing menu items
+> - `run-tests`: Test execution
+>
+> To use these features, you need to enable the corresponding settings in the Security Settings of the uLoopMCP window:
+> - **Allow Test Execution**: Enables the `run-tests` tool
+> - **Allow Menu Item Execution**: Enables the `execute-menu-item` tool
+    > Only enable these features in trusted environments.
 
 ## Usage
 1. Select Window > uLoopMCP. A dedicated window will open, so press the "Start Server" button.  
