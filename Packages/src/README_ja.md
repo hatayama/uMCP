@@ -7,7 +7,6 @@
 ![Cursor](https://img.shields.io/badge/Cursor-111?logo=Cursor)
 ![GitHubCopilot](https://img.shields.io/badge/GitHub_Copilot-111?logo=githubcopilot)
 ![Windsurf](https://img.shields.io/badge/Windsurf-111?logo=Windsurf)
-![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
 <h1 align="center">
     <img width="500" alt="uLoopMCP" src="https://github.com/user-attachments/assets/a8b53cca-5444-445d-aa39-9024d41763e6" />  
@@ -390,7 +389,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 
 4. 手動設定（通常は不要）
 > [!NOTE]
-> 通常は自動設定で十分ですが、必要に応じて、Cursorの設定ファイル（`.cursor/mcp.json`）を手動で編集できます：
+> 通常は自動設定で十分ですが、必要に応じて、設定ファイル（`mcp.jsonなど`）を手動で編集できます：
 
 ```json
 {
@@ -543,17 +542,9 @@ CursorはデフォルトでMCP実行時にユーザーの許可を必要とし�
 これを無効にするには、Cursor Settings > Chat > MCP Tools ProtectionをOffにします。
 MCPの種類・ツール事に制御できず、全てのMCPが許可不要になってしまうため、セキュリティとのトレードオフになります。そこを留意して設定してください。
 
-## WindowsでClaude Codeを使う際、WSL2の対応
-WSL2のミラーモードを有効化します。`C:/Users/[username]/.wslconfig` に、下記を記述します。
-```
-[wsl2]
-networkingMode=mirrored
-```
-その後、下記コマンドを実行して設定を反映させます。
-```bash
-wsl --shutdown
-wsl
-```
+> [!WARNING]  
+> WindowsでClaude Codeを使う場合、1.0.51以上のバージョンを推奨します。(Git for Windows が必要です)  
+> [Claude CodeのCHANGELOG](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) を参照して下さい。
 
 ## ライセンス
 MIT License
