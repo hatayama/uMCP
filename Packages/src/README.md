@@ -7,7 +7,6 @@
 ![Cursor](https://img.shields.io/badge/Cursor-111?logo=Cursor)
 ![GitHubCopilot](https://img.shields.io/badge/GitHub_Copilot-111?logo=githubcopilot)
 ![Windsurf](https://img.shields.io/badge/Windsurf-111?logo=Windsurf)
-![WSL2](https://img.shields.io/badge/WSL2-28b?logo=WSL2)
 
 <h1 align="center">
     <img width="500" alt="uLoopMCP" src="https://github.com/user-attachments/assets/a8b53cca-5444-445d-aa39-9024d41763e6" />  
@@ -54,12 +53,12 @@ This allows you to retrieve logs while keeping the context small.
 
 #### 3. run-tests - Execute TestRunner (PlayMode, EditMode supported)
 Executes Unity Test Runner and retrieves test results. You can set conditions with FilterType and FilterValue.
-- FilterType: all (all tests), fullclassname (full class name), etc.
+- FilterType: all (all tests), exact (individual test method name), regex (class name or namespace), assembly (assembly name)
 - FilterValue: Value according to filter type (class name, namespace, etc.)  
 Test results can be output as xml. The output path is returned so AI can read it.  
 This is also a strategy to avoid consuming context.
 ```
-→ run-tests (FilterType: fullclassname, FilterValue: "PlayerControllerTests")
+→ run-tests (FilterType: exact, FilterValue: "io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs")
 → Check failed tests, fix implementation to pass tests
 ```
 > [!WARNING]
@@ -174,10 +173,12 @@ All tools automatically include the following timing information:
 ### 3. run-tests
 - **Description**: Executes Unity Test Runner and retrieves test results with comprehensive reporting
 - **Parameters**: 
-  - `FilterType` (enum): Type of test filter - "all", "fullclassname" (default: "all")
+  - `FilterType` (enum): Type of test filter - "all"(0), "exact"(1), "regex"(2), "assembly"(3) (default: "all")
   - `FilterValue` (string): Filter value (specify when FilterType is other than all) (default: "")
-    - `fullclassname`: Full class name (e.g.: io.github.hatayama.uLoopMCP.CompileCommandTests)
-  - `TestMode` (enum): Test mode - "EditMode", "PlayMode" (default: "EditMode")
+    - `exact`: Individual test method name (exact match) (e.g.: io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs)
+    - `regex`: Class name or namespace (regex pattern) (e.g.: io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests, io.github.hatayama.uLoopMCP)
+    - `assembly`: Assembly name (e.g.: uLoopMCP.Tests.Editor)
+  - `TestMode` (enum): Test mode - "EditMode"(0), "PlayMode"(1) (default: "EditMode")
     - ⚠️ **PlayMode Warning**: During PlayMode test execution, domain reload is temporarily disabled
   - `SaveXml` (boolean): Whether to save test results as XML file (default: false)
     - XML files are saved to `TestResults/` folder (project root)
@@ -240,15 +241,16 @@ All tools automatically include the following timing information:
 - **Parameters**: 
   - `SearchQuery` (string): Search query string (supports Unity Search syntax) (default: "")
     - Examples: "*.cs", "t:Texture2D", "ref:MyScript", "p:MyPackage"
+    - For detailed Unity Search documentation see: https://docs.unity3d.com/6000.1/Documentation/Manual/search-expressions.html and https://docs.unity3d.com/6000.0/Documentation/Manual/search-query-operators.html. Common queries: "*.cs" (all C# files), "t:Texture2D" (Texture2D assets), "ref:MyScript" (assets referencing MyScript), "p:MyPackage" (search in package), "t:MonoScript *.cs" (C# scripts only), "Assets/Scripts/*.cs" (C# files in specific folder). Japanese guide: https://light11.hatenadiary.com/entry/2022/12/12/193119
   - `Providers` (array): Specific search providers to use (empty = all active providers) (default: [])
     - Common providers: "asset", "scene", "menu", "settings", "packages"
   - `MaxResults` (number): Maximum number of search results to return (default: 50)
   - `IncludeDescription` (boolean): Whether to include detailed descriptions in results (default: true)
   - `IncludeMetadata` (boolean): Whether to include file metadata (size, modified date) (default: false)
-  - `SearchFlags` (enum): Search flags for controlling Unity Search behavior (default: "Default")
-  - `SaveToFile` (boolean): Whether to save search results to external file (default: false)
-  - `OutputFormat` (enum): Output file format when SaveToFile is enabled - "JSON", "CSV", "TSV" (default: "JSON")
-  - `AutoSaveThreshold` (number): Threshold for automatic file saving (default: 100)
+  - `SearchFlags` (enum): Search flags for controlling Unity Search behavior (default: "Default"(0), "Synchronous"(1), "WantsMore"(2), "Packages"(4), "Sorted"(8))
+  - `SaveToFile` (boolean): Whether to save search results to external file to avoid massive token consumption when dealing with large result sets. Results are saved as JSON/CSV files for external reading (default: false)
+  - `OutputFormat` (enum): Output file format when SaveToFile is enabled (default: "JSON"(0), "CSV"(1), "TSV"(2))
+  - `AutoSaveThreshold` (number): Threshold for automatic file saving (if result count exceeds this, automatically save to file). Set to 0 to disable automatic file saving (default: 100)
   - `FileExtensions` (array): Filter results by file extension (e.g., "cs", "prefab", "mat") (default: [])
   - `AssetTypes` (array): Filter results by asset type (e.g., "Texture2D", "GameObject", "MonoScript") (default: [])
   - `PathFilter` (string): Filter results by path pattern (supports wildcards) (default: "")
@@ -293,6 +295,8 @@ All tools automatically include the following timing information:
     - `hierarchyFilePath` (string): Relative path to saved hierarchy file (e.g., "HierarchyResults/hierarchy_2025-07-10_21-30-15.json")
     - `saveToFileReason` (string): Reason for file export ("auto_threshold")
     - `context` (object): Same context information as above
+  - `Message` (string): Operation message
+  - `ErrorMessage` (string): Error message if operation failed
 
 ### 8. get-provider-details
 - **Description**: Get detailed information about Unity Search providers including display names, descriptions, active status, and capabilities
@@ -316,7 +320,7 @@ All tools automatically include the following timing information:
 - **Description**: Retrieve Unity MenuItems with detailed metadata for programmatic execution. Unlike Unity Search menu provider, this provides implementation details (method names, assemblies, execution compatibility) needed for automation and debugging
 - **Parameters**: 
   - `FilterText` (string): Text to filter MenuItem paths (empty for all items) (default: "")
-  - `FilterType` (enum): Type of filter to apply - "contains", "exact", "startswith" (default: "contains")
+  - `FilterType` (enum): Type of filter to apply (contains(0), exact(1), startswith(2)) (default: "contains")
   - `IncludeValidation` (boolean): Include validation functions in the results (default: false)
   - `MaxCount` (number): Maximum number of menu items to retrieve (default: 200)
 - **Response**: 
@@ -372,7 +376,7 @@ All tools automatically include the following timing information:
 > To use these features, you need to enable the corresponding settings in the Security Settings of the uLoopMCP window:
 > - **Allow Test Execution**: Enables the `run-tests` tool
 > - **Allow Menu Item Execution**: Enables the `execute-menu-item` tool
-    > Only enable these features in trusted environments.
+   > Only enable these features in trusted environments.
 
 ## Usage
 1. Select Window > uLoopMCP. A dedicated window will open, so press the "Start Server" button.  
@@ -388,7 +392,7 @@ All tools automatically include the following timing information:
 
 4. Manual Setup (Usually Unnecessary)
 > [!NOTE]
-> Usually automatic setup is sufficient, but if needed, you can manually edit Cursor's configuration file (`.cursor/mcp.json`):
+> Usually automatic setup is sufficient, but if needed, you can manually edit the configuration file (e.g., `mcp.json`):
 
 ```json
 {
@@ -540,18 +544,6 @@ Please also refer to [Custom Tool Samples](/Assets/Editor/CustomToolSamples).
 By default, Cursor requires user permission when executing MCP.
 To disable this, go to Cursor Settings > Chat > MCP Tools Protection and turn it Off.
 Note that this cannot be controlled per MCP type or tool, so all MCPs will no longer require permission. This is a security tradeoff, so please configure it with that in mind.
-
-## WSL2 Support for Using Claude Code on Windows
-Enable WSL2 mirror mode. Add the following to `C:/Users/[username]/.wslconfig`:
-```
-[wsl2]
-networkingMode=mirrored
-```
-Then execute the following commands to apply the settings:
-```bash
-wsl --shutdown
-wsl
-```
 
 ## License
 MIT License
