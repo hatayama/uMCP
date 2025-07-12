@@ -369,15 +369,6 @@ UnitySearchが提供する検索プロバイダーを取得します
 - [変更履歴](CHANGELOG.md) - バージョン履歴と更新
 </details>
 
-> [!TIP]
-> **ファイル出力について**: `run-tests`、`unity-search`、`get-hierarchy`の各ツールは、大量のデータによるトークン消費を避けるため、結果を`{project_root}/uLoopMCPOutputs/`ディレクトリにファイル保存する機能があります。
-> 
-> **推奨**: `.gitignore`に`uLoopMCPOutputs/`を追加してバージョン管理から除外してください。
-
-> [!NOTE]
-> これらのツールを組み合わせることで、AIが人間の介入なしに複雑なタスクを完了できます。
-> 特にエラー修正、テスト実行などの反復的なタスクで威力を発揮します。
-
 ## セキュリティ設定
 
 > [!IMPORTANT]
@@ -569,6 +560,11 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 [カスタムツールのサンプル](/Assets/Editor/CustomToolSamples)も参考にして下さい。
 
 </details>
+
+> [!TIP]
+> **ファイル出力について**: `run-tests`、`unity-search`、`get-hierarchy`の各ツールは、大量のデータによるトークン消費を避けるため、結果を`{project_root}/uLoopMCPOutputs/`ディレクトリにファイル保存する機能があります。
+>
+> **推奨**: `.gitignore`に`uLoopMCPOutputs/`を追加してバージョン管理から除外してください。
 
 > [!TIP]
 > **Cursorでmcpの実行を自動で行う**
