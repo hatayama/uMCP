@@ -563,6 +563,7 @@ Please also refer to [Custom Tool Samples](/Assets/Editor/CustomToolSamples).
 
 </details>
 
+## Other
 > [!TIP]
 > **File Output**: The `run-tests`, `unity-search`, and `get-hierarchy` tools can save results to the `{project_root}/uLoopMCPOutputs/` directory to avoid massive token consumption when dealing with large datasets.
 > 
