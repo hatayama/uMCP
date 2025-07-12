@@ -105,7 +105,7 @@ Retrieve objects and examine component parameters.
 
 #### 10. get-hierarchy - Analyze Scene Structure
 Retrieve information about the currently active Hierarchy in nested JSON format. Works at runtime as well.
-**Automatic File Export**: Large hierarchies (>100KB) are automatically saved to `HierarchyResults/` directory to minimize token consumption.
+**Automatic File Export**: Large hierarchies (>100KB) are automatically saved to `{project_root}/uLoopMCPOutputs/HierarchyResults/` directory to minimize token consumption.
 ```
 → Understand parent-child relationships between GameObjects, discover and fix structural issues
 → For large scenes, hierarchy data is saved to file and path is returned instead of raw JSON
@@ -180,8 +180,7 @@ All tools automatically include the following timing information:
   - `TestMode` (enum): Test mode - "EditMode"(0), "PlayMode"(1) (default: "EditMode")
     - ⚠️ **PlayMode Warning**: During PlayMode test execution, domain reload is temporarily disabled
   - `SaveXml` (boolean): Whether to save test results as XML file (default: false)
-    - XML files are saved to `TestResults/` folder (project root)
-    - **Recommendation**: Add `TestResults/` to `.gitignore` to exclude from version control
+    - XML files are saved to `{project root}/uLoopMCPOutputs/TestResults/` folder
 - **Response**: 
   - `Success` (boolean): Whether test execution was successful
   - `Message` (string): Test execution message
@@ -296,7 +295,7 @@ All tools automatically include the following timing information:
       - `maxDepth` (number): Maximum depth reached during traversal
   - **Large hierarchies** (>100KB): Automatic file export
     - `hierarchySavedToFile` (boolean): Always true for large hierarchies
-    - `hierarchyFilePath` (string): Relative path to saved hierarchy file (e.g., "HierarchyResults/hierarchy_2025-07-10_21-30-15.json")
+    - `hierarchyFilePath` (string): Relative path to saved hierarchy file (e.g., "{project_root}/uLoopMCPOutputs/HierarchyResults/hierarchy_2025-07-10_21-30-15.json")
     - `saveToFileReason` (string): Reason for file export ("auto_threshold")
     - `context` (object): Same context information as above
   - `Message` (string): Operation message
@@ -363,6 +362,11 @@ All tools automatically include the following timing information:
 - [Changelog](CHANGELOG.md) - Version history and updates
 
 </details>
+
+> [!TIP]
+> **File Output**: The `run-tests`, `unity-search`, and `get-hierarchy` tools can save results to the `{project_root}/uLoopMCPOutputs/` directory to avoid massive token consumption when dealing with large datasets.
+> 
+> **Recommendation**: Add `uLoopMCPOutputs/` to `.gitignore` to exclude from version control.
 
 > [!NOTE]
 > By combining these tools, AI can complete complex tasks without human intervention.

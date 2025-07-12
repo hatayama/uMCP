@@ -105,7 +105,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 
 #### 10. get-hierarchy - シーン構造の解析
 現在アクティブなHierarchyの情報をネストされたJSON形式で取得します。ランタイムでも動作します。
-**自動ファイル出力**: 大きなHierarchy（100KB超）は自動的に`HierarchyResults/`ディレクトリに保存され、トークン消費を最小限に抑えます。
+**自動ファイル出力**: 大きなHierarchy（100KB超）は自動的に`{project_root}/uLoopMCPOutputs/HierarchyResults/`ディレクトリに保存され、トークン消費を最小限に抑えます。
 ```
 → GameObject間の親子関係を理解。構造的な問題を発見・修正
 → 大きなシーンでは、Hierarchyデータがファイルに保存され、生のJSONの代わりにパスが返されます
@@ -179,8 +179,7 @@ UnitySearchが提供する検索プロバイダーを取得します
   - `TestMode` (enum): テストモード - "EditMode"(0), "PlayMode"(1)（デフォルト: "EditMode"）
     - ⚠️ **PlayMode注意**: PlayModeテスト実行時は、一時的にdomain reloadが無効化されます
   - `SaveXml` (boolean): テスト結果をXMLファイルとして保存するかどうか（デフォルト: false）
-    - XMLファイルは `TestResults/` フォルダに保存されます（プロジェクトルート）
-    - **推奨**: `.gitignore` に `TestResults/` を追加してバージョン管理から除外してください
+    - XMLファイルは `{project_root}//uLoopMCPOutputs/TestResults/` フォルダに保存されます
 - **レスポンス**: 
   - `Success` (boolean): テスト実行が成功したかどうか
   - `Message` (string): テスト実行メッセージ
@@ -294,7 +293,7 @@ UnitySearchが提供する検索プロバイダーを取得します
       - `maxDepth` (number): 探索中に到達した最大深度
   - **大きな階層**（>100KB）: 自動ファイルエクスポート
     - `hierarchySavedToFile` (boolean): 大きな階層では常にtrue
-    - `hierarchyFilePath` (string): 保存された階層ファイルの相対パス（例: "HierarchyResults/hierarchy_2025-07-10_21-30-15.json"）
+    - `hierarchyFilePath` (string): 保存された階層ファイルの相対パス（例: "{project_root}/uLoopMCPOutputs/HierarchyResults/hierarchy_2025-07-10_21-30-15.json"）
     - `saveToFileReason` (string): ファイルエクスポートの理由（"auto_threshold"）
     - `context` (object): 上記と同じコンテキスト情報
   - `Message` (string): 操作メッセージ
@@ -360,6 +359,11 @@ UnitySearchが提供する検索プロバイダーを取得します
 - [TypeScriptサーバーアーキテクチャ](TypeScriptServer~/ARCHITECTURE.md) - TypeScriptサーバー実装
 - [変更履歴](CHANGELOG.md) - バージョン履歴と更新
 </details>
+
+> [!TIP]
+> **ファイル出力について**: `run-tests`、`unity-search`、`get-hierarchy`の各ツールは、大量のデータによるトークン消費を避けるため、結果を`{project_root}/uLoopMCPOutputs/`ディレクトリにファイル保存する機能があります。
+> 
+> **推奨**: `.gitignore`に`uLoopMCPOutputs/`を追加してバージョン管理から除外してください。
 
 > [!NOTE]
 > これらのツールを組み合わせることで、AIが人間の介入なしに複雑なタスクを完了できます。
