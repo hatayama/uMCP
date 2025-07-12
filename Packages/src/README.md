@@ -168,7 +168,6 @@ All tools automatically include the following timing information:
     - `Type` (string): Log type (Error, Warning, Log)
     - `Message` (string): Log message
     - `StackTrace` (string): Stack trace (if IncludeStackTrace is true)
-    - `File` (string): File name where log occurred
 
 ### 3. run-tests
 - **Description**: Executes Unity Test Runner and retrieves test results with comprehensive reporting
@@ -267,6 +266,11 @@ All tools automatically include the following timing information:
   - `ResultsSavedToFile` (boolean): Whether results were saved to file
   - `SavedFileFormat` (string): File format of saved results
   - `SaveToFileReason` (string): Reason why results were saved to file
+  - `AppliedFilters` (object): Applied filter information
+    - `FileExtensions` (array): Filtered file extensions
+    - `AssetTypes` (array): Filtered asset types
+    - `PathFilter` (string): Applied path filter pattern
+    - `FilteredOutCount` (number): Number of results filtered out
 
 ### 7. get-hierarchy
 - **Description**: Get Unity Hierarchy structure in nested JSON format for AI-friendly processing

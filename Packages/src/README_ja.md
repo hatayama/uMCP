@@ -167,7 +167,6 @@ UnitySearchが提供する検索プロバイダーを取得します
     - `Type` (string): ログタイプ（Error, Warning, Log）
     - `Message` (string): ログメッセージ
     - `StackTrace` (string): スタックトレース（IncludeStackTraceがtrueの場合）
-    - `File` (string): ログが発生したファイル名
 
 ### 3. run-tests
 - **説明**: Unity Test Runnerを実行し、包括的なレポート付きでテスト結果を取得します
@@ -265,9 +264,14 @@ UnitySearchが提供する検索プロバイダーを取得します
   - `ResultsSavedToFile` (boolean): 結果がファイルに保存されたかどうか
   - `SavedFileFormat` (string): 保存された結果のファイル形式
   - `SaveToFileReason` (string): 結果がファイルに保存された理由
+  - `AppliedFilters` (object): 適用されたフィルタ情報
+    - `FileExtensions` (array): フィルタされたファイル拡張子
+    - `AssetTypes` (array): フィルタされたアセットタイプ
+    - `PathFilter` (string): 適用されたパスフィルタパターン
+    - `FilteredOutCount` (number): フィルタで除外された結果数
 
 ### 7. get-hierarchy
-- **説明**: AIフレンドリーな処理のためにUnity階層構造をネストされたJSON形式で取得します
+- **説明**: Unity階層構造をネストされたJSON形式で取得します
 - **パラメータ**: 
   - `IncludeInactive` (boolean): 階層結果に非アクティブなGameObjectを含めるかどうか（デフォルト: true）
   - `MaxDepth` (number): 階層を探索する最大深度（無制限深度の場合は-1）（デフォルト: -1）
