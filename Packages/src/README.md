@@ -61,8 +61,9 @@ This is also a strategy to avoid consuming context.
 → run-tests (FilterType: exact, FilterValue: "io.github.hatayama.uLoopMCP.ConsoleLogRetrieverTests.GetAllLogs_WithMaskAllOff_StillReturnsAllLogs")
 → Check failed tests, fix implementation to pass tests
 ```
-> [!WARNING]
-> During PlayMode test execution, Domain Reload is forcibly turned OFF. Note that static variables will not be reset.
+> [!WARNING]  
+> During PlayMode test execution, Domain Reload is forcibly turned OFF. (Settings are restored after test completion)  
+> Note that static variables will not be reset during this period.
 
 #### 4. clear-console - Log Cleanup
 Clear logs that become noise during log searches.

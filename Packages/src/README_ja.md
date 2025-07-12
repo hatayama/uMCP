@@ -61,8 +61,9 @@ Unity Test Runnerを実行し、テスト結果を取得します。FilterType�
 → run-tests (FilterType: fullclassname, FilterValue: "PlayerControllerTests")
 → 失敗したテストを確認、実装を修正してテストをパス
 ```
-> [!WARNING]
-> PlayModeテスト実行の際、Domain Reloadは強制的にOFFにされます。Static変数がリセットされない事に注意して下さい。
+> [!WARNING]  
+> PlayModeテスト実行の際、Domain Reloadは強制的にOFFにされます。(テスト終了後に元の設定に戻ります)  
+> この際、Static変数がリセットされない事に注意して下さい。
 
 #### 4. clear-console - ログのクリーンアップ
 log検索時、ノイズのとなるlogをクリアする事ができます。
@@ -423,7 +424,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 
 ## インストール
 
-> [!WARNING]
+> [!WARNING]  
 > 以下のソフトウェアが必須です
 > 
 > - **Unity 2022.3以上**
@@ -538,7 +539,7 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 }
 ```
 
-> [!IMPORTANT]
+> [!IMPORTANT]  
 > **重要事項**：
 > - **タイムアウト処理**: 全てのツールは`BaseToolSchema`から`TimeoutSeconds`パラメータを継承します。長時間実行される処理では`cancellationToken.ThrowIfCancellationRequested()`チェックを実装して、適切なタイムアウト動作を保証してください。
 > - **スレッドセーフティ**: ツールはUnityのメインスレッドで実行されるため、追加の同期なしにUnity APIを安全に呼び出せます。
