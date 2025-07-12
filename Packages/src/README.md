@@ -398,7 +398,9 @@ All tools automatically include the following timing information:
 <img width="545" alt="image" src="https://github.com/user-attachments/assets/ed54d051-b78a-4bb4-bb2f-7ab23ebc1840" />
 
 
-4. Manual Setup (Usually Unnecessary)
+<details>
+<summary>Manual Setup (Usually Unnecessary)</summary>
+
 > [!NOTE]
 > Usually automatic setup is sufficient, but if needed, you can manually edit the configuration file (e.g., `mcp.json`):
 
@@ -422,6 +424,8 @@ All tools automatically include the following timing information:
 - **Via Package Manager**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.uloopmcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
 > [!NOTE]
 > When installed via Package Manager, the package is placed in `Library/PackageCache` with a hashed directory name. Using the "Auto Configure Cursor" button will automatically set the correct path.
+
+</details>
 
 5. Multiple Unity Instance Support
 > [!NOTE]
@@ -461,7 +465,9 @@ Scope(s): io.github.hatayama.uloopmcp
 
 3. Open Package Manager window and select OpenUPM in the My Registries section. uLoopMCP will be displayed.
 
-## Custom Tool Development
+<details>
+<summary><span style="font-size: 1.1em; font-weight: bold;">Custom Tool Development</span></summary>
+
 You can easily add project-specific tools without modifying the core package.
 
 **Step 1: Create Schema Class** (define parameters):
@@ -548,10 +554,14 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 
 Please also refer to [Custom Tool Samples](/Assets/Editor/CustomToolSamples).
 
-## Automatic MCP Execution in Cursor
-By default, Cursor requires user permission when executing MCP.
-To disable this, go to Cursor Settings > Chat > MCP Tools Protection and turn it Off.
-Note that this cannot be controlled per MCP type or tool, so all MCPs will no longer require permission. This is a security tradeoff, so please configure it with that in mind.
+</details>
+
+> [!TIP]
+> **Automatic MCP Execution in Cursor**
+> 
+> By default, Cursor requires user permission when executing MCP.
+> To disable this, go to Cursor Settings > Chat > MCP Tools Protection and turn it Off.
+> Note that this cannot be controlled per MCP type or tool, so all MCPs will no longer require permission. This is a security tradeoff, so please configure it with that in mind.
 
 ## License
 MIT License

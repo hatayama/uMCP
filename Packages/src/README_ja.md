@@ -395,7 +395,9 @@ UnitySearchが提供する検索プロバイダーを取得します
 <img width="545" alt="image" src="https://github.com/user-attachments/assets/ed54d051-b78a-4bb4-bb2f-7ab23ebc1840" />
 
 
-4. 手動設定（通常は不要）
+<details>
+<summary>手動設定（通常は不要）</summary>
+
 > [!NOTE]
 > 通常は自動設定で十分ですが、必要に応じて、設定ファイル（`mcp.jsonなど`）を手動で編集できます：
 
@@ -419,6 +421,8 @@ UnitySearchが提供する検索プロバイダーを取得します
 - **Package Manager経由**: `"/Users/username/UnityProject/Library/PackageCache/io.github.hatayama.uloopmcp@[hash]/TypeScriptServer~/dist/server.bundle.js"`
 > [!NOTE]
 > Package Manager経由でインストールした場合、パッケージはハッシュ化されたディレクトリ名で`Library/PackageCache`に配置されます。「Auto Configure Cursor」ボタンを使用すると、正しいパスが自動的に設定されます。
+
+</details>
 
 5. 複数のUnityインスタンスのサポート
 > [!NOTE]
@@ -458,7 +462,9 @@ Scope(s): io.github.hatayama.uloopmcp
 
 3. Package Managerウィンドウを開き、My RegistriesセクションのOpenUPMを選択。uLoopMCPが表示されます。
 
-## カスタムツール開発
+<details>
+<summary><span style="font-size: 1.1em; font-weight: bold;">カスタムツール開発</span></summary>
+
 コアパッケージを変更することなく、プロジェクト独自のツールを簡単に追加できます。
 
 **ステップ1: スキーマクラスの作成**（パラメータを定義）：
@@ -545,10 +551,14 @@ public class MyCustomTool : AbstractUnityTool<MyCustomSchema, MyCustomResponse>
 
 [カスタムツールのサンプル](/Assets/Editor/CustomToolSamples)も参考にして下さい。
 
-## Cursorでmcpの実行を自動で行う
-CursorはデフォルトでMCP実行時にユーザーの許可を必要とします。
-これを無効にするには、Cursor Settings > Chat > MCP Tools ProtectionをOffにします。
-MCPの種類・ツール事に制御できず、全てのMCPが許可不要になってしまうため、セキュリティとのトレードオフになります。そこを留意して設定してください。
+</details>
+
+> [!TIP]
+> **Cursorでmcpの実行を自動で行う**
+> 
+> CursorはデフォルトでMCP実行時にユーザーの許可を必要とします。
+> これを無効にするには、Cursor Settings > Chat > MCP Tools ProtectionをOffにします。
+> MCPの種類・ツール事に制御できず、全てのMCPが許可不要になってしまうため、セキュリティとのトレードオフになります。そこを留意して設定してください。
 
 > [!WARNING]  
 > WindowsでClaude Codeを使う場合、1.0.51以上のバージョンを推奨します。(Git for Windows が必要です)  
