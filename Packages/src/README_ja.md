@@ -111,7 +111,7 @@ UnitySearchが提供する検索プロバイダーを取得します
 → 大きなシーンでは、Hierarchyデータがファイルに保存され、生のJSONの代わりにパスが返されます
 ```
 <details>
-<summary><span style="font-size: 1.1em; font-weight: bold;">機能詳細仕様</span></summary>
+<summary><span style="font-size: 2em; font-weight: bold;">機能詳細仕様</span></summary>
 
 ## 共通パラメータ・レスポンス形式
 
@@ -463,7 +463,7 @@ Scope(s): io.github.hatayama.uloopmcp
 3. Package Managerウィンドウを開き、My RegistriesセクションのOpenUPMを選択。uLoopMCPが表示されます。
 
 <details>
-<summary><span style="font-size: 1.1em; font-weight: bold;">カスタムツール開発</span></summary>
+<summary><span style="font-size: 2em; font-weight: bold;">カスタムツール開発</span></summary>
 
 コアパッケージを変更することなく、プロジェクト独自のツールを簡単に追加できます。
 

@@ -112,7 +112,7 @@ Retrieve information about the currently active Hierarchy in nested JSON format.
 ```
 
 <details>
-<summary><span style="font-size: 1.1em; font-weight: bold;">Feature Specifications</span></summary>
+<summary><span style="font-size: 2em; font-weight: bold;">Feature Specifications</span></summary>
 
 ## Common Parameters & Response Format
 
@@ -466,7 +466,7 @@ Scope(s): io.github.hatayama.uloopmcp
 3. Open Package Manager window and select OpenUPM in the My Registries section. uLoopMCP will be displayed.
 
 <details>
-<summary><span style="font-size: 1.1em; font-weight: bold;">Custom Tool Development</span></summary>
+<summary><span style="font-size: 2em; font-weight: bold;">Custom Tool Development</span></summary>
 
 You can easily add project-specific tools without modifying the core package.
 
