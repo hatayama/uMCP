@@ -463,8 +463,6 @@ The type-safe design allows for reliable custom tool implementation in minimal t
 <details>
 <summary>View Implementation Guide</summary>
 
-You can easily add project-specific tools without modifying the core package.
-
 **Step 1: Create Schema Class** (define parameters):
 ```csharp
 using System.ComponentModel;

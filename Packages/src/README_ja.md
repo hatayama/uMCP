@@ -461,8 +461,6 @@ uLoopMCPはコアパッケージへの変更を必要とせず、プロジェク
 <details>
 <summary>実装ガイドを見る</summary>
 
-コアパッケージを変更することなく、プロジェクト独自のツールを簡単に追加できます。
-
 **ステップ1: スキーマクラスの作成**（パラメータを定義）：
 ```csharp
 using System.ComponentModel;
