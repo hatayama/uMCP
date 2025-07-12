@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
 
-namespace io.github.hatayama.uLoopMCP.Tests
+namespace io.github.hatayama.uLoopMCP
 {
     public class GetHierarchyToolTests
     {
@@ -29,7 +29,6 @@ namespace io.github.hatayama.uLoopMCP.Tests
         {
             Assert.That(tool.ToolName, Is.EqualTo("get-hierarchy"));
         }
-        
         
         [Test]
         public async Task ExecuteAsync_WithDefaultParameters_ReturnsValidResponse()
