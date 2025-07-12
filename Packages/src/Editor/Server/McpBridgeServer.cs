@@ -440,8 +440,14 @@ namespace io.github.hatayama.uLoopMCP
                             // Only send response if it's not null (notifications return null)
                             if (!string.IsNullOrEmpty(responseJson))
                             {
+                                UnityEngine.Debug.Log($"[McpBridgeServer] Sending response: {responseJson.Length} chars");
                                 byte[] responseData = Encoding.UTF8.GetBytes(responseJson + "\n");
                                 await stream.WriteAsync(responseData, 0, responseData.Length, cancellationToken);
+                                UnityEngine.Debug.Log($"[McpBridgeServer] Response sent successfully");
+                            }
+                            else
+                            {
+                                UnityEngine.Debug.Log($"[McpBridgeServer] Response is null or empty, not sending");
                             }
                         }
                     }

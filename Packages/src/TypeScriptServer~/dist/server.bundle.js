@@ -1,9 +1,110 @@
 #!/usr/bin/env node
 var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
+
+// src/utils/log-to-file.ts
+var log_to_file_exports = {};
+__export(log_to_file_exports, {
+  debugToFile: () => debugToFile,
+  errorToFile: () => errorToFile,
+  infoToFile: () => infoToFile,
+  warnToFile: () => warnToFile
+});
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
+var isValidPath, findProjectRoot, logDir, timestamp, dateStr, timeStr, logFile, directoryCreated, writeToFile, debugToFile, infoToFile, warnToFile, errorToFile;
+var init_log_to_file = __esm({
+  "src/utils/log-to-file.ts"() {
+    "use strict";
+    isValidPath = (filePath) => {
+      const normalized = path.normalize(filePath);
+      return !normalized.includes("..") && path.isAbsolute(normalized);
+    };
+    findProjectRoot = () => {
+      const __filename = fileURLToPath(import.meta.url);
+      let currentDir = path.dirname(__filename);
+      let searchDepth = 0;
+      const maxSearchDepth = 10;
+      while (searchDepth < maxSearchDepth) {
+        const parentDir = path.dirname(currentDir);
+        if (currentDir === parentDir) {
+          break;
+        }
+        const unityIndicators = ["ProjectSettings", "Assets", "Packages"];
+        const hasUnityFiles = unityIndicators.every((indicator) => {
+          try {
+            const checkPath = path.join(currentDir, indicator);
+            return isValidPath(checkPath) && fs.existsSync(checkPath);
+          } catch {
+            return false;
+          }
+        });
+        if (hasUnityFiles) {
+          return currentDir;
+        }
+        currentDir = parentDir;
+        searchDepth++;
+      }
+      return process.cwd();
+    };
+    logDir = path.join(findProjectRoot(), "ULoopMCPLogs");
+    timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").split("T");
+    dateStr = timestamp[0];
+    timeStr = timestamp[1].split(".")[0];
+    logFile = path.join(logDir, `mcp-debug-${dateStr}_${timeStr}.log`);
+    directoryCreated = false;
+    writeToFile = (message) => {
+      try {
+        if (!directoryCreated) {
+          if (!isValidPath(logDir)) {
+            return;
+          }
+          fs.mkdirSync(logDir, { recursive: true });
+          directoryCreated = true;
+        }
+        if (!isValidPath(logFile)) {
+          return;
+        }
+        const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+        fs.appendFileSync(logFile, `${timestamp2} ${message}
+`);
+      } catch (error) {
+      }
+    };
+    debugToFile = (...args) => {
+      if (process.env.MCP_DEBUG) {
+        const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
+        writeToFile(`[MCP-DEBUG] ${message}`);
+      }
+    };
+    infoToFile = (...args) => {
+      if (process.env.MCP_DEBUG) {
+        const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
+        writeToFile(`[MCP-INFO] ${message}`);
+      }
+    };
+    warnToFile = (...args) => {
+      if (process.env.MCP_DEBUG) {
+        const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
+        writeToFile(`[MCP-WARN] ${message}`);
+      }
+    };
+    errorToFile = (...args) => {
+      if (process.env.MCP_DEBUG) {
+        const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
+        writeToFile(`[MCP-ERROR] ${message}`);
+      }
+    };
+  }
+});
 
 // node_modules/zod/dist/esm/v3/external.js
 var external_exports = {};
@@ -5527,89 +5628,8 @@ var LIST_CHANGED_UNSUPPORTED_CLIENTS = [
   "codeium"
 ];
 
-// src/utils/log-to-file.ts
-import * as fs from "fs";
-import * as path from "path";
-import { fileURLToPath } from "url";
-var isValidPath = (filePath) => {
-  const normalized = path.normalize(filePath);
-  return !normalized.includes("..") && path.isAbsolute(normalized);
-};
-var findProjectRoot = () => {
-  const __filename = fileURLToPath(import.meta.url);
-  let currentDir = path.dirname(__filename);
-  let searchDepth = 0;
-  const maxSearchDepth = 10;
-  while (searchDepth < maxSearchDepth) {
-    const parentDir = path.dirname(currentDir);
-    if (currentDir === parentDir) {
-      break;
-    }
-    const unityIndicators = ["ProjectSettings", "Assets", "Packages"];
-    const hasUnityFiles = unityIndicators.every((indicator) => {
-      try {
-        const checkPath = path.join(currentDir, indicator);
-        return isValidPath(checkPath) && fs.existsSync(checkPath);
-      } catch {
-        return false;
-      }
-    });
-    if (hasUnityFiles) {
-      return currentDir;
-    }
-    currentDir = parentDir;
-    searchDepth++;
-  }
-  return process.cwd();
-};
-var logDir = path.join(findProjectRoot(), "ULoopMCPLogs");
-var timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").split("T");
-var dateStr = timestamp[0];
-var timeStr = timestamp[1].split(".")[0];
-var logFile = path.join(logDir, `mcp-debug-${dateStr}_${timeStr}.log`);
-var directoryCreated = false;
-var writeToFile = (message) => {
-  try {
-    if (!directoryCreated) {
-      if (!isValidPath(logDir)) {
-        return;
-      }
-      fs.mkdirSync(logDir, { recursive: true });
-      directoryCreated = true;
-    }
-    if (!isValidPath(logFile)) {
-      return;
-    }
-    const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
-    fs.appendFileSync(logFile, `${timestamp2} ${message}
-`);
-  } catch (error) {
-  }
-};
-var debugToFile = (...args) => {
-  if (process.env.MCP_DEBUG) {
-    const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
-    writeToFile(`[MCP-DEBUG] ${message}`);
-  }
-};
-var infoToFile = (...args) => {
-  if (process.env.MCP_DEBUG) {
-    const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
-    writeToFile(`[MCP-INFO] ${message}`);
-  }
-};
-var warnToFile = (...args) => {
-  if (process.env.MCP_DEBUG) {
-    const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
-    writeToFile(`[MCP-WARN] ${message}`);
-  }
-};
-var errorToFile = (...args) => {
-  if (process.env.MCP_DEBUG) {
-    const message = args.map((arg) => typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)).join(" ");
-    writeToFile(`[MCP-ERROR] ${message}`);
-  }
-};
+// src/unity-client.ts
+init_log_to_file();
 
 // src/utils/safe-timer.ts
 var SafeTimer = class _SafeTimer {
@@ -5703,6 +5723,7 @@ function safeSetTimeout(callback, delay) {
 }
 
 // src/connection-manager.ts
+init_log_to_file();
 var ConnectionManager = class {
   onReconnectedCallback = null;
   onConnectionLostCallback = null;
@@ -5757,6 +5778,7 @@ var ConnectionManager = class {
 };
 
 // src/message-handler.ts
+init_log_to_file();
 var JsonRpcErrorTypes = {
   SECURITY_BLOCKED: "security_blocked",
   INTERNAL_ERROR: "internal_error"
@@ -5773,6 +5795,7 @@ var hasValidId = (msg) => {
 var MessageHandler = class {
   notificationHandlers = /* @__PURE__ */ new Map();
   pendingRequests = /* @__PURE__ */ new Map();
+  partialBuffer = "";
   /**
    * Register notification handler for specific method
    */
@@ -5796,19 +5819,54 @@ var MessageHandler = class {
    */
   handleIncomingData(data) {
     try {
-      const lines = data.split("\n").filter((line) => line.trim());
-      for (const line of lines) {
-        const message = JSON.parse(line);
-        if (isJsonRpcNotification(message)) {
-          this.handleNotification(message);
-        } else if (isJsonRpcResponse(message)) {
-          this.handleResponse(message);
-        } else if (hasValidId(message)) {
-          this.handleResponse(message);
+      console.log(`[DEBUG] MessageHandler received data: ${data.length} chars`);
+      this.partialBuffer += data;
+      console.log(`[DEBUG] Buffer now contains: ${this.partialBuffer.length} chars`);
+      if (this.partialBuffer.length > 5e3) {
+        console.log(`[DEBUG] Large buffer detected (${this.partialBuffer.length} chars), checking for resources/list...`);
+        if (this.partialBuffer.includes('"resources":[')) {
+          console.log(`[DEBUG] Found resources array in buffer!`);
         }
       }
+      let processedAny = false;
+      while (true) {
+        const newlineIndex = this.partialBuffer.indexOf("\n");
+        if (newlineIndex === -1) {
+          break;
+        }
+        const completeLine = this.partialBuffer.substring(0, newlineIndex).trim();
+        this.partialBuffer = this.partialBuffer.substring(newlineIndex + 1);
+        if (completeLine.length === 0) {
+          continue;
+        }
+        console.log(`[DEBUG] Processing complete line: ${completeLine.substring(0, 100)}... (${completeLine.length} chars)`);
+        if (completeLine.length > 5e3) {
+          console.log(`[DEBUG] Large line detected, contains resources: ${completeLine.includes('"resources":[')}`);
+        }
+        try {
+          const message = JSON.parse(completeLine);
+          processedAny = true;
+          if (isJsonRpcNotification(message)) {
+            console.log(`[DEBUG] Handling notification: ${message.method}`);
+            this.handleNotification(message);
+          } else if (isJsonRpcResponse(message)) {
+            console.log(`[DEBUG] Handling response for id: ${message.id}`);
+            this.handleResponse(message);
+          } else if (hasValidId(message)) {
+            console.log(`[DEBUG] Handling fallback response for id: ${message.id}`);
+            this.handleResponse(message);
+          }
+        } catch (parseError) {
+          console.error("[MessageHandler] Error parsing line:", parseError);
+          console.error("[MessageHandler] Failed line:", completeLine.substring(0, 200));
+        }
+      }
+      if (!processedAny && this.partialBuffer.length > 0) {
+        console.log(`[DEBUG] Incomplete message in buffer: ${this.partialBuffer.substring(0, 100)}...`);
+      }
     } catch (error) {
-      errorToFile("[MessageHandler] Error parsing incoming data:", error);
+      console.error("[MessageHandler] Error in handleIncomingData:", error);
+      errorToFile("[MessageHandler] Error in handleIncomingData:", error);
     }
   }
   /**
@@ -5942,15 +6000,21 @@ var UnityClient = class {
    * Connect to Unity (reconnect if necessary)
    */
   async ensureConnected() {
+    console.log(`[DEBUG] ensureConnected called, current connected: ${this.connected}`);
     try {
+      console.log(`[DEBUG] Testing connection...`);
       if (await this.testConnection()) {
+        console.log(`[DEBUG] Connection test passed, returning`);
         return;
       }
     } catch (error) {
+      console.log(`[DEBUG] Connection test failed:`, error);
       this._connected = false;
     }
+    console.log(`[DEBUG] Disconnecting and reconnecting...`);
     this.disconnect();
     await this.connect();
+    console.log(`[DEBUG] Reconnection completed, connected: ${this.connected}`);
   }
   /**
    * Connect to Unity
@@ -6103,6 +6167,22 @@ var UnityClient = class {
     }
   }
   handleToolResponse(response, toolName) {
+    console.log(`[DEBUG] Unity response for ${toolName}`, {
+      hasError: !!response.error,
+      hasResult: !!response.result,
+      resultType: typeof response.result,
+      resultKeys: response.result && typeof response.result === "object" ? Object.keys(response.result) : null,
+      fullResponse: response
+    });
+    Promise.resolve().then(() => (init_log_to_file(), log_to_file_exports)).then(({ debugToFile: debugToFile2 }) => {
+      debugToFile2(`Unity response for ${toolName}`, {
+        hasError: !!response.error,
+        hasResult: !!response.result,
+        resultType: typeof response.result,
+        resultKeys: response.result && typeof response.result === "object" ? Object.keys(response.result) : null,
+        fullResponse: response
+      });
+    });
     if (response.error) {
       throw new Error(`Failed to execute tool '${toolName}': ${response.error.message}`);
     }
@@ -6179,8 +6259,12 @@ var UnityClient = class {
   }
 };
 
+// src/server.ts
+init_log_to_file();
+
 // src/unity-discovery.ts
 import * as net2 from "net";
+init_log_to_file();
 var UnityDiscovery = class _UnityDiscovery {
   discoveryInterval = null;
   unityClient;
@@ -6418,6 +6502,7 @@ var UnityDiscovery = class _UnityDiscovery {
 };
 
 // src/unity-connection-manager.ts
+init_log_to_file();
 var UnityConnectionManager = class {
   unityClient;
   unityDiscovery;
@@ -6697,6 +6782,7 @@ var DynamicUnityCommandTool = class extends BaseTool {
 };
 
 // src/unity-tool-manager.ts
+init_log_to_file();
 var UnityToolManager = class {
   unityClient;
   isDevelopment;
@@ -6869,6 +6955,7 @@ var UnityToolManager = class {
 };
 
 // src/mcp-client-compatibility.ts
+init_log_to_file();
 var McpClientCompatibility = class {
   unityClient;
   clientName = DEFAULT_CLIENT_NAME;
@@ -6958,6 +7045,7 @@ var McpClientCompatibility = class {
 };
 
 // src/unity-event-handler.ts
+init_log_to_file();
 var UnityEventHandler = class {
   server;
   unityClient;
@@ -7018,6 +7106,38 @@ var UnityEventHandler = class {
       errorToFile("[Unity Event Handler] Failed to send tools changed notification:", error);
     } finally {
       this.isNotifying = false;
+    }
+  }
+  /**
+   * Send resources list changed notification
+   */
+  sendResourcesListChangedNotification() {
+    try {
+      void this.server.notification({
+        method: "notifications/resources/list_changed",
+        params: {}
+      });
+      if (this.isDevelopment) {
+        debugToFile("[Unity Event Handler] resources/list_changed notification sent");
+      }
+    } catch (error) {
+      errorToFile("[Unity Event Handler] Failed to send resources list changed notification:", error);
+    }
+  }
+  /**
+   * Send resource updated notification for a specific resource
+   */
+  sendResourceUpdatedNotification(uri) {
+    try {
+      void this.server.notification({
+        method: "notifications/resources/updated",
+        params: { uri }
+      });
+      if (this.isDevelopment) {
+        debugToFile(`[Unity Event Handler] resources/updated notification sent for: ${uri}`);
+      }
+    } catch (error) {
+      errorToFile(`[Unity Event Handler] Failed to send resource updated notification for ${uri}:`, error);
     }
   }
   /**
@@ -7191,6 +7311,10 @@ var UnityMcpServer = class {
         capabilities: {
           tools: {
             listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+          },
+          resources: {
+            subscribe: true,
+            listChanged: true
           }
         }
       }
@@ -7239,6 +7363,10 @@ var UnityMcpServer = class {
               capabilities: {
                 tools: {
                   listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+                },
+                resources: {
+                  subscribe: true,
+                  listChanged: true
                 }
               },
               serverInfo: {
@@ -7254,6 +7382,10 @@ var UnityMcpServer = class {
               capabilities: {
                 tools: {
                   listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+                },
+                resources: {
+                  subscribe: true,
+                  listChanged: true
                 }
               },
               serverInfo: {
@@ -7282,6 +7414,10 @@ var UnityMcpServer = class {
         capabilities: {
           tools: {
             listChanged: TOOLS_LIST_CHANGED_CAPABILITY
+          },
+          resources: {
+            subscribe: true,
+            listChanged: true
           }
         },
         serverInfo: {
@@ -7318,6 +7454,75 @@ var UnityMcpServer = class {
           ],
           isError: true
         };
+      }
+    });
+    this.server.setRequestHandler(ListResourcesRequestSchema, async (request) => {
+      console.log("[DEBUG] Resources list requested", { cursor: request.params?.cursor });
+      debugToFile("Resources list requested", { cursor: request.params?.cursor });
+      try {
+        console.log("[DEBUG] Sending resources/list to Unity...", { params: request.params || {} });
+        debugToFile("Sending resources/list to Unity...", { params: request.params || {} });
+        const response = await this.unityClient.executeTool("resources/list", request.params || {});
+        console.log("[DEBUG] Resources list response from Unity", {
+          resourceCount: response.resources?.length,
+          fullResponse: response,
+          responseType: typeof response,
+          responseKeys: Object.keys(response || {}),
+          finalResources: response.resources,
+          finalNextCursor: response.nextCursor
+        });
+        debugToFile("Resources list response from Unity", {
+          resourceCount: response.resources?.length,
+          fullResponse: response,
+          responseType: typeof response,
+          responseKeys: Object.keys(response || {}),
+          finalResources: response.resources,
+          finalNextCursor: response.nextCursor
+        });
+        const finalResponse = {
+          resources: response.resources || [],
+          nextCursor: response.nextCursor
+        };
+        console.log("[DEBUG] Final MCP response being returned", {
+          finalResourceCount: finalResponse.resources?.length,
+          finalResponse
+        });
+        debugToFile("Final MCP response being returned", {
+          finalResourceCount: finalResponse.resources?.length,
+          finalResponse
+        });
+        return finalResponse;
+      } catch (error) {
+        console.error("[ERROR] Error listing resources:", error);
+        errorToFile("Error listing resources:", error);
+        return {
+          resources: []
+        };
+      }
+    });
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const { uri } = request.params;
+      debugToFile(`Resource read requested: ${uri}`);
+      try {
+        const response = await this.unityClient.executeTool("resources/read", { uri });
+        debugToFile(`Resource read response from Unity for ${uri}`, { contentLength: response.contents?.length });
+        return {
+          contents: response.contents || []
+        };
+      } catch (error) {
+        errorToFile(`Error reading resource ${uri}:`, error);
+        throw error;
+      }
+    });
+    this.server.setRequestHandler(SubscribeRequestSchema, async (request) => {
+      const { uri } = request.params;
+      debugToFile(`Resource subscription requested: ${uri}`);
+      try {
+        infoToFile(`Resource subscription accepted for: ${uri}`);
+        return {};
+      } catch (error) {
+        errorToFile(`Error subscribing to resource ${uri}:`, error);
+        throw error;
       }
     });
   }

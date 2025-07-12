@@ -6,6 +6,9 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   InitializeRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  SubscribeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { UnityClient } from './unity-client.js';
 import { errorToFile, debugToFile, infoToFile } from './utils/log-to-file.js';
@@ -65,6 +68,10 @@ class UnityMcpServer {
         capabilities: {
           tools: {
             listChanged: TOOLS_LIST_CHANGED_CAPABILITY,
+          },
+          resources: {
+            subscribe: true,
+            listChanged: true,
           },
         },
       },
@@ -135,6 +142,10 @@ class UnityMcpServer {
                 tools: {
                   listChanged: TOOLS_LIST_CHANGED_CAPABILITY,
                 },
+                resources: {
+                  subscribe: true,
+                  listChanged: true,
+                },
               },
               serverInfo: {
                 name: MCP_SERVER_NAME,
@@ -149,6 +160,10 @@ class UnityMcpServer {
               capabilities: {
                 tools: {
                   listChanged: TOOLS_LIST_CHANGED_CAPABILITY,
+                },
+                resources: {
+                  subscribe: true,
+                  listChanged: true,
                 },
               },
               serverInfo: {
@@ -185,6 +200,10 @@ class UnityMcpServer {
         capabilities: {
           tools: {
             listChanged: TOOLS_LIST_CHANGED_CAPABILITY,
+          },
+          resources: {
+            subscribe: true,
+            listChanged: true,
           },
         },
         serverInfo: {
@@ -231,6 +250,91 @@ class UnityMcpServer {
           ],
           isError: true,
         };
+      }
+    });
+
+    // Handle resources/list request
+    this.server.setRequestHandler(ListResourcesRequestSchema, async (request) => {
+      console.log('[DEBUG] Resources list requested', { cursor: request.params?.cursor });
+      debugToFile('Resources list requested', { cursor: request.params?.cursor });
+      
+      try {
+        // Forward to Unity
+        console.log('[DEBUG] Sending resources/list to Unity...', { params: request.params || {} });
+        debugToFile('Sending resources/list to Unity...', { params: request.params || {} });
+        const response = await this.unityClient.executeTool('resources/list', request.params || {});
+        console.log('[DEBUG] Resources list response from Unity', { 
+          resourceCount: response.resources?.length,
+          fullResponse: response,
+          responseType: typeof response,
+          responseKeys: Object.keys(response || {}),
+          finalResources: response.resources,
+          finalNextCursor: response.nextCursor
+        });
+        debugToFile('Resources list response from Unity', { 
+          resourceCount: response.resources?.length,
+          fullResponse: response,
+          responseType: typeof response,
+          responseKeys: Object.keys(response || {}),
+          finalResources: response.resources,
+          finalNextCursor: response.nextCursor
+        });
+        
+        const finalResponse = {
+          resources: response.resources || [],
+          nextCursor: response.nextCursor,
+        };
+        
+        console.log('[DEBUG] Final MCP response being returned', {
+          finalResourceCount: finalResponse.resources?.length,
+          finalResponse: finalResponse
+        });
+        debugToFile('Final MCP response being returned', {
+          finalResourceCount: finalResponse.resources?.length,
+          finalResponse: finalResponse
+        });
+        
+        return finalResponse;
+      } catch (error) {
+        console.error('[ERROR] Error listing resources:', error);
+        errorToFile('Error listing resources:', error);
+        return {
+          resources: [],
+        };
+      }
+    });
+
+    // Handle resources/read request
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const { uri } = request.params;
+      debugToFile(`Resource read requested: ${uri}`);
+      
+      try {
+        // Forward to Unity
+        const response = await this.unityClient.executeTool('resources/read', { uri });
+        debugToFile(`Resource read response from Unity for ${uri}`, { contentLength: response.contents?.length });
+        return {
+          contents: response.contents || [],
+        };
+      } catch (error) {
+        errorToFile(`Error reading resource ${uri}:`, error);
+        throw error;
+      }
+    });
+
+    // Handle resources/subscribe request
+    this.server.setRequestHandler(SubscribeRequestSchema, async (request) => {
+      const { uri } = request.params;
+      debugToFile(`Resource subscription requested: ${uri}`);
+      
+      try {
+        // For now, just acknowledge the subscription
+        // Unity side doesn't implement subscription yet, but we accept it
+        infoToFile(`Resource subscription accepted for: ${uri}`);
+        return {};
+      } catch (error) {
+        errorToFile(`Error subscribing to resource ${uri}:`, error);
+        throw error;
       }
     });
   }

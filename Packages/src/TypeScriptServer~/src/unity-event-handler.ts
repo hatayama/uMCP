@@ -91,6 +91,40 @@ export class UnityEventHandler {
   }
 
   /**
+   * Send resources list changed notification
+   */
+  sendResourcesListChangedNotification(): void {
+    try {
+      void this.server.notification({
+        method: 'notifications/resources/list_changed',
+        params: {},
+      });
+      if (this.isDevelopment) {
+        debugToFile('[Unity Event Handler] resources/list_changed notification sent');
+      }
+    } catch (error) {
+      errorToFile('[Unity Event Handler] Failed to send resources list changed notification:', error);
+    }
+  }
+
+  /**
+   * Send resource updated notification for a specific resource
+   */
+  sendResourceUpdatedNotification(uri: string): void {
+    try {
+      void this.server.notification({
+        method: 'notifications/resources/updated',
+        params: { uri },
+      });
+      if (this.isDevelopment) {
+        debugToFile(`[Unity Event Handler] resources/updated notification sent for: ${uri}`);
+      }
+    } catch (error) {
+      errorToFile(`[Unity Event Handler] Failed to send resource updated notification for ${uri}:`, error);
+    }
+  }
+
+  /**
    * Setup signal handlers for graceful shutdown
    */
   setupSignalHandlers(): void {

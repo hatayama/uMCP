@@ -131,7 +131,9 @@ namespace io.github.hatayama.uLoopMCP
                 await MainThreadSwitcher.SwitchToMainThread();
                 await McpCommunicationLogger.LogRequest(originalJson);
                 BaseToolResponse result = await ExecuteMethod(request.Method, request.Params);
+                McpLogger.LogDebug($"Execution result type: {result?.GetType().Name}, Result: {result}");
                 string response = CreateSuccessResponse(request.Id, result);
+                McpLogger.LogDebug($"Created JSON response length: {response?.Length ?? 0}");
                 McpLogger.LogDebug($"Method: [{request.Method}], executed in {result.ExecutionTimeMs}ms");
                 _ = McpCommunicationLogger.RecordLogResponse(response);
                 return response;
@@ -157,6 +159,8 @@ namespace io.github.hatayama.uLoopMCP
         /// <param name="result">Command execution result</param>
         private static string CreateSuccessResponse(object id, BaseToolResponse result)
         {
+            McpLogger.LogDebug($"CreateSuccessResponse called with id: {id}, result type: {result?.GetType().Name}");
+            
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
@@ -170,7 +174,10 @@ namespace io.github.hatayama.uLoopMCP
                     id,
                     result
                 );
-                return JsonConvert.SerializeObject(response, Formatting.None, settings);
+                McpLogger.LogDebug("JsonRpcSuccessResponse created, serializing...");
+                string serialized = JsonConvert.SerializeObject(response, Formatting.None, settings);
+                McpLogger.LogDebug($"Serialization successful, length: {serialized?.Length ?? 0}");
+                return serialized;
             }
             catch (Exception)
             {

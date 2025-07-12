@@ -42,7 +42,41 @@ namespace io.github.hatayama.uLoopMCP
         /// <returns>Execution result</returns>
         public static async Task<BaseToolResponse> ExecuteCommandAsync(string commandName, JToken paramsToken)
         {
+            McpLogger.LogDebug($"UnityApiHandler.ExecuteCommandAsync called with command: {commandName}");
+            
+            // Handle MCP resources requests
+            if (commandName == "resources/list")
+            {
+                McpLogger.LogDebug("Matched resources/list command, calling HandleResourcesListAsync");
+                return await HandleResourcesListAsync(paramsToken);
+            }
+            else if (commandName == "resources/read")
+            {
+                McpLogger.LogDebug("Matched resources/read command, calling HandleResourcesReadAsync");
+                return await HandleResourcesReadAsync(paramsToken);
+            }
+            
+            McpLogger.LogDebug($"Command {commandName} not matched, delegating to CustomToolManager");
             return await CustomToolManager.GetRegistry().ExecuteToolAsync(commandName, paramsToken);
+        }
+
+        /// <summary>
+        /// Handle resources/list request
+        /// </summary>
+        private static async Task<BaseToolResponse> HandleResourcesListAsync(JToken paramsToken)
+        {
+            McpLogger.LogDebug("Handling resources/list request");
+            BaseToolResponse response = await McpResourceManager.Instance.HandleResourcesListAsync(paramsToken);
+            McpLogger.LogDebug($"resources/list response: {response?.GetType().Name}");
+            return response;
+        }
+
+        /// <summary>
+        /// Handle resources/read request
+        /// </summary>
+        private static async Task<BaseToolResponse> HandleResourcesReadAsync(JToken paramsToken)
+        {
+            return await McpResourceManager.Instance.HandleResourcesReadAsync(paramsToken);
         }
 
     }

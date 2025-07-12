@@ -75,6 +75,7 @@ export class MessageHandler {
     number,
     { resolve: (value: unknown) => void; reject: (reason: unknown) => void }
   > = new Map();
+  private partialBuffer: string = '';
 
   /**
    * Register notification handler for specific method
@@ -106,24 +107,72 @@ export class MessageHandler {
    */
   handleIncomingData(data: string): void {
     try {
-      const lines = data.split('\n').filter((line) => line.trim());
-
-      for (const line of lines) {
-        const message: unknown = JSON.parse(line);
-
-        // Check if this is a notification (no id field)
-        if (isJsonRpcNotification(message)) {
-          this.handleNotification(message);
-        } else if (isJsonRpcResponse(message)) {
-          // This is a response to a request
-          this.handleResponse(message);
-        } else if (hasValidId(message)) {
-          // Fallback for other messages with valid id
-          this.handleResponse(message as JsonRpcResponse);
+      console.log(`[DEBUG] MessageHandler received data: ${data.length} chars`);
+      
+      // Append to partial buffer
+      this.partialBuffer += data;
+      console.log(`[DEBUG] Buffer now contains: ${this.partialBuffer.length} chars`);
+      
+      // Check for specific large responses
+      if (this.partialBuffer.length > 5000) {
+        console.log(`[DEBUG] Large buffer detected (${this.partialBuffer.length} chars), checking for resources/list...`);
+        if (this.partialBuffer.includes('"resources":[')) {
+          console.log(`[DEBUG] Found resources array in buffer!`);
         }
       }
+      
+      // Process complete messages (ending with newline)
+      let processedAny = false;
+      while (true) {
+        const newlineIndex = this.partialBuffer.indexOf('\n');
+        if (newlineIndex === -1) {
+          // No complete message yet
+          break;
+        }
+        
+        const completeLine = this.partialBuffer.substring(0, newlineIndex).trim();
+        this.partialBuffer = this.partialBuffer.substring(newlineIndex + 1);
+        
+        if (completeLine.length === 0) {
+          continue;
+        }
+        
+        console.log(`[DEBUG] Processing complete line: ${completeLine.substring(0, 100)}... (${completeLine.length} chars)`);
+        
+        if (completeLine.length > 5000) {
+          console.log(`[DEBUG] Large line detected, contains resources: ${completeLine.includes('"resources":[')}`);
+        }
+        
+        try {
+          const message: unknown = JSON.parse(completeLine);
+          processedAny = true;
+
+          // Check if this is a notification (no id field)
+          if (isJsonRpcNotification(message)) {
+            console.log(`[DEBUG] Handling notification: ${(message as any).method}`);
+            this.handleNotification(message);
+          } else if (isJsonRpcResponse(message)) {
+            // This is a response to a request
+            console.log(`[DEBUG] Handling response for id: ${(message as any).id}`);
+            this.handleResponse(message);
+          } else if (hasValidId(message)) {
+            // Fallback for other messages with valid id
+            console.log(`[DEBUG] Handling fallback response for id: ${(message as any).id}`);
+            this.handleResponse(message as JsonRpcResponse);
+          }
+        } catch (parseError) {
+          console.error('[MessageHandler] Error parsing line:', parseError);
+          console.error('[MessageHandler] Failed line:', completeLine.substring(0, 200));
+        }
+      }
+      
+      if (!processedAny && this.partialBuffer.length > 0) {
+        console.log(`[DEBUG] Incomplete message in buffer: ${this.partialBuffer.substring(0, 100)}...`);
+      }
+      
     } catch (error) {
-      errorToFile('[MessageHandler] Error parsing incoming data:', error);
+      console.error('[MessageHandler] Error in handleIncomingData:', error);
+      errorToFile('[MessageHandler] Error in handleIncomingData:', error);
     }
   }
 

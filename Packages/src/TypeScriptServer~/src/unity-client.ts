@@ -102,18 +102,25 @@ export class UnityClient {
    * Connect to Unity (reconnect if necessary)
    */
   async ensureConnected(): Promise<void> {
+    console.log(`[DEBUG] ensureConnected called, current connected: ${this.connected}`);
+    
     // Test if already connected and actual communication is possible
     try {
+      console.log(`[DEBUG] Testing connection...`);
       if (await this.testConnection()) {
+        console.log(`[DEBUG] Connection test passed, returning`);
         return;
       }
     } catch (error) {
+      console.log(`[DEBUG] Connection test failed:`, error);
       this._connected = false;
     }
 
     // Reconnect if connection is lost
+    console.log(`[DEBUG] Disconnecting and reconnecting...`);
     this.disconnect();
     await this.connect();
+    console.log(`[DEBUG] Reconnection completed, connected: ${this.connected}`);
   }
 
   /**
@@ -318,6 +325,25 @@ export class UnityClient {
   }
 
   private handleToolResponse(response: { error?: { message: string }; result?: unknown }, toolName: string): unknown {
+    // Debug log for response analysis
+    console.log(`[DEBUG] Unity response for ${toolName}`, {
+      hasError: !!response.error,
+      hasResult: !!response.result,
+      resultType: typeof response.result,
+      resultKeys: response.result && typeof response.result === 'object' ? Object.keys(response.result) : null,
+      fullResponse: response
+    });
+    
+    import('./utils/log-to-file.js').then(({ debugToFile }) => {
+      debugToFile(`Unity response for ${toolName}`, {
+        hasError: !!response.error,
+        hasResult: !!response.result,
+        resultType: typeof response.result,
+        resultKeys: response.result && typeof response.result === 'object' ? Object.keys(response.result) : null,
+        fullResponse: response
+      });
+    });
+
     if (response.error) {
       throw new Error(`Failed to execute tool '${toolName}': ${response.error.message}`);
     }
