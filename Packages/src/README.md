@@ -15,6 +15,8 @@
 
 Control Unity Editor from various LLM tools.
 
+Accelerates AI-driven development cycles to enable continuous improvement loops.
+
 # Concept
 This project was created with the concept of enabling AI-driven coding to run autonomously for as long as possible.
 Normally, humans need to handle tasks like compiling Unity, running tests, and communicating logs to AI. uLoopMCP solves this hassle.

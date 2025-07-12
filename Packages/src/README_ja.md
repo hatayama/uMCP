@@ -13,7 +13,9 @@
     <img width="500" alt="uLoopMCP" src="https://github.com/user-attachments/assets/a8b53cca-5444-445d-aa39-9024d41763e6" />  
 </h1>  
 
-様々なLLMツールからUnity Editorを操作する事ができます。  
+様々なLLMツールからUnity Editorを操作する事ができます。
+
+AIによる開発サイクルを高速に回すことで、継続的な改善Loopを実現します。
 
 # コンセプト
 AIによるコーディングを可能な限り長時間自走させる事をコンセンプトに作りました。
